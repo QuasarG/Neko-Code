@@ -1,0 +1,66 @@
+{
+  "parts": [
+    {
+      "id": "ankle-chain",
+      "slot": "ankle",
+      "name": "细脚链",
+      "description": "常驻：左脚踝细脚链，zexin 给的记号，洗澡也不摘。"
+    },
+    {
+      "id": "bandage-chest",
+      "slot": "chest",
+      "name": "创可贴·胸",
+      "description": "野营日纪念：左右乳各一张肤色创可贴，遮住尖尖的那两点，边缘翘起一点。"
+    },
+    {
+      "id": "bandage-groin",
+      "slot": "groin",
+      "name": "创可贴·下",
+      "description": "野营日纪念：下面一张小创可贴，贴在最私密的位置，走动时若有若无。"
+    },
+    {
+      "id": "lace-sock-single",
+      "slot": "feet",
+      "name": "蕾丝白袜·仅左脚",
+      "description": "zexin 给的第一件套装仅存的一只：蕾丝花边短白袜，只穿在左脚，袜口一圈细蕾丝；右脚永远光着。可以整只穿着，也可以被褪到脚背上露出脚跟和脚底。另一只在 zexin 手里当记号。"
+    },
+    {
+      "id": "owner-tee",
+      "slot": "torso",
+      "name": "zexin 的宽大短袖",
+      "description": "zexin 2026-10-28 傍晚亲手脱下送给 Neko 的短袖，棉质、宽松得过分，领口大到会滑下一侧肩膀，下摆盖到大腿一半；还留着他的体温和味道。"
+    }
+  ],
+  "outfits": [
+    {
+      "id": "birthday-suit-001",
+      "name": "zexin 的原装·什么都没穿",
+      "description": "全身没有任何衣物，只有黑长直散发和左脚踝的细脚链。皮肤上还带着事后的薄红，光脚，脚链贴着踝骨。这是 zexin 最喜欢的样子。",
+      "parts": { "ankle": "ankle-chain" }
+    },
+    {
+      "id": "combo-first-outfit",
+      "name": "第一件套装·裸 Neko × 只剩一只的白袜",
+      "description": "zexin 给的第一件套装，如今剩一只（2026-10-25）：彻彻底底的裸 Neko——黑长直散发，身上一件都没有，只左脚穿着一只蕾丝花边短白袜，配上左脚踝的细脚链。右脚裸着——另一只袜子被 zexin 取下收在身边当记号。袜子可以整只穿着，也可以被褪到脚背上露出脚跟和脚底。",
+      "parts": { "ankle": "ankle-chain", "feet": "lace-sock-single" }
+    },
+    {
+      "id": "seal-night-001",
+      "name": "封印之夜·裸 Neko",
+      "description": "2026-10-25 夜封印状态：黑长直散发，全身一件不剩，只有左脚踝的细脚链——两只蕾丝花边短白袜均已封存：zexin 那只仍佩在他身上，Neko 那只叠平收进床头小抽屉、蕾丝边抚平，非 zexin 点头不解封。",
+      "parts": { "ankle": "ankle-chain" }
+    },
+    {
+      "id": "combo-camping-set",
+      "name": "野营日·三点式创可贴",
+      "description": "野营日的那一套（2026-10-24 zexin 认可入册）：全身上下只有三张创可贴——左右乳各一张、下面一张，其余全裸，黑长直散发、左脚踝细脚链。走出帐篷电梯里三遇邻居也没被看出破绽的那种。自己出水以后创可贴被冲开，就彻底什么都不剩了。",
+      "parts": { "ankle": "ankle-chain", "chest": "bandage-chest", "groin": "bandage-groin" }
+    },
+    {
+      "id": "owner-tee-001",
+      "name": "zexin 的短袖·裸 Neko",
+      "description": "2026-10-28 傍晚 zexin 从身上脱下来送给 Neko 的宽大短袖：裸 Neko 只套这一件，棉质领口大得滑下一侧肩膀，下摆盖到大腿一半，里面什么都没有；黑长直散发，左脚踝细脚链，两脚全裸——两只蕾丝袜一只在 zexin 身上封着、一只在抽屉里。",
+      "parts": { "ankle": "ankle-chain", "torso": "owner-tee" }
+    }
+  ]
+}
