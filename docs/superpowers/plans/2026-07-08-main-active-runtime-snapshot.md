@@ -8,7 +8,7 @@
 
 **Goal:** 将 `isMainActive` 从本地临时 UI 猜测收敛为 runtime snapshot / live monitor 同步的临时投影，确保 main idle + background running 时不显示底部 fake loading、普通消息不进 queue、queued prompt 可以正常 drain，同时 restore / reconnect 不会误判仍在运行的 main turn。
 
-**Architecture:** `mainActive` 作为 `ZCodeSessionRuntimeSnapshot.runtime` 的 ephemeral 字段，从 agent runtime active turn 投影生成；UI 通过 `applyTaskSnapshotEphemeralRuntimeState()` 和 live stream/background monitor 统一同步到 `TaskUiState.isMainActive`。旧的 `runtime.status`、`activeInputId`、`activeTurnKind` 状态流保持不变，`isMainActive` 只被三类消费点读取：main loading 展示、普通发送 queue 判定、queued prompt drain 判定。
+**Architecture:** `mainActive` 作为 `NekodeSessionRuntimeSnapshot.runtime` 的 ephemeral 字段，从 agent runtime active turn 投影生成；UI 通过 `applyTaskSnapshotEphemeralRuntimeState()` 和 live stream/background monitor 统一同步到 `TaskUiState.isMainActive`。旧的 `runtime.status`、`activeInputId`、`activeTurnKind` 状态流保持不变，`isMainActive` 只被三类消费点读取：main loading 展示、普通发送 queue 判定、queued prompt drain 判定。
 
 **Tech Stack:** TypeScript、Zod protocol schema、Zustand store、Vitest、WDIO conversation-session E2E、pnpm workspace。
 
@@ -51,10 +51,10 @@
 
 - `packages/shared/src/zcode-task-types.ts`
   - 定义 UI/service 侧消费的 snapshot TypeScript interface。
-  - 新增 `ZCodeSessionRuntimeSnapshot.mainActive?: boolean`。
+  - 新增 `NekodeSessionRuntimeSnapshot.mainActive?: boolean`。
 
 - `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/session-mapper.ts`
-  - 将 agent runtime projection / active turn 转成 ZCode protocol snapshot。
+  - 将 agent runtime projection / active turn 转成 Nekode protocol snapshot。
   - 负责设置 `mainActive: Boolean(input.activeTurn)`。
 
 - `apps/zcode-cli/packages/bootstrap/tests/zcode-protocol.test.ts`
@@ -87,7 +87,7 @@
 - `packages/ui/test/chatStatus.test.ts`
   - 覆盖 mainActivity status 派生。
 
-- `packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+- `packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
   - 覆盖普通发送是否进入 queue。
 
 - `packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts`
@@ -134,7 +134,7 @@ Expected:
 ```bash
 pnpm exec vitest run \
   packages/ui/test/chatStatus.test.ts \
-  packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts \
+  packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts \
   packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts
 ```
 
@@ -168,7 +168,7 @@ Expected: PASS before this plan starts changing snapshot behavior.
 
 ```ts
 // packages/shared/src/zcode-task-types.ts
-export interface ZCodeSessionRuntimeSnapshot {
+export interface NekodeSessionRuntimeSnapshot {
   mainActive?: boolean;
 }
 ```
@@ -281,7 +281,7 @@ Expected:
 
 ```ts
 runtime?: Pick<
-  ZCodeSessionRuntimeSnapshot,
+  NekodeSessionRuntimeSnapshot,
   | "activeTurnKind"
   | "mainActive"
   | "contextUsage"
@@ -375,7 +375,7 @@ Expected: PASS.
 ```bash
 pnpm exec vitest run \
   packages/ui/test/chatStatus.test.ts \
-  packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts \
+  packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts \
   packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts
 ```
 
@@ -398,7 +398,7 @@ Expected: PASS.
 - Modify: `packages/ui/src/hooks/taskStreamEventHandlers.ts`
 - Modify: `packages/ui/src/lib/zcodeTaskRuntimeMonitor.ts`
 - Test: `packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts`
-- Test: `packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+- Test: `packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 
 **Implementation Notes:**
 
@@ -430,7 +430,7 @@ Expected:
 - [ ] Add or confirm test: background-only streaming does not queue normal prompt.
 
 Existing target:
-`packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+`packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 
 Expected assertion:
 
@@ -477,7 +477,7 @@ Expected assertion:
 
 ```bash
 pnpm exec vitest run \
-  packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts \
+  packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts \
   packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts
 ```
 
@@ -498,7 +498,7 @@ Expected: PASS.
 
 **Files:**
 - Test: `packages/ui/test/taskSnapshotRuntimeStateSync.test.ts`
-- Test: `packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+- Test: `packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 - Optional Test: `packages/ui/test/taskStreamEventSnapshotSync.test.ts` if existing helpers make stale snapshot behavior easy to isolate
 
 ### Checklist
@@ -541,7 +541,7 @@ If the current test harness cannot call `syncTaskSnapshotAfterEvent()` cleanly w
 pnpm exec vitest run \
   packages/ui/test/taskSnapshotRuntimeStateSync.test.ts \
   packages/ui/test/chatStatus.test.ts \
-  packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts \
+  packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts \
   packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts
 ```
 
@@ -629,7 +629,7 @@ Expected:
 pnpm exec vitest run \
   packages/ui/test/taskSnapshotRuntimeStateSync.test.ts \
   packages/ui/test/chatStatus.test.ts \
-  packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts \
+  packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts \
   packages/ui/test/zcodeTaskRuntimeMonitorQueueDrain.test.ts
 ```
 
@@ -721,7 +721,7 @@ Expected:
 
 - [ ] The plan does not introduce a new durable DB field.
 - [ ] The plan does not rename or repurpose `activeInputId`.
-- [ ] The plan does not infer `mainActive` in ChatView/useZCodeChat from `activeTurnId`.
+- [ ] The plan does not infer `mainActive` in ChatView/useNekodeChat from `activeTurnId`.
 - [ ] The plan keeps terminal cleanup centralized in `setTaskRuntimeState(non-running)`.
 - [ ] The plan includes RED/GREEN unit tests before each implementation phase.
 - [ ] The plan includes targeted E2E before final completion.

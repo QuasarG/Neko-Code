@@ -9,7 +9,7 @@
 | 目标   | 实施 `2026-09-09-virtual-project-design.md`，按第 8 节顺序交付                                                            |
 | 层级   | presentation、option-source、draft-default、validation、commit-effect、persistence、recovery                              |
 | 模式   | planning → implementation                                                                                                 |
-| 种子   | `taskIndexRepo`、`createZCodeTaskIndexSyncer`、`IZCodeTaskService`、`WorkspaceSidebar`、`V4Gateway`、`SqliteSessionStore` |
+| 种子   | `taskIndexRepo`、`createNekodeTaskIndexSyncer`、`INekodeTaskService`、`WorkspaceSidebar`、`V4Gateway`、`SqliteSessionStore` |
 | 范围外 | workbench 分屏组、队列 owner、bridge identity、目录 hash、普通会话配置解析链                                              |
 
 ## UI Surface Matrix
@@ -170,7 +170,7 @@ D82 的 Web transport 偶发等待超时保留记录：当前与重构前 checko
 
 旧 checkout 为 `ad1fc7d414ee71c58d3539efdeb028b5d6e2e8f4`。先在旧 checkout 执行 `pnpm install --offline --ignore-scripts --frozen-lockfile`、`pnpm exec tsc -b apps/zcode-cli/packages/contracts`；不将新版 workspace 包软链给旧代码。通过现有 Node tsx loader 执行 `scripts/verify-project-upgrade.mts <对应 checkout 根> <phase> <隔离目录>`，四个 phase 依次为 `old-seed`、`upgrade`、`old-write`、`reupgrade`。
 
-隔离目录名必须以 `zcode-project-upgrade-` 开头，HOME/USERPROFILE/ZCODE_DATA_BASE_DIR 在每个进程启动前全部指向该目录。旧版真实 TaskIndexRepo/SqliteSessionStore 新建数据，新版升级，旧版实际改名/删除/新建，新版再升级。正文/FK、旧 checksum、已有归属、新行首次归属、旧意图交接及清位均通过。CLI 端口在进程内直连真实 Store；旧 CLI 仍列出新软删除会话是已接受的降级限制。
+隔离目录名必须以 `zcode-project-upgrade-` 开头，HOME/USERPROFILE/NEKODE_DATA_BASE_DIR 在每个进程启动前全部指向该目录。旧版真实 TaskIndexRepo/SqliteSessionStore 新建数据，新版升级，旧版实际改名/删除/新建，新版再升级。正文/FK、旧 checksum、已有归属、新行首次归属、旧意图交接及清位均通过。CLI 端口在进程内直连真实 Store；旧 CLI 仍列出新软删除会话是已接受的降级限制。
 
 ### 未验证范围与收尾
 
@@ -195,7 +195,7 @@ D82 的 Web transport 偶发等待超时保留记录：当前与重构前 checko
 
 ### 顺带修复
 
-- 闲时任务绑定会话的忙碌判断已失效：归属收口后 tasks-index 行的 status 只镜像 CLI last_outcome，永远不会是 running，host 按 `listTasks(...).status === "running"` 的守卫形同虚设。新增 `IZCodeTaskService.listActiveTaskIds`（来自 syncer 活动集合），host 改用它；offPeakHostDispatch 测试按活动集合断言 busy。
+- 闲时任务绑定会话的忙碌判断已失效：归属收口后 tasks-index 行的 status 只镜像 CLI last_outcome，永远不会是 running，host 按 `listTasks(...).status === "running"` 的守卫形同虚设。新增 `INekodeTaskService.listActiveTaskIds`（来自 syncer 活动集合），host 改用它；offPeakHostDispatch 测试按活动集合断言 busy。
 - 分支上两处已失效的旧测试：pinnedTaskFileTreeAction 断言 79de8c7fab 已移除的文件树按钮（删除）；workspaceShellRemoteMobileLayout 的 TabStoreProvider mock 缺 useTabStore（8d06343e22 后 useProjectTree 直接订阅），24 例报错（补 mock）。
 - core resume 改为拒绝恢复已软删除会话（旧 time.archived 判断永远 false）。
 

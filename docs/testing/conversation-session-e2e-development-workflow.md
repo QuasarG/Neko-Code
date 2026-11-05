@@ -31,7 +31,7 @@ E2E 落地回答“怎么稳定测”：
 6. 跑本地 default replay。
 7. 需要进入 Docker suite 时，先单 spec 跑 `replay-isolated`，通过后再登记进 Docker preset。
 8. 常规 Docker 回归按 suite 批量运行，复用同一个镜像、容器和 WDIO 构建入口。
-9. MR 与 GitLab Web pipeline 通过手动 optional job 跑正式目录下的 default replay：共享 macOS 与专用 macOS runner job 都是单实例执行，只有 Windows job 使用四个 GitLab/WDIO 原生 shard。三条入口都复用 `ZCODE_E2E_SPEC=./test/e2e/conversation-session/*.test.ts` 等 direct-root glob；这些 glob 是非递归的，只收已经转正到正式目录的 spec，不收 `manual-review/pending`。
+9. MR 与 GitLab Web pipeline 通过手动 optional job 跑正式目录下的 default replay：共享 macOS 与专用 macOS runner job 都是单实例执行，只有 Windows job 使用四个 GitLab/WDIO 原生 shard。三条入口都复用 `NEKODE_E2E_SPEC=./test/e2e/conversation-session/*.test.ts` 等 direct-root glob；这些 glob 是非递归的，只收已经转正到正式目录的 spec，不收 `manual-review/pending`。
 10. Docker CI 只收已经自动化稳定的 suite。
 
 默认 Desktop 全量入口按任意层级的 `manual-review` 目录统一排除候选，不能只枚举已知领域，
@@ -165,7 +165,7 @@ worker 收到具体 spec → 按需使用 / 清理 mock 环境 → 执行用例
 
 `automations-create-manage` 的项目操作使用当前 `automation-project-select` 和
 `role=option`。按 [虚拟项目规格 B18](../superpowers/specs/2026-09-09-virtual-project-design.md)，
-候选来自本地虚拟项目，不再使用会话草稿菜单；隔离 fixture 只应列出 `ZCodeProject`。
+候选来自本地虚拟项目，不再使用会话草稿菜单；隔离 fixture 只应列出 `NekodeProject`。
 保留创建、编辑、暂停、恢复与删除断言，不把旧「不在项目中工作」入口作为当前表单前置条件。
 
 正式目录下的 spec 使用 `prepareV4ConversationE2E` 把测试带到“可发送的空草稿”；`manual-review/pending` 迁移期候选仍可使用 `prepareConversationE2E`。已转正 spec 不得导入 legacy `helpers/conversation-session.js`：V4 pane/composer/timeline 操作来自 `v4-conversation.ts`，tool block 断言来自 `conversation-session-tool.ts`，provider request 断言来自 `conversation-session-network.ts`。这条边界只收敛 formal 证据实现，不改变 catalog 的产品状态组合。
@@ -183,7 +183,7 @@ admission 规则让 legacy helper 或 ledger mismatch 进入 direct-root suite�
 composer 可见，provider 配置完成后直接复用该草稿；只有当前仍绑定已有 session、处于非 draft
 页面或 composer 不存在时，才点击新建任务。
 
-固定文件夹具的准备还必须确认导航 owner 的 cwd 为 `ZCodeProject` 主要目录，并先于 Provider
+固定文件夹具的准备还必须确认导航 owner 的 cwd 为 `NekodeProject` 主要目录，并先于 Provider
 初始化完成。该目录上的初始空草稿即使没有项目标签也可复用；不能为补标签重复新建，触发预热
 owner 换代。全局新建按虚拟项目规格 D3 创建独立目录，不能用它初始化固定目录夹具；已有会话、
 其他 cwd 或非空草稿应通过现有项目行的新建入口返回夹具目录。`skipShellReady` 保留调用方
@@ -284,21 +284,21 @@ packages/desktop/test/e2e/fixtures/cases/conversation-session/<case-name>.json
 
 ### 跨平台运行时路径合同
 
-`.e2e-home` 是 Desktop E2E 的隔离用户目录，不应把 case 文件散落到系统 `/tmp`。spec 在运行时创建、读取、修改或等待的文件统一放到 Agent 实际执行 workspace `ZCodeProject` 下的 `.zcode-e2e/<case>`：
+`.e2e-home` 是 Desktop E2E 的隔离用户目录，不应把 case 文件散落到系统 `/tmp`。spec 在运行时创建、读取、修改或等待的文件统一放到 Agent 实际执行 workspace `NekodeProject` 下的 `.nekode-e2e/<case>`：
 
 ```text
-.e2e-home/ZCodeProject/               Agent workspace cwd
-└── .zcode-e2e/<case>/                case-owned runtime files
+.e2e-home/NekodeProject/               Agent workspace cwd
+└── .nekode-e2e/<case>/                case-owned runtime files
 ```
 
 - Node 文件操作使用共享 helper 生成的原生绝对路径。
 - provider fixture 的 Read/Write/Edit/Glob/Grep 等绝对路径使用 `{{e2eRuntimeRoot}}/<case>/...`；replay server 在请求匹配前展开变量。
-- Bash command 使用 `.zcode-e2e/<case>/...` workspace-relative POSIX 路径，禁止依赖 `/tmp`、Windows drive 到 Git Bash mount 的隐式转换或用户 TEMP 目录。
+- Bash command 使用 `.nekode-e2e/<case>/...` workspace-relative POSIX 路径，禁止依赖 `/tmp`、Windows drive 到 Git Bash mount 的隐式转换或用户 TEMP 目录。
 - case manifest 的 `fileFixtures[].path` 使用 workspace-relative 路径。
 
 ```text
 spec native path ─────────────┐
-fixture absolute tool path ───┼─> ZCodeProject/.zcode-e2e/<case>/file
+fixture absolute tool path ───┼─> NekodeProject/.nekode-e2e/<case>/file
 Bash relative path ───────────┘
 ```
 
@@ -381,7 +381,7 @@ pnpm --filter @zcode/desktop e2e:fixture:check -- \
 
 pending manual-review 会按 case 是否已有 case-local fixture 自动隔离模式：已有 fixture 时使用 replay，
 缺 fixture 时使用 live/capture。需要临时覆盖 fixture 集合时仍可显式传入 fixture 路径；该变量同时把
-provider transport 切到 replay，但仍保留 `ZCODE_E2E_MANUAL_REVIEW=1` 的 pending spec 运行边界，
+provider transport 切到 replay，但仍保留 `NEKODE_E2E_MANUAL_REVIEW=1` 的 pending spec 运行边界，
 避免把回放证据误当成真实 provider capture：
 
 ```bash

@@ -5,8 +5,8 @@
 ## 链路
 
 ```text
-手机 ZCodeAgentServiceClient.invoke("conversationInputPredictionV4", target, params)
-  → 桌面 IZCodeAgentService.conversationInputPredictionV4（packages/services）
+手机 NekodeAgentServiceClient.invoke("conversationInputPredictionV4", target, params)
+  → 桌面 INekodeAgentService.conversationInputPredictionV4（packages/services）
       开关关闭 → 直接回 unavailable，不转发
       开关开启 → getReadOnlyClient(existing-only)，不为预测拉起运行时
   → CLI v4/conversation/inputPrediction（apps/zcode-cli/packages/bootstrap）
@@ -23,7 +23,7 @@
 
 ### 请求
 
-手机发给 service 的请求在 `ZCodeAgentSessionTarget`（workspacePath 等）的基础上增加以下字段：
+手机发给 service 的请求在 `NekodeAgentSessionTarget`（workspacePath 等）的基础上增加以下字段：
 
 | 字段        | 类型          | 必填 | 说明                                                                                       |
 | ----------- | ------------- | ---- | ------------------------------------------------------------------------------------------ |
@@ -81,9 +81,9 @@ hello 只能说明 Host 侧已经开启。如果 Host 连接的是远端（SSH�
 
 | 项       | 值                                                                                                                                                                                               |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 环境变量 | `ZCODE_REMOTE_INPUT_PREDICTION`，由桌面 Host 进程读取（`packages/services/src/zcode-agent/inputPredictionSwitch.ts`）                                                                            |
+| 环境变量 | `NEKODE_REMOTE_INPUT_PREDICTION`，由桌面 Host 进程读取（`packages/services/src/zcode-agent/inputPredictionSwitch.ts`）                                                                            |
 | 取值     | 去掉首尾空白后：未设置或为空 → 取缺省值（开启）；`"1"` → 开启；`"0"` 或其它任何值 → 关闭                                                                                                         |
-| 缺省     | **开启**（`REMOTE_INPUT_PREDICTION_DEFAULT_ENABLED = true`）。用户决定（2026-10-23）：输入预测所有渠道默认打开。每次请求都会调用一次模型，有成本；需要关闭时设 `ZCODE_REMOTE_INPUT_PREDICTION=0` |
+| 缺省     | **开启**（`REMOTE_INPUT_PREDICTION_DEFAULT_ENABLED = true`）。用户决定（2026-10-23）：输入预测所有渠道默认打开。每次请求都会调用一次模型，有成本；需要关闭时设 `NEKODE_REMOTE_INPUT_PREDICTION=0` |
 | 生效     | 每次 hello 和每次请求都会重新读取。运行中修改进程环境变量不会生效，需要重启桌面端                                                                                                                |
 | 错误行为 | 无效值（非空且不是 `"1"`）按关闭处理，不报错                                                                                                                                                     |
 | 测试     | `packages/services/test/inputPredictionSwitch.test.ts`、`packages/services/test/zcodeAgentService.v4.test.ts`（inputPrediction 用例）                                                            |

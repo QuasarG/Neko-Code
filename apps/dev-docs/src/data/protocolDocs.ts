@@ -82,7 +82,7 @@ export const concepts: Concept[] = [
     id: "sessionId",
     name: "sessionId",
     kind: "id",
-    summary: "Agent server 生成的会话主键，ZCode Protocol 里的核心实体 ID。",
+    summary: "Agent server 生成的会话主键，Nekode Protocol 里的核心实体 ID。",
     lifecycle:
       "由 `session/create` 创建；`session/resume` 复用；会随 snapshot、event、message、part 全程回传。",
     owner: "agent server",
@@ -94,11 +94,11 @@ export const concepts: Concept[] = [
     id: "taskId",
     name: "taskId",
     kind: "id",
-    summary: "App/UI 任务列表里的产品层 ID。ZCode Agent 路径迁移后应等同或映射到 sessionId。",
+    summary: "App/UI 任务列表里的产品层 ID。Nekode Agent 路径迁移后应等同或映射到 sessionId。",
     lifecycle:
-      "UI task 列表、缓存、导航和本地持久化使用；进入 ZCode Protocol 时必须找到对应 sessionId。",
+      "UI task 列表、缓存、导航和本地持久化使用；进入 Nekode Protocol 时必须找到对应 sessionId。",
     owner: "app/ui",
-    source: "packages/shared/src/zcode-task-types.ts#ZCodeTaskMeta",
+    source: "packages/shared/src/zcode-task-types.ts#NekodeTaskMeta",
     related: ["sessionId", "workspaceKey", "activeInputId"],
   },
   {
@@ -143,7 +143,7 @@ export const concepts: Concept[] = [
     name: "clientMessageId",
     kind: "compat",
     summary: "旧字段名，过去承载 UI 每次 prompt 的相关性 ID；已统一改名为 inputId。",
-    lifecycle: "旧协议字段；新 ZCode Protocol schema 不再接受它，继续发送会触发 Invalid params。",
+    lifecycle: "旧协议字段；新 Nekode Protocol schema 不再接受它，继续发送会触发 Invalid params。",
     owner: "deprecated",
     source: "dae26032: packages/shared/src/zcode-protocol/index.ts",
     related: ["inputId", "sessionSend"],
@@ -188,7 +188,7 @@ export const concepts: Concept[] = [
     summary: "消息主键，标识 user/assistant message。",
     lifecycle: "消息创建时生成；message upsert/remove、part、snapshot 都围绕它组织。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeMessageInfo",
+    source: "packages/shared/src/zcode-protocol/index.ts#NekodeMessageInfo",
     related: ["partId", "sessionId", "turnId"],
   },
   {
@@ -198,7 +198,7 @@ export const concepts: Concept[] = [
     summary: "消息内部 part 的主键，用于 text、reasoning、tool、patch、compaction 等细粒度更新。",
     lifecycle: "part.started/upserted/delta/remove 时使用。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeMessagePart",
+    source: "packages/shared/src/zcode-protocol/index.ts#NekodeMessagePart",
     related: ["messageId", "toolCallId"],
   },
   {
@@ -208,7 +208,7 @@ export const concepts: Concept[] = [
     summary: "工具调用主键，用于工具状态、权限请求和 active tool projection。",
     lifecycle: "工具 scheduled/started/progress/result/error 流程中保持稳定。",
     owner: "agent runtime",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeActiveToolCall",
+    source: "packages/shared/src/zcode-protocol/index.ts#NekodeActiveToolCall",
     related: ["partId", "permissionRequest"],
   },
   {
@@ -273,7 +273,7 @@ export const concepts: Concept[] = [
     summary: "真实文件路径，只用于文件读写、命令 cwd、Git 操作和路径展示。",
     lifecycle: "本地 workspace 通常直接使用；远程 workspace 不能只靠它做身份判等。",
     owner: "app/host",
-    source: "packages/shared/src/zcode-protocol/index.ts#ZCodeWorkspaceRef",
+    source: "packages/shared/src/zcode-protocol/index.ts#NekodeWorkspaceRef",
     related: ["workspaceIdentity", "workspaceKey"],
   },
   {
@@ -288,10 +288,10 @@ export const concepts: Concept[] = [
   },
   {
     id: "eventEnvelope",
-    name: "ZCode Event Envelope",
+    name: "Nekode Event Envelope",
     kind: "protocol",
     summary:
-      "ZCode Protocol 事件外壳，承载 eventId、sessionId、turnId、seq、traceId、timestamp、deliveryKind。",
+      "Nekode Protocol 事件外壳，承载 eventId、sessionId、turnId、seq、traceId、timestamp、deliveryKind。",
     lifecycle: "所有 `session/event` 通知和 `session/events` 读取结果都使用它。",
     owner: "agent server",
     source: "packages/shared/src/zcode-protocol/index.ts#zcodeEventEnvelopeSchema",
@@ -301,7 +301,7 @@ export const concepts: Concept[] = [
     id: "sessionSend",
     name: "session/send",
     kind: "protocol",
-    summary: "提交用户输入的 ZCode Protocol 方法，立即 ACK，不等待整轮模型生成完成。",
+    summary: "提交用户输入的 Nekode Protocol 方法，立即 ACK，不等待整轮模型生成完成。",
     lifecycle: "client 调用后，agent 后台执行 turn，并通过 session.event/state.updated 推送进度。",
     owner: "protocol client -> agent server",
     source: "packages/shared/src/zcode-protocol/index.ts#zcodeSessionSendParamsSchema",
@@ -334,7 +334,7 @@ export const structures: StructureDoc[] = [
   {
     id: "id-migration",
     title: "ID 语义迁移总览",
-    path: "跨 UI / host / agent / ZCode Protocol",
+    path: "跨 UI / host / agent / Nekode Protocol",
     purpose:
       "把观测链路 traceId 和用户输入归属 inputId 拆开，解决 UI 状态收口、stop、队列和协议 schema 不一致。",
     oldShape:
@@ -382,7 +382,7 @@ export const structures: StructureDoc[] = [
         type: "sess_${uuid}",
         required: "required",
         meaning:
-          "ZCode Protocol 会话主键，由 agent server 生成并在 snapshot/event/message 中回传。",
+          "Nekode Protocol 会话主键，由 agent server 生成并在 snapshot/event/message 中回传。",
         owner: "agent server",
         source: "createSessionId",
         conceptIds: ["sessionId"],
@@ -392,16 +392,16 @@ export const structures: StructureDoc[] = [
         type: "string",
         required: "required",
         meaning:
-          "App 产品层任务 ID。迁移期仍存在，但 ZCode Agent 路径进入协议时要找到对应 sessionId。",
+          "App 产品层任务 ID。迁移期仍存在，但 Nekode Agent 路径进入协议时要找到对应 sessionId。",
         owner: "app/ui",
-        source: "ZCodeTaskMeta",
+        source: "NekodeTaskMeta",
         conceptIds: ["taskId", "sessionId"],
       },
     ],
   },
   {
     id: "zcode-session-send",
-    title: "ZCodeSessionSendParams",
+    title: "NekodeSessionSendParams",
     path: "packages/shared/src/zcode-protocol/index.ts",
     purpose: "`session/send` 的参数结构。它只提交输入并立即 ACK，结果通过事件流返回。",
     oldShape: "{ sessionId, clientMessageId?, content, attachments?, expectedRevision? }",
@@ -544,7 +544,7 @@ export const structures: StructureDoc[] = [
   },
   {
     id: "zcode-stream-event",
-    title: "ZCodeStreamEvent / TaskStreamMirrorableEvent",
+    title: "NekodeStreamEvent / TaskStreamMirrorableEvent",
     path: "packages/shared/src/zcode-task-types.ts",
     purpose: "Host 到 renderer 的实时事件结构。现在同时携带 traceId 和可选 inputId。",
     oldShape: "每个 stream event 只有 traceId；UI 把它当 run id 使用。",
@@ -558,7 +558,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "事件类型，如 agent_message_chunk、tool_call、task_complete、task_error。",
         owner: "host/runtime",
-        source: "ZCodeStreamEvent",
+        source: "NekodeStreamEvent",
         conceptIds: ["taskRuntimeState"],
       },
       {
@@ -567,7 +567,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "UI task 归属，用于找到对应消息列表、runtime state 和 task cache。",
         owner: "app/host",
-        source: "ZCodeStreamEvent",
+        source: "NekodeStreamEvent",
         conceptIds: ["taskId"],
       },
       {
@@ -576,7 +576,7 @@ export const structures: StructureDoc[] = [
         required: "required",
         meaning: "观测 trace。日志、调试、链路排查使用，不再做 prompt 终态收口。",
         owner: "host/runtime",
-        source: "ZCodeStreamEvent",
+        source: "NekodeStreamEvent",
         conceptIds: ["traceId"],
       },
       {
@@ -585,7 +585,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "事件所属用户输入。terminal complete/error 优先用它与 activeInputId 比较。",
         owner: "host/runtime echoes",
-        source: "TaskStreamMirrorableEvent & ZCodeStreamEvent",
+        source: "TaskStreamMirrorableEvent & NekodeStreamEvent",
         conceptIds: ["inputId", "activeInputId"],
       },
       {
@@ -594,16 +594,16 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "子 agent 或工具嵌套关系；null 表示主 agent 正文或主 agent 工具调用。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent / TaskStreamMirrorableEvent",
+        source: "NekodeStreamEvent / TaskStreamMirrorableEvent",
         conceptIds: ["toolCallId"],
       },
       {
         name: "messageId",
         type: "string",
         required: "optional",
-        meaning: "ZCode message upsert 主键；synthetic timeline 消息也用它做稳定更新。",
+        meaning: "Nekode message upsert 主键；synthetic timeline 消息也用它做稳定更新。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent",
+        source: "NekodeStreamEvent",
         conceptIds: ["messageId"],
       },
       {
@@ -612,7 +612,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "工具调用 ID；tool_call 与 tool_call_update 共享。",
         owner: "agent runtime",
-        source: "ZCodeStreamEvent tool update",
+        source: "NekodeStreamEvent tool update",
         conceptIds: ["toolCallId"],
       },
       {
@@ -621,7 +621,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "task_complete 的结束原因。",
         owner: "agent runtime",
-        source: "ZCodeTaskComplete",
+        source: "NekodeTaskComplete",
         conceptIds: ["inputId"],
       },
       {
@@ -630,7 +630,7 @@ export const structures: StructureDoc[] = [
         required: "optional",
         meaning: "task_error 的可读错误正文；远控恢复依赖它展示失败原因。",
         owner: "agent runtime",
-        source: "ZCodeTaskError",
+        source: "NekodeTaskError",
         conceptIds: ["inputId"],
       },
     ],
@@ -665,7 +665,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "provider",
-        type: "ZCodeProvider",
+        type: "NekodeProvider",
         required: "optional",
         meaning: "该 task 当前绑定的 legacy provider，用于 workspace 级兼容投影和 busy lock。",
         owner: "renderer store",
@@ -683,7 +683,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "apiRetry",
-        type: "ZCodeApiRetryStatus | null",
+        type: "NekodeApiRetryStatus | null",
         required: "required",
         meaning: "模型 API 重试状态，展示网络/限流恢复进度。",
         owner: "renderer store",
@@ -714,7 +714,7 @@ export const structures: StructureDoc[] = [
   },
   {
     id: "zcode-event-envelope",
-    title: "ZCode Event Envelope",
+    title: "Nekode Event Envelope",
     path: "packages/shared/src/zcode-protocol/index.ts",
     purpose: "协议事件外壳。它描述事件日志顺序和观测链路，不描述 UI 输入归属。",
     newShape: "{ eventId, sessionId, turnId?, seq, traceId?, timestamp, deliveryKind? }",
@@ -796,7 +796,7 @@ export const structures: StructureDoc[] = [
     fields: [
       {
         name: "protocol",
-        type: "{ name: 'ZCode Protocol'; version: 1 }",
+        type: "{ name: 'Nekode Protocol'; version: 1 }",
         required: "required",
         meaning: "协议名和版本，客户端据此确定 schema。",
         owner: "agent server",
@@ -805,7 +805,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "session",
-        type: "ZCodeSessionInfo",
+        type: "NekodeSessionInfo",
         required: "required",
         meaning:
           "session 基本信息：sessionId、workspace、parent、kind、title、mode、status、model、target、时间戳。",
@@ -815,7 +815,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "settings",
-        type: "ZCodeSessionSettingsState",
+        type: "NekodeSessionSettingsState",
         required: "required",
         meaning: "server-authoritative 模型、思考深度、模式和权限规则状态。",
         owner: "agent server",
@@ -824,7 +824,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "projection",
-        type: "ZCodeSessionProjection",
+        type: "NekodeSessionProjection",
         required: "required",
         meaning:
           "运行投影：status、currentTurnId、pendingPermissions、activeToolCalls、target、lastError 等。",
@@ -834,7 +834,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "runtime",
-        type: "ZCodeSessionRuntimeState",
+        type: "NekodeSessionRuntimeState",
         required: "required",
         meaning: "eventSeq、stateRevision、deliveryKind、activeTurnId、pendingRequestIds。",
         owner: "agent server",
@@ -843,7 +843,7 @@ export const structures: StructureDoc[] = [
       },
       {
         name: "messages",
-        type: "ZCodeMessageWithParts[]",
+        type: "NekodeMessageWithParts[]",
         required: "required",
         meaning: "可渲染消息及 part 列表。UI 从这里恢复 transcript。",
         owner: "agent server",
@@ -854,7 +854,7 @@ export const structures: StructureDoc[] = [
   },
   {
     id: "workspace-ref",
-    title: "ZCodeWorkspaceRef",
+    title: "NekodeWorkspaceRef",
     path: "packages/shared/src/zcode-protocol/index.ts",
     purpose: "协议层 workspace 身份结构，分清执行路径和身份隔离。",
     newShape: "{ workspacePath, workspaceIdentity?, workspaceKey }",
@@ -1080,7 +1080,7 @@ export const stdioTrafficLogFields: StdioTrafficLogField[] = [
   {
     name: "message",
     type: "object | null",
-    meaning: "raw 可解析为 ZCode Protocol 消息时的结构化结果；stderr 或解析失败时为空。",
+    meaning: "raw 可解析为 Nekode Protocol 消息时的结构化结果；stderr 或解析失败时为空。",
   },
   {
     name: "parseError",
@@ -1093,7 +1093,7 @@ export const stdioTrafficReadSteps: StdioTrafficReadStep[] = [
   {
     id: "tail-current",
     title: "实时跟随当前文件",
-    command: "cat ~/.zcode/v2/dev/stdio-traffic/<workspaceHash>/latest.txt",
+    command: "cat ~/.nekode/v2/dev/stdio-traffic/<workspaceHash>/latest.txt",
     detail: "适合临时排查，按写入顺序看每一行 traffic record。",
   },
   {

@@ -4,7 +4,7 @@
 
 用户取得声明的入口：
 
-- Desktop：安装目录的 `resources/THIRD-PARTY-NOTICES.md`；macOS 为 `ZCode.app/Contents/Resources/THIRD-PARTY-NOTICES.md`。`Resources/licenses/electron/` 另外保存目标平台 Electron 原文、Chromium 汇总及校验清单。
+- Desktop：安装目录的 `resources/THIRD-PARTY-NOTICES.md`；macOS 为 `Nekode.app/Contents/Resources/THIRD-PARTY-NOTICES.md`。`Resources/licenses/electron/` 另外保存目标平台 Electron 原文、Chromium 汇总及校验清单。
 - Web：部署根目录的 `THIRD-PARTY-NOTICES.md`；构建后的 HTML 带 `rel="license"` 链接。
 - 发行 CLI：`dist/THIRD-PARTY-NOTICES.md` 作为伴随文件随构建产出，`pnpm build:zcode` 的统一分发包复制到 `agent/THIRD-PARTY-NOTICES.md`。`zcode --licenses` 入口与 SEA 内嵌 Node 精确版本许可尚未接入：SEA 基底取构建机 Node 版本，而 `runtime/sources.json` 只登记 22.16.0 与 24.14.0，CI 浮动 Node 24 时会因缺少对应原文而无法构建。开发态 `tsx src/main.ts` 不经过发行入口。
 - 搜索工具：准备后的每个工具目录包含 `THIRD-PARTY-NOTICES.txt` 和 `SOURCES.json`（内网镜像下载与仓库归档两条准备路径都写入，缓存命中也刷新）。SEA 同时嵌入这些材料。producer 打出的 tar/zip 仍只含二进制，保持与已固定 SHA-256 的归档逐字节一致。
@@ -65,7 +65,7 @@ ugrep 的 BSD-3-Clause 版权、条件和免责声明完整保留。ripgrep 保�
 
 Knip 文档镜像现已登记：原始导入的 169 个文件与上游 Knip 6.0.6 的固定参考提交逐一匹配，补齐 ISC 原文；随镜像复制的 Source Sans Pro 与 Hack 字体按字体内版本单独登记原始许可。来源、版本与本地改动说明见 [镜像 README](../docs/knip/docs/README.md)。
 
-Apache-2.0 复制内容中的 148 个已确认改编文件包含文件内来源和 `Modified by ZCode:` 声明，并登记到 `modifiedFiles`；生成时校验该声明仍存在。Markdown frontmatter、脚本 shebang 和 JavaScript directive 保持有效。未确认源自上游的自有文件不追加上游归属。
+Apache-2.0 复制内容中的 148 个已确认改编文件包含文件内来源和 `Modified by Nekode:` 声明，并登记到 `modifiedFiles`；生成时校验该声明仍存在。Markdown frontmatter、脚本 shebang 和 JavaScript directive 保持有效。未确认源自上游的自有文件不追加上游归属。
 
 | 内容                                  | 本地范围                                                                                           | 上游许可与修改说明                                                                                                                                   |
 | ------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |

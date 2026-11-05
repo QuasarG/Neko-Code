@@ -65,7 +65,7 @@
 - services/UI/sqlite-migrations 模块批次：1490 文件中 1489 通过，运行中新增的 prepareSession 删除竞态用例最初失败；修复后的专项 21 文件 109 用例及最后新增的导航/身份/准备回归均通过。没有把该中间批次记为全绿。
 - CLI 迁移专项 7 文件 64 用例通过。AST 对比双方原分支已有 CLI migration ID/SQL 全部保持；app 双 0004 与 Source identity/schema 的 ledger/checksum/回滚由迁移用例验证。
 - 重建后的 macOS Electron：VPR01 平铺、跨设备离线拖拽、刷新持久化及入口清理通过，run desktop-e2e-20261010-034929-123。
-- 真实本机 ServerCore HTTP/WebSocket + 远端 Host/CLI：项目创建、不可改目录、改名、移除/重加、文件树、首发、历史重开、CLI 冷恢复、归档及正文保留通过，run desktop-e2e-20261010-035958-302。模型响应使用 replay；这不是 SSH 证据。夹具服务器使用独立 ZCODE_DESKTOP_HOME_DIR，固定 root 内替换技能验证冷恢复，不再修改远程 roots。
+- 真实本机 ServerCore HTTP/WebSocket + 远端 Host/CLI：项目创建、不可改目录、改名、移除/重加、文件树、首发、历史重开、CLI 冷恢复、归档及正文保留通过，run desktop-e2e-20261010-035958-302。模型响应使用 replay；这不是 SSH 证据。夹具服务器使用独立 NEKODE_DESKTOP_HOME_DIR，固定 root 内替换技能验证冷恢复，不再修改远程 roots。
 - Fixture check 通过；新增用例保持 manual-review/pending，未晋升 CI。回放命令需 E2E_PROVIDER_THOUGHT_LEVEL=disabled，与 env preset 的实际 Option Spec 一致；本机旧 high 配置会被上游 Provider Provisioning 正确拒绝。
 - TypeScript 的 build 模式会写 desktop/out，必须在 typecheck 完成后重建桌面再执行 E2E，避免拿被覆盖的未打包 Host 当发布产物。
 - 未执行：真实 SSH/WSL/Docker、真实手机 shared-host、Windows/Linux GUI、完整主题/390px/国际化矩阵。旧远程详情/设备包装层的 pending 视觉用例需按本裁决复核，不作为本次已通过证据。

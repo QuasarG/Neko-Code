@@ -78,7 +78,7 @@ await expect(gateway.subscribe(subscribeParams())).rejects.toThrow("persisted re
 `materializeSessionRecord`，最后后写入的 record 覆盖先写入的 record；两个 app 都可能继续
 `resume()`，但只有一个仍在 registry 中。
 
-真 sqlite + `ZCodeProtocolAgentServer` 探针（已运行，当前实现失败）：
+真 sqlite + `NekodeProtocolAgentServer` 探针（已运行，当前实现失败）：
 
 ```ts
 await Promise.all([
@@ -103,9 +103,9 @@ expect(createdAppOptions.filter((o) => o.sessionId === sessionId)).toHaveLength(
 `packages/services/src/zcode-agent/zcodeAgentService.ts` 的
 `commandsQuery`、`conversationUsage`、`rowsRange`、`plans`、`fileChanges`、
 `fileRewindPreview`、attachment read/preview 等调用均未传 per-request `timeoutMs`，因此实际使用
-`ZCodeProtocolClient` 的默认 3 分钟。
+`NekodeProtocolClient` 的默认 3 分钟。
 
-超时还会触发 `ZCodeAgentProcessManager.onRequestTimeout`，除
+超时还会触发 `NekodeAgentProcessManager.onRequestTimeout`，除
 `workspace/cancelGenerateText` 外会淘汰整个 client/process。需要验证：
 
 - query 是否应当 10 秒失败而不是 180 秒；
@@ -196,7 +196,7 @@ usage query 测试，确认是否有明确的 active-client 选择/重试规则�
 
 1. 把 R1 探针加入 `v4-gateway.test.ts`，先以 `it.fails` 或隔离审计 fixture 记录现状，避免把
      “空 projection”误当正常回归。
-2. 把 R2 探针加入 `v4-cold-resume.test.ts`，断言同 session `createZCodeApp` 次数和最终 registry
+2. 把 R2 探针加入 `v4-cold-resume.test.ts`，断言同 session `createNekodeApp` 次数和最终 registry
    owner；该测试应先失败，再讨论 per-session activation owner 的修复设计。
 
 ### Phase B：补齐 timeout / cancellation harness
@@ -272,7 +272,7 @@ client  = desktop-continuous | web-remote-replayable
 | C20 | 暴露低风险选择问题 | usage 绑定任意第一个 active client；该 client 在请求中被 dispose 时请求失败，不自动切换第二个健康 client。 |
 
 额外 timeout 检查：`PROTOCOL_V4_LIMITS.conversationQueryTimeoutMs=10_000` 仍无消费点；
-`ZCodeProtocolClient` 的默认请求 watchdog 测试确认实际默认值为 180 秒。因此 R3 是静态确认的
+`NekodeProtocolClient` 的默认请求 watchdog 测试确认实际默认值为 180 秒。因此 R3 是静态确认的
 契约缺口，还没有用真实 10 秒等待做慢 query 集成测试。
 
 本轮实际测试汇总：

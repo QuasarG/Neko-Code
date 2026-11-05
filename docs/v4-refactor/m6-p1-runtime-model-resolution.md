@@ -48,7 +48,7 @@
   Team Plan 移除守卫（provider 被过滤则抛 unavailable 不静默兜底个人 key，:1615/:855）。
 - **runtimeModel schema**（`shared/zcode-protocol/index.ts:523` `zcodeModelRuntimeConfigSchema`）：
   `{revision, generatedAt, model{providerId,modelId,variant?}, provider(providerId,kind,apiFormat?,baseURL?,apiKey?(inline/credential/env),apiKeyRequired?,headers?,providerOptions?,models[]…), thoughtLevel?}`。
-- **service 契约**：`IZCodeAgentService.setModel({..., model, runtimeModel?, modelProviderFamilySelectedKeys?})` / `updateRuntimeModelConfig({..., runtimeModel, applyModelSelection?})` / `updateProviderRegistry({..., registry})`。
+- **service 契约**：`INekodeAgentService.setModel({..., model, runtimeModel?, modelProviderFamilySelectedKeys?})` / `updateRuntimeModelConfig({..., runtimeModel, applyModelSelection?})` / `updateProviderRegistry({..., registry})`。
 - **要保留的 app 兜底**（多数属 Phase 2，本 Phase 只需复用 service resolver 自带的那部分）：
   `resolveRuntimeModelConfig` 内建兜底（历史缺失→undefined 让 agent 恢复 :1583；provider 被移除→抛 unavailable :1615；stale 默认→registry 首个可用 :1678）。
   toolbar 侧的 `resolveUnavailableModelListFallback` / `resolveLoginProviderFirstModel` / `<synthetic>` / context-window guard / recovery path 归 **Phase 2**（本 Phase 不做，但设计不能挡它们）。
@@ -86,7 +86,7 @@ registry 解析），provider 不在 registry（刚加/竞态/远端）时回落
 **Layer C — renderer/service（app 侧）**
 
 - 1b 常态：保证 registry 时效——沿用现有 `updateProviderRegistry` 推送；**连接方式变更（P4b）/加 provider 时触发 re-push**（对齐老版 `syncModelProviderRegistryBeforeCustomModelWrite`）。
-- 1a 回落：暴露 service resolver 供 v4 调——`IZCodeAgentService` 加 `resolveRuntimeModelForV4({model, modelProviderFamilySelectedKeys})`（薄封装现有 `resolveRuntimeModelConfig`，**零重写 coding-plan/兜底**）；SessionPane `handleSelectModel` 在 `provider_not_in_registry` 回执时解析 runtimeModel 重发一次。
+- 1a 回落：暴露 service resolver 供 v4 调——`INekodeAgentService` 加 `resolveRuntimeModelForV4({model, modelProviderFamilySelectedKeys})`（薄封装现有 `resolveRuntimeModelConfig`，**零重写 coding-plan/兜底**）；SessionPane `handleSelectModel` 在 `provider_not_in_registry` 回执时解析 runtimeModel 重发一次。
 - 保留 toolbar 兜底（Phase 2 主体，但本 Phase 不得挡）：context-window guard 在会话态切小窗模型时的确认/压缩（`modelSwitchContextWindowGuard`，reserve 64k）；restart-runtime 决策（非 GLM 的外部 agent 类型切模型需 restart，**GLM 不 restart**——v4 主力 GLM 基本不触发）。
 
 ### 3.1 Phase 2 app fallback 收口语义（2026-07-09）

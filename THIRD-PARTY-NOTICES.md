@@ -258,9 +258,7 @@ Original copyright, license and NOTICE text is retained below. Identical text is
 
 - @kurkle/color@0.3.4 — MIT
 
-- @larksuiteoapi/node-sdk@1.61.1 — MIT
 
-- @larksuiteoapi/node-sdk@1.64.0 — MIT
 
 - @lexical/clipboard@0.42.0 — MIT
 
@@ -2426,21 +2424,21 @@ Electron/Chromium target-specific notices are shipped separately under Resources
 
 ## Modified npm packages
 
-- @radix-ui/react-collapsible@1.1.12: modified by ZCode; the changes are recorded in patches/@radix-ui__react-collapsible@1.1.12.patch in the source repository.
+- @radix-ui/react-collapsible@1.1.12: modified by Nekode; the changes are recorded in patches/@radix-ui__react-collapsible@1.1.12.patch in the source repository.
 
-- vitest@4.1.7: modified by ZCode; the changes are recorded in patches/vitest@4.1.7.patch in the source repository.
+- vitest@4.1.7: modified by Nekode; the changes are recorded in patches/vitest@4.1.7.patch in the source repository.
 
-- wdio-electron-service@9.2.1: modified by ZCode; the changes are recorded in patches/wdio-electron-service@9.2.1.patch in the source repository.
+- wdio-electron-service@9.2.1: modified by Nekode; the changes are recorded in patches/wdio-electron-service@9.2.1.patch in the source repository.
 
-- @arms/rum-electron@0.0.3: modified by ZCode; the changes are recorded in patches/@arms__rum-electron@0.0.3.patch in the source repository.
+- @arms/rum-electron@0.0.3: modified by Nekode; the changes are recorded in patches/@arms__rum-electron@0.0.3.patch in the source repository.
 
-- @ai-sdk/openai-compatible@2.0.60: modified by ZCode; the changes are recorded in patches/@ai-sdk__openai-compatible@2.0.60.patch in the source repository.
+- @ai-sdk/openai-compatible@2.0.60: modified by Nekode; the changes are recorded in patches/@ai-sdk__openai-compatible@2.0.60.patch in the source repository.
 
-- @ai-sdk/anthropic@3.0.81: modified by ZCode; the changes are recorded in patches/@ai-sdk__anthropic@3.0.81.patch in the source repository.
+- @ai-sdk/anthropic@3.0.81: modified by Nekode; the changes are recorded in patches/@ai-sdk__anthropic@3.0.81.patch in the source repository.
 
-- @aiden0z/pptx-renderer@1.2.4: modified by ZCode; the changes are recorded in patches/@aiden0z__pptx-renderer@1.2.4.patch in the source repository.
+- @aiden0z/pptx-renderer@1.2.4: modified by Nekode; the changes are recorded in patches/@aiden0z__pptx-renderer@1.2.4.patch in the source repository.
 
-- @extend-ai/react-xlsx@0.16.0: modified by ZCode; the changes are recorded in patches/@extend-ai__react-xlsx@0.16.0.patch in the source repository.
+- @extend-ai/react-xlsx@0.16.0: modified by Nekode; the changes are recorded in patches/@extend-ai__react-xlsx@0.16.0.patch in the source repository.
 
 ## License and NOTICE texts
 
@@ -4658,35 +4656,6 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 ````
 
-### Notice f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373
-
-- @larksuiteoapi/node-sdk@1.61.1: LICENSE
-
-- @larksuiteoapi/node-sdk@1.64.0: LICENSE
-
-
-
-````text
-MIT License
-
-Copyright (c) 2022 Lark Technologies Pte. Ltd.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice, shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-````
-
-### Notice d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344
-
-- @larksuiteoapi/node-sdk@1.61.1: README.md (license section)
-
-- @larksuiteoapi/node-sdk@1.64.0: README.md (license section)
-
-
-
-````text
 ## LICENSE
 MIT
 

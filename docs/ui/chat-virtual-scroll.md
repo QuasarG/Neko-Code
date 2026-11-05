@@ -108,7 +108,7 @@ getConversationRowsPartition(rows) = { history, tail }
 可重复的性能验收入口是 PERF04（`packages/desktop/test/e2e/conversation-session/manual-review/pending/conversation-session-streaming-history-performance.test.ts`，覆盖记录见 coverage matrix「PERF04 长历史流式渲染」）。它经 Host 导入服务建立 1000 回合 / 3000 行历史，回放 thinking 与正文流式输出，断言完成态正文逐字一致、帧间隔 P95 低于预算，并输出帧间隔、长任务和 renderer CPU profile。
 
 ```bash
-ZCODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop exec wdio run wdio.conf.ts \
+NEKODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop exec wdio run wdio.conf.ts \
   --spec ./test/e2e/conversation-session/manual-review/pending/conversation-session-streaming-history-performance.test.ts
 ```
 
@@ -130,7 +130,7 @@ ZCODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop exec wdio run wdio.conf.t
 
 ## 远控边界
 
-本改动只影响 UI 层渲染，不改变 ZCode task 消息流、snapshot、queue 或恢复语义：
+本改动只影响 UI 层渲染，不改变 Nekode task 消息流、snapshot、queue 或恢复语义：
 
 - 桌面端 `desktop-continuous` 仍保持 direct continuous 主链路。
 - 手机远控 `web-remote-replayable` 仍通过 replayable snapshot/gap 恢复边界展示消息。

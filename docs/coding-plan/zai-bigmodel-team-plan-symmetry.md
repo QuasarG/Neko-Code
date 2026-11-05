@@ -182,7 +182,7 @@ zai token 用 `Bearer` header（区别于 bigmodel 裸 token）。
 
 ### 注入流程运行时验证（dev:desktop:test）
 
-5 环节对称化在 zai 已端到端打通，证据来自 app 日志 + `~/.zcode-dev` 凭证手动调用 `api.z.ai`：
+5 环节对称化在 zai 已端到端打通，证据来自 app 日志 + `~/.nekode-dev` 凭证手动调用 `api.z.ai`：
 
 1. **routing 正确**：`getEnterprisePricing` 由 `ZaiCodingPlanSubscriptionProvider` 处理，prewarm 日志带
    `family: "builtin:zai-coding-plan"`，请求落在测试环境 zai biz 域名 `api.z.ai`
@@ -487,12 +487,12 @@ zai/bigmodel 两个分支共享 `modelProviderFamilySelectedKeys`：
 
 ### 根因
 
-`buildZCodeProviderRegistrySnapshot`（`modelProviderService.ts`）——发消息时下发给 agent runtime 的
+`buildNekodeProviderRegistrySnapshot`（`modelProviderService.ts`）——发消息时下发给 agent runtime 的
 provider 凭据快照——只有 bigmodel 的 team runtime key 投影（`resolveSelectedBigModelTeamPlanRuntimeApiKey`），
 **没有 zai 对应实现**：
 
 ```text
-buildZCodeProviderRegistrySnapshot
+buildNekodeProviderRegistrySnapshot
   ├─ bigmodelTeamRuntimeApiKey = resolveSelectedBigModelTeamPlanRuntimeApiKey(...)  ✅
   ├─ zaiTeamRuntimeApiKey     = （不存在）                                          ❌
   └─ filter.map(provider):
@@ -516,7 +516,7 @@ team 选中后才会被 enable）会被 `pickResolvedFamilyProvider` 提前丢�
    （`resolveZaiBusinessBaseUrl` + `createZaiLoginAuthHeaders`）的 `getCustomerInfo` 校验 org/project
    存在 → `ensureBigModelTeamPlanProjectApiKey` + `copyBigModelTeamPlanProjectApiKeySecret`
    （zai/bigmodel 业务 API 路径同构，仅 host/providerId/token 不同）→ 返回 `${apiKey}.${secretKey}`。
-3. **`buildZCodeProviderRegistrySnapshot` 接入**：新增 `zaiTeamRuntimeApiKey` + `selectedZaiTeamContext`
+3. **`buildNekodeProviderRegistrySnapshot` 接入**：新增 `zaiTeamRuntimeApiKey` + `selectedZaiTeamContext`
    计算；filter 阶段保留 zai coding provider；map 阶段 zai team 选中时覆盖 `apiKey` + `enabled: true`。
 4. **`filterResolvedProviderFamiliesForRegistry`**：zai 也传
    `forceCodingPlan: Boolean(resolveSelectedZaiTeamContext(familySelectedKeys))`，与 bigmodel 对称。

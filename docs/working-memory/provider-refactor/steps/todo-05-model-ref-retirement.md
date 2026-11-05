@@ -18,7 +18,7 @@
 
 - `ModelSelection` 已收口到 `@zcode/shared`，作为跨进程选择意图的唯一严格契约；
 - 当前执行统一持有 `Model`，Core、Compact、Memory、Subagent 和 Adapter 不再接收公共 `ModelRef`；
-- `ModelRef`、`ZCodeModelRef`、`variant` reasoning identity、parse/format/equality helper 及同形公共 alias 已删除；
+- `ModelRef`、`NekodeModelRef`、`variant` reasoning identity、parse/format/equality helper 及同形公共 alias 已删除；
 - Result、Stream、Session persistence 与 Telemetry 按各自语义保存 Selection 或明确的 provider/model 字段，
   不再共享一份伪身份对象；
 - Bot、TUI、Protocol、CLI admission、历史 hydration 和 SQLite codec 已切到标准 `ModelSelection`；只有明确的

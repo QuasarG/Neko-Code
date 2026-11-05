@@ -354,8 +354,8 @@ const backend = createElectronNativeBackend({
   adapter,
   axSource,
   brokerInfo: {
-    bundle_id: "dev.zcode.cua.helper",
-    display_name: "ZCode Computer Use",
+    bundle_id: "dev.nekode.cua.helper",
+    display_name: "Nekode Computer Use",
     permission_mode: "product",
     version: "0.0.0-test",
     platform: "win32",

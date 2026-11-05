@@ -4,9 +4,9 @@
 
 **Goal:** 实现 subagent blocking interaction delegate 语义：child runtime 产生普通权限请求、AskUserQuestion、ExitPlanMode approval 等阻塞交互时，parent-visible interaction channel 负责展示和回包，payload 里保留 child/subagent 归因信息，避免 subagent 内 Bash/AskUserQuestion/ExitPlanMode 等等待用户输入的路径无弹窗卡死。
 
-**Architecture:** 在 ZCode core 层新增 subagent interaction broker delegate，把 child 侧经 `PermissionBrokerPort` 发出的阻塞交互请求对外 `sessionId` 改写为 parent session id，并附带 `origin.kind="subagent"` 元数据。bootstrap 按 toolName 继续分流到 `interaction/requestPermission` 或 `interaction/requestUserInput`，service/task/UI 继续按 parent task/session 路由 pending permission 和 elicitation；用户回包沿现有 protocol request promise 返回 child tool executor。普通权限请求与 ZCode 已拆出的 elicitation channel 统一走这条代理链路，并以 `origin` 元数据标明请求来自哪个 subagent。
+**Architecture:** 在 Nekode core 层新增 subagent interaction broker delegate，把 child 侧经 `PermissionBrokerPort` 发出的阻塞交互请求对外 `sessionId` 改写为 parent session id，并附带 `origin.kind="subagent"` 元数据。bootstrap 按 toolName 继续分流到 `interaction/requestPermission` 或 `interaction/requestUserInput`，service/task/UI 继续按 parent task/session 路由 pending permission 和 elicitation；用户回包沿现有 protocol request promise 返回 child tool executor。普通权限请求与 Nekode 已拆出的 elicitation channel 统一走这条代理链路，并以 `origin` 元数据标明请求来自哪个 subagent。
 
-**Tech Stack:** TypeScript, Zod schema, ZCode Protocol, core AgentRuntime, services task projection, React UI permission/elicitation surface, Vitest, WDIO manual-review E2E, pnpm.
+**Tech Stack:** TypeScript, Zod schema, Nekode Protocol, core AgentRuntime, services task projection, React UI permission/elicitation surface, Vitest, WDIO manual-review E2E, pnpm.
 
 ## Global Constraints
 
@@ -31,7 +31,7 @@
 - 现象：child model 已产生 Bash tool call，permission flow 进入 ask，但 parent task 的 pending permission 数为 0，UI 没有弹窗；用户 stop 后 parent `Agent` tool 以取消失败收口。
 - 当前 core 已有类似设计样板：`apps/zcode-cli/packages/core/src/runtime/methods/subagent.ts` 里的 `createSubagentProviderRuntimeHeadersPort()` 把 provider runtime headers 的对外 `sessionId` 改成 parent session id，并保留 child runtime 内部账本。
 - 当前 service pending key：`packages/services/src/zcode-agent/zcodeAgentService.ts` 用 `workspace + sessionId + requestId` 分别记录 pending permission 和 pending user input；因此只要 blocking request 出协议前改成 parent session id，现有 respond path 可继续工作。
-- 当前 task projection：`packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts` 将 permission request 转成 `ZCodePermissionRequest` stream event，并把 `raw` 保留为原始 request。
+- 当前 task projection：`packages/services/src/zcode-agent/zcodeTaskServiceAdapter.ts` 将 permission request 转成 `NekodePermissionRequest` stream event，并把 `raw` 保留为原始 request。
 - AskUserQuestion 和 ExitPlanMode approval 不是普通 permission popup：`apps/zcode-cli/packages/bootstrap/src/zcode-protocol/interaction-broker.ts` 会把它们 special-case 到 `interaction/requestUserInput`，service 再投影成 `elicitation_request`。它们同样会在 subagent child session 里卡住，必须和普通 permission 一起代理到 parent task。
 - provider runtime headers（官方版本的安全校验经此链路）也是阻塞交互，但当前 `createSubagentProviderRuntimeHeadersPort()` 已经做 parent session wrapper。本计划只把它纳入回归验证，不重新设计这条链路。
 
@@ -104,7 +104,7 @@
 **Interfaces:**
 
 - Produces: `InteractionRequestOrigin`
-- Produces: `ZCodeInteractionRequestOrigin`
+- Produces: `NekodeInteractionRequestOrigin`
 - Produces: `origin?: ...` on protocol permission request params, protocol user-input request params, permission requested event payload, pending permission snapshot, task stream permission request, task stream elicitation request
 
 ### Checklist
@@ -170,7 +170,7 @@ export const zcodeInteractionRequestOriginSchema = z.discriminatedUnion("kind", 
     })
     .strict(),
 ]);
-export type ZCodeInteractionRequestOrigin = z.infer<
+export type NekodeInteractionRequestOrigin = z.infer<
   typeof zcodeInteractionRequestOriginSchema
 >;
 ```
@@ -181,14 +181,14 @@ export type ZCodeInteractionRequestOrigin = z.infer<
   - `zcodePermissionRequestParamsSchema`
   - `zcodeUserInputRequestParamsSchema`
 
-- [ ] 在 `packages/shared/src/zcode-task-types.ts` 从 `zcode-protocol/index.js` import `ZCodeInteractionRequestOrigin`，并给 `ZCodePermissionRequest` 和 `ZCodeElicitationRequest` 增加：
+- [ ] 在 `packages/shared/src/zcode-task-types.ts` 从 `zcode-protocol/index.js` import `NekodeInteractionRequestOrigin`，并给 `NekodePermissionRequest` 和 `NekodeElicitationRequest` 增加：
 
 ```ts
-origin?: ZCodeInteractionRequestOrigin;
+origin?: NekodeInteractionRequestOrigin;
 ```
 
-- [ ] 检查所有构造 `ZCodePermissionRequest` 的地方，旧路径不需要强制补 origin。
-- [ ] 检查所有构造 `ZCodeElicitationRequest` 的地方，旧路径不需要强制补 origin。
+- [ ] 检查所有构造 `NekodePermissionRequest` 的地方，旧路径不需要强制补 origin。
+- [ ] 检查所有构造 `NekodeElicitationRequest` 的地方，旧路径不需要强制补 origin。
 - [ ] 运行类型检查的快速子集。
 
 Commands:
@@ -525,11 +525,11 @@ PASS packages/bootstrap/tests/subagents.test.ts
 
 **Interfaces:**
 
-- Consumes: `ZCodePermissionRequestParams.origin`
-- Consumes: `ZCodeUserInputRequestParams.origin`
-- Produces: `ZCodePermissionRequest.origin`
-- Produces: `ZCodeElicitationRequest.origin`
-- Produces: `ZCodeSessionStateSnapshot.projection.pendingPermissions[].origin`
+- Consumes: `NekodePermissionRequestParams.origin`
+- Consumes: `NekodeUserInputRequestParams.origin`
+- Produces: `NekodePermissionRequest.origin`
+- Produces: `NekodeElicitationRequest.origin`
+- Produces: `NekodeSessionStateSnapshot.projection.pendingPermissions[].origin`
 - Produces: task runtime snapshot `pendingElicitations[].origin`
 
 ### Checklist
@@ -588,7 +588,7 @@ origin: permission.origin,
 - [ ] 如果采用 task-adapter 本地 map 记录 live pending user inputs，命名建议：
 
 ```ts
-const pendingElicitationsByTaskKey = new Map<string, Map<string, ZCodeElicitationRequest>>();
+const pendingElicitationsByTaskKey = new Map<string, Map<string, NekodeElicitationRequest>>();
 ```
 
 并在收到 `userInput.request` 时 upsert，在 `userInput.response`、task terminal、session close 时删除。
@@ -687,13 +687,13 @@ rg -n "permission_request|PermissionRequest|permissionRequest|pendingPermissions
 ```
 
 - [ ] 确认 UI 对未知 `raw.origin` 不会崩溃。
-- [ ] 确认 UI 对 `ZCodeElicitationRequest.origin` 不会崩溃。
-- [ ] 如果 `ZCodePermissionRequest` 或 `ZCodeElicitationRequest` 是 exhaustively destructured，需要补 `origin` 可选字段。
+- [ ] 确认 UI 对 `NekodeElicitationRequest.origin` 不会崩溃。
+- [ ] 如果 `NekodePermissionRequest` 或 `NekodeElicitationRequest` 是 exhaustively destructured，需要补 `origin` 可选字段。
 - [ ] 可选展示：在 dialog 的辅助文案里只展示短来源，例如 `来自 subagent: general-purpose`。不要显示 child session id、agent internal id，除非 debug UI 已有类似入口。
 - [ ] 如果添加 UI copy，确认中英文 i18n；不要硬编码单语言可见文案。
 - [ ] 如果添加日志，使用 `packages/ui/src/logger.ts`。
-- [ ] 补 UI test：带 `origin.kind="subagent"` 的 `ZCodePermissionRequest` 能打开 dialog，点击 approve 后调用 parent `taskId/requestId`。
-- [ ] 补 UI test：带 `origin.kind="subagent"` 的 `ZCodeElicitationRequest` 能打开 elicitation dialog，点击 accept/submit 后调用 parent `taskId/requestId`。
+- [ ] 补 UI test：带 `origin.kind="subagent"` 的 `NekodePermissionRequest` 能打开 dialog，点击 approve 后调用 parent `taskId/requestId`。
+- [ ] 补 UI test：带 `origin.kind="subagent"` 的 `NekodeElicitationRequest` 能打开 elicitation dialog，点击 accept/submit 后调用 parent `taskId/requestId`。
 - [ ] 跑 UI focused tests。
 
 Commands:

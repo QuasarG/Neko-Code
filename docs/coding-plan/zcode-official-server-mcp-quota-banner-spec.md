@@ -1,4 +1,4 @@
-# ZCode 官方 Server MCP：不可用时的输入框提示（额度耗尽 / 无 Coding Plan 权益）规格
+# Nekode 官方 Server MCP：不可用时的输入框提示（额度耗尽 / 无 Coding Plan 权益）规格
 
 - 状态：T1（服务端错误码 → 输入框提示）已实现；T2（退登换 API Key 的本地分类）未实现，见 §10.2
 - 当前统一鉴权与 scope 事实见 `zcode-official-server-mcp-auth-spec.md`；本文只维护 quota/banner 产品行为。
@@ -86,7 +86,7 @@ MCP 的 in-band `isError: true` 在 CLI 侧算**成功执行**：`turn-tools.ts:
 ## 4. 协议契约：tool error content 里的 `error_code`
 
 > 本节已按服务端 2026-08-20 的实现修正。设计初稿曾假设标识放在 `CallToolResult._meta` 的
-> `com.zcode/mcp-unavailable` 键上；服务端最终选择把它渲染进 **tool error content 的 JSON 文本**，
+> `com.nekode/mcp-unavailable` 键上；服务端最终选择把它渲染进 **tool error content 的 JSON 文本**，
 > 客户端按后者实现。
 
 ### 4.1 形态
@@ -173,7 +173,7 @@ v4 row schema（校验 code）、UI（按 code 决定文案与动作）。
 
 | 形态 | 结果产出方 | 能否伪造 `error_code` | 是否置位 |
 | --- | --- | --- | --- |
-| `http` + `auth.type=zcode_official` | ZCode 后端（连接存活即意味着逐请求 origin 校验通过且 fail closed） | 不能——插件只能把请求打到真实 ZCode，响应体不由它写 | ✓ |
+| `http` + `auth.type=zcode_official` | Nekode 后端（连接存活即意味着逐请求 origin 校验通过且 fail closed） | 不能——插件只能把请求打到真实 Nekode，响应体不由它写 | ✓ |
 | `stdio` + `auth.type=zcode_official` | 插件进程自己 | **能**，任意字符串 | ✗ |
 | 其它 | 第三方 server | 能 | ✗ |
 
@@ -187,7 +187,7 @@ zcode-plugins-test）的官方插件直接失效，而它也不是真实屏障�
 经宿主背书的通道，而不是放宽这里。
 
 - `apps/zcode-cli/packages/adapters/src/mcp/index.ts`：`normalizeMcpToolDescriptor` 调用处按
-  `config.type === "http" && config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE` 传入 official；
+  `config.type === "http" && config.auth?.type === NEKODE_OFFICIAL_MCP_AUTH_TYPE` 传入 official；
   `descriptor.ts` 透传；
 - `apps/zcode-cli/packages/core/src/mcp/index.ts` 把标记带进 `mcpPresentation`；
 - `core/src/tool/types.ts` 的 `mcpPresentation` 同步加字段。

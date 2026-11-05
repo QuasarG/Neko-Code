@@ -54,7 +54,7 @@ MCP 光标工具面。
 | session 身份到 fire 点 | **比早期认知好得多（已核实）**：SDK 主链路的产品 sessionId（裸 `sess_*`）每请求流入 Helper——`trace.sessionId → request-context.session_id → context.sessionId`（cua-bridge 必填校验），`capture_app` 已带 `pip_session_context.session_id`；普通动作带复合 `session_key`（input-hold 域）。缺的只是：ghost fire 点（`ax_macos.mm:71-76`）与 Windows fire 点（`ax_win.cc` 经 `windowsInputDispatch.ts`）无 session 参数、native API 单例 | fire 点/seam 消费既有 `context.sessionId`（P0 最后一公里），光标 key 统一用裸 sessionId（§4.1） |
 | Windows 输入并行 | S4 并行实验 P6「同 Helper 双 MCP session 并行元素点击」已 pass（`2026-10-19-windows-input-s4-parallel-baseline.md`） | 多 agent 输入并行有实证，光标可视化跟得上语义 |
 | 单写者约束 | `ControllerLease` 全局唯一 controller（文件锁，Windows 分支就绪：`controllerLease.ts:122`） | 保持不变：多光标仅展示层，输入仍单写者 |
-| 测试基建 | `test/matrix/` 三层门控（平台不匹配 skip → `ZCODE_CUA_HARNESS_E2E=1` opt-in → fixture 缺失 fail-fast）；`scripts/windows-harness-parallel-experiments.mjs` 双 MCP session runner | 直接复用为 Windows 多光标真机验收 |
+| 测试基建 | `test/matrix/` 三层门控（平台不匹配 skip → `NEKODE_CUA_HARNESS_E2E=1` opt-in → fixture 缺失 fail-fast）；`scripts/windows-harness-parallel-experiments.mjs` 双 MCP session runner | 直接复用为 Windows 多光标真机验收 |
 
 其他 Windows 事实（实施时注意）：
 
@@ -90,7 +90,7 @@ turn 事件天然同源，不引入第二套身份。
 
 **关键调研结论（已核实，修正早期认知）**：SDK 主链路（生产链，node_repl）
 的产品 sessionId **现在就已 per-request 流到 Helper**，不存在「缺一整条
-路由」——`trace.sessionId → MCP request-context（com.zcode/request-context
+路由」——`trace.sessionId → MCP request-context（com.nekode/request-context
 .session_id，cua-bridge 构造 context 时必填缺失抛错）→ runtime.execute
 ({context})`；`capture_app` 已带 `pip_session_context.session_id`（同为裸
 产品 sessionId）。真正缺的只有最后一公里：**ghost fire 点与 native API 不
@@ -444,7 +444,7 @@ Helper native：addon Proxy 在指针类调用边界推
 ```text
 L0 契约   helperConstants.ts: HELPER_DISABLE_MULTI_CURSOR_OVERLAY_ARG
           = "--disable-multi-cursor-overlay"（缺省 = 开）
-          + env 翻译 ZCODE_CUA_DISABLE_MULTI_CURSOR_OVERLAY →
+          + env 翻译 NEKODE_CUA_DISABLE_MULTI_CURSOR_OVERLAY →
           multiCursorOverlayDisableRequested(env)（只认显式 1/true/on/yes，
           唯一判定点，模式抄 cpsActivationDisableRequested）
 L1 构造   helperLauncher.ts: HelperLaunchSpec.disableMultiCursorOverlay?:
@@ -532,7 +532,7 @@ live 用例沿用本仓多屏 spec 先例（每块活动显示器中心点移动
 | macOS `ghost_cursor.mm` NAPI/C ABI | 现有 13 个导出增可选 sessionId 变体（NAPI 可选属性；C 接口新增 `ghost_cursor_move_to_session(...)` 系列，旧签名保留为 default 转发） | 二进制面只增不改 |
 | Windows `ghost_cursor_win.cc`（新） | 导出与 macOS 对齐的 ghost\* NAPI 面（带 sessionId；无 mac-only 的 focusRect/RenderPng 可后置）；`ax_win.cc` fire 点（SendClickAt / postMessage\* / hitTest 确定投递处）带 session 触发 | 新增导出，无兼容负担 |
 | 根目录 `binding.gyp` | Windows 分支 sources 加 `ghost_cursor_win.cc`、`motion_math.cc`，补 `gdi32/user32/dwmapi` 链接；macOS 分支加 `motion_math.cc` | 只加源与库；**不改 `src/native/binding.gyp`（旧拷贝）** |
-| argv（`helperConstants.ts` / `helperLauncher.ts` / Windows launcher 路径） | 现有 `--ghost-cursor-overlay/--ghost-cursor-capture` 不动；新增 kill-switch `--disable-multi-cursor-overlay`（默认开）+ env 翻译 `ZCODE_CUA_DISABLE_MULTI_CURSOR_OVERLAY`；`HelperLaunchSpec` 加 `disableMultiCursorOverlay?: boolean`，**产品链与懒启动链都传**（§4.9） | 旧 Helper 未知 argv 安全忽略 = 现状单光标；不 bump IPC 版本 |
+| argv（`helperConstants.ts` / `helperLauncher.ts` / Windows launcher 路径） | 现有 `--ghost-cursor-overlay/--ghost-cursor-capture` 不动；新增 kill-switch `--disable-multi-cursor-overlay`（默认开）+ env 翻译 `NEKODE_CUA_DISABLE_MULTI_CURSOR_OVERLAY`；`HelperLaunchSpec` 加 `disableMultiCursorOverlay?: boolean`，**产品链与懒启动链都传**（§4.9） | 旧 Helper 未知 argv 安全忽略 = 现状单光标；不 bump IPC 版本 |
 
 ## 6. 时序与状态图
 
@@ -694,7 +694,7 @@ MCP 工具面直调（无 title）全程无 badge，光标/动画/遮挡/生命�
    展示层并发，输入投递仍经现有仲裁。
 4. **Linux 不在本 spec 范围**：无 overlay，跨平台移植另立 spec。
 5. **不做 arrival waiter**：工具返回不等待光标滑行完成。
-6. **不替换 Windows 指示条**：指示条（全局「ZCode 在操作」状态）与光标
+6. **不替换 Windows 指示条**：指示条（全局「Nekode 在操作」状态）与光标
    （per-session 位置可视化）语义互补，并存；后续产品若要合并另议。
 7. **不做相对 z 槽 pin**（`orderWindow:relativeTo:` / SetWindowPos 相对
    插入）：保留本仓「恒置顶 + 点位遮挡探测」模型——探测天然 per-cursor，

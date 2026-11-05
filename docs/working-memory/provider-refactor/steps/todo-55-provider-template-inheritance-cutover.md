@@ -167,10 +167,10 @@ Template 集合使用以 `templateId` 为键的独立 Map；Provider 集合继�
 ### 2.2 Built-in Release 结构
 
 ```ts
-interface ZCodeBuiltinConfigContent {
+interface NekodeBuiltinConfigContent {
   readonly providers: ProviderConfigMap;
   readonly providerTemplates: ProviderTemplateMap;
-  readonly modelConfigRules: ZCodeBuiltinModelConfigRules;
+  readonly modelConfigRules: NekodeBuiltinModelConfigRules;
 }
 ```
 
@@ -334,7 +334,7 @@ modelRules.resolve({ providerId, templateId, modelId, apiType, baseURL });
 不同 Rule 类型不依靠一个混合 JSON 数组的偶然位置表达跨层优先级：
 
 ```ts
-interface ZCodeBuiltinModelConfigRules {
+interface NekodeBuiltinModelConfigRules {
   readonly matchRules: readonly MatchModelConfigRule[];
   readonly templateModelRules: readonly TemplateModelConfigRule[];
   readonly providerModelRules: readonly ProviderModelConfigRule[];

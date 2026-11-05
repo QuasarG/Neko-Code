@@ -6,7 +6,7 @@
 > `TaskRealtimeBus` 继续承担 owner lease、stale-run 与跨 host 命令路由；它不保存第二份
 > conversation queue、projection 或 replayable 业务状态。
 
-本文描述 ZCode task/session 的实时订阅、snapshot/resync、跨端输入和断线恢复边界。
+本文描述 Nekode task/session 的实时订阅、snapshot/resync、跨端输入和断线恢复边界。
 
 ## 核心不变量
 
@@ -148,7 +148,7 @@ mobile send ──┘                  |
                                   └─ explicit rejected/failed/discarded
 ```
 
-手机 V4 绕过 `IZCodeTaskService.enqueueTaskCommand` 的 host runtime command queue；桌面 accepted busy
+手机 V4 绕过 `INekodeTaskService.enqueueTaskCommand` 的 host runtime command queue；桌面 accepted busy
 input 也不再留在 renderer-local queue。owner route 只负责把 command 送到正确 CLI，不改变 CLI admission
 顺序。每个 `ConversationInputIntent` 自包含保存 `sourceCommandId`、`queueItemId`、`clientId`、kind、原文、
 attachments、delivery、顺序和 steer/dispatch 状态。

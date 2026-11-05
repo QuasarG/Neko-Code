@@ -1,4 +1,4 @@
-# 10 ZCode Built-in Provider Config 命名切换
+# 10 Nekode Built-in Provider Config 命名切换
 
 > 状态：已完成
 >
@@ -10,9 +10,9 @@
 
 ## 1. 任务目标
 
-把 Provider Refactor 中仍使用 `official` 表达 ZCode 内置配置的领域、实现和物理命名，一次性切换为
-`zcodeBuiltin` / `zcode-builtin`。切换完成后，ZCode 自带的 Provider/Model 配置只有一个准确名称：
-**ZCode Built-in Provider/Model Config**。
+把 Provider Refactor 中仍使用 `official` 表达 Nekode 内置配置的领域、实现和物理命名，一次性切换为
+`zcodeBuiltin` / `zcode-builtin`。切换完成后，Nekode 自带的 Provider/Model 配置只有一个准确名称：
+**Nekode Built-in Provider/Model Config**。
 
 当前分支的 Provider Refactor 尚未上线，不存在需要继续读取的已发布 Provider Config 协议、环境变量或物理文件。
 因此本 Todo 是原子重命名，不是兼容迁移：不保留 alias、deprecated export、双字段、双读写、旧环境变量
@@ -33,14 +33,14 @@ officialProviders / officialModels
 ProviderConfigService / Resolver / Facade
         |
         +--> Desktop Host init: officialProviderConfigFilePath
-        `--> CLI env / SEA: ZCODE_OFFICIAL_PROVIDER_CONFIG_FILE
+        `--> CLI env / SEA: NEKODE_OFFICIAL_PROVIDER_CONFIG_FILE
 
 目标命名链
 
 config/provider/zcode-builtin.json
         |
         v
-ZCodeBuiltinProviderConfigSource
+NekodeBuiltinProviderConfigSource
         |
         v
 zcodeBuiltinProviders / zcodeBuiltinModelRules
@@ -49,7 +49,7 @@ zcodeBuiltinProviders / zcodeBuiltinModelRules
 ProviderConfigService / Resolver / Facade
         |
         +--> Desktop Host init: zcodeBuiltinProviderConfigFilePath
-        `--> CLI env / SEA: ZCODE_BUILTIN_PROVIDER_CONFIG_FILE
+        `--> CLI env / SEA: NEKODE_BUILTIN_PROVIDER_CONFIG_FILE
 ```
 
 本 Todo 只改变名称，不改变 Overlay 顺序、模型成员、Access、Registry 完整性、设置页行为或模型调用行为。
@@ -59,7 +59,7 @@ ProviderConfigService / Resolver / Facade
 ### 2.1 领域术语
 
 ```text
-ZCode Built-in Provider Config
+Nekode Built-in Provider Config
         |
         v
 overlay Account Built-in Provider Config
@@ -73,7 +73,7 @@ overlay Personal Provider Config
         v
 Effective Provider Config
 
-ZCode Built-in Model Config Rules
+Nekode Built-in Model Config Rules
         +
 Personal Model Config Rules
         |
@@ -91,21 +91,21 @@ Effective Model Config Rules
 | `officialProviders`                        | `zcodeBuiltinProviders`                         |
 | `officialModels`                           | `zcodeBuiltinModelRules`                        |
 | `officialSource`                           | `zcodeBuiltinSource`                            |
-| `OfficialProviderConfigSource`             | `ZCodeBuiltinProviderConfigSource`              |
-| `createOfficialProviderConfigSource`       | `createZCodeBuiltinProviderConfigSource`        |
-| `materializeOfficialProviderConfig`        | `materializeZCodeBuiltinProviderConfig`         |
-| `resolveOfficialProviderConfigFilePath`    | `resolveZCodeBuiltinProviderConfigFilePath`     |
+| `OfficialProviderConfigSource`             | `NekodeBuiltinProviderConfigSource`              |
+| `createOfficialProviderConfigSource`       | `createNekodeBuiltinProviderConfigSource`        |
+| `materializeOfficialProviderConfig`        | `materializeNekodeBuiltinProviderConfig`         |
+| `resolveOfficialProviderConfigFilePath`    | `resolveNekodeBuiltinProviderConfigFilePath`     |
 | `officialProviderConfigFilePath`           | `zcodeBuiltinProviderConfigFilePath`            |
-| `isOfficial`                               | `isZCodeBuiltin`                                |
+| `isOfficial`                               | `isNekodeBuiltin`                                |
 | `official-provider-config-source.ts`       | `zcode-builtin-provider-config-source.ts`       |
 | `official-provider-config-materializer.ts` | `zcode-builtin-provider-config-materializer.ts` |
 | `config/provider/official.json`            | `config/provider/zcode-builtin.json`            |
-| `ZCODE_OFFICIAL_PROVIDER_CONFIG_FILE`      | `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE`            |
+| `NEKODE_OFFICIAL_PROVIDER_CONFIG_FILE`      | `NEKODE_BUILTIN_PROVIDER_CONFIG_FILE`            |
 | SEA `zcode-provider/official.json`         | SEA `zcode-provider/zcode-builtin.json`         |
 | 生成文件 `official-<hash>.json`            | 生成文件 `zcode-builtin-<hash>.json`            |
 
 实现时若发现同一事实链上的其他 `official*` 符号，按同一规则直接重命名。`zcodeBuiltin` 用于明确表达
-ZCode 产品下发的 Built-in 层；不能简化成会与 Account Built-in 混淆的无来源 `builtin`。
+Nekode 产品下发的 Built-in 层；不能简化成会与 Account Built-in 混淆的无来源 `builtin`。
 
 ### 2.3 零兼容
 
@@ -144,7 +144,7 @@ ZCode 产品下发的 Built-in 层；不能简化成会与 Account Built-in 混�
 
 ```bash
 rg -n \
-  'officialProviders|officialModels|officialSource|OfficialProviderConfig|officialProviderConfigFilePath|ZCODE_OFFICIAL_PROVIDER_CONFIG_FILE|config/provider/official\.json|zcode-provider/official\.json' \
+  'officialProviders|officialModels|officialSource|OfficialProviderConfig|officialProviderConfigFilePath|NEKODE_OFFICIAL_PROVIDER_CONFIG_FILE|config/provider/official\.json|zcode-provider/official\.json' \
   packages/provider packages/provider-node packages/services packages/shared packages/desktop apps/zcode-cli config
 ```
 
@@ -188,13 +188,13 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 
 | 状态/事实                     | 权威 owner                           | 本 Todo 结果                        |
 | ----------------------------- | ------------------------------------ | ----------------------------------- |
-| ZCode Built-in 发布内容       | `config/provider/zcode-builtin.json` | 内容不变，只改物理名称              |
-| Node Source snapshot/revision | `ZCodeBuiltinProviderConfigSource`   | watch/reload 行为不变               |
+| Nekode Built-in 发布内容       | `config/provider/zcode-builtin.json` | 内容不变，只改物理名称              |
+| Node Source snapshot/revision | `NekodeBuiltinProviderConfigSource`   | watch/reload 行为不变               |
 | Desktop Host 启动参数         | Shared strict schema                 | 原子改为新字段，不双读              |
-| CLI 显式路径                  | `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` | 只认新变量                          |
+| CLI 显式路径                  | `NEKODE_BUILTIN_PROVIDER_CONFIG_FILE` | 只认新变量                          |
 | SEA 内置资产                  | `zcode-provider/zcode-builtin.json`  | 只打包/读取新 key                   |
 | Provider Config Snapshot      | Provider Domain                      | 字段改名，解析结果不变              |
-| Settings Built-in 标记        | Settings Facade View                 | 改为 `isZCodeBuiltin`，显示行为不变 |
+| Settings Built-in 标记        | Settings Facade View                 | 改为 `isNekodeBuiltin`，显示行为不变 |
 
 ### 4.3 UI Surface Matrix
 
@@ -224,7 +224,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 1. 重命名 `ProviderConfigSnapshot`、Resolver input、Service dependency/field/event reason 和 Facade input；
 2. 将 Model 规则字段明确命名为 `zcodeBuiltinModelRules`，避免 `Models` 同时表达成员与 Rule；
 3. 重命名 Node Source、watcher、materializer、runtime dependency、文件名和所有 exports/imports；
-4. 错误信息和测试标题统一使用 `ZCode Built-in Provider Config`。
+4. 错误信息和测试标题统一使用 `Nekode Built-in Provider Config`。
 
 ### C. Services、Shared Protocol 与 Desktop
 
@@ -235,7 +235,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 
 ### D. CLI、SEA、构建和物理文件
 
-1. 将显式环境变量改为 `ZCODE_BUILTIN_PROVIDER_CONFIG_FILE`；
+1. 将显式环境变量改为 `NEKODE_BUILTIN_PROVIDER_CONFIG_FILE`；
 2. 将 SEA asset key 改为 `zcode-provider/zcode-builtin.json`；
 3. 将运行时解包和 content-addressed materializer 文件名改为 `zcode-builtin-<hash>.json`；
 4. 原子重命名 `config/provider/official.json` 为 `config/provider/zcode-builtin.json`；
@@ -243,7 +243,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 
 ### E. Settings 投影与文档归零
 
-1. 将 Provider Settings View 的 `isOfficial` 改为 `isZCodeBuiltin`；
+1. 将 Provider Settings View 的 `isOfficial` 改为 `isNekodeBuiltin`；
 2. 更新 Renderer/Protocol 消费者和测试，不改变可见性与编辑规则；
 3. 将现行 Design、Feature Graph、实施 Todo 和当前开发文档中的 Provider Config 术语改为 Built-in；
 4. 历史 implementation log 若必须保留原始证据，可在明确的历史引文中出现旧名；它不能继续作为当前 API 或
@@ -259,7 +259,7 @@ Personal Repository、Account Source、Registry Overlay 和 Active Model 不改�
 | ZBN-04  | CLI 显式新环境变量                  | 启动 Runtime                       | 读取新路径并生成相同 Provider/Model View                   |
 | ZBN-05  | SEA binary                          | 无显式文件路径启动                 | 只从新 asset key 解包并装配 Built-in Config                |
 | ZBN-06  | 只设置旧环境变量或只提供旧路径      | 启动 Runtime                       | 不读取旧入口，按缺失配置的正式错误失败                     |
-| ZBN-07  | Provider Settings View              | 读取 Built-in 和 Personal Provider | `isZCodeBuiltin` 正确，UI 行为与保存结果不变               |
+| ZBN-07  | Provider Settings View              | 读取 Built-in 和 Personal Provider | `isNekodeBuiltin` 正确，UI 行为与保存结果不变               |
 | ZBN-08  | 同一 Built-in/Account/Personal 输入 | 切换前后解析快照                   | Overlay 顺序、Effective Config 和 Registry 候选等价        |
 
 ## 7. 完成门禁
@@ -277,7 +277,7 @@ createOfficialProviderConfigSource
 materializeOfficialProviderConfig
 resolveOfficialProviderConfigFilePath
 officialProviderConfigFilePath
-ZCODE_OFFICIAL_PROVIDER_CONFIG_FILE
+NEKODE_OFFICIAL_PROVIDER_CONFIG_FILE
 config/provider/official.json
 zcode-provider/official.json
 isOfficial（仅 Provider Settings Built-in 标记语义）
@@ -319,6 +319,6 @@ exports 没有通过 barrel 残留。
 - Domain、Node Source、Services、Shared Host init、Desktop、Server、CLI 与 SEA 已统一使用
   `zcodeBuiltin` / `zcode-builtin`；
 - 物理发布文件、运行时物化文件、环境变量和 SEA asset 已一次性切换到最终名称；
-- Provider Settings 的来源标记已改为 `isZCodeBuiltin`，没有保留旧字段；
+- Provider Settings 的来源标记已改为 `isNekodeBuiltin`，没有保留旧字段；
 - 旧环境变量仅存在于否定测试，生产代码不读取旧变量、旧路径或旧 asset；
 - Provider、Provider Node、Desktop、Server、CLI 定向测试和全仓 TypeScript 检查通过。

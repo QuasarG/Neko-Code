@@ -1187,7 +1187,7 @@ import { useEffect } from "react";
 import { LogInIcon, TriangleAlertIcon, Loader2Icon } from "lucide-react";
 import { TID_OAUTH_LOGIN_BUTTON, TID_OAUTH_CANCEL, TID_OAUTH_ERROR } from "@zcode/shared";
 import { useOAuth } from "./hooks/useOAuth.js";
-import { useZCodeStore } from "./store/StoreProvider.js";
+import { useNekodeStore } from "./store/StoreProvider.js";
 import { Alert, AlertDescription } from "./components/ui/alert.js";
 import { Button } from "./components/ui/button.js";
 import {
@@ -1197,7 +1197,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./components/ui/dialog.js";
-import { useZCodeIntl } from "./i18n/IntlProvider.js";
+import { useNekodeIntl } from "./i18n/IntlProvider.js";
 
 interface LoginDialogProps {
   open: boolean;
@@ -1205,11 +1205,11 @@ interface LoginDialogProps {
 }
 
 export function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const { startLogin, cancel, reset, status, error } = useOAuth();
-  const user = useZCodeStore((s) => s.user);
-  const oauthError = useZCodeStore((s) => s.oauthError);
-  const setOAuthError = useZCodeStore((s) => s.setOAuthError);
+  const user = useNekodeStore((s) => s.user);
+  const oauthError = useNekodeStore((s) => s.oauthError);
+  const setOAuthError = useNekodeStore((s) => s.setOAuthError);
 
   // Root 层 OAuth 回调失败时写入 Zustand oauthError → 弹窗显示错误
   useEffect(() => {
@@ -1347,14 +1347,14 @@ git commit -m "feat(ui): replace WelcomeScreen with LoginDialog for BigModel OAu
 
 - [ ] **Step 1.5: 修改 store/index.ts — 新增 oauthError 字段**
 
-在 `packages/ui/src/store/index.ts` 的 `ZCodeState` 接口中添加：
+在 `packages/ui/src/store/index.ts` 的 `NekodeState` 接口中添加：
 ```ts
   /** OAuth 回调错误（Root 层写入，LoginDialog 读取） */
   oauthError: string | null;
   setOAuthError: (error: string | null) => void;
 ```
 
-在 `create<ZCodeState>()` 的初始值中添加：
+在 `create<NekodeState>()` 的初始值中添加：
 ```ts
     oauthError: null,
     setOAuthError: (error: string | null) => set({ oauthError: error }),
@@ -1369,8 +1369,8 @@ git commit -m "feat(ui): replace WelcomeScreen with LoginDialog for BigModel OAu
 3. RootProps 中删除 `skipAuth`
 4. 将 `const [user, setUser] = useState<UserInfo | null>(skipAuth ? MOCK_USER : null)` 改为：
    ```ts
-   const user = useZCodeStore((s) => s.user);
-   const setUser = useZCodeStore((s) => s.setUser);
+   const user = useNekodeStore((s) => s.user);
+   const setUser = useNekodeStore((s) => s.setUser);
    ```
 5. 删除 `const [checked, setChecked] = useState(!!skipAuth)` — 改为根据 token 加载状态控制
 6. 启动时的 token 检查改为：
@@ -1398,7 +1398,7 @@ git commit -m "feat(ui): replace WelcomeScreen with LoginDialog for BigModel OAu
 7. 添加常驻的 OAuth 回调监听（在 RootInner 的 useEffect 中）：
    ```ts
    // 在组件顶层通过 hook 获取 setter
-   const setOAuthError = useZCodeStore((s) => s.setOAuthError);
+   const setOAuthError = useNekodeStore((s) => s.setOAuthError);
 
    useEffect(() => {
      const dispose = platform.onOAuthCallback(async (url) => {

@@ -1727,7 +1727,7 @@
     "packages/ui/src/components/ui/toast.tsx": "9c6e0837d4e54ad05b98dc4c4b110255783822c2ab3a9dc3c57ca167ea0c7ed0",
     "packages/ui/src/components/ui/tooltip.tsx": "b385da0f882ef4a44c101051107a670c42f7b347b86ef8ca0dba40369ed34d3b",
     "packages/ui/src/components/ui/usePdfZoomOverlay.ts": "c8c91b003ce2fded32c7a2369dc6eac43aa4b9dc9c830a0f5ceccb21d366b610",
-    "packages/ui/src/components/ui/ZCodeAboutLogo.tsx": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a",
+    "packages/ui/src/components/ui/NekodeAboutLogo.tsx": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a",
     "packages/ui/src/lib/builtinSkillI18n.ts": "c4df1dae0eaf5d65cc2cbf28ff162993f0d2bb1c482e8cb52a5e222f7778ab12",
     "packages/ui/src/styles.css": "75cfbc067d93ec79b61f5f8873544cb6f8e020fbcf31beda9925604a67a60f56",
     "packages/web-share/package.json": "4865c14968b96d355c45c2edf612443f79d6d05cfbe433a28374e19b1b0c9d88",
@@ -4688,36 +4688,6 @@
         {
           "member": "README.md (license section)",
           "sha256": "bcb7ca9ca99522b2cc6a2913987a46114a1926896b9ebbe0fca67423aad0c5d5"
-        }
-      ]
-    },
-    {
-      "name": "@larksuiteoapi/node-sdk",
-      "version": "1.61.1",
-      "license": "MIT",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344"
-        }
-      ]
-    },
-    {
-      "name": "@larksuiteoapi/node-sdk",
-      "version": "1.64.0",
-      "license": "MIT",
-      "notices": [
-        {
-          "member": "LICENSE",
-          "sha256": "f9bfd5e309b1523a2dd3937b44f516e6018605eb05b35336485b0a34cbd9f373"
-        },
-        {
-          "member": "README.md (license section)",
-          "sha256": "d0de7064760700e47a0fdedd12ae4e027146e16e9cec0233505fe7c4ed5b3344"
         }
       ]
     },
@@ -19151,7 +19121,7 @@
         "packages/ui/src/components/ui",
         "packages/ui/src/styles.css"
       ],
-      "scope": "Upstream-derived portions only; ZCode-specific files in the same directory are not attributed to the upstream project.",
+      "scope": "Upstream-derived portions only; Nekode-specific files in the same directory are not attributed to the upstream project.",
       "license": "MIT",
       "files": [
         {
@@ -19163,7 +19133,7 @@
           "sha256": "5b5d554e2ad0c8e095258d70e5c3f35f58b9340a850c767f7b76bbe19c3b42d0"
         },
         {
-          "file": "packages/ui/src/components/ui/ZCodeAboutLogo.tsx",
+          "file": "packages/ui/src/components/ui/NekodeAboutLogo.tsx",
           "sha256": "1e5b7c2e8a9dc98a3c597cbe34122521319eaeb89825e4c41641e77715d1407a"
         },
         {
@@ -19368,7 +19338,7 @@
         "packages/ui/src/components/ai-elements",
         ".agents/skills/ai-elements"
       ],
-      "scope": "Upstream-derived UI components, skill instructions, reference documentation and example scripts only; locally adapted for ZCode imports, styling and agent workflow. Original import revision not recorded.",
+      "scope": "Upstream-derived UI components, skill instructions, reference documentation and example scripts only; locally adapted for Nekode imports, styling and agent workflow. Original import revision not recorded.",
       "license": "Apache-2.0",
       "modifiedFiles": [
         "packages/ui/src/components/ai-elements/agent.tsx",
@@ -29492,7 +29462,7 @@
         ".agents/skills/dogfood",
         ".agents/skills/electron"
       ],
-      "scope": "Upstream-derived instructions, reference documents and shell templates; locally adapted for the ZCode workspace. Reference release v0.20.0 contains all three skills.",
+      "scope": "Upstream-derived instructions, reference documents and shell templates; locally adapted for the Nekode workspace. Reference release v0.20.0 contains all three skills.",
       "license": "Apache-2.0",
       "modifiedFiles": [
         ".agents/skills/agent-browser/SKILL.md",
@@ -29581,7 +29551,7 @@
         "packages/rpc/examples",
         "packages/shared/src/zcode-protocol-v4/wire-codec.ts"
       ],
-      "scope": "Upstream-derived IPC, serialization, buffer, lifecycle and event portions only. Local RPC extensions, transports and envelope measurement are ZCode adaptations; inclusion does not attribute all local code to Microsoft.",
+      "scope": "Upstream-derived IPC, serialization, buffer, lifecycle and event portions only. Local RPC extensions, transports and envelope measurement are Nekode adaptations; inclusion does not attribute all local code to Microsoft.",
       "license": "MIT",
       "files": [
         {

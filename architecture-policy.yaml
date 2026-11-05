@@ -223,19 +223,6 @@ modules:
       domain: selection-id.ts
       app: .
     owner: conversation
-  # bot-project-runtime：由 architecture:adopt 登记
-  - id: bot-project-runtime
-    roots:
-      - packages/services/src/bot-project-runtime
-    managed: true
-    requires: [services, shared, remote-projects]
-    publicEntrypoints:
-      - packages/services/src/bot-project-runtime/index.ts
-      - packages/services/src/bot-project-runtime/contract.ts
-    layers:
-      contract: contract.ts
-      app: .
-    owner: conversation
   # project-workspace-navigation：由 architecture:adopt 登记
   - id: project-workspace-navigation
     roots:
@@ -486,7 +473,7 @@ modules:
       - packages/ui/src/components/mobile-ui/index.ts
       - packages/ui/src/components/mobile-ui/contract.ts
       - packages/ui/src/components/mobile-ui/DevicePlatformIcon.tsx
-      - packages/ui/src/components/mobile-ui/ZCodeAppLogo.tsx
+      - packages/ui/src/components/mobile-ui/NekodeAppLogo.tsx
       - packages/ui/src/components/mobile-ui/bottom-sheet.tsx
     layers:
       contract: contract.ts

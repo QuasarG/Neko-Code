@@ -6,7 +6,7 @@
 
 **Architecture:** 修复语义是“任何会执行 subagent 的 agent runtime，在 turn 前必须拥有完整 app provider registry”。实现上分两条链路：local desktop 由 `zcodeAgentService` 在 service 内部把 `providerRegistrySource` 的完整 registry 注入当前 CLI workspace；remote workspace 保持现有 `remoteWorkspaceProviderSync` 专用链路，不把 local 行为混进 remote replayable 语义。subagent 不负责 provider 注入，继续复用父 runtime 的 `modelAdapter`。
 
-**Tech Stack:** TypeScript, `@zcode/protocol`, ZCode Services, React/UI remote sync guard tests, Vitest, ZCode Desktop WDIO E2E.
+**Tech Stack:** TypeScript, `@zcode/protocol`, Nekode Services, React/UI remote sync guard tests, Vitest, Nekode Desktop WDIO E2E.
 
 ## Global Constraints
 
@@ -114,7 +114,7 @@ The title fixture may warn that its matcher has no E2E marker. That warning is a
 Run:
 
 ```bash
-ZCODE_DESKTOP_AGENT_BUILD_MODE=pnpm \
+NEKODE_DESKTOP_AGENT_BUILD_MODE=pnpm \
 E2E_PROVIDER_REPLAY_FIXTURE_PATH=packages/desktop/test/e2e/fixtures/upstream/common.json,packages/desktop/test/e2e/fixtures/upstream/conversation-session/conversation-session-subagent-provider-registry-cold-start.json \
 pnpm --filter @zcode/desktop exec wdio run wdio.conf.ts --spec './test/e2e/conversation-session/conversation-session-subagent-provider-registry-cold-start.test.ts'
 ```
@@ -139,13 +139,13 @@ If the E2E already passes before code changes, inspect recent commits and update
 - Modify: `packages/services/test/zcodeAgentService.providerRegistry.test.ts`
 
 **Interfaces:**
-- Consumes: `createZCodeAgentService({ providerRegistrySource })`.
+- Consumes: `createNekodeAgentService({ providerRegistrySource })`.
 - Consumes: `zcodeProtocolMethods.workspaceUpdateProviderRegistry`.
 - Produces: tests that require full registry sync before local session/create and after local provider registry changes.
 
 - [ ] **Step 1: Add test for session/create preflight**
 
-Add this test to `describe("createZCodeAgentService provider registry", ...)`:
+Add this test to `describe("createNekodeAgentService provider registry", ...)`:
 
 ```ts
 it("syncs the full local provider registry before session/create", async () => {
@@ -172,7 +172,7 @@ it("syncs the full local provider registry before session/create", async () => {
   });
   vi.resetModules();
   vi.doMock("../src/zcode-agent/zcodeAgentProcessManager.js", () => ({
-    ZCodeAgentProcessManager: class {
+    NekodeAgentProcessManager: class {
       async getClient() {
         return {
           request,
@@ -185,10 +185,10 @@ it("syncs the full local provider registry before session/create", async () => {
       disposeAll() {}
     },
   }));
-  const { createZCodeAgentService } = await import(
+  const { createNekodeAgentService } = await import(
     "../src/zcode-agent/zcodeAgentService.js"
   );
-  const service = createZCodeAgentService({
+  const service = createNekodeAgentService({
     providerRegistrySource: {
       async getProviderRegistrySnapshot() {
         return {
@@ -248,9 +248,9 @@ it("syncs the full local provider registry before session/create", async () => {
 Add a tiny event source in the test file:
 
 ```ts
-function createProviderRegistryChangeSource(initial: ZCodeProviderRegistrySnapshot) {
+function createProviderRegistryChangeSource(initial: NekodeProviderRegistrySnapshot) {
   let listener:
-    | ((event: { reason: string; snapshot: ZCodeProviderRegistrySnapshot }) => void)
+    | ((event: { reason: string; snapshot: NekodeProviderRegistrySnapshot }) => void)
     | undefined;
   return {
     source: {
@@ -262,7 +262,7 @@ function createProviderRegistryChangeSource(initial: ZCodeProviderRegistrySnapsh
         return { dispose() {} };
       },
     },
-    emit(reason: string, snapshot: ZCodeProviderRegistrySnapshot) {
+    emit(reason: string, snapshot: NekodeProviderRegistrySnapshot) {
       listener?.({ reason, snapshot });
     },
   };
@@ -301,7 +301,7 @@ it("pushes changed local provider registry to active workspace clients", async (
   });
   vi.resetModules();
   vi.doMock("../src/zcode-agent/zcodeAgentProcessManager.js", () => ({
-    ZCodeAgentProcessManager: class {
+    NekodeAgentProcessManager: class {
       async getClient() {
         return {
           request,
@@ -340,10 +340,10 @@ it("pushes changed local provider registry to active workspace clients", async (
     revision: "sha256:registry-2",
   };
   const providerRegistrySource = createProviderRegistryChangeSource(initial);
-  const { createZCodeAgentService } = await import(
+  const { createNekodeAgentService } = await import(
     "../src/zcode-agent/zcodeAgentService.js"
   );
-  const service = createZCodeAgentService({
+  const service = createNekodeAgentService({
     providerRegistrySource: providerRegistrySource.source,
   });
 
@@ -397,13 +397,13 @@ Expected before implementation: the new tests fail because `session/create` curr
 - Modify: `packages/services/src/zcode-agent/zcodeAgentService.ts`
 
 **Interfaces:**
-- Consumes: `providerRegistrySource?: ZCodeProviderRegistrySource`.
-- Consumes: `ZCodeProtocolClient.request(zcodeProtocolMethods.workspaceUpdateProviderRegistry, ...)`.
+- Consumes: `providerRegistrySource?: NekodeProviderRegistrySource`.
+- Consumes: `NekodeProtocolClient.request(zcodeProtocolMethods.workspaceUpdateProviderRegistry, ...)`.
 - Produces: agent-side stale snapshot guard plus private helpers that sync complete provider registry to local active CLI clients without touching remote helper code.
 
 - [ ] **Step 1: Add agent-side registry generatedAt waterline**
 
-In `ZCodeProtocolWorkspaceModelCatalogRecord`, add:
+In `NekodeProtocolWorkspaceModelCatalogRecord`, add:
 
 ```ts
   providerRegistryGeneratedAt?: number;
@@ -427,19 +427,19 @@ Add a Chinese bugfix comment at the stale guard explaining:
 
 - [ ] **Step 2: Add workspace sync state**
 
-Near existing maps in `createZCodeAgentService`, add:
+Near existing maps in `createNekodeAgentService`, add:
 
 ```ts
   const providerRegistrySyncByWorkspaceKey = new Map<
     string,
     {
-      client: ZCodeProtocolClient;
+      client: NekodeProtocolClient;
       generatedAt?: number;
       inFlight?: Promise<void>;
       pending?: {
         includeWorkspaceState: boolean;
         reason: string;
-        registry: ZCodeProviderRegistrySnapshot;
+        registry: NekodeProviderRegistrySnapshot;
       };
       revision?: string;
     }
@@ -484,10 +484,10 @@ Add:
 
 ```ts
   async function ensureLocalProviderRegistrySynced(params: {
-    client: ZCodeProtocolClient;
+    client: NekodeProtocolClient;
     includeWorkspaceState?: boolean;
     reason: string;
-    workspace: ZCodeAgentWorkspaceTarget;
+    workspace: NekodeAgentWorkspaceTarget;
   }): Promise<void> {
     if (!providerRegistrySource) {
       return;
@@ -828,7 +828,7 @@ Expected: PASS with the known title fixture warning.
 Run:
 
 ```bash
-ZCODE_DESKTOP_AGENT_BUILD_MODE=pnpm \
+NEKODE_DESKTOP_AGENT_BUILD_MODE=pnpm \
 E2E_PROVIDER_REPLAY_FIXTURE_PATH=packages/desktop/test/e2e/fixtures/upstream/common.json,packages/desktop/test/e2e/fixtures/upstream/conversation-session/conversation-session-subagent-provider-registry-cold-start.json \
 pnpm --filter @zcode/desktop exec wdio run wdio.conf.ts --spec './test/e2e/conversation-session/conversation-session-subagent-provider-registry-cold-start.test.ts'
 ```
@@ -851,7 +851,7 @@ Run:
 
 ```bash
 rg "workspace/updateProviderRegistry|provider_not_found|e2e-deepseek-alt|deepseek-v4-pro" \
-  packages/desktop/.e2e-home/.zcode/cli/log \
+  packages/desktop/.e2e-home/.nekode/cli/log \
   packages/desktop/.e2e-artifacts
 ```
 

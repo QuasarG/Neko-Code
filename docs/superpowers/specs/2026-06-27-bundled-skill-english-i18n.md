@@ -2,7 +2,7 @@
 
 ## 背景
 
-ZCode 官方内置 skill 通过官方插件随 CLI 打包。用户在输入框中主要通过两种入口发现它们：
+Nekode 官方内置 skill 通过官方插件随 CLI 打包。用户在输入框中主要通过两种入口发现它们：
 
 - `/` 面板：slash command 面板会把 enabled skill 也作为候选，选中后插入 `$skill`。
 - `$` 面板：skill mention 面板直接展示 skill 候选。
@@ -35,7 +35,7 @@ ZCode 官方内置 skill 通过官方插件随 CLI 打包。用户在输入框�
 接入点：
 
 - `packages/ui/src/slashCommandHelpers.ts` 的 `buildSkillSuggestions()` 接收当前 locale，用 helper 生成 `/` 面板 skill 候选描述。
-- `packages/ui/src/mentions/providers/skillsMentionProvider.ts` 从 `useZCodeIntl()` 读取 locale，用同一个 helper 生成 `$` 面板 skill 候选描述与 source label。
+- `packages/ui/src/mentions/providers/skillsMentionProvider.ts` 从 `useNekodeIntl()` 读取 locale，用同一个 helper 生成 `$` 面板 skill 候选描述与 source label。
 
 ## 验证
 

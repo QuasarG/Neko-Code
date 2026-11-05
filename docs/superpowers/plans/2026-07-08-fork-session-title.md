@@ -4,7 +4,7 @@
 
 **Architecture:** Runtime resume will publish persisted session title into the current session event stream, so `ProductProjection.meta` becomes the single live title source. Bootstrap live records will preserve `parentSessionId` and expose it through `getSessionIndexMeta`, allowing sessions-index summaries to retain fork identity.
 
-**Tech Stack:** TypeScript, Vitest, ZCode runtime event store, v4 ProductProjection, sessions-index publisher.
+**Tech Stack:** TypeScript, Vitest, Nekode runtime event store, v4 ProductProjection, sessions-index publisher.
 
 ## Global Constraints
 
@@ -23,7 +23,7 @@
 - Modify: `apps/zcode-cli/packages/bootstrap/tests/v4-cold-resume.test.ts`
 
 **Interfaces:**
-- Consumes: `AgentRuntime.resumeFromStore()`, `ZCodeProtocolAgentServer` v4 cold subscribe, sessions-index subscribe.
+- Consumes: `AgentRuntime.resumeFromStore()`, `NekodeProtocolAgentServer` v4 cold subscribe, sessions-index subscribe.
 - Produces: failing tests proving persisted fork title must become a runtime event and live sessions-index summaries must include `parentSessionId`.
 
 - [x] **Step 1: Write the failing core resume test**
@@ -61,11 +61,11 @@ Expected before implementation: failure because `resumedSummary.parentSessionId`
 
 **Interfaces:**
 - Consumes: `params.parentSessionId` from create/fork record params and persisted `session.parentID` from resume.
-- Produces: `ZCodeProtocolSessionRecord.parentSessionId?: string` and `getSessionIndexMeta(...).parentSessionId`.
+- Produces: `NekodeProtocolSessionRecord.parentSessionId?: string` and `getSessionIndexMeta(...).parentSessionId`.
 
 - [x] **Step 1: Implement record parent propagation**
 
-Add `parentSessionId?: string` to `ZCodeProtocolSessionRecord`. In `createRecord`, set it when `params.parentSessionId` exists. In `resumeSession`, after loading persisted session, set `record.parentSessionId = String(session.parentID)` when present. In `forkSession`, pass `parentSessionId: fork.parentSessionId` into `createRecord`.
+Add `parentSessionId?: string` to `NekodeProtocolSessionRecord`. In `createRecord`, set it when `params.parentSessionId` exists. In `resumeSession`, after loading persisted session, set `record.parentSessionId = String(session.parentID)` when present. In `forkSession`, pass `parentSessionId: fork.parentSessionId` into `createRecord`.
 
 - [x] **Step 2: Expose parent through v4 bridge**
 

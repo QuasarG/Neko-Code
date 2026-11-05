@@ -114,7 +114,7 @@ git commit -m "feat(remote): define shared WSL host lifecycle messages"
 
 **Interfaces:**
 - Consumes: `ReleaseRemoteWorkspace` and `WorkspaceRunningTaskCountChanged` from Task 1.
-- Produces: `releaseWorkspacePreparation(params): Promise<void>` delegating to `IZCodeAgentService.disposeWorkspace()`.
+- Produces: `releaseWorkspacePreparation(params): Promise<void>` delegating to `INekodeAgentService.disposeWorkspace()`.
 - Produces: optional `onWorkspaceRunningTaskCountChanged(process, event)` callback from `spawnHostProcess` dependencies.
 
 - [ ] **Step 1: Write a failing adapter test**
@@ -152,7 +152,7 @@ async releaseWorkspacePreparation(params): Promise<void> {
 
 - [ ] **Step 4: Add failing Host control/report tests**
 
-Test that `ReleaseRemoteWorkspace` calls the active `IZCodeTaskService.releaseWorkspacePreparation` and that a workspace activity response is forwarded through the optional Main callback with the originating process.
+Test that `ReleaseRemoteWorkspace` calls the active `INekodeTaskService.releaseWorkspacePreparation` and that a workspace activity response is forwarded through the optional Main callback with the originating process.
 
 - [ ] **Step 5: Implement Host release and Main callback wiring**
 

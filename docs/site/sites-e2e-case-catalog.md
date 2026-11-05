@@ -1,6 +1,6 @@
 # Sites E2E 用例
 
-ZCode Sites 的端到端行为合同。CLI 链路（Agent 经 Skill 调 `zcode-site`）和面板链路（插件 UI plugin，见 [Sites 面板](sites-panel.md)）共用同一个 mock Sites 服务端，状态只来自服务端。
+Nekode Sites 的端到端行为合同。CLI 链路（Agent 经 Skill 调 `zcode-site`）和面板链路（插件 UI plugin，见 [Sites 面板](sites-panel.md)）共用同一个 mock Sites 服务端，状态只来自服务端。
 
 ## 范围
 
@@ -15,7 +15,7 @@ ZCode Sites 的端到端行为合同。CLI 链路（Agent 经 Skill 调 `zcode-s
 
 ### SITE-E2E-CLI-01：首次部署
 
-- Setup：已登录、没有站点；项目里没有 `.zcode-site.json`。
+- Setup：已登录、没有站点；项目里没有 `.nekode-site.json`。
 - 操作：Agent 按 Skill 准备 stage 并执行 `zcode-site deploy`。
 - 断言：创建站点并写绑定文件；输出依次经过 preparing → uploading → publishing → verifying → success；退出码 0。
 

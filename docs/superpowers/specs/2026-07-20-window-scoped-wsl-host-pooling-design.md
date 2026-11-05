@@ -101,7 +101,7 @@ Desktop Main
 
 以下事实限定本设计：
 
-- 远端 `createLocalServices()` 和 `ZCodeAgentProcessManager` 已能在一个 server 内按 `workspaceKey`
+- 远端 `createLocalServices()` 和 `NekodeAgentProcessManager` 已能在一个 server 内按 `workspaceKey`
   管理多个 workspace。
 - Agent 主要按 workspace 管理，不是“一 conversation 一 Agent”；一个 workspace Agent 可以承载多个
   session。
@@ -173,7 +173,7 @@ workspace Agent 长期留到窗口关闭，形成另一种资源滞留。
 - 不把 task、stream、queue、snapshot、permission 或 elicitation 状态下沉到 Desktop Main。
 - 不改变 App 与 Agent 的 `@zcode/protocol`，除非实施时证明现有 service RPC 无法表达 workspace runtime
   release；若必须修改，需单独更新协议 spec 和 runtime schema。
-- 不承诺 WSL distro 在 ZCode 退出后显示 `Stopped`；验收对象是 ZCode-owned Host、server 和 Agent。
+- 不承诺 WSL distro 在 Nekode 退出后显示 `Stopped`；验收对象是 Nekode-owned Host、server 和 Agent。
 
 ## Clarification Log
 
@@ -271,7 +271,7 @@ Remote Host 持有一个共享 `activeServices`，通过多个 `AttachServicePor
 ### Remote zcode-server / services
 
 - 继续由一个 `createLocalServices()` 服务多个 workspace。
-- `ZCodeAgentProcessManager` 继续按 `workspaceKey` 隔离 Agent。
+- `NekodeAgentProcessManager` 继续按 `workspaceKey` 隔离 Agent。
 - 实现可等待且幂等的 workspace preparation/runtime release；不得只关闭 Renderer port 而遗留 Agent。
 - runtime release 不删除 task/session 持久数据，只释放进程和可重建的内存态资源。
 
@@ -649,7 +649,7 @@ dispose 可能被共享的整个 backend。
 ```text
 deployServer
   → start remote lock-holder shell
-      → mkdir ~/.zcode/server/.deploy.lock (atomic acquire)
+      → mkdir ~/.nekode/server/.deploy.lock (atomic acquire)
       → write owner UUID + heartbeat
       → emit acquired marker
   → lock 内重新执行 checkServerDeployDecision
@@ -856,7 +856,7 @@ Docker 仍使用 dedicated Host，但继续参与统一的真实关窗/App/updat
 5. 在 task 运行时关闭 workspace，确认 task 不被立即中断；terminal 后 Agent 释放。
 6. 关闭最后 workspace，确认 60 秒内 Host/server 保持；TTL 到期后退出。
 7. TTL 内重新打开 workspace，确认复用原 Host/server PID，旧 timer 不误杀。
-8. TTL 期间退出 App，确认不等待 60 秒，全部 ZCode-owned Host/server/Agent 在 shutdown deadline 内退出。
+8. TTL 期间退出 App，确认不等待 60 秒，全部 Nekode-owned Host/server/Agent 在 shutdown deadline 内退出。
 9. 分别验证真实关窗、更新安装、renderer reload、最小化、托盘隐藏。
 10. 手机 attach 后关闭桌面 tab，验证 mobile owner 保持 runtime；手机再断开后进入 draining/idle 判定。
 11. 注入 Host crash、connect cancel、deploy failure 和 stale timer，保存日志与 PID 证据。
@@ -921,5 +921,5 @@ idle timer install/cancel/fire、owner shutdown override、Host exit。
   attachment。
 - Docker 保持 dedicated，但继续被应用级 shutdown barrier 覆盖。
 - 真实 Windows + WSL 的 1/3/5 workspace 验证留下 PID、RSS、耗时和释放时间证据。
-- 不调用 distro terminate，不影响非 ZCode WSL 用户进程。
+- 不调用 distro terminate，不影响非 Nekode WSL 用户进程。
 - 相关测试、`pnpm typecheck` 和 `pnpm lint` 全部通过。

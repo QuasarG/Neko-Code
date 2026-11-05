@@ -203,7 +203,7 @@ interface ZhipuAccountAccessConfig {
 
 ## 4. entitled 的裁决与调用背景
 
-用户的最终解释：这份 Config 决定 ZCode 认为能不能用这个模型、请求时怎么用；最终是否有资格使用，仍由账号和远端等共同决定。因此 `entitled` 放在 Provider Config 中说得通。
+用户的最终解释：这份 Config 决定 Nekode 认为能不能用这个模型、请求时怎么用；最终是否有资格使用，仍由账号和远端等共同决定。因此 `entitled` 放在 Provider Config 中说得通。
 
 ```text
 内置 / 账号 / 个人配置
@@ -212,7 +212,7 @@ interface ZhipuAccountAccessConfig {
 Effective Provider Config（可以包含动态事实）
           |
           v
-ZCode 本地可用性判断与请求装配
+Nekode 本地可用性判断与请求装配
           |
           v
 账号服务提供请求期访问材料 -> 模型服务端最终鉴权 / 授权
@@ -700,7 +700,7 @@ Provider 名称在外层 ProviderConfigRule 中叫 providerName，可选性和 n
 内置文件层：保留版本、发布 revision 和 config 内容层。用户已确认本分支新增、未发布的内置格式从当前 schemaVersion: 3 收口为 schemaVersion: 1；发布 revision 的规则及 review 见 6.12。
 
 ```ts
-interface ZCodeBuiltinRelease {
+interface NekodeBuiltinRelease {
   schemaVersion: 1;
   revision: number;
   config: BuiltinProviderConfig;
@@ -844,7 +844,7 @@ Provider / Model / 排序修改 --+
 程序维护层：统一放进环境目录下 runtime/provider/。runtime 在这里表示程序维护的数据，不表示可随意清空的临时文件。此前讨论的 cache/、state/ 两套顶层目录方案均被替代。
 
 ```text
-~/.zcode/v2/
+~/.nekode/v2/
 |-- provider_config.json
 |-- bot-config.v3.json
 |-- bot-state.v3.json
@@ -889,7 +889,7 @@ Bot 误记纠正：此前本文将“沿用原文件迁移”写成用户裁决�
 | 版本边界                   | 目标版本         | 管理范围                                                          |
 | -------------------------- | ---------------- | ----------------------------------------------------------------- |
 | PersonalProviderConfigFile | schemaVersion: 1 | 个人文件的整份 config，包括 defaultModelSelection                 |
-| ZCodeBuiltinRelease        | schemaVersion: 1 | 随包、释放副本、下载内容共用的内置发布格式；当前实现的 3 收口为 1 |
+| NekodeBuiltinRelease        | schemaVersion: 1 | 随包、释放副本、下载内容共用的内置发布格式；当前实现的 3 收口为 1 |
 | 内置刷新记录               | schemaVersion: 1 | 刷新占用、时间、失败计数等记录                                    |
 | Provider 分发状态文件      | schemaVersion: 1 | 已完成请求及结果的保存格式                                        |
 | Provider 分发信封          | schemaVersion: 1 | 发往目标环境的整包配置、设置、凭据等内容                          |
@@ -1116,7 +1116,7 @@ staging 已发布数据 --升级----> 同一最终格式
 
 | 已有裁决                       | 必须一起核对的入口                                                                                                                                                                                                  |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 字段改名、规则分组及去掉 type  | provider/config/schema.ts 的解析、provider-config.ts / model-config.ts 的构造及 toJSON、toPersonalJSON、toZCodeBuiltinJSON；不能只改展示类型，写回仍出现旧字段                                                      |
+| 字段改名、规则分组及去掉 type  | provider/config/schema.ts 的解析、provider-config.ts / model-config.ts 的构造及 toJSON、toPersonalJSON、toNekodeBuiltinJSON；不能只改展示类型，写回仍出现旧字段                                                      |
 | 个人 config 包装和默认选择合并 | provider-node 的 provider-config-file-codec.ts、personal-provider-config-repository.ts、model-selection-config-repository.ts，以及宿主装配和默认选择订阅；不得保留第二个持续写入的 model-selection.json             |
 | staging 个人配置导入           | App 的 legacyPersonalProviderConfigImporter.ts 与独立 CLI 的 legacy-cli-personal-provider-config-importer.ts 都输出最终格式；保留现有用户意图提取和旧身份转换，不把旧 Effective Config 的系统默认能力冻结成用户覆盖 |
 | Bot 保留 v3 新文件             | bots/repo.ts 与 storageMigration.ts 沿用当前新文件导入链路；验证旧配置 / 草稿选择进入 v3 文件，旧文件不被覆盖，不实施此前误记的原路径迁移                                                                           |
@@ -1320,7 +1320,7 @@ modelSelection 层：复用第 2 节通用结构，不另建一套 Provider / Mo
 | ModelConfig、Properties、输入输出格式、OptionSpecs | config/schema.ts 有运行时定义，model-config.ts 另手写 Input / Object 等字段                                                             | 共享 schema，推导数据类型；不把 class 删除视作前提                                                          |
 | ModelConfigRule 三种成员                           | schema 工厂定义规则结构，model-config.ts 又手写规则接口                                                                                 | 从各具体规则 schema 推导；工厂参数当前使用 ZodTypeAny，实施时需保留 config 的具体类型，不能让推导退化为 any |
 | Registry 完整配置                                  | resolver.ts 另手写 RegistryModelConfig / RegistryModelConfigObject 等完整成员；目前完整性依靠 validateComplete，而非已有独立完整 schema | 与完整 / 稀疏 / 固定配置共享字段定义，不错误声称这里已存在完整 schema 只是没 infer                          |
-| 协议 ZCodeProviderAccountAccess                    | shared/zcode-protocol/index.ts 已从 schema infer；Resolver 中仍有手写的同形 Registry 账号访问结构                                       | 保留已推导协议类型；共享数据形状时遵守包依赖方向                                                            |
+| 协议 NekodeProviderAccountAccess                    | shared/zcode-protocol/index.ts 已从 schema infer；Resolver 中仍有手写的同形 Registry 账号访问结构                                       | 保留已推导协议类型；共享数据形状时遵守包依赖方向                                                            |
 | 账号连接选择及设置                                 | shared/provider-family-connection-selection.ts 已定义两个 schema，但又手写联合类型及设置映射类型                                        | 改为从 schema 推导；不改变 kind、团队 ID 或持久化形状，用户已跳过结构调整                                   |
 
 证据：[ModelSelection](../../../../packages/shared/src/model-selection.ts)、[Registry Selection 重用](../../../../packages/provider/src/registry.ts)、[配置 schema](../../../../packages/provider/src/config/schema.ts)、[Provider 类型](../../../../packages/provider/src/config/provider-config.ts)、[Model / Rule 类型](../../../../packages/provider/src/config/model-config.ts)、[Registry 完整类型](../../../../packages/provider/src/resolver.ts)、[协议类型](../../../../packages/shared/src/zcode-protocol/index.ts)。

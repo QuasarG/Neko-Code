@@ -15,7 +15,7 @@ last-selected 配置种子；首发后才由 CLI session projection 成为权威
 1. mode 从 renderer 的 draft mode 偏好读取，不以 workspace catalog 为持久事实。
 2. 模型和 thought 优先读取该 workspace 身份下的全局 last-selected 配置元组。
 3. workspace `configOptions` 提供可选目录并校验选择；目录未加载时
-   `prepareWorkspaceWithZCodeSessionService` 负责水合。
+   `prepareWorkspaceWithNekodeSessionService` 负责水合。
 4. 用户本次显式选择写入 reactive draft intent，优先于初始种子和异步目录回包。
 5. `followupMode` 来自 app 设置，并随 create config 传递。
 

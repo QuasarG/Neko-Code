@@ -26,9 +26,9 @@
 可选环境变量：
 
 - `PORT`（默认 `3850`）
-- `ZCODE_INTRANET_PROBE_PATH`（默认 `/api/intranet/probe`）
-- `ZCODE_INTRANET_PROBE_MARKER`（默认 `zcode-intranet`）
-- `ZCODE_INTRANET_PROBE_TOKEN`（可选，配置后客户端需带 `x-zcode-intranet-token`）
+- `NEKODE_INTRANET_PROBE_PATH`（默认 `/api/intranet/probe`）
+- `NEKODE_INTRANET_PROBE_MARKER`（默认 `zcode-intranet`）
+- `NEKODE_INTRANET_PROBE_TOKEN`（可选，配置后客户端需带 `x-zcode-intranet-token`）
 
 ## 客户端
 

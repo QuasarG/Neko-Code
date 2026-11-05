@@ -49,7 +49,7 @@ V4 已经删除“UI task config、task meta、workspace 默认、session snapsh
 当前模型：
 
 - `ChatInputToolbar` / `useToolbarModelChange` 的 active-task 分支；
-- `useZCodeChatSendPrompt` 的 resume hint 解析；
+- `useNekodeChatSendPrompt` 的 resume hint 解析；
 - `taskConfigOptionsByTaskId` 作为 conversation config 权威；
 - renderer-local busy prompt queue；
 - `session/setModel`、`workspace/setDefaultModel` 作为 V4 会话写入口；

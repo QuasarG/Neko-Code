@@ -206,7 +206,7 @@ node evals/zcode-gui-eval/bin/zge.mjs validate M15
 node evals/zcode-gui-eval/bin/zge.mjs validate M16
 ```
 
-For a before/after checkout comparison, point `ZCODE_CUA_TS_SERVER_DIST` at the built `dist/cli.js`
+For a before/after checkout comparison, point `NEKODE_CUA_TS_SERVER_DIST` at the built `dist/cli.js`
 for each revision while running the same task definitions. Performance latency is retained as a
 non-blocking diagnostic; all behavior, safety, lifecycle, and oracle checks are blocking.
 

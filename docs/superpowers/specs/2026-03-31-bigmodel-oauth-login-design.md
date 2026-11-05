@@ -470,8 +470,8 @@ LoginDialog({
 修正：统一为 Zustand store 作为唯一数据源。
 
 - 删除 Root.tsx 中的 `const [user, setUser] = useState<UserInfo | null>(...)`
-- Root.tsx 改为 `const user = useZCodeStore(s => s.user)`
-- 所有登录/登出操作通过 `useZCodeStore(s => s.setUser)` 更新
+- Root.tsx 改为 `const user = useNekodeStore(s => s.user)`
+- 所有登录/登出操作通过 `useNekodeStore(s => s.setUser)` 更新
 - 启动时 Root 通过 `useAuthToken().getToken()` 读取 token，有则调用 `setUser`
 
 ## 启动流程调整
@@ -497,7 +497,7 @@ Root 组件启动时：
 
 ### 存储
 
-使用现有 `credentialService`（`~/.zcode/v2/credentials.json`）：
+使用现有 `credentialService`（`~/.nekode/v2/credentials.json`）：
 
 | Key | 用途 |
 |---|---|

@@ -105,7 +105,7 @@ UI 调用 reportXxx(...)
 | `packages/ui/src/lib/uiPerfArmsTelemetry.ts`               | **新建**：单例 reporter + `setUiPerfArmsReporter` + 4 个 report 函数 + 常量                                                                  |
 | `packages/ui/src/Root.tsx`                                 | 注入 / 清理 reporter（挨着 L150 既有 reporter 注入）                                                                                         |
 | `packages/desktop/src/renderer/src/main.tsx`               | 模块层记首屏起点；监听 `zcode-react-startup-ready` 算首屏并上报                                                                              |
-| `packages/ui/src/hooks/useZCodeChat.ts`                    | `reportPromptCompletionTelemetry` 内镜像首 token / 完成到 ARMS(复用 `completionTelemetry.eventExtraDetail`,保持 messageTelemetry 为纯计算器) |
+| `packages/ui/src/hooks/useNekodeChat.ts`                    | `reportPromptCompletionTelemetry` 内镜像首 token / 完成到 ARMS(复用 `completionTelemetry.eventExtraDetail`,保持 messageTelemetry 为纯计算器) |
 | `packages/ui/src/hooks/taskStreamEventHandlers.ts`         | 维护 `lastChunkAt`，超阈值上报停顿                                                                                                           |
 | `packages/ui/src/hooks/taskStreamEventTerminalHandlers.ts` | 消息结束清理 `lastChunkAt` 状态                                                                                                              |
 | `docs/monitoring/performance-monitoring.md`                | 新增 "P0 端侧 UI 性能 / group=ui_perf" 一节                                                                                                  |

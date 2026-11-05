@@ -4,9 +4,9 @@
 
 **Goal:** 修正窗口级 WSL Host Pool 把 `sendPrompt` ACK 误当作运行结束的问题，并让 workspace 释放同步回收 Host 侧的 task 元数据和动态事件订阅。
 
-**Architecture:** `IZCodeTaskService` 暴露由 `ZCodeTaskIndexSyncer.onSessionReadyEvent` 驱动的 task-ready 动态事件；Host 以 workspace/task 为唯一 active-run 真相源，在 ready 或启动失败时结束计数，Host 总数由该 tracker 聚合。workspace runtime 释放成功后，Host 同步删除该 workspace 的 task meta、ready 监听和动态事件订阅，重新 attach 时可重新建立订阅。
+**Architecture:** `INekodeTaskService` 暴露由 `NekodeTaskIndexSyncer.onSessionReadyEvent` 驱动的 task-ready 动态事件；Host 以 workspace/task 为唯一 active-run 真相源，在 ready 或启动失败时结束计数，Host 总数由该 tracker 聚合。workspace runtime 释放成功后，Host 同步删除该 workspace 的 task meta、ready 监听和动态事件订阅，重新 attach 时可重新建立订阅。
 
-**Tech Stack:** TypeScript、Vitest、Electron UtilityProcess、`@zcode/rpc` dynamic event、ZCode task index syncer。
+**Tech Stack:** TypeScript、Vitest、Electron UtilityProcess、`@zcode/rpc` dynamic event、Nekode task index syncer。
 
 ## Global Constraints
 
@@ -26,8 +26,8 @@
 - Test: `packages/services/test/zcodeLegacyTaskCompatTaskIndex.test.ts`
 
 **Interfaces:**
-- Consumes: `ZCodeTaskIndexSyncer.onSessionReadyEvent`，事件原因是 `prompt_completed | prompt_failed`。
-- Produces: `ZCodeTaskReadyOutcome` 和 `IZCodeTaskService.onDynamicTaskReady(taskId): Event<ZCodeTaskReadyOutcome>`。
+- Consumes: `NekodeTaskIndexSyncer.onSessionReadyEvent`，事件原因是 `prompt_completed | prompt_failed`。
+- Produces: `NekodeTaskReadyOutcome` 和 `INekodeTaskService.onDynamicTaskReady(taskId): Event<NekodeTaskReadyOutcome>`。
 
 - [x] **Step 1: 写失败测试**
 
@@ -42,12 +42,12 @@
 - [x] **Step 3: 实现最小接口和 adapter 映射**
 
   ```ts
-  export interface ZCodeTaskReadyOutcome {
+  export interface NekodeTaskReadyOutcome {
     taskId: string;
     reason: "prompt_completed" | "prompt_failed";
   }
 
-  onDynamicTaskReady(taskId: string): Event<ZCodeTaskReadyOutcome> {
+  onDynamicTaskReady(taskId: string): Event<NekodeTaskReadyOutcome> {
     return Event.filter(
       Event.map(taskIndexSyncer.onSessionReadyEvent, (event) => ({
         taskId: event.target.taskId,

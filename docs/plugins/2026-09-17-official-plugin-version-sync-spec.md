@@ -58,7 +58,7 @@ CUA 并入 monorepo，git SHA pin、`bump-zcode-cua-producer.mjs`、`upstream.js
 - 各消费方（desktop / services / node-repl-host / core / adapters / wrapper）对 `@zcode/zcode-cua`
   的依赖声明必须是 `workspace:*`。
 
-`dist/` 不入 git：版本经 esbuild define `__ZCODE_CUA_VERSION__` 注入 bundle，改版本号后必须
+`dist/` 不入 git：版本经 esbuild define `__NEKODE_CUA_VERSION__` 注入 bundle，改版本号后必须
 重跑 `pnpm build:cua`（根 `prepare` 与 CI 安装后都会执行），否则本地 dist 仍是旧版本号。
 
 ## 3. 发布与缓存链路

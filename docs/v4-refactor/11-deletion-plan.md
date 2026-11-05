@@ -82,10 +82,10 @@
 
 | 文件 | 行数 | 去向 |
 | --- | --- | --- |
-| `packages/ui/src/hooks/useZCodeChatSendPrompt.ts` | 2,185 | 重写为 `sendText` command + optimistic overlay（预计 <200 行） |
+| `packages/ui/src/hooks/useNekodeChatSendPrompt.ts` | 2,185 | 重写为 `sendText` command + optimistic overlay（预计 <200 行） |
 | `packages/ui/src/hooks/useChatComposer.ts` | 2,265 | 输入路由判断（startNow/enqueue/guide）改读 projection.inputRouting；编辑器交互部分并入保留的输入组件 |
-| `packages/ui/src/hooks/useZCodeChat.ts` | 1,274 | 订阅生命周期重写为 `subscribe(base)` |
-| `packages/ui/src/hooks/useZCodeChatHistoryActions.ts` | 951 | fork/edit 改为 command，可用性读 row.actions |
+| `packages/ui/src/hooks/useNekodeChat.ts` | 1,274 | 订阅生命周期重写为 `subscribe(base)` |
+| `packages/ui/src/hooks/useNekodeChatHistoryActions.ts` | 951 | fork/edit 改为 command，可用性读 row.actions |
 | `packages/ui/src/hooks/useChatTaskControlActions.ts` | 589 | stop 等改为 command，可用性读 projection.control |
 | `packages/ui/src/hooks/useChatViewEffects.ts` | 353 | |
 | `packages/ui/src/hooks/zcodeChatShared.ts` | 213 | |
@@ -164,7 +164,7 @@ M5 ③-4 是删波次 2/3 的最终收口波：把前序测绘（③-2/③-3）�
 
 | 词 | 删除面 | 备注 |
 | --- | --- | --- |
-| `session/steer` | 全链（wire/op/agentService/sessionService/steerPrompt facade stub/ZCodeTurnSteerSendResult 类型） | adapter steerPrompt 本就返回 unsupported |
+| `session/steer` | 全链（wire/op/agentService/sessionService/steerPrompt facade stub/NekodeTurnSteerSendResult 类型） | adapter steerPrompt 本就返回 unsupported |
 | `session/rewind` | 全链 + adapter `rewindTurn`（全仓零调用） | v4 edit/retry 经原生 handler 直发 `/rewind conversation <messageId>` slash command |
 | `session/rewindCascade` | 全链 | |
 | `session/previewFileRewind` | 全链 + UI `MessageFileRewindDialog` 整删、`MessageChangeSummaryPanel` 撤销 props 收敛 `onToggleFiles` | core workspace file-rewind 机制保留（`/rewind` slash command 消费） |
@@ -206,7 +206,7 @@ M5 ③-4 是删波次 2/3 的最终收口波：把前序测绘（③-2/③-3）�
 | --- | --- | --- |
 | M5② store 收尾第一步（ChatInputToolbar/PlanModeToolPanel 等死簇） | `44a8e5e5f` | −12,013 |
 | M5② zcodeSessionStore 死面 + zcodeChatMessages 本体 | `ac1b30356` | −11,752 |
-| M5② useZCodeConfig/useWorkspacePrepare 死路径 + 类型 re-home | `e0cee071c` | −2,592 |
+| M5② useNekodeConfig/useWorkspacePrepare 死路径 + 类型 re-home | `e0cee071c` | −2,592 |
 | M5② bot 广播消息面退役 | `0ac436b55` | −94 |
 | ③-2 旧协议 UI 控制孤儿 | `70e887aad` | −506 |
 | ③-2 onDynamicSessionEvent 清扫 | `2e5e716c0` | −298 |

@@ -4,16 +4,16 @@
 
 - 状态：P0/P1 已实现；本次 hardening 已补齐 Core 父进程断连、更新指针清理和稳定 Server identity；Linux x64 已完成 SSH 实机验证
 - 阶段：统一多端远程架构 R2 / D4
-- 本阶段目标：交付可独立安装、可后台运行、与 UI 生命周期解耦的 ZCode Server CLI
+- 本阶段目标：交付可独立安装、可后台运行、与 UI 生命周期解耦的 Nekode Server CLI
 - 本文定位：R2 的实现规格和边界；可执行测试补充见 [R2 lifecycle test plan](./r2-server-cli-and-daemon-test-plan.md)
 - R2 不切换 Desktop 的生产远程连接主链
 
 本文基于：
 
-- [ZCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)
+- [Nekode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)
 - [R1 窗口级单 Host 进程重构规格](./r1-single-window-host-refactor.md)
 - [Agent Electron/Node runtime 事实](../runtime-tools/agent-electron-node-runtime.md)
-- [ZCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)
+- [Nekode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)
 
 R2 交付：
 
@@ -46,12 +46,12 @@ R2 不交付：
 | Supervisor           | 只拥有生命周期状态，不拥有 task/session/stream/queue/snapshot 业务状态                                                                                                                                                                                                                                                                                                                                                                                                              |
 | 监听地址             | 默认回环地址和动态端口；非回环监听必须启用鉴权                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | Web / WS             | R2 实现并验证 Core 的 HTTP/WS ingress；具体远程 Transport 留给后续阶段                                                                                                                                                                                                                                                                                                                                                                                                              |
-| 数据目录             | 复用 `getZCodeDataRootDir()` 和 `ZCODE_DATA_BASE_DIR`；标准目录为 `<dataRoot>/server`。OS service 必须携带内部参数 `--server-root <absolute-path>`，不得依赖注册时 shell 的环境                                                                                                                                                                                                                                                                                                     |
+| 数据目录             | 复用 `getNekodeDataRootDir()` 和 `NEKODE_DATA_BASE_DIR`；标准目录为 `<dataRoot>/server`。OS service 必须携带内部参数 `--server-root <absolute-path>`，不得依赖注册时 shell 的环境                                                                                                                                                                                                                                                                                                     |
 | Node runtime         | 沿用现有远端资产流程的 Node `v22.16.0`；Server CLI 不依赖系统 Node 或 Electron Node                                                                                                                                                                                                                                                                                                                                                                                                 |
 | 崩溃策略             | 5 次/5 分钟预算，退避 1、2、4、8、16 秒；超出后进入 `crash-loop-stopped`。ready 的 Core 连续 6 个 heartbeat 周期无 IPC 消息时由 Supervisor SIGKILL，按崩溃处理（§4.2 Core 活性）                                                                                                                                                                                                                                                                                                    |
 | Task 恢复            | Core 崩溃或更新后，运行中的 Task 中断，不自动恢复或重放输入                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | stop                 | 停止当前实例，但保留自启动注册                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| uninstall            | 停止实例、移除服务注册、删除 ZCode 自有数据；Workspace/Repo/用户文件不删除                                                                                                                                                                                                                                                                                                                                                                                                          |
+| uninstall            | 停止实例、移除服务注册、删除 Nekode 自有数据；Workspace/Repo/用户文件不删除                                                                                                                                                                                                                                                                                                                                                                                                          |
 | update               | 默认从配置的 release catalog 在线下载并校验；无网络时可应用本地 pending；使用原子切换和失败回滚                                                                                                                                                                                                                                                                                                                                                                                     |
 | 组件更新             | 以 Node、server、agent、official-plugins、native-search-tools 五个粗粒度组件做内容寻址缓存；完整 release 仍是原子运行单元                                                                                                                                                                                                                                                                                                                                                           |
 | 平台服务注册         | 先探测当前用户的 launchctl / systemctl --user / schtasks 能力；Linux 非交互会话可从 `/run/user/<uid>/bus` 恢复 user bus 环境。服务管理器不可访问，或 systemd 在装载阶段（`daemon-reload`、`enable`）失败时，自动由 detached Supervisor 启动并报告 `serviceRegistered=false`；systemd 启动阶段（`start`）失败和 launchd / Task Scheduler 注册失败仍返回可诊断错误，不做伪装 fallback。每次冷启动重新选择，不持久保存。OS service 或 detached Supervisor 二选一成为 daemon 启动 owner |
@@ -188,7 +188,7 @@ Desktop probe / serve --daemon 读到新端口 ──> 握手成功
 维护第二份 task registry。Core-local `TaskActivityTracker` 订阅所有已连接 workspace 的
 `turn.started` / `turn.terminal`，只保留按 `workspaceKey + sessionId` 去重的活动 key，并把数量作为
 生命周期快照发给 Supervisor。它不是公开 RPC 接口，也不持有正文、stream、queue 或 snapshot。
-Task facade 与直接调用 `IZCodeAgentService` v4 的 `desktop-continuous` 路径必须汇入同一 tracker；
+Task facade 与直接调用 `INekodeAgentService` v4 的 `desktop-continuous` 路径必须汇入同一 tracker；
 `web-remote-replayable` 仍只按自己的 gap/snapshot 边界向客户端恢复，活动计数不得改变两种 delivery
 语义。
 
@@ -245,7 +245,7 @@ Supervisor ── SIGKILL/crash ──X IPC ──disconnect──> Core
 
 `/api/server-info.serverId` 使用 `install.json.installationId` 作为持久用户数据环境的稳定身份。只有直接调用
 Core HTTP 工厂且未提供 server root 的测试/嵌入场景才回退到 hostname；真实 Supervisor 启动的
-Core 必须通过 `ZCODE_SERVER_ROOT` 校验 ownership marker 后注入 installationId。
+Core 必须通过 `NEKODE_SERVER_ROOT` 校验 ownership marker 后注入 installationId。
 
 现有 `packages/server` 中的 `/api/server-info`、`/api/rpc-host-capability`、`/ws`、`/ws/host` 等行为作为兼容性参考；新 Core 不直接导入旧入口，而是通过合同测试决定需要保留的边界。
 
@@ -359,7 +359,7 @@ staging 由 `packages/zcode-server-cli/src/packaging/stage.ts` 实现，
   `node_modules/.cache/zcode-server-cli/tools/<target>`（内网依赖源已配置时下载，未配置时解包仓库归档），
   不复用 mock-cdn 或 bundled-tools 目录（远端 macOS 固定为 rg13）；每个工具目录同时携带
   `THIRD-PARTY-NOTICES.txt` 与 `SOURCES.json`。运行时通过
-  `ZCODE_SERVER_RUNTIME_ROOT` 解析；`runtime/packages` 包含当前官方插件定义中需要 seed 的七个
+  `NEKODE_SERVER_RUNTIME_ROOT` 解析；`runtime/packages` 包含当前官方插件定义中需要 seed 的七个
   plugin（browser-use、document-skills、skill-creator、zcode-guide、android-emulator、
   ios-simulator、restore-legacy-sessions）。
 - 内置技能包不变量：`stageRelease` 从独立的 `bundledSkillsDir` 参数发布
@@ -369,7 +369,7 @@ staging 由 `packages/zcode-server-cli/src/packaging/stage.ts` 实现，
   只在这里。它只属于 `agent-runtime` 组件并参与其内容哈希与归档，不写入 manifest 的 `plugins`。
   官方插件目录不提供也不覆盖技能包，发布不依赖插件缓存中是否存在同名目录。
   `stageRelease` 按 Agent 的必需文件清单 fail-closed 校验，缺任一文件时 staging 失败。
-- 官方插件 MCP runtime 不变量：凡 `plugin.json` 的 `mcpServers` 通过 `${ZCODE_PLUGIN_ROOT}/...`
+- 官方插件 MCP runtime 不变量：凡 `plugin.json` 的 `mcpServers` 通过 `${NEKODE_PLUGIN_ROOT}/...`
   引用的文件（当前为 android-emulator、ios-simulator、browser-use 的 `dist/mcp/server.js`）必须随
   archive 一起发布。这些 dist 不入库，由 `scripts/build-desktop-agent-cli.mjs` 的 MCP runtime 清单在
   staging 前构建；`stageRelease` 以 plugin.json 声明为事实源 fail-closed 校验，manifest 缺失或入口
@@ -378,17 +378,17 @@ staging 由 `packages/zcode-server-cli/src/packaging/stage.ts` 实现，
 Agent 接线约定：发行包内 Core 不在 monorepo、也没有 Electron runtime。Supervisor 每次启动 Core
 时必须根据该 Core 所属 release 的 `runtime/` 重新计算接线（`runtime/node zcode.cjs app-server
 --stdio`），不得由旧 `server-cli.js` 把自动推导结果永久写入全局 `process.env`。显式配置的
-`ZCODE_AGENT_SERVER_COMMAND` 仍永远优先；开发态没有 release runtime 时不注入。
+`NEKODE_AGENT_SERVER_COMMAND` 仍永远优先；开发态没有 release runtime 时不注入。
 
-Agent 版本身份：Core 启动时把自身编译期版本 `ZCODE_VERSION` 写入 `ZCODE_APP_VERSION`，覆盖继承值；
-Core 拉起的 Agent 继承该 env，模型请求的 `User-Agent` / `X-ZCode-App-Version` 和遥测
+Agent 版本身份：Core 启动时把自身编译期版本 `NEKODE_VERSION` 写入 `NEKODE_APP_VERSION`，覆盖继承值；
+Core 拉起的 Agent 继承该 env，模型请求的 `User-Agent` / `X-Nekode-App-Version` 和遥测
 productVersion 报告 App 版本，而不是 CLI 包版本。注入点只能在 Core：升级时旧 Supervisor 会拉起
 新 release 的 Core，Supervisor 与 SSH/WSL/Docker exec 的版本都不代表该 Core。
 
 安装后的程序和数据分离：
 
 ```text
-~/.zcode/server/
+~/.nekode/server/
 ├── releases/<version>-<target>-<sha12>/
 │   ├── runtime/
 │   ├── bin/
@@ -399,7 +399,7 @@ productVersion 报告 App 版本，而不是 CLI 包版本。注入点只能在 
 ├── bin/zcode                       # Windows 为 zcode.cmd；OS service 稳定入口
 ├── service/<root-hash>.<platform>  # 运行时按 canonical root 生成，显式携带 --server-root
 ├── cache/components/<target>/<component>/<sha256>/
-├── config/provider/zcode-builtin-<sha256>.json   # Core 启动时按内容 hash 物化的 ZCode Built-in Provider Config（2026-09-07 起）
+├── config/provider/zcode-builtin-<sha256>.json   # Core 启动时按内容 hash 物化的 Nekode Built-in Provider Config（2026-09-07 起）
 └── run/
     ├── server.lock
     ├── update.lock                  # 跨 Supervisor handoff 的 CLI update/uninstall/restart 单 owner
@@ -409,16 +409,16 @@ productVersion 报告 App 版本，而不是 CLI 包版本。注入点只能在 
 ```
 
 `config/provider/zcode-builtin-<sha256>.json` 由 Core（`server-core/core.ts`）在启动时从构建期 define
-`__ZCODE_BUILTIN_PROVIDER_CONFIG_JSON__` 物化（tmp + rename；同 hash 幂等，内容不一致则启动失败），
-`ZCODE_BUILTIN_PROVIDER_CONFIG_FILE` 显式指定时跳过物化。它落在 server root 而不是 release 自带的
+`__NEKODE_BUILTIN_PROVIDER_CONFIG_JSON__` 物化（tmp + rename；同 hash 幂等，内容不一致则启动失败），
+`NEKODE_BUILTIN_PROVIDER_CONFIG_FILE` 显式指定时跳过物化。它落在 server root 而不是 release 自带的
 `runtime/`：release 目录不可变，同一 releaseId 重装时会重算整棵树的内容哈希，多出的物化文件会让该目录
 被判为损坏副本并在重装时整体替换；文件名含内容 hash，跨 release 共用安全。当前 `zcode uninstall` 的
 allowlist 不含 `config/`，卸载后该目录会保留并列入 `uninstalled.json.preservedPaths`。
 
 descriptor 不随 release archive 打包，而是在 `serve --daemon` 注册时由
 `platform/serviceManager.ts` 动态写入 `service/`。显式传入非标准 `--server-root` 时，Server CLI
-将该目录同时作为 `dataBaseDir`，因此 Agent/SQLite 等本地状态位于该 root 的 `.zcode/` 隔离目录；
-卸载仍只删除 ZCode allowlist，未知文件会保留并列入 `uninstalled.json.preservedPaths`。
+将该目录同时作为 `dataBaseDir`，因此 Agent/SQLite 等本地状态位于该 root 的 `.nekode/` 隔离目录；
+卸载仍只删除 Nekode allowlist，未知文件会保留并列入 `uninstalled.json.preservedPaths`。
 
 `current.json` 和 `pending.json` 只通过临时文件加 rename 更新。release 目录按 archive SHA 内容寻址
 且不可变：安装器只能把完整临时目录原子 promote 到尚不存在的 `releases/<releaseId>`；目标已存在
@@ -558,13 +558,13 @@ unit name、Windows task name 和 descriptor 文件名。兼容清理旧固定 s
 
 `--server-root` 是 service/fallback daemon 使用的内部全局参数，值必须是绝对路径。CLI 的 control
 endpoint、status、release、service descriptor 和 uninstall 均从该参数解析同一个 layout；Core/Agent
-同时获得对应的 `ZCODE_DATA_BASE_DIR`。因此自定义 data root 的 daemon 不得在默认 root 创建第二份
+同时获得对应的 `NEKODE_DATA_BASE_DIR`。因此自定义 data root 的 daemon 不得在默认 root 创建第二份
 status、lock、Core 或 SQLite。
 
 POSIX 稳定入口 `bin/zcode` 读取 `current.json.releaseDir`，只执行 `<root>/releases/` 下的 release；
-越界时输出 `Invalid current ZCode Server release` 并以 1 退出。该边界必须和写入方比较同一种路径：
+越界时输出 `Invalid current Nekode Server release` 并以 1 退出。该边界必须和写入方比较同一种路径：
 生命周期命令写 `current.json` 前已把 server root 收敛为 canonical（`realpath`）路径，launcher 也必须
-用物理路径（`cd -P` + `pwd -P`）计算 root。远端以 `"$HOME/.zcode/server/bin/zcode"` 调用入口，
+用物理路径（`cd -P` + `pwd -P`）计算 root。远端以 `"$HOME/.nekode/server/bin/zcode"` 调用入口，
 `$HOME` 可能经过符号链接（例如 NAS 的 `/var/services/homes -> /volume1/homes`、`/home -> /var/home`），
 这种别名不得让合法 release 被判为越界。
 
@@ -602,14 +602,14 @@ zcode uninstall
 | `update`                                           | 获取 catalog 中当前 target 的新 release（或使用已有 pending），校验并安装后应用；在线 daemon 必须完成 Supervisor/Core/Agent 的整棵进程树换代与 runtime identity 校验后才返回成功；catalog 与 current archive 相同返回成功的 `up-to-date`，不得继续请求 apply；未配置 catalog 且没有 pending 时返回明确的 release source 错误；有运行 Task 时默认返回可操作的 guard 错误，不中断任务 |
 | `update --force`                                   | 明确允许中断运行 Task 后应用 release                                                                                                                                                                                                                                                                                                                                                |
 | `update --from-archive <path> [--allow-downgrade]` | 校验并应用本地 archive；archive 版本低于 `current.json` 且未带 `--allow-downgrade` 时，删除本次 `pending.json`，以 `source-server-downgrade-unconfirmed` 失败，不切换 release；带该参数时先写 `downgrade.json` 再应用                                                                                                                                                               |
-| `uninstall`                                        | 检查运行 Task（有运行 Task 时拒绝并保持原状态），要求两次输入 `DELETE`，停止并移除服务，删除允许列表内的 ZCode 数据                                                                                                                                                                                                                                                                 |
+| `uninstall`                                        | 检查运行 Task（有运行 Task 时拒绝并保持原状态），要求两次输入 `DELETE`，停止并移除服务，删除允许列表内的 Nekode 数据                                                                                                                                                                                                                                                                 |
 
 `uninstall` 允许删除：
 
 - R2 程序 release；
 - Supervisor/Core 运行记录；
-- ZCode 配置、缓存、runtime 记录；
-- ZCode 自有状态数据库和日志。
+- Nekode 配置、缓存、runtime 记录；
+- Nekode 自有状态数据库和日志。
 
 `uninstall` 禁止删除：
 
@@ -653,7 +653,7 @@ canonical server root 和 installation id。`uninstall` 只有在 `realpath` 后
     启动方式只按调用方环境变量与服务管理器探测判定，与 `serve --daemon` 一致。control 请求带 `restart` 时按
     非法请求返回 `invalid-request`。
   - `restart` 取 `run/update.lock`（2026-10-21 确认），与 `update`、`uninstall` 以及另一次 `restart` 互斥：锁被占用时
-    不等待、不停止现有服务，直接失败；输出沿用 `uninstall` 的锁冲突结果 `{ok:false,error:"A ZCode Server update is
+    不等待、不停止现有服务，直接失败；输出沿用 `uninstall` 的锁冲突结果 `{ok:false,error:"A Nekode Server update is
 already running"}`，不带公开错误码。锁在停止等待与启动等待 ready 期间一直持有，命令结束释放。桌面 Host 按设备的
     互斥保持不变，CLI 锁覆盖多台电脑或终端并发的场景。
 
@@ -693,7 +693,7 @@ Workspace / Repo / User files
 - stale lock 回收必须先按 ownership token 原子 claim 到隔离路径；release 只能删除仍属于自己的 token，禁止按一次陈旧的 PID 判断直接删除当前路径；
 - 持锁者判活按进程身份，不只看 PID（2026-10-21）。容器、WSL 发行版或整机重启后，进程全部消失但锁文件留在磁盘上；
   PID 从小号重新分配，同样的启动顺序会让新 Supervisor 拿到锁里记录的旧 PID，只看 PID 会把残留锁判为存活，
-  启动永久报 `Another ZCode Server instance is already running`。容器重启不换内核，`boot_id` 不变，所以只有开机标识不够。
+  启动永久报 `Another Nekode Server instance is already running`。容器重启不换内核，`boot_id` 不变，所以只有开机标识不够。
   锁记录 `processIdentity`，持锁进程身份一致才算存活：
 
   | 锁记录                                                       | 判定                                                                                                 |

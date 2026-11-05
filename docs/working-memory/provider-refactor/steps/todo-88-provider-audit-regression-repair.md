@@ -179,7 +179,7 @@ Built-in / Template + Account + Personal
 
 - 内置 Subagent 旧 state 在 Host 的 Agent 启动准备边界完成一次性导入并落盘；不靠打开设置页触发，不向 App–Agent 协议增加账号替换接口。导入沿用同一身份转换，保留旧字段用于回滚；异步转换后原文件已变化则放弃迟到写入，不能覆盖用户新选择。已有新字段不从旧字段补值。
 - 已裁决（2026-09-07）：用户同意将自定义/项目/插件 Markdown 的旧 `builtin:` 身份导入纳入本轮，整理为可等待的初始化步骤，复用已有 `resolveLegacyModelProviderId` 端口，不自动改写 Markdown。普通新版 Account ID 不调用此转换、不随账号切换改写；单项身份无法确认保留原不可绑定选择，相同旧 ID 合并一次查询。
-- 初始化影响核对：`createZCodeApp` 必须先完成 profile 导入再构造 Runtime，因此创建返回 Promise；Protocol 的 session materialization、临时连接测试/文本生成、CLI prompt/TUI 和轨迹工具统一等待。复用原 Session resident pool 的创建协调，不新增后台初始化状态或修改 Runtime 私有配置。测试/嵌入依赖允许同步 factory，生产调用方统一 await。
+- 初始化影响核对：`createNekodeApp` 必须先完成 profile 导入再构造 Runtime，因此创建返回 Promise；Protocol 的 session materialization、临时连接测试/文本生成、CLI prompt/TUI 和轨迹工具统一等待。复用原 Session resident pool 的创建协调，不新增后台初始化状态或修改 Runtime 私有配置。测试/嵌入依赖允许同步 factory，生产调用方统一 await。
 - 验收补充：真实 Markdown 加载 + 延迟身份解析时 Runtime 不提前创建；转换失败仅保留该 profile 不可绑定，不丢其他 profile；新字段档位保持权威；原文件不写回。Protocol 的桌面 continuous/手机 replayable 恢复及并发冷加载沿原入口回归。Codegraph 当前不可用，dep:refs 未索引独立 CLI workspace；以完整仓库调用搜索和 CLI 三包类型检查补齐，不把无索引误认为无引用。
 
 - 历史空/坏 Selection 的 Session 可打开并重选继续；旧定时任务、内置/自定义 Subagent、Wiki 的真实旧格式导入，新值不被旧值覆盖。
@@ -212,7 +212,7 @@ Built-in / Template + Account + Personal
 | 范围与现场           | 已记录                                          | 当前分支与自身远端同步；工作区有并行修改，保留                                                                                                                                                                                                                                                                                                             | 不操作真实配置                                                                                                                                  |
 
 - Air 备份：真实用户备份压缩包已完整传输，源端与 Air 的 SHA-256 均为 `e4b179c215619fc700848a51cece6fef8e77dec8c742f52ec2f8c0e33c282827`，9,787,073,272 字节。未解压、未恢复真实数据；Air 当时剩余约 12 GiB，后续测试必须控制空间。
-- 2026-09-07 用户新增授权：把该真实用户备份传到 Pro，并替换 Pro 的默认 `.zcode` 作为重复迁移测试数据。现已完成：原包 SHA-256 与 Air/源端一致；解压原件留在 `/Users/dev/.zcode-test-fixtures/real-user-20260902/pristine/.zcode`，恢复后的 `/Users/dev/.zcode` 与其全量 checksum dry-run 比较无差异。原 Pro 数据约 533 MiB 留在 `/Users/dev/.zcode.before-real-user-2026-09-07T13-18-05.536Z`，没有删除，没有启动旧版应用。桌面 `Restore-Real-User-Test-Data.command` 可在退出全部 ZCode/Agent/Host 后重复恢复，工具每次先准备副本、再改名留档。工具和敏感备份仅留测试机，不提交 Git。
+- 2026-09-07 用户新增授权：把该真实用户备份传到 Pro，并替换 Pro 的默认 `.nekode` 作为重复迁移测试数据。现已完成：原包 SHA-256 与 Air/源端一致；解压原件留在 `/Users/dev/.nekode-test-fixtures/real-user-20260902/pristine/.nekode`，恢复后的 `/Users/dev/.nekode` 与其全量 checksum dry-run 比较无差异。原 Pro 数据约 533 MiB 留在 `/Users/dev/.nekode.before-real-user-2026-09-07T13-18-05.536Z`，没有删除，没有启动旧版应用。桌面 `Restore-Real-User-Test-Data.command` 可在退出全部 Nekode/Agent/Host 后重复恢复，工具每次先准备副本、再改名留档。工具和敏感备份仅留测试机，不提交 Git。
 - 2026-09-07 验证环境：Air 与 Pro 的 SSH Git 凭据读取均报钥匙串 `-25308`，本机终端 Git 可用，不能据此判成账号失效。未放宽钥匙串权限；改用本机已授权取得的源码 bundle 准备 Pro 隔离工作区 `/Users/dev/zcode-todo88-pro-e2e`，CUA 仍为锁定的 `95ca9ede5f308c1fcf33ea1081da4d9550bd439d`。Electron 通过结果见下文。
 - 最新本地全量 `pnpm typecheck` 通过；`pnpm lint` 通过（40 条既有 warning，0 error）。后续修改仍需重跑，不能用本条替代最终验收。
 - 二次复审批量回归：Provider、Provider Node、Automation、Subagent、Settings、Wiki、Account 与 UI 相关 34 个测试文件、501 条通过。桌面 MP-UI-06 的真实交互断言已通过，详见产物记录。

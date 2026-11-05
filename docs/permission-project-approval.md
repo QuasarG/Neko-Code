@@ -25,7 +25,7 @@
 - `optionId`：稳定选项 ID。
 - `kind`：UI 展示语义。
 - `name` / `description`：展示文案。
-- `response`：用户选择该 option 时原样回传给 agent 的 `ZCodePermissionResponse`。
+- `response`：用户选择该 option 时原样回传给 agent 的 `NekodePermissionResponse`。
 
 legacy app 按 option.response 透传裁决；V4 通过稳定 optionId 交给 Agent 已登记的交互处理，不根据 UI 序号推导响应。完全访问属于下述独立提交动作，不能当成普通 allow。
 
@@ -47,7 +47,7 @@ V4 permission snapshot 可通过 `freeText: true` 声明“拒绝时允许附带
 - PermissionDialog 的 feedback 输入是可自动换行、按内容增高的多行文本框，序号与 textarea 第一行文字的垂直中心对齐，不随输入框整体高度移动（普通权限选项仍居中），最多 5 行、4096 字符，超过行数后在输入框内滚动；共享 `resolveInteraction` schema 不限制其他
   interaction 的 `freeText`，避免收窄 AskUserQuestion、Plan 和通用 user-input 的既有行为。未提交草稿只存在
   renderer 内存，pending command 继续只保存敏感摘要。
-- legacy v3、TUI 和 bot 不声明该能力，继续使用普通 Deny 兼容路径。
+- legacy v3 和 TUI 不声明该能力，继续使用普通 Deny 兼容路径。
 
 ```text
 UI focus (fullAccess): [1 Allow once] <-> [2 Allow project] <-> [3 Full access]
@@ -145,7 +145,7 @@ stored group == current trusted tool group ?
 prefix/wildcard 改由 AST evaluator 按 invocation 安全匹配，避免旧宽规则吞掉 compound 的
 追加命令。没有新授权发生时不得批量重写历史 ruleset。
 
-这个编码是混合版本与回滚边界：旧 desktop/mobile/bot 的严格 schema 能展示并原样回传
+这个编码是混合版本与回滚边界：旧 desktop/mobile 的严格 schema 能展示并原样回传
 该规则；新版 Agent 将它与当前可信 tool entry 的 capability 一起解释。若回滚到旧 Agent，
 保留 key 不会匹配真实工具，最坏只会再次询问，不会扩大授权或让 pending permission
 无法解析。
@@ -209,12 +209,3 @@ resolveInteraction(fullAccess) → session FIFO → registry + broker claim（Ho
 `$` 起始标记与命令正文放在同一滚动视口内，滚动离开首行后一起消失，回到顶部后重新出现；不得固定在命令中段旁。
 
 键盘路径：存在长命令展开按钮时，默认第一项权限选项按 Shift+Tab 返回命令按钮，按钮按 Tab 回到第一项；展开后继续 Shift+Tab 可进入命令滚动视口。展开/滚动不得提交授权。短命令没有按钮时，既有选项循环保持不变。
-## Group task scope
-
-Feishu/Lark group tasks use `SessionInfo.permission.scope = "session"` before tool execution. The first trusted group input initializes an empty session ruleset; later inputs retain only that task's explicit approvals. Session-scoped tasks do not read or write project approval memory. Existing private/Desktop tasks without this marker retain project semantics. An explicit owner mode change remains session configuration; message text and model output never set the marker or grant permissions.
-
-```
-trusted group input → persisted session scope → tool permission check
-                                             → session grants only
-owner approval      → same pending request   → session grant update
-```

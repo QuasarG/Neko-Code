@@ -13,7 +13,7 @@ Status: ready-for-human
 ## 已确认
 
 探针（已复现，真实模块边界）：用本分支的 `DataRootLock`，写入 3.16.2 格式的锁 `{pid, acquiredAt, ownerToken}`，`pid` 指向同用户的无关存活进程，
-`acquire()` 报 `Another ZCode Server instance is already running`。
+`acquire()` 报 `Another Nekode Server instance is already running`。
 
 ## 为什么本次没有改
 

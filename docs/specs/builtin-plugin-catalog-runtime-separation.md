@@ -33,7 +33,7 @@
 ### 1.3 未知 / 明确延后（Unknown / Deferred）
 
 - 当前 config read-modify-write 与 plugin storage lock 之间存在低概率 lost-update 窗口；本次不扩展为跨进程锁重构，记录为后续任务。
-- `ZCodeAvailablePluginSummary.installed` 对活跃内置插件的底层投影仍可能为 false；本次通过 UI join 保证 Marketplace 行为，协议字段修正另行处理。
+- `NekodeAvailablePluginSummary.installed` 对活跃内置插件的底层投影仍可能为 false；本次通过 UI join 保证 Marketplace 行为，协议字段修正另行处理。
 
 ## 2. Product Contract
 
@@ -120,7 +120,7 @@
 | View uninstalled builtin detail | `PluginStoreDetailView` | same detail + `plugins/describe` cache | `describeCache` keyed by stable plugin ID | Catalog/cache readable; no runtime `info` required | read-only `plugins/describe` | Agent Catalog + immutable cache | No session/clientMode change | `suppressedBuiltins`, enable/options, data |
 | Uninstall builtin | detail/card/manage menu + confirm dialog | `usePluginUninstall`, management store | operation state in plugin management store | explicit confirmation; builtin is uninstallable | `plugins/uninstall` | user config + data cleanup; Catalog untouched | Desktop local lifecycle only | Marketplace source removal semantics |
 | Restore builtin | Install button on restorable item | `handleInstall`, `restoreBuiltin` | operation state + refreshed overview | `item.restorable === true` | `plugins/restoreBuiltin` | suppression removed; seed self-heals missing cache | Desktop local lifecycle only | ordinary installed record |
-| View installed detail | detail/manage | `ZCodePluginInfo` runtime projection | `item.info` | runtime info available | no mutation for read | discovery outcome | unchanged | catalog-only detail fallback |
+| View installed detail | detail/manage | `NekodePluginInfo` runtime projection | `item.info` | runtime info available | no mutation for read | discovery outcome | unchanged | catalog-only detail fallback |
 
 ## 5. Shared And Divergent Behavior
 

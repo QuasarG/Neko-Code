@@ -546,9 +546,9 @@ git commit -m "feat(desktop): main 采集 T0-T3 经 loadURL query 注入"
 **Interfaces:**
 - Consumes: `parseLaunchMarks`, `LAUNCH_MARKS_QUERY_KEY`, `LaunchMarks` from `@zcode/shared`
 - Produces:
-  - `window.__ZCODE_LAUNCH_MARKS__: LaunchMarks | null`（从 location query 解析，模块层一次）
-  - `window.__ZCODE_RENDERER_START__: number`（T4，模块顶部 Date.now()）
-  - `window.__ZCODE_REACT_COMMIT_AT__: number`（T5，startup-ready 时写入）
+  - `window.__NEKODE_LAUNCH_MARKS__: LaunchMarks | null`（从 location query 解析，模块层一次）
+  - `window.__NEKODE_RENDERER_START__: number`（T4，模块顶部 Date.now()）
+  - `window.__NEKODE_REACT_COMMIT_AT__: number`（T5，startup-ready 时写入）
 
 - [ ] **Step 1: 模块顶部记 T4、解析 marks**
 
@@ -561,10 +561,10 @@ const launchMarks: LaunchMarks | null = parseLaunchMarks(
   new URLSearchParams(window.location.search).get(LAUNCH_MARKS_QUERY_KEY),
 );
 (window as Window & {
-  __ZCODE_RENDERER_START__?: number;
-  __ZCODE_LAUNCH_MARKS__?: LaunchMarks | null;
-}).__ZCODE_RENDERER_START__ = rendererStartedAt;
-(window as Window & { __ZCODE_LAUNCH_MARKS__?: LaunchMarks | null }).__ZCODE_LAUNCH_MARKS__ =
+  __NEKODE_RENDERER_START__?: number;
+  __NEKODE_LAUNCH_MARKS__?: LaunchMarks | null;
+}).__NEKODE_RENDERER_START__ = rendererStartedAt;
+(window as Window & { __NEKODE_LAUNCH_MARKS__?: LaunchMarks | null }).__NEKODE_LAUNCH_MARKS__ =
   launchMarks;
 ```
 
@@ -580,7 +580,7 @@ const launchMarks: LaunchMarks | null = parseLaunchMarks(
 function StartupReadyNotifier() {
   useEffect(() => {
     // T5:React 首次 commit。供启动分阶段耗时计算 react_commit 段。
-    (window as Window & { __ZCODE_REACT_COMMIT_AT__?: number }).__ZCODE_REACT_COMMIT_AT__ =
+    (window as Window & { __NEKODE_REACT_COMMIT_AT__?: number }).__NEKODE_REACT_COMMIT_AT__ =
       Date.now();
     // Bugfix: HTML 启动壳的弹出动画结束时，React 首屏可能还没 commit，直接移除壳会露出空白。
     window.dispatchEvent(new Event("zcode-react-startup-ready"));
@@ -695,16 +695,16 @@ export function readRendererLaunchTimings(): {
   reactCommit: number;
 } | null {
   const w = window as Window & {
-    __ZCODE_LAUNCH_MARKS__?: LaunchMarks | null;
-    __ZCODE_RENDERER_START__?: number;
-    __ZCODE_REACT_COMMIT_AT__?: number;
+    __NEKODE_LAUNCH_MARKS__?: LaunchMarks | null;
+    __NEKODE_RENDERER_START__?: number;
+    __NEKODE_REACT_COMMIT_AT__?: number;
   };
-  const rendererStart = w.__ZCODE_RENDERER_START__;
-  const reactCommit = w.__ZCODE_REACT_COMMIT_AT__;
+  const rendererStart = w.__NEKODE_RENDERER_START__;
+  const reactCommit = w.__NEKODE_REACT_COMMIT_AT__;
   if (typeof rendererStart !== "number" || typeof reactCommit !== "number") {
     return null;
   }
-  return { marks: w.__ZCODE_LAUNCH_MARKS__ ?? null, rendererStart, reactCommit };
+  return { marks: w.__NEKODE_LAUNCH_MARKS__ ?? null, rendererStart, reactCommit };
 }
 ```
 

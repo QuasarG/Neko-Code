@@ -21,7 +21,7 @@ patchedDependencies:
     hash: e1a90a724324c45a2cc90cf84d1ae1f35755b8fc9438a208d610960bd0d5f65a
     path: patches/@aiden0z__pptx-renderer@1.2.4.patch
   '@arms/rum-electron@0.0.3':
-    hash: 36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97
+    hash: 290508f9b95e16c29769d69faa9ddc0f155181cc84fd70378ff351584bd51ac0
     path: patches/@arms__rum-electron@0.0.3.patch
   '@extend-ai/react-xlsx@0.16.0':
     hash: b2fc5fcfa1aab1271d20fd539d2a367f06aac08a191425885cf8f1125b7c6bc8
@@ -29,6 +29,9 @@ patchedDependencies:
   '@radix-ui/react-collapsible@1.1.12':
     hash: 4b7b3781f603e111bb33aef9c4b1694ac9bacd3dff47692606de9876d4631164
     path: patches/@radix-ui__react-collapsible@1.1.12.patch
+  app-builder-lib@26.17.0:
+    hash: ad57950166a082ce4a7160c80c2e9736401a68c3b10d3ee9d6f418f8353b0114
+    path: patches/app-builder-lib@26.17.0.patch
   vitest@4.1.7:
     hash: 11fdb66aa985e1d77e68752deeb7c1130ae33c9a4e2968f23aae8adaf8bc9ba0
     path: patches/vitest@4.1.7.patch
@@ -226,6 +229,9 @@ importers:
       '@zcode/contracts':
         specifier: workspace:*
         version: link:../contracts
+      '@zcode/core':
+        specifier: workspace:*
+        version: link:../core
       '@zcode/dynamic-workflow':
         specifier: workspace:*
         version: link:../dynamic-workflow
@@ -987,16 +993,13 @@ importers:
     dependencies:
       '@arms/rum-electron':
         specifier: ^0.0.3
-        version: 0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@44.7.0)
+        version: 0.0.3(patch_hash=290508f9b95e16c29769d69faa9ddc0f155181cc84fd70378ff351584bd51ac0)(@babel/runtime@7.29.7)(electron@44.7.0)
       '@babel/runtime':
         specifier: ^7.24.5
         version: 7.29.7
       '@fiahfy/icns':
         specifier: ^0.0.7
         version: 0.0.7
-      '@larksuiteoapi/node-sdk':
-        specifier: 1.61.1
-        version: 1.61.1
       '@lydell/node-pty-linux-arm64':
         specifier: 1.2.0-beta.10
         version: 1.2.0-beta.10
@@ -1414,9 +1417,9 @@ importers:
       '@agentclientprotocol/sdk':
         specifier: ^0.21.1
         version: 0.21.1(zod@4.6.5)
-      '@larksuiteoapi/node-sdk':
-        specifier: 1.64.0
-        version: 1.64.0
+      '@zcode/adapters':
+        specifier: workspace:*
+        version: link:../../apps/zcode-cli/packages/adapters
       '@zcode/provider':
         specifier: workspace:*
         version: link:../provider
@@ -3385,12 +3388,6 @@ packages:
 
   '@kurkle/color@0.3.4':
     resolution: {integrity: sha512-M5UknZPHRu3DEDWoipU6sE8PdkZ6Z/S+v4dD+Ke8IaNlpdSQah50lz1KtcFBa2vsdOnwbbnxJwVM4wty6udA5w==}
-
-  '@larksuiteoapi/node-sdk@1.61.1':
-    resolution: {integrity: sha512-BxLBCXk/652I0nWduQbiIrTH2TPe/i4ZD6UhW3VCTVFzrOq5Y9SKvAwanBE6z1ZyEPL6iLnXg/TfGvGSzG6MLw==}
-
-  '@larksuiteoapi/node-sdk@1.64.0':
-    resolution: {integrity: sha512-r3ae0lAi3ipH1g1geUo1fmb7DK5e0WAKrrrDi25yJCKBvxtiKLsR3ldss3OZnqyfP7yGHkjeN0BYuzyaWgxFoA==}
 
   '@lexical/clipboard@0.42.0':
     resolution: {integrity: sha512-D3K2ID0zew/+CKpwxnUTTh/N46yU4IK8bFWV9Htz+g1vFhgUF9UnDOQCmqpJbdP7z+9U1F8rk3fzf9OmP2Fm2w==}
@@ -10003,9 +10000,6 @@ packages:
   lodash.groupby@4.6.0:
     resolution: {integrity: sha512-5dcWxm23+VAoz+awKmBaiBvzox8+RqMgFhi7UvX9DHZr2HdxHXM/Wrf8cfKpsW37RNrvtPn6hSwNqurSILbmJw==}
 
-  lodash.identity@3.0.0:
-    resolution: {integrity: sha512-AupTIzdLQxJS5wIYUQlgGyk2XRTfGXA+MCghDHqZk0pzUNYvd3EESS6dkChNauNYVIutcb0dfHw1ri9Q1yPV8Q==}
-
   lodash.isboolean@3.0.3:
     resolution: {integrity: sha512-Bz5mupy2SVbPHURB98VAcw+aHh4vRV5IPNhILUCsOzRmsTmSQ17jIuqopAentWoehktxGd9e/hbIXq980/1QJg==}
 
@@ -10800,8 +10794,8 @@ packages:
     engines: {node: ^20.19.0 || >=22.12.0}
     hasBin: true
 
-  oxlint-plugin-react-doctor@0.9.18:
-    resolution: {integrity: sha512-1mfeb/jzXnduWOZJxrvdJjvKT0pFNKrNFYcPO4ncpFAnfW41M0mLz/23lAFzHb0knNLYayEgIQ5DjI4ZfFe+DQ==}
+  oxlint-plugin-react-doctor@0.9.22:
+    resolution: {integrity: sha512-kf9MwCpK3YlAWYUyX5Zx7XYrdIbA/4lQD2QREIqC8DvmNb2I+wP8zyjL4NeGl2FO2EC1sLuYvW8ir4Ooq1Xd2A==}
     engines: {node: ^20.19.0 || >=22.13.0}
 
   oxlint@1.60.0:
@@ -11356,8 +11350,8 @@ packages:
   react-devtools-core@7.0.1:
     resolution: {integrity: sha512-C3yNvRHaizlpiASzy7b9vbnBGLrhvdhl1CbdU6EnZgxPNbai60szdLtl+VL76UNOt5bOoVTOz5rNWZxgGt+Gsw==}
 
-  react-doctor@0.9.18:
-    resolution: {integrity: sha512-4Ach00KtfnfjTBGgr2PyPgHua85vT/UfPY5sR0bHgRAc/QSu0JInA0GHCL6a7WFGMeGUrxtGnI8oqZinG44BOA==}
+  react-doctor@0.9.22:
+    resolution: {integrity: sha512-SyZOIl61VMCZ3sN7v7Vr2zCsPlyy7nNnBshtIrl0B/X+uY+rL9MGfyNhTmp/FLXfuDKEv61Y6xMguya7vn1Ulg==}
     engines: {node: ^20.19.0 || >=22.13.0}
     hasBin: true
 
@@ -13508,7 +13502,7 @@ snapshots:
     dependencies:
       '@babel/runtime': 7.29.7
 
-  '@arms/rum-electron@0.0.3(patch_hash=36855354851ea495bc47a03340b0484ff62836b739cad56904b8a69f18e2ae97)(@babel/runtime@7.29.7)(electron@44.7.0)':
+  '@arms/rum-electron@0.0.3(patch_hash=290508f9b95e16c29769d69faa9ddc0f155181cc84fd70378ff351584bd51ac0)(@babel/runtime@7.29.7)(electron@44.7.0)':
     dependencies:
       '@arms/rum-browser': 0.1.8(@babel/runtime@7.29.7)
       '@arms/rum-core': 0.1.4(@babel/runtime@7.29.7)
@@ -14855,34 +14849,6 @@ snapshots:
   '@keyv/serialize@1.1.1': {}
 
   '@kurkle/color@0.3.4': {}
-
-  '@larksuiteoapi/node-sdk@1.61.1':
-    dependencies:
-      axios: 1.13.6
-      lodash.identity: 3.0.0
-      lodash.merge: 4.6.2
-      lodash.pickby: 4.6.0
-      protobufjs: 7.5.5
-      qs: 6.15.1
-      ws: 8.20.0
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - utf-8-validate
-
-  '@larksuiteoapi/node-sdk@1.64.0':
-    dependencies:
-      axios: 1.13.6
-      lodash.identity: 3.0.0
-      lodash.merge: 4.6.2
-      lodash.pickby: 4.6.0
-      protobufjs: 7.5.5
-      qs: 6.15.1
-      ws: 8.20.0
-    transitivePeerDependencies:
-      - bufferutil
-      - debug
-      - utf-8-validate
 
   '@lexical/clipboard@0.42.0':
     dependencies:
@@ -18392,7 +18358,7 @@ snapshots:
 
   anynum@1.0.1: {}
 
-  app-builder-lib@26.17.0(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0):
+  app-builder-lib@26.17.0(patch_hash=ad57950166a082ce4a7160c80c2e9736401a68c3b10d3ee9d6f418f8353b0114)(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0):
     dependencies:
       '@electron/asar': 3.4.1
       '@electron/fuses': 1.8.0
@@ -19652,7 +19618,7 @@ snapshots:
 
   dmg-builder@26.17.0(electron-builder-squirrel-windows@26.17.0):
     dependencies:
-      app-builder-lib: 26.17.0(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
+      app-builder-lib: 26.17.0(patch_hash=ad57950166a082ce4a7160c80c2e9736401a68c3b10d3ee9d6f418f8353b0114)(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
       builder-util: 26.16.0
       fs-extra: 10.1.0
       js-yaml: 4.1.1
@@ -19758,7 +19724,7 @@ snapshots:
 
   electron-builder-squirrel-windows@26.17.0(dmg-builder@26.17.0):
     dependencies:
-      app-builder-lib: 26.17.0(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
+      app-builder-lib: 26.17.0(patch_hash=ad57950166a082ce4a7160c80c2e9736401a68c3b10d3ee9d6f418f8353b0114)(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
       builder-util: 26.16.0
       electron-winstaller: 5.4.0
     transitivePeerDependencies:
@@ -19767,7 +19733,7 @@ snapshots:
 
   electron-builder@26.17.0(electron-builder-squirrel-windows@26.17.0):
     dependencies:
-      app-builder-lib: 26.17.0(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
+      app-builder-lib: 26.17.0(patch_hash=ad57950166a082ce4a7160c80c2e9736401a68c3b10d3ee9d6f418f8353b0114)(dmg-builder@26.17.0)(electron-builder-squirrel-windows@26.17.0)
       builder-util: 26.16.0
       builder-util-runtime: 9.7.0
       chalk: 4.1.2
@@ -21797,8 +21763,6 @@ snapshots:
 
   lodash.groupby@4.6.0: {}
 
-  lodash.identity@3.0.0: {}
-
   lodash.isboolean@3.0.3: {}
 
   lodash.isequal@4.5.0: {}
@@ -23046,7 +23010,7 @@ snapshots:
       '@oxfmt/binding-win32-ia32-msvc': 0.47.0
       '@oxfmt/binding-win32-x64-msvc': 0.47.0
 
-  oxlint-plugin-react-doctor@0.9.18:
+  oxlint-plugin-react-doctor@0.9.22:
     dependencies:
       '@shaderfrog/glsl-parser': 7.0.1
       '@typescript-eslint/types': 8.72.0
@@ -23694,7 +23658,7 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  react-doctor@0.9.18(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7):
+  react-doctor@0.9.22(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7):
     dependencies:
       '@astrojs/compiler': 4.0.0
       '@sentry/node': 10.76.2(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))
@@ -23709,7 +23673,7 @@ snapshots:
       oxc-parser: 0.148.0
       oxc-resolver: 11.24.2
       oxlint: 1.81.0
-      oxlint-plugin-react-doctor: 0.9.18
+      oxlint-plugin-react-doctor: 0.9.22
       playwright-core: 1.64.1
       prompts: 2.4.2
       typescript: 5.9.3
@@ -23821,7 +23785,7 @@ snapshots:
       preact: 10.29.8
       prompts: 2.4.2
       react: 19.2.7
-      react-doctor: 0.9.18(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7)
+      react-doctor: 0.9.22(@opentelemetry/core@2.12.0(@opentelemetry/api@1.9.1))(eslint@10.13.0(jiti@2.7.0))(react@19.2.7)
       react-dom: 19.2.7(react@19.2.7)
       react-grab: 0.2.0(react@19.2.7)
     optionalDependencies:

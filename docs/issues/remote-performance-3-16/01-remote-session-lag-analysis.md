@@ -270,4 +270,4 @@ P0-2 之后
 - 失败分析：两版都出现了同样的失败，失败原因与本次改动无关。
   - 远程项目创建后会自动打开；如果自动打开还没有收到 renderer attachment，用户（或用例）又点击了"新建任务"，第二次打开会加入同一个 route。`desktopRemoteSessions.ts` 的 `waitForRendererAttachmentReady` 立即拒绝（"尚无可用 renderer attachment"），随后共享会话被释放，工作区一直打不开。基线和修复都复现过。这是另一个已有问题，未在本次处理。
   - 加延迟后，切回任务时 `remoteSessionId` 被重建，`waitForRemoteTab` 不收敛。基线和修复各出现 1 次。
-  - 早期几次失败来自默认 120s 用例上限（需要与 harness 一样设置 `ZCODE_E2E_MANUAL_REVIEW_HOLD_MS`），以及 SSH 连接前的 UI 点击失败。这些都不涉及本次改动的代码路径。
+  - 早期几次失败来自默认 120s 用例上限（需要与 harness 一样设置 `NEKODE_E2E_MANUAL_REVIEW_HOLD_MS`），以及 SSH 连接前的 UI 点击失败。这些都不涉及本次改动的代码路径。

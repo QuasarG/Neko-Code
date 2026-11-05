@@ -147,7 +147,7 @@ OpenAI-compatible Adapter 最终把它发成：
 
 ### App 的持久配置
 
-App 的权威文件是 `~/.zcode/v2/config.json`。目前持久化的 reasoning 只描述档位，不保存供应商请求参数：
+App 的权威文件是 `~/.nekode/v2/config.json`。目前持久化的 reasoning 只描述档位，不保存供应商请求参数：
 
 ```jsonc
 {
@@ -190,7 +190,7 @@ App 保存配置时会清理旧的 `model.variants`、`reasoningSpec` 和 `zcode
 
 ### Standalone CLI 的配置
 
-Standalone CLI 读取 `~/.zcode/cli/config.json`。它接受更接近 Runtime 的结构，可以显式保存 `providerOptionsByLevel`：
+Standalone CLI 读取 `~/.nekode/cli/config.json`。它接受更接近 Runtime 的结构，可以显式保存 `providerOptionsByLevel`：
 
 ```jsonc
 {
@@ -279,7 +279,7 @@ App 向 zcode-cli 投影当前 transport 时，只取相应 kind 的 patch。假
 
 普通 App 持久配置会清掉这些 patch，但内置 Coding Plan、Start Plan 和远端 client config 可以在内存中携带完整 `ModelProviderReasoningSpec`，再经过同一个协议投影函数进入 zcode-cli。
 
-Plan 的登录态、权益判断、运行时 API Key 和一次性安全校验 Header 不参与 reasoning 方言选择。它们先形成当前可调用的 Provider；reasoning 仍由这个 Provider 的 `kind` 与模型定义决定。当前 ZCode 内置 Plan 主要按 Anthropic runtime 投影，因此 GLM 等模型会走 `anthropic.effort` / `anthropic.thinking` 路径。请求前刷新 Token 或 Header 只改变鉴权材料，不改变已经选择的 reasoning level。
+Plan 的登录态、权益判断、运行时 API Key 和一次性安全校验 Header 不参与 reasoning 方言选择。它们先形成当前可调用的 Provider；reasoning 仍由这个 Provider 的 `kind` 与模型定义决定。当前 Nekode 内置 Plan 主要按 Anthropic runtime 投影，因此 GLM 等模型会走 `anthropic.effort` / `anthropic.thinking` 路径。请求前刷新 Token 或 Header 只改变鉴权材料，不改变已经选择的 reasoning level。
 
 当前本地 Catalog 中实际出现的 reasoning patch 路径只有五类：
 
@@ -929,7 +929,7 @@ Automation、Bot、OffPeak Task 都可以携带 `thoughtLevel` 字符串。普�
 
 Host 把临时 Provider 作为 turn overlay 注入，CLI 再生成 `TurnExecutionModel`，其中已经包含 `modelRef` 和 `modelProviderOptions`。这个对象是当前最接近未来 ModelBinding 输入的结构。
 
-这里存在一个值得迁移时修正的差异：`ZCodeModelRuntimeConfig.thoughtLevel` 会随闲时任务传入，但当前 `resolveTurnExecutionModel()` 解析参数时读取的是 CLI 全局 reasoning preference，并没有直接把 `runtimeModel.thoughtLevel` 作为 preferred level 传入。只有两者恰好一致，或模型默认值一致时，本轮实际档位才与 Host 指定值一致。
+这里存在一个值得迁移时修正的差异：`NekodeModelRuntimeConfig.thoughtLevel` 会随闲时任务传入，但当前 `resolveTurnExecutionModel()` 解析参数时读取的是 CLI 全局 reasoning preference，并没有直接把 `runtimeModel.thoughtLevel` 作为 preferred level 传入。只有两者恰好一致，或模型默认值一致时，本轮实际档位才与 Host 指定值一致。
 
 ## Model Step 如何使用参数
 
@@ -1006,7 +1006,7 @@ anthropic-messages
 
 ### Bot
 
-Bot 没有另一套模型请求 Adapter。Bot 的 `/thoughtLevel` 配置、草稿状态和任务参数保存逻辑 level，创建或恢复 ZCode Task 后仍进入标准 Session/Agent 执行链。因此 Bot 需要统一的是 Selection、Submission 与 Session 恢复语义，不需要新增 reasoning wire 方言。
+Bot 没有另一套模型请求 Adapter。Bot 的 `/thoughtLevel` 配置、草稿状态和任务参数保存逻辑 level，创建或恢复 Nekode Task 后仍进入标准 Session/Agent 执行链。因此 Bot 需要统一的是 Selection、Submission 与 Session 恢复语义，不需要新增 reasoning wire 方言。
 
 ### Project Memory
 

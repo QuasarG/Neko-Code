@@ -23,7 +23,7 @@ child MCP call (runtime_scope=subagent)
 
 错误码为 `SUBAGENT_COMPUTER_USE_UNAVAILABLE`，错误文本为
 `Computer Use is not available in subagent`。producer 只信任 namespaced
-`com.zcode/request-context.runtime_scope`；缺失、格式错误或 `main` 保持兼容，顶层同名字段不可信。
+`com.nekode/request-context.runtime_scope`；缺失、格式错误或 `main` 保持兼容，顶层同名字段不可信。
 
 ## 子 Agent 语义
 

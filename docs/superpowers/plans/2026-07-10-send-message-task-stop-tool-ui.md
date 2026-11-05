@@ -29,7 +29,7 @@
 
 **Interfaces:**
 
-- Consumes: `resolveToolCallIdentity(toolCall)` and `getZCodeToolFamilyForName(name)`.
+- Consumes: `resolveToolCallIdentity(toolCall)` and `getNekodeToolFamilyForName(name)`.
 - Produces: canonical `TaskStop` identity with family `task-control`.
 
 - [x] **Step 1: Write the failing identity test**
@@ -48,24 +48,24 @@ it("recognizes current TaskStop as task control", () => {
 
 Run: `pnpm exec vitest run packages/ui/test/toolIdentity.test.ts`
 
-Expected: FAIL because `TaskStop` is not in `ZCODE_KNOWN_TOOL_NAMES` and resolves to `unknown`.
+Expected: FAIL because `TaskStop` is not in `NEKODE_KNOWN_TOOL_NAMES` and resolves to `unknown`.
 
 - [x] **Step 3: Add the canonical name and family**
 
 ```ts
-export const ZCODE_KNOWN_TOOL_NAMES = [
+export const NEKODE_KNOWN_TOOL_NAMES = [
   // existing names
   "TaskStop",
 ] as const;
 
-export type ZCodeToolFamily =
+export type NekodeToolFamily =
   // existing families
   "task-control";
 
 const TOOL_FAMILY_BY_NAME = {
   // existing mappings
   TaskStop: "task-control",
-} satisfies Record<ZCodeKnownToolName, ZCodeToolFamily>;
+} satisfies Record<NekodeKnownToolName, NekodeToolFamily>;
 ```
 
 - [x] **Step 4: Run the identity test and verify GREEN**
@@ -89,7 +89,7 @@ Expected: all tests pass, including the existing assertion that lowercase `send_
 
 **Interfaces:**
 
-- Consumes: `ToolCallBlockRenderContext`, `ToolLayout`, `useZCodeIntl`.
+- Consumes: `ToolCallBlockRenderContext`, `ToolLayout`, `useNekodeIntl`.
 - Produces: `SendMessageToolCallBlock(context)` and `TaskStopToolCallBlock(context)`.
 
 - [x] **Step 1: Write failing route/summary tests through ToolCallBlock**

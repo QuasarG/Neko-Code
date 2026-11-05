@@ -65,7 +65,7 @@ Host 设置/账号查询                     Host/Worker 各自的配置来源
              只证明已送达                 供 View/解析/执行读取
 ```
 
-这段来源匹配和保留旧快照是基线 Registry 已有机制，不是本项新建的同步状态机。这里的“配套配置”具体指 Account 的 basedOnZCodeBuiltinRevision 与 Config 的 zcodeBuiltinRevision 相符，不是要求所有配置内容或两端全局版本一模一样。
+这段来源匹配和保留旧快照是基线 Registry 已有机制，不是本项新建的同步状态机。这里的“配套配置”具体指 Account 的 basedOnNekodeBuiltinRevision 与 Config 的 zcodeBuiltinRevision 相符，不是要求所有配置内容或两端全局版本一模一样。
 
 允许 Host 已应用 B、Worker 暂时应用完整 A。不允许 Worker 把 A 的模型和 B 的账号事实混用，也不允许实际 A 却报告 B 已应用。初始没有完整可用结果时明确不可用，不伪造账号可执行性。
 

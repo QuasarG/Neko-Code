@@ -529,7 +529,7 @@ subagents: {
 
 - [ ] **Step 1：写失败测试**
 
-在 `apps/zcode-cli/packages/bootstrap/tests/subagents.test.ts` 的 `describe("loadZCodeAgentProfiles", ...)` 中加入：
+在 `apps/zcode-cli/packages/bootstrap/tests/subagents.test.ts` 的 `describe("loadNekodeAgentProfiles", ...)` 中加入：
 
 ```ts
 it("loads built-in model overrides from shared subagent state", async () => {
@@ -550,7 +550,7 @@ it("loads built-in model overrides from shared subagent state", async () => {
       "utf8",
     );
 
-    const result = loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+    const result = loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
     expect(result.builtInModelOverrides).toEqual({
       "general-purpose": "custom:custom-openai:gpt-5.4",
@@ -581,7 +581,7 @@ import type { BuiltInSubagentModelOverrides } from "@zcode/shared";
 扩展 result：
 
 ```ts
-interface LoadZCodeAgentProfilesResult {
+interface LoadNekodeAgentProfilesResult {
   builtInModelOverrides: BuiltInSubagentModelOverrides;
   diagnostics: AgentProfileParseDiagnostic[];
   profiles: AgentProfile[];
@@ -655,7 +655,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 在 `apps/zcode-cli/packages/bootstrap/src/app/create-app.ts` 中保留 loader outcome：
 
 ```ts
-const zcodeSubagentProfileOutcome = loadZCodeAgentProfiles({
+const zcodeSubagentProfileOutcome = loadNekodeAgentProfiles({
   logger,
   storageRoot,
   workingDirectory,
@@ -1409,7 +1409,7 @@ function BuiltInModelControl({
   onChange: (agent: AgentSummary, model: string) => void;
   onManageModels?: () => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const defaultValue = getBuiltInDefaultModelValue(agent);
   const defaultLabel = intl.formatMessage({ id: "settings.subagents.model.builtInDefault" });
   const groups = createBuiltInSubagentModelSelectGroups(defaultLabel, defaultValue, modelSelectGroups);

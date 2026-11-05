@@ -35,7 +35,7 @@
 
 ## 审批 E2E 录屏依赖修复（2026-09-17）
 
-转正后的 Hook 用例默认回放已复现：业务断言完成后，强制录屏收尾因 `spawn ffmpeg ENOENT` 失败（失败报告（本机报告 `desktop-e2e-20260917-105436-295`））。录屏是人工审核证据，不是审批功能的前置条件；仅当已有 `ZCODE_E2E_MANUAL_REVIEW=1` 时启用录屏及两段 3 秒阅读停留，编码器仍沿用 `ZCODE_E2E_FFMPEG_PATH` / PATH。默认回放保留截图、交互轨迹及全部业务断言，不创建录屏、不标记已生成视频。人工录屏失败继续报错，不捕获吞掉。
+转正后的 Hook 用例默认回放已复现：业务断言完成后，强制录屏收尾因 `spawn ffmpeg ENOENT` 失败（失败报告（本机报告 `desktop-e2e-20260917-105436-295`））。录屏是人工审核证据，不是审批功能的前置条件；仅当已有 `NEKODE_E2E_MANUAL_REVIEW=1` 时启用录屏及两段 3 秒阅读停留，编码器仍沿用 `NEKODE_E2E_FFMPEG_PATH` / PATH。默认回放保留截图、交互轨迹及全部业务断言，不创建录屏、不标记已生成视频。人工录屏失败继续报错，不捕获吞掉。
 
 验证：未配置 ffmpeg 的默认回放 1/1（本机报告 `desktop-e2e-20260917-110126-662`） 通过，产物 `video_capture_mode=null` 且无视频；显式人工录屏回放 1/1（本机报告 `desktop-e2e-20260917-110306-504`） 通过，产物标记 `electron_capture_page` 且视频非空。两条路径均保留全部审批和 provider result 断言。E2E/root typecheck、lint（195 warnings / 0 errors）、fixture check、架构及覆盖审计通过；未改生产代码或 provider fixture。
 
@@ -55,7 +55,7 @@
 
 本次只转正现有桌面闭环，不把整个 DCA-V1 合同标为完成：真实手机恢复、无人值守 scheduler 实机闭环等仍按用户决定在发版前确认。Docker suite 准入不在本次范围内；测试目录迁移不等于 Windows Desktop 或手机验收。
 
-本次实际验收（macOS，正式路径）：独立 common + case-local replay 的 Guarded 16/16（本机报告 `desktop-e2e-20260917-103040-969`）、Hook 改写 1/1（本机报告 `desktop-e2e-20260917-103358-154`） 均通过；两份 spec 的 default replay 联跑 17/17（本机报告 `desktop-e2e-20260917-103558-120`） 通过，无 flaky/skip/infra failure。录屏通过既有 `ZCODE_E2E_FFMPEG_PATH` 指向本机可用 ffmpeg，未改录屏 helper。
+本次实际验收（macOS，正式路径）：独立 common + case-local replay 的 Guarded 16/16（本机报告 `desktop-e2e-20260917-103040-969`）、Hook 改写 1/1（本机报告 `desktop-e2e-20260917-103358-154`） 均通过；两份 spec 的 default replay 联跑 17/17（本机报告 `desktop-e2e-20260917-103558-120`） 通过，无 flaky/skip/infra failure。录屏通过既有 `NEKODE_E2E_FFMPEG_PATH` 指向本机可用 ffmpeg，未改录屏 helper。
 
 两份 fixture check、Desktop E2E/root typecheck、lint（195 warnings / 0 errors）、架构检查（0 violations）及 diff check 通过。全局覆盖审计现为 101 formal admitted / 0 rejected、0 contract gaps、0 stale generated docs；未将基线的其他 pending 用例转正。逐字对比确认测试仅变更 helper/文件 fixture 相对路径，所有断言和 provider fixture 均保持不变；Guarded fixture check 的既有输出标记 `E2E_GUARDED_PARENT_DONE` warning 保留。
 
@@ -340,7 +340,7 @@ DCA-V1-01/03..08 转为 guarded 合同；02 保持 PowerShell pruned；09..12 �
 1. spec/catalog/matrix/tool-chain 在先，失败测试在生产实现之前。
 2. 模式链路 -> matcher -> 共享审批 -> 多端投影，不重写 prefix registry。
 3. 每条规则至少一个真实拒绝闭环；批准路径使用隔离目录/受控 handler。检查 handler 次数、文件/规则存储及最终 provider tool_result。
-4. 新用例先 manual-review/pending；case-local synthetic fixture 写明原因，普通 fast-text、取消/迟到受控时序。文件统一 .zcode-e2e/<case>。人工审核后才 promotion。
+4. 新用例先 manual-review/pending；case-local synthetic fixture 写明原因，普通 fast-text、取消/迟到受控时序。文件统一 .nekode-e2e/<case>。人工审核后才 promotion。
 5. Windows Git Bash/CMD 必须有真实运行证据；缺 runner 则明确待验证。手机恢复测试不冒充物理网络 E2E。
 6. 运行 targeted unit/integration、CLI typecheck、desktop typecheck:e2e、pnpm typecheck/lint、架构检查、覆盖审计。图谱基线统计漂移单列，不混入功能修复。
 

@@ -20,7 +20,7 @@
 
 相关入口：
 
-- `packages/services/src/model-provider/legacyZCodeConfigProviderReader.ts`
+- `packages/services/src/model-provider/legacyNekodeConfigProviderReader.ts`
 - `packages/services/src/model-provider/legacyPersonalProviderConfigImporter.ts`
 - `packages/provider/src/resolver.ts`
 - `packages/services/test/legacyPersonalProviderConfigImporter.test.ts`

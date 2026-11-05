@@ -4,7 +4,7 @@
 
 **Goal:** Eliminate platform-dependent `/tmp` usage from Desktop E2E runtime files while preserving existing conversation product semantics.
 
-**Architecture:** Keep `.e2e-home` as the isolated HOME and place runtime files under the Agent execution workspace `ZCodeProject/.zcode-e2e`. Specs use a shared path helper, Bash uses workspace-relative POSIX paths, and replay fixtures expand `{{e2eRuntimeRoot}}` before matching requests. Runtime evidence confirms conversation child agents execute from `ZCodeProject`, not the conversation backing workspace.
+**Architecture:** Keep `.e2e-home` as the isolated HOME and place runtime files under the Agent execution workspace `NekodeProject/.nekode-e2e`. Specs use a shared path helper, Bash uses workspace-relative POSIX paths, and replay fixtures expand `{{e2eRuntimeRoot}}` before matching requests. Runtime evidence confirms conversation child agents execute from `NekodeProject`, not the conversation backing workspace.
 
 **Tech Stack:** TypeScript, Vitest, WebdriverIO, JSON replay fixtures, Node.js filesystem/path APIs.
 
@@ -27,12 +27,12 @@
 **Interfaces:**
 - Produces: `E2E_RUNTIME_RELATIVE_ROOT`, `E2E_RUNTIME_ROOT_REPLAY_TOKEN`, `resolveE2EHomeDir()`, `resolveE2ERuntimeRoot()`, `resolveE2ERuntimePath()`, `resolveE2EToolPath()`, and `resolveE2EShellPath()`.
 
-- [ ] **Step 1: Write failing tests** proving runtime files resolve below `<home>/ZCodeProject/.zcode-e2e`, tool paths use `/`, shell paths remain workspace-relative, and the E2E tree contains no raw `/tmp`.
+- [ ] **Step 1: Write failing tests** proving runtime files resolve below `<home>/NekodeProject/.nekode-e2e`, tool paths use `/`, shell paths remain workspace-relative, and the E2E tree contains no raw `/tmp`.
 
 ```ts
-expect(resolveE2ERuntimeRoot("C:\\e2e-home")).toContain(".zcode-e2e");
+expect(resolveE2ERuntimeRoot("C:\\e2e-home")).toContain(".nekode-e2e");
 expect(resolveE2EShellPath("bg25", "release-child-bash")).toBe(
-  ".zcode-e2e/bg25/release-child-bash",
+  ".nekode-e2e/bg25/release-child-bash",
 );
 expect(findRawSystemTmpReferences()).toEqual([]);
 ```
@@ -69,13 +69,13 @@ export function resolveE2EShellPath(...segments: string[]) {
 const server = await startUpstreamReplayServer({
   artifactPath,
   fixturePaths: [fixturePath],
-  fixtureVariables: { e2eRuntimeRoot: "C:/e2e/.zcode-e2e" },
+  fixtureVariables: { e2eRuntimeRoot: "C:/e2e/.nekode-e2e" },
 });
 const response = await fetch(`${server.baseUrl}/messages`, {
-  body: JSON.stringify({ messages: [{ role: "user", content: "Read C:/e2e/.zcode-e2e/file.txt" }] }),
+  body: JSON.stringify({ messages: [{ role: "user", content: "Read C:/e2e/.nekode-e2e/file.txt" }] }),
   method: "POST",
 });
-expect(await response.text()).toContain("C:/e2e/.zcode-e2e/file.txt");
+expect(await response.text()).toContain("C:/e2e/.nekode-e2e/file.txt");
 ```
 
 - [ ] **Step 2: Run the focused replay test** and verify it returns Missing Fixture before implementation.
@@ -113,7 +113,7 @@ const fixtures = options.fixturePaths.flatMap((path) =>
 
 - [ ] **Step 1: Replace Node filesystem constants** with native runtime paths scoped by case.
 - [ ] **Step 2: Replace user-visible/tool prompt paths** with portable absolute tool paths.
-- [ ] **Step 3: Replace Bash paths** with `.zcode-e2e/<case>/...` shell paths.
+- [ ] **Step 3: Replace Bash paths** with `.nekode-e2e/<case>/...` shell paths.
 - [ ] **Step 4: Keep setup and cleanup case-local** and add Chinese root-cause comments at the shared helper/barrier boundaries.
 
 ### Task 4: Migrate provider fixtures, manifests, and E2E snapshots
@@ -147,7 +147,7 @@ const fixtures = options.fixturePaths.flatMap((path) =>
 - Modify: `packages/desktop/test/e2e/fixtures/upstream/provider-conversation-tool-cross-product.json`
 
 **Interfaces:**
-- Consumes: `{{e2eRuntimeRoot}}` for absolute tool/matcher values and `.zcode-e2e/<case>` for Bash commands.
+- Consumes: `{{e2eRuntimeRoot}}` for absolute tool/matcher values and `.nekode-e2e/<case>` for Bash commands.
 
 - [ ] **Step 1: Replace Read/Write/Edit/Glob/Grep absolute values** with `{{e2eRuntimeRoot}}/<case>/...`.
 
@@ -155,13 +155,13 @@ const fixtures = options.fixturePaths.flatMap((path) =>
 { "file_path": "{{e2eRuntimeRoot}}/conversation-session-tool-cross-product/read-fixture.txt" }
 ```
 
-- [ ] **Step 2: Replace Bash command values** with `.zcode-e2e/<case>/...`.
+- [ ] **Step 2: Replace Bash command values** with `.nekode-e2e/<case>/...`.
 
 ```json
-{ "command": "while [ ! -f '.zcode-e2e/conversation-session-subagent-respond-to-coordinator/release-child-bash' ]; do sleep 0.05; done" }
+{ "command": "while [ ! -f '.nekode-e2e/conversation-session-subagent-respond-to-coordinator/release-child-bash' ]; do sleep 0.05; done" }
 ```
 
-- [ ] **Step 3: Replace manifest file paths** with workspace-relative `.zcode-e2e/<case>/...` metadata.
+- [ ] **Step 3: Replace manifest file paths** with workspace-relative `.nekode-e2e/<case>/...` metadata.
 - [ ] **Step 4: Replace non-executed `/tmp` E2E snapshot values** with runtime-root tokens so the tree has one mechanical contract.
 - [ ] **Step 5: Run the path contract test** and verify the raw-literal audit passes.
 

@@ -56,7 +56,7 @@ Artifacts land in `artifacts/act-verify/` (gitignored): one `result.json` +
 `/tmp/act-verify-e2e-report.md` (override with `--report`).
 
 The per-tool-call **recording ledger** (!179) is enabled per scenario by pointing
-`ZCODE_CUA_LEDGER_DIR` at the scenario's `ledger/` dir; it captures every tool's
+`NEKODE_CUA_LEDGER_DIR` at the scenario's `ledger/` dir; it captures every tool's
 redacted input + result/exception + duration + the exact backend method that crossed
 the OS boundary.
 
@@ -286,7 +286,7 @@ visible desktop) with:
 - the **iCloud TextEdit "Untitled N" backlog cleared** — TextEdit restores those
   autosaved docs on launch and they shadow the front document (preflight reports
   the count; the harness never deletes them);
-- the **GLM-5V-Turbo** credentials in `~/.zcode/v2/config.json` (billed calls).
+- the **GLM-5V-Turbo** credentials in `~/.nekode/v2/config.json` (billed calls).
 
 Per-scenario **window isolation** (TextEdit/Finder): before each scenario the
 harness runs a hermetic reset that reaps ONLY the documents/windows the suite

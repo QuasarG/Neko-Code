@@ -13,7 +13,7 @@ Contracts 共同构成 Telemetry Schema：方法签名和类型约束以 Contrac
 
 ## 1. OpenTelemetry 数据模型
 
-ZCode 使用以下 OpenTelemetry 数据模型描述 Agent 执行：
+Nekode 使用以下 OpenTelemetry 数据模型描述 Agent 执行：
 
 ```text
 Resource：Telemetry 生产者（CLI 版本、产品版本、构建、运行面、安装实例）
@@ -58,9 +58,9 @@ agent_turn
 `model_attempt` 为统计对象；工具成功率以 `tool_execution` 为统计对象；Shell/Git 退出码以
 `command_execution` 为统计对象。
 
-Resource、Context、SpanContext、Parent、Link、Event、Baggage 和 Metric 的定义及其在 ZCode
+Resource、Context、SpanContext、Parent、Link、Event、Baggage 和 Metric 的定义及其在 Nekode
 中的使用约束，详见
-[OpenTelemetry 概念与 ZCode 取舍](./reference/otel-concepts.md)。
+[OpenTelemetry 概念与 Nekode 取舍](./reference/otel-concepts.md)。
 
 ## 2. 观测设施边界
 
@@ -78,7 +78,7 @@ Trace 不写入本地日志，也不通过 RUM 上报。即使这些数据最终
 
 ## 3. 设计原则
 
-### 3.1 OTel 表达结构，ZCode 定义业务语义
+### 3.1 OTel 表达结构，Nekode 定义业务语义
 
 Parent、Link、Context、Span、Event、Status、Resource 使用 OTel 原生能力；Turn、Step、
 Attempt、Reasoning、Cache、Tool Outcome 等业务语义使用完整的 `zcode.*` 字段。
@@ -426,7 +426,7 @@ Trace 在 ARMS 应用监控/调用链分析中查询，不是在 RUM 体验看�
 
 ```text
 serviceName : zcode-cli-agent
-and resources.zcode.telemetry.schema_version : 5
+and resources.nekode.telemetry.schema_version : 5
 ```
 
 常用查询：
@@ -437,27 +437,27 @@ spanName : agent_turn
 
 # 失败的物理模型请求
 spanName : model_attempt
-and attributes.zcode.model_attempt.outcome : failed
+and attributes.nekode.model_attempt.outcome : failed
 
 # 某个 Turn 的关键节点
-attributes.zcode.execution.turn_id : <turn-id>
+attributes.nekode.execution.turn_id : <turn-id>
 
 # 某个安装实例的模型请求
 spanName : model_attempt
-and resources.zcode.device.installation_id : <installation-id>
+and resources.nekode.device.installation_id : <installation-id>
 
 # 某个逻辑调用的全部 Retry Attempt
-attributes.zcode.execution.logical_call_id : <logical-call-id>
+attributes.nekode.execution.logical_call_id : <logical-call-id>
 ```
 
 错误查询使用：
 
-- HTTP 429/500：`attributes.zcode.model_attempt.http_status_code`；
-- Provider 原始错误码：`attributes.zcode.model_attempt.provider_error_code`；
+- HTTP 429/500：`attributes.nekode.model_attempt.http_status_code`；
+- Provider 原始错误码：`attributes.nekode.model_attempt.provider_error_code`；
 - Provider 原始错误信息（已脱敏）：
-  `attributes.zcode.model_attempt.provider_error_message`；
+  `attributes.nekode.model_attempt.provider_error_message`；
 - 终止 Attempt 的 Error（通常是 Transport/SDK 异常）：
-  `attributes.zcode.model_attempt.error_message`；
+  `attributes.nekode.model_attempt.error_message`；
 - 请求地址：`provider_origin` 与 `provider_route`，不使用原始 URL。
 
 准确成功率、QPS、Token 和 P95/P99 优先使用 OTLP Metric；Trace 用于定位具体执行样本。完整

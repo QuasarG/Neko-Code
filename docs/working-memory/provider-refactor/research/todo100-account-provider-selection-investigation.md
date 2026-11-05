@@ -93,7 +93,7 @@ Desktop→远端环境 provisioning 与 Host→Worker Account 同步是不同边
 
 ### P100-01：跨进程丢失 states，执行资格不一致（确认，优先修）
 
-Host Account revision 已包含 states，但 `zcodeAgentService.ts:1169` 发出的信封只有 revision、basedOnZCodeBuiltinRevision、providers。基线协议和 Worker 接收路径也没有把 states 接通。
+Host Account revision 已包含 states，但 `zcodeAgentService.ts:1169` 发出的信封只有 revision、basedOnNekodeBuiltinRevision、providers。基线协议和 Worker 接收路径也没有把 states 接通。
 
 Resolver 使用 `accountStates?.[providerId]?.current !== false`。这对不定义 current 的普通 Provider / Off-Peak 有既定用途，但信息丢失后也会让非当前普通 Account 通过。
 

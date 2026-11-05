@@ -71,14 +71,14 @@ OTEL_EXPORTER_OTLP_HEADERS
 OTEL_EXPORTER_OTLP_METRICS_ENDPOINT
 OTEL_EXPORTER_OTLP_METRICS_HEADERS
 OTEL_SERVICE_NAME
-ZCODE_MODEL_TELEMETRY_ENABLED
-ZCODE_TELEMETRY_DEVICE_MID
-ZCODE_TELEMETRY_USER_SUBJECT_ID
-ZCODE_TELEMETRY_IDENTITY_STATE
-ZCODE_TELEMETRY_RUNTIME_SURFACE
-ZCODE_TELEMETRY_RUNTIME_DISTRIBUTION
-ZCODE_APP_VERSION
-ZCODE_BUILD_COMMIT_ID
+NEKODE_MODEL_TELEMETRY_ENABLED
+NEKODE_TELEMETRY_DEVICE_MID
+NEKODE_TELEMETRY_USER_SUBJECT_ID
+NEKODE_TELEMETRY_IDENTITY_STATE
+NEKODE_TELEMETRY_RUNTIME_SURFACE
+NEKODE_TELEMETRY_RUNTIME_DISTRIBUTION
+NEKODE_APP_VERSION
+NEKODE_BUILD_COMMIT_ID
 ```
 
 若只配置公共 `OTEL_EXPORTER_OTLP_ENDPOINT`，Trace 自动追加 `/v1/traces`，Metric 自动追加
@@ -89,7 +89,7 @@ Header 是运行时 Secret，只进入 Exporter 配置，不进入 Resource、Sp
 
 ### 1.3 Disabled 路径
 
-没有合法 Trace Endpoint，或 `ZCODE_MODEL_TELEMETRY_ENABLED` 为
+没有合法 Trace Endpoint，或 `NEKODE_MODEL_TELEMETRY_ENABLED` 为
 `0/false/off/disabled` 时：
 
 - 不动态 import OTel SDK/Exporter；
@@ -103,8 +103,8 @@ Header 是运行时 Secret，只进入 Exporter 配置，不进入 Resource、Sp
 Standalone 安装 ID 保存于：
 
 ```text
-$ZCODE_HOME/v2/telemetry-state.json
-或 ~/.zcode/v2/telemetry-state.json
+$NEKODE_HOME/v2/telemetry-state.json
+或 ~/.nekode/v2/telemetry-state.json
 ```
 
 创建使用异步文件 I/O、临时文件原子 Rename、跨进程锁和 5 分钟 Stale Lock 回收。另一个活跃
@@ -547,16 +547,16 @@ OTel 原生字段
 
 Resource
     resources.service.version
-    resources.zcode.product.version
-    resources.zcode.build.commit_id
-    resources.zcode.telemetry.schema_version
-    resources.zcode.runtime.surface
-    resources.zcode.device.installation_id
+    resources.nekode.product.version
+    resources.nekode.build.commit_id
+    resources.nekode.telemetry.schema_version
+    resources.nekode.runtime.surface
+    resources.nekode.device.installation_id
 
 Span Attribute
-    attributes.zcode.execution.turn_id
-    attributes.zcode.<span_name>.outcome
-    attributes.zcode.model_attempt.provider_origin
+    attributes.nekode.execution.turn_id
+    attributes.nekode.<span_name>.outcome
+    attributes.nekode.model_attempt.provider_origin
 ```
 
 不同 ARMS 控制台版本可能使用可视化条件、SPL 或等价查询语法，字段语义不变。
@@ -567,7 +567,7 @@ Span Attribute
 
 ```text
 serviceName : zcode-cli-agent
-and resources.zcode.telemetry.schema_version : 5
+and resources.nekode.telemetry.schema_version : 5
 ```
 
 Turn：
@@ -580,30 +580,30 @@ and spanName : agent_turn
 
 ```text
 and spanName : model_attempt
-and attributes.zcode.model_attempt.outcome : failed
+and attributes.nekode.model_attempt.outcome : failed
 ```
 
 429：
 
 ```text
 and spanName : model_attempt
-and attributes.zcode.model_attempt.http_status_code : 429
+and attributes.nekode.model_attempt.http_status_code : 429
 ```
 
 按 Provider Error 信息排查：
 
 ```text
 and spanName : model_attempt
-and attributes.zcode.model_attempt.outcome : failed
+and attributes.nekode.model_attempt.outcome : failed
 
 聚合/展示：
-attributes.zcode.model_attempt.provider_origin
-attributes.zcode.model_attempt.provider_route
-attributes.zcode.model_attempt.http_status_code
-attributes.zcode.model_attempt.provider_error_code
-attributes.zcode.model_attempt.provider_error_message
-attributes.zcode.model_attempt.error_code
-attributes.zcode.model_attempt.error_message
+attributes.nekode.model_attempt.provider_origin
+attributes.nekode.model_attempt.provider_route
+attributes.nekode.model_attempt.http_status_code
+attributes.nekode.model_attempt.provider_error_code
+attributes.nekode.model_attempt.provider_error_message
+attributes.nekode.model_attempt.error_code
+attributes.nekode.model_attempt.error_message
 ```
 
 注意：Provider 没有返回结构化错误正文时，`provider_error_message` 可以为空；网络/DNS/Timeout
@@ -614,9 +614,9 @@ attributes.zcode.model_attempt.error_message
 
 ```text
 resources.service.version
-resources.zcode.product.version
-resources.zcode.build.commit_id
-resources.zcode.telemetry.schema_version
+resources.nekode.product.version
+resources.nekode.build.commit_id
+resources.nekode.telemetry.schema_version
 ```
 
 ARMS 若不支持语义版本字符串的 `>=`，不要按字典序比较 `3.10` 和 `3.9`。使用精确版本集合、

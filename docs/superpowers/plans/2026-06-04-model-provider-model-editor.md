@@ -390,7 +390,7 @@ function ProviderModelApiFormatMultiSelect({
   kinds: ModelProviderKind[];
   onChange: (kinds: ModelProviderKind[]) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const labels = MODEL_API_FORMAT_OPTIONS.filter((option) =>
     kinds.includes(option.kind),
   ).map((option) => intl.formatMessage({ id: option.labelId }));

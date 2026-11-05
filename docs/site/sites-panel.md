@@ -1,4 +1,4 @@
-# ZCode Sites 面板
+# Nekode Sites 面板
 
 Sites 面板是官方插件 `zcode-site` 自带的 UI plugin（MCP Apps），用来查看站点、部署记录、阶段日志和用量。部署本身仍由 Agent 通过 Skill + CLI 完成（CLI 鉴权见 [官方插件命令鉴权](../coding-plan/zcode-official-plugin-command-auth-spec.md)），面板不发起部署。
 
@@ -19,8 +19,8 @@ Sites 面板是官方插件 `zcode-site` 自带的 UI plugin（MCP Apps），用
 | 登记       | `official-plugin-definitions.ts` 与三份打包清单                            | `componentTypes: ["ui"]`，`requiredSeedPaths` 带两个 dist 产物；桌面包、SEA、dev 的运行时构建登记，做法同 documents                     |
 
 - **模型不可见**：工具全部声明 `_meta.ui.visibility: ["app"]`，不进入模型的工具列表；模型没有读 MCP 资源的工具；server 不返回 `instructions`。
-- **身份**：宿主在发给 server 的每条消息的 `_meta["com.zcode/official-mcp-auth"]` 里附 `{ok: true, headers}` 或 `{ok: false, reason}`，`resources/read` 和 `tools/call` 都带。server 用它请求 zcode-server，不缓存、不落盘、不写日志；没有身份头时不发请求。请求 origin 用 `resolveRuntimeZCodeEndpointOrigin(process.env)`，与宿主校验官方 MCP 目标同一口径；`X-ZCode-App-Version` 取桌面端注入的 `ZCODE_APP_VERSION`；网络出口经 `http.setGlobalProxyFromEnv()` 读宿主给的代理变量。
-- **套餐**：MCP 路径不支持「套餐可选」。没有 Coding Plan 连接的用户拿到只含 ZCode JWT 的身份头，可以正常使用；选中的 Coding Plan 连接已过期或类型不符时拿到 `official_auth_plan_required`，面板显示对应状态页。CLI 走命令端点的套餐可选模式，不受影响。
+- **身份**：宿主在发给 server 的每条消息的 `_meta["com.nekode/official-mcp-auth"]` 里附 `{ok: true, headers}` 或 `{ok: false, reason}`，`resources/read` 和 `tools/call` 都带。server 用它请求 zcode-server，不缓存、不落盘、不写日志；没有身份头时不发请求。请求 origin 用 `resolveRuntimeNekodeEndpointOrigin(process.env)`，与宿主校验官方 MCP 目标同一口径；`X-Nekode-App-Version` 取桌面端注入的 `NEKODE_APP_VERSION`；网络出口经 `http.setGlobalProxyFromEnv()` 读宿主给的代理变量。
+- **套餐**：MCP 路径不支持「套餐可选」。没有 Coding Plan 连接的用户拿到只含 Nekode JWT 的身份头，可以正常使用；选中的 Coding Plan 连接已过期或类型不符时拿到 `official_auth_plan_required`，面板显示对应状态页。CLI 走命令端点的套餐可选模式，不受影响。
 
 ## 资源与工具
 
@@ -52,7 +52,7 @@ Sites 面板是官方插件 `zcode-site` 自带的 UI plugin（MCP Apps），用
 ## 打开与生命周期
 
 - 面板只能手动打开，部署后不自动打开详情。入口有两个：侧栏「打开标签页」的内置入口「部署」（宿主写死插件 `zcode-site@zcode-plugins-official`，排在「辅助对话」前，见 `animatedSidePanePanelModel.ts`；不需要配 `uiPluginRecommendations`，配了会在「应用插件」里重复出现）；以及插件市场的「打开 UI」。草稿会话和远端工作区没有入口。中文界面名称为「部署」，英文为「Sites」。
-- 只在 ZCode Desktop 的本地工作区可用。远程工作区（SSH / WSL / Docker）、Web 和手机打开时，宿主提示不支持；这些场景只用 CLI 部署。
+- 只在 Nekode Desktop 的本地工作区可用。远程工作区（SSH / WSL / Docker）、Web 和手机打开时，宿主提示不支持；这些场景只用 CLI 部署。
 - 面板实例按 workspace / session 隔离。当前页面和选中站点经 `ui/set-widget-state` 保存，切换会话后恢复，应用重启后回到列表。
 - 主题和语言读 `hostContext.theme`、`hostContext.locale`，变化时只重绘，不重新请求数据。
 - 样式只用宿主下发的 MCP Apps 标准变量（`hostContext.styles.variables`），不读宿主私有 token；宽窄布局用容器查询（520px 起标题与操作并排，600px 起用量三列）。
@@ -106,11 +106,11 @@ Sites 面板是官方插件 `zcode-site` 自带的 UI plugin（MCP Apps），用
 
 | 来源                                             | 面板表现                                                                      |
 | ------------------------------------------------ | ----------------------------------------------------------------------------- |
-| 身份 `official_auth_unavailable` / HTTP 401      | 状态页「请先登录 ZCode」                                                      |
+| 身份 `official_auth_unavailable` / HTTP 401      | 状态页「请先登录 Nekode」                                                      |
 | `official_mcp_origin_untrusted` / `bad_response` | 同网络错误                                                                    |
 | 身份 `official_auth_plan_required`               | 状态页「Coding Plan 已失效，续费或在设置里断开后可用；部署仍可让 Agent 完成」 |
-| 3101                                             | 状态页「登录已过期，请重新登录 ZCode」                                        |
-| 3609                                             | 状态页「插件版本过旧，请升级 ZCode」                                          |
+| 3101                                             | 状态页「登录已过期，请重新登录 Nekode」                                        |
+| 3609                                             | 状态页「插件版本过旧，请升级 Nekode」                                          |
 | 3601 / 3602                                      | 「站点或部署不存在」，返回列表并刷新                                          |
 | 3605 / Usage `canDeploy: false`                  | 用量页与列表底部标红，列出超额原因，文字提示升级套餐后恢复（不带跳转）        |
 | 3608                                             | 角标开关回滚，提示当前套餐不能隐藏角标                                        |

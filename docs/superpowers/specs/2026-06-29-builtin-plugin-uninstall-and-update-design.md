@@ -2,7 +2,7 @@
 
 > Date: 2026-06-29
 > Status: Draft v2 (revised after review; pending user review + plan)
-> Scope: ZCode plugin management page — (1) allow uninstalling built-in
+> Scope: Nekode plugin management page — (1) allow uninstalling built-in
 > (official/bundled) plugins, (2) surface per-plugin update in the UI.
 
 ## Problem
@@ -25,7 +25,7 @@ This design adds both, end to end.
 ### C1. Built-ins re-seed on every resolve — AND multiple readers materialize them
 
 `seedBundledOfficialPlugins` (`bootstrap/src/app/bundled-plugins.ts`) runs on every
-`resolveZCodePlugins` via `resolveOfficialPluginRoots`, writing each bundled plugin
+`resolveNekodePlugins` via `resolveOfficialPluginRoots`, writing each bundled plugin
 into `storageRoot/cache/<marketplace>/<name>/<version>` (skipped only when a content-
 hash marker matches). **Deleting cache files is futile — the next resolve re-creates
 them.**
@@ -34,7 +34,7 @@ Critically, **more than one reader** materializes or scans official plugins, so 
 suppression mechanism must thread through **all** of them or a built-in keeps
 showing up / running:
 
-- `bootstrap/src/plugins.ts` `resolveZCodePlugins` → `resolveOfficialPluginRoots` → `seedBundledOfficialPlugins`.
+- `bootstrap/src/plugins.ts` `resolveNekodePlugins` → `resolveOfficialPluginRoots` → `seedBundledOfficialPlugins`.
 - `bootstrap/src/app/startup-marks.ts:24` `resolveStartupPlugins` → `resolveOfficialPluginRoots` (independent call).
 - `bootstrap/src/app/plugin-facade.ts` in-session facade (caches `enabledPlugins`).
 - `packages/services/src/skills/skillsService.ts:818` `resolvePluginSkillRootDescriptors` — **directly** calls `scanOfficialPluginCacheRoots(pluginStorageRoot)` and force-default-enables official ids via `DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS`.
@@ -42,10 +42,10 @@ showing up / running:
 
 ### C2. UI installed list/detail renders from `plugins/list`, not the overview
 
-`PluginsSection.tsx` selects the detail plugin from `plugins` (`ZCodePluginInfo`,
+`PluginsSection.tsx` selects the detail plugin from `plugins` (`NekodePluginInfo`,
 from `plugins/list`). Extra per-plugin fields are join-patched by id (see
 `installedAt` at `PluginsSection.tsx:118`). So any new `updateAvailable` field must
-either be added to `ZCodePluginInfo` or join-patched the same way — putting it only
+either be added to `NekodePluginInfo` or join-patched the same way — putting it only
 on the overview's `installedPlugins` will not reach the detail panel.
 
 ## Decisions (locked with product)
@@ -122,10 +122,10 @@ The backend `pluginsUpdate` handler (`zcode-protocol/plugins.ts:235` `updatePlug
 reinstalls the latest closure from the cached manifest. Changes:
 
 - **Fail loudly (finding #3):** aggregate diagnostics from every
-  `installZCodeMarketplacePlugin` call; if any target returns error diagnostics, the
+  `installNekodeMarketplacePlugin` call; if any target returns error diagnostics, the
   op fails and the UI keeps the badge until the installed record's version actually
   changes.
-- **Detection (dual-track: version + sha):** in `getZCodePluginsOverview`, for each
+- **Detection (dual-track: version + sha):** in `getNekodePluginsOverview`, for each
   installed (`cache`) plugin, build a "latest pin" from its manifest entry — a semver
   `version` if present, else the commit `sha` from `entry.source` (`readPluginSourceSha`).
   `comparePluginUpdate` picks the axis: version present → semver compare; else sha
@@ -180,11 +180,11 @@ iteration (tracked in Known limitations).
    `resolveOfficialPluginRoots` accept `suppressedBuiltins`; skip + rm suppressed;
    `writeOfficialMarketplace` omits suppressed.
 5. `bootstrap/src/plugins.ts`:
-   - `resolveZCodePlugins` passes `config.plugins.suppressedBuiltins` through.
-   - `uninstallZCodeMarketplacePlugin`: when `source !== "cache"`, suppress + purge
+   - `resolveNekodePlugins` passes `config.plugins.suppressedBuiltins` through.
+   - `uninstallNekodeMarketplacePlugin`: when `source !== "cache"`, suppress + purge
      (bypassing the current installed-records `return null`); under storage lock.
    - new `restoreBuiltinPlugin`.
-   - `getZCodePluginsOverview`: compute update status + `restorableBuiltins`; add
+   - `getNekodePluginsOverview`: compute update status + `restorableBuiltins`; add
      `semver` + `compareVersions`.
    - `updatePlugin` aggregates diagnostics and fails on error.
    - add `withPluginStorageLock` and wrap mutating ops.
@@ -200,14 +200,14 @@ iteration (tracked in Known limitations).
 ### Protocol (`packages/shared/src/zcode-protocol/index.ts`)
 
 8. `zcodeInstalledPluginSummarySchema`: add `updateAvailable?`, `latestVersion?`.
-   Consider adding the same to `ZCodePluginInfo` (or join in UI per C2).
+   Consider adding the same to `NekodePluginInfo` (or join in UI per C2).
 9. Overview result: add `restorableBuiltins` (array of available-plugin summaries).
 10. New `pluginsRestoreBuiltin` method (params: workspace + pluginId). `pluginsUpdate`
     schema already present.
 
 ### Services client (`packages/services/src/zcode-agent/`)
 
-11. `zcodeAgent.ts` (`IZCodeAgentService`): add `updatePlugin`, `restoreBuiltinPlugin`.
+11. `zcodeAgent.ts` (`INekodeAgentService`): add `updatePlugin`, `restoreBuiltinPlugin`.
 12. `zcodeAgentService.ts`: implement both via `client.request(...)` with the 5-min
     plugin timeout.
 

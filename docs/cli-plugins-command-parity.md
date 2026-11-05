@@ -13,14 +13,14 @@
 
 | 子命令 | 行为 | 落点 |
 |---|---|---|
-| `list [--json] [--available]` | 列出已加载插件（内置 + 已安装）；`--available` 追加市场目录 | `listZCodePlugins` / `getZCodePluginsOverview` |
-| `install <plugin>[@marketplace] [-s <scope>]` | 裸 name 在所有市场里唯一匹配才安装，多个同名报错要求带 `@marketplace` | `installZCodeMarketplacePlugin` |
-| `uninstall <plugin> [-s <scope>] [--keep-data] [--force]` | `--keep-data` 只删安装缓存、保留 `data/<plugin-id>`；非 TTY 未带 `--force` 拒绝执行 | `uninstallZCodeMarketplacePlugin`（新增 `keepData`） |
-| `enable <plugin> [-s <scope>]` / `disable [plugin] [-a\|--all] [-s <scope>]` | `--all` 逐个关闭当前启用的插件；`--all` 不能与插件名或 `--scope` 同用 | `setZCodePluginEnabled` |
-| `update <plugin> [-s <scope>]` | 先刷新所属市场目录再按同条目重装；保留 installedAt 与用户开关 | 新增 `updateZCodeMarketplacePlugin` |
-| `validate <path>` | 本地插件目录 / plugin.json / 市场目录 / marketplace.json 只读校验 | 新增 `validateZCodePluginPath` → adapters `validateLocalPluginPath` |
-| `marketplace add <source> [--scope] [--sparse <path>]` | `--sparse` 可重复，仅 git/github 源生效（复用既有 `sparsePaths`） | `addZCodePluginMarketplace`（新增 `sparsePaths`） |
-| `marketplace list [--json]` / `remove <name>` / `update [name]` | 列出、移除、刷新已知市场 | `getZCodePluginsOverview` / `removeZCodePluginMarketplace` / `updateZCodePluginMarketplace` |
+| `list [--json] [--available]` | 列出已加载插件（内置 + 已安装）；`--available` 追加市场目录 | `listNekodePlugins` / `getNekodePluginsOverview` |
+| `install <plugin>[@marketplace] [-s <scope>]` | 裸 name 在所有市场里唯一匹配才安装，多个同名报错要求带 `@marketplace` | `installNekodeMarketplacePlugin` |
+| `uninstall <plugin> [-s <scope>] [--keep-data] [--force]` | `--keep-data` 只删安装缓存、保留 `data/<plugin-id>`；非 TTY 未带 `--force` 拒绝执行 | `uninstallNekodeMarketplacePlugin`（新增 `keepData`） |
+| `enable <plugin> [-s <scope>]` / `disable [plugin] [-a\|--all] [-s <scope>]` | `--all` 逐个关闭当前启用的插件；`--all` 不能与插件名或 `--scope` 同用 | `setNekodePluginEnabled` |
+| `update <plugin> [-s <scope>]` | 先刷新所属市场目录再按同条目重装；保留 installedAt 与用户开关 | 新增 `updateNekodeMarketplacePlugin` |
+| `validate <path>` | 本地插件目录 / plugin.json / 市场目录 / marketplace.json 只读校验 | 新增 `validateNekodePluginPath` → adapters `validateLocalPluginPath` |
+| `marketplace add <source> [--scope] [--sparse <path>]` | `--sparse` 可重复，仅 git/github 源生效（复用既有 `sparsePaths`） | `addNekodePluginMarketplace`（新增 `sparsePaths`） |
+| `marketplace list [--json]` / `remove <name>` / `update [name]` | 列出、移除、刷新已知市场 | `getNekodePluginsOverview` / `removeNekodePluginMarketplace` / `updateNekodePluginMarketplace` |
 | 别名 `zcode plugin ...` | 单数形式别名，行为与 `zcode plugins` 相同 | `run.ts` |
 
 ## JSON 输出契约
@@ -70,11 +70,11 @@ zcode --prompt "<task>" --output-format stream-json
 
 - 单测：`apps/zcode-cli/packages/cli/tests/plugins-command.test.ts`（子命令路由、scope 映射、
   `--all` 互斥、`--keep-data` 透传、JSON 形状、`plugin` 别名与旗标收集）。
-- 真实冒烟（2026-09-14，隔离 `HOME`/`ZCODE_DATA_BASE_DIR`/`ZCODE_STORAGE_DIR`，ZAPI GLM-5.3-Highspeed）：
+- 真实冒烟（2026-09-14，隔离 `HOME`/`NEKODE_DATA_BASE_DIR`/`NEKODE_STORAGE_DIR`，ZAPI GLM-5.3-Highspeed）：
   `marketplace list` → `marketplace update zcode-plugins-official`（8 → 27 个条目）→ `list --available --json`
   → `install lark-cli` → `plugin disable --all` → `enable lark-cli` → `update lark-cli`（already up to date）
   → `--prompt` 要求加载 lark-cli 的 setup skill，stream-json 中出现 `tool.updated` 且 `toolName: "Skill"`、
   `skill: "lark-cli:setup"`，turn 正常完成 → `uninstall lark-cli --keep-data --force` 后 `data/lark-cli@…` 保留、
   cache 记录移除 → `validate` 对 bundled 插件目录、plugin.json 文件、不存在路径分别返回 0 / 0 / 1。
-- 冒烟踩坑：headless 默认模型只读 `~/.zcode/v2/provider_config.json` 的 `config.defaultModelSelection`，
+- 冒烟踩坑：headless 默认模型只读 `~/.nekode/v2/provider_config.json` 的 `config.defaultModelSelection`，
   且必须带 `options.reasoningLevel`，否则静默回退到第一个 provider 的第一个模型。

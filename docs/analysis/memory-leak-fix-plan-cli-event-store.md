@@ -87,7 +87,7 @@
 | retention 状态机 | 瞬态事件在所属 turn 进行中 retain；`TurnStarted(T+1)` 后 `T` 桶淘汰；`T+1` 未结束前 `T+1` 桶保留；非瞬态永不淘汰；rewind 不触发淘汰 |
 | store：seq 单调 | 淘汰后 `getLatestSequenceNumber` 不回退；`append` 返回的 seq 严格递增 |
 | store：读路径 | `getEvents/getEventsAfter` 返回非瞬态 ∪ 窗口内瞬态，按 seq 排序；`deleteSession` 后 `getStats` 归零 |
-| store：性能 | append 10^5 次线性（防回到 O(n²)），用现有 `ZCODE_PERF_REPRO=1` 门控写法 |
+| store：性能 | append 10^5 次线性（防回到 O(n²)），用现有 `NEKODE_PERF_REPRO=1` 门控写法 |
 | Port 合同测试 | `describeSessionEventStoreContract(factory)` 同时跑 unbounded 与 turn-window 两种模式，保证接口语义一致 |
 
 ### bootstrap 集成（现有 + 新增）
@@ -103,17 +103,17 @@
 
 ### 内存回归（新增）
 
-`bootstrap/tests/session-event-store-retention.perf.test.ts`：`ZCODE_PERF_REPRO=1` 门控，`--expose-gc`，跑 N 个 turn × M 个 delta，断言 `getStats().events ≤ 非瞬态数 + 2 个 turn 的瞬态数`，且 `heapUsed` 增量有界；同一脚本在 unbounded 模式下作为对照输出。
+`bootstrap/tests/session-event-store-retention.perf.test.ts`：`NEKODE_PERF_REPRO=1` 门控，`--expose-gc`，跑 N 个 turn × M 个 delta，断言 `getStats().events ≤ 非瞬态数 + 2 个 turn 的瞬态数`，且 `heapUsed` 增量有界；同一脚本在 unbounded 模式下作为对照输出。
 
 ### 手工 / E2E
 
-- 桌面端连本地 CLI 跑 >30 分钟流式长会话，看 `~/.zcode/cli/log` 里 `memory_sample` 的 `eventRows` 曲线：修复前随 token 线性上升，修复后在 turn 间回落。
+- 桌面端连本地 CLI 跑 >30 分钟流式长会话，看 `~/.nekode/cli/log` 里 `memory_sample` 的 `eventRows` 曲线：修复前随 token 线性上升，修复后在 turn 间回落。
 - V4 pane 与 legacy bot 流同时订阅、断网重连走 `afterSeq` 回放；rewind / fork / compact 后再回放。
 - 跑 `pnpm test:e2e:container:conversation`（conversation 验证集覆盖 streaming / replay 语义）。
 
 ## 五、如何保证对其他模块修改的可测试性
 
-1. **依赖注入取代硬编码构造**：`server-operations.ts:3493` 与 `:2883` 直接 `createInMemorySessionEventStore()`。新增 `context.deps.createSessionEventStore?(sessionId)`（`server-types.ts` 的 `ZCodeProtocolAgentDependencies`），默认 turn-window store；测试可注入 spy store 断言 append / delete 调用，也可注入 unbounded store 做 A/B 对照。`create-app.ts:558` 已有 `options.eventStore` 口子，沿用。
+1. **依赖注入取代硬编码构造**：`server-operations.ts:3493` 与 `:2883` 直接 `createInMemorySessionEventStore()`。新增 `context.deps.createSessionEventStore?(sessionId)`（`server-types.ts` 的 `NekodeProtocolAgentDependencies`），默认 turn-window store；测试可注入 spy store 断言 append / delete 调用，也可注入 unbounded store 做 A/B 对照。`create-app.ts:558` 已有 `options.eventStore` 口子，沿用。
 2. **策略与容器分离**：淘汰规则是无 IO 的纯状态机，单测穷举分支；store 只做"调用策略、维护 Map"。以后改规则不碰 store，也不碰任何消费者。
 3. **一份 Port 合同测试**：`describeSessionEventStoreContract` 放 `adapters/tests`，现有 `core/tests/test-event-store.ts` 这个手写替身（与生产实现同款 O(n) 拷贝）删掉，core 的 40 处测试改用真实 store，消除"替身与生产行为漂移"这一类假绿。
 4. **单一出处常量**：`TRANSIENT_SESSION_EVENT_TYPES` 从 contracts 导出，store、spec、`readStreamingDeltaBatchableEvent`（`server-operations.ts:382`）引用同一集合；新增事件类型时只改一处，测试断言该集合与 reducer 忽略集一致。

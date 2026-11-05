@@ -8,7 +8,7 @@
 
 **Goal:** Implement the model provider catalog metadata design from `docs/superpowers/specs/2026-06-03-model-provider-catalog-metadata-design.md`.
 
-**Architecture:** Add shared catalog/provider v2 schemas and migration helpers first, then make the host service read/write v2 provider data, catalog sources, and display order. UI consumes object models and independent display order, while ZCode Agent registry projection remains the only runtime metadata path.
+**Architecture:** Add shared catalog/provider v2 schemas and migration helpers first, then make the host service read/write v2 provider data, catalog sources, and display order. UI consumes object models and independent display order, while Nekode Agent registry projection remains the only runtime metadata path.
 
 **Tech Stack:** TypeScript, Zod, Vitest, React, @dnd-kit, Electron desktop dev server.
 
@@ -32,7 +32,7 @@ Expected: FAIL because catalog/provider v2 schemas and new projection helpers do
 
 - [ ] **Step 3: Implement shared types, schemas, migration helpers, and projection**
 
-Add `ModelProviderKind`, `ModelProviderCatalogFile`, `ModelProviderModelConfig`, `ModelProviderStoreFile`, display order state types, model helper functions, legacy migration, endpoint/kind resolution, reasoning patch application, and v2-aware `convertModelProviderConfigToZCodeProviderInput`.
+Add `ModelProviderKind`, `ModelProviderCatalogFile`, `ModelProviderModelConfig`, `ModelProviderStoreFile`, display order state types, model helper functions, legacy migration, endpoint/kind resolution, reasoning patch application, and v2-aware `convertModelProviderConfigToNekodeProviderInput`.
 
 - [ ] **Step 4: Run focused tests and verify pass**
 

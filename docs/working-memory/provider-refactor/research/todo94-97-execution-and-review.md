@@ -67,7 +67,7 @@ Wiki 选择 / 生成设置（无输出预算）
 
 ### Todo 96 核心验证与二审
 
-- 根工作区 28 文件 / 438 条通过：Bot 全组、Subagents、Automation Repo、Wiki selection、ZCodeAgentService、共享身份、Account resolver、Host 派发、Draft control。Agent 6 文件 / 73 条通过：真实 SQLite 迁移、App/Protocol 恢复、Subagent 初始化及冷恢复。首次 Agent 测试命中了旧 adapters dist，重建 contracts/adapters 后复跑，未用改断言掩盖旧构建。
+- 根工作区 28 文件 / 438 条通过：Bot 全组、Subagents、Automation Repo、Wiki selection、NekodeAgentService、共享身份、Account resolver、Host 派发、Draft control。Agent 6 文件 / 73 条通过：真实 SQLite 迁移、App/Protocol 恢复、Subagent 初始化及冷恢复。首次 Agent 测试命中了旧 adapters dist，重建 contracts/adapters 后复跑，未用改断言掩盖旧构建。
 - 根 `pnpm typecheck`、`pnpm lint` 和 Agent bootstrap typecheck 通过；Lint 41 警告 / 0 错误。最终清理已有未使用项另计，不声称全库零警告。
 - 删除专用于旧迁移的 `session/resolveLegacyModelProvider` RPC、Host 装配回调和 Agent 注入；真实账号连接迁移/OAuth 查询不动。Protocol 恢复测试同时覆盖 continuous/replayable，并断言恢复不发该迁移 RPC。
 - Bot 菜单原有跨 Workspace 全局缓存会在目标 View 失败后展示其他 Host 的模型；删除该缓存和本地借用路径，原持久选择不变，目标恢复后正常重读。回归测试显式保存真实 Bot context 后覆盖同路径不同远端身份，不能用未持久化的测试 context 假装切换成功。

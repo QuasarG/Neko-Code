@@ -1709,7 +1709,7 @@ entries:
     recommendation: "当前实现倾向拒绝整份 release；补充 remote、active、bundled 三种来源的一致证据。"
     evidence:
       [
-        "runtime: decodeZCodeBuiltinRelease rejects RETIRED_ZAPI_PROVIDER_ID",
+        "runtime: decodeNekodeBuiltinRelease rejects RETIRED_ZAPI_PROVIDER_ID",
         "code comment: prevent re-publishing retired provider through Host Registry",
       ]
     blockingCases: [MSR-REG-019, MSR-MIGRATION-007]

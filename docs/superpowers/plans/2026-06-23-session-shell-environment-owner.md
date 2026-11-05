@@ -6,7 +6,7 @@
 
 **Architecture:** 保留现有 `ExecutionShellSelection` / `resolveEffectiveBashShellSelection()` 的解析能力，但新增一个 core runtime owner：`session-shell-environment.ts`。所有 runtime 内部 shell 状态读写、EnvInfo shell patch、snapshot persist/restore 都通过这个 owner；pre-conversation context rebuild 抽到无环的 shared helper，owner 只调用 helper，不反向依赖 `config.ts` / `context.ts`。bootstrap/protocol 只负责提供“当前候选 selection”，不再维护额外 prepared 状态。
 
-**Tech Stack:** TypeScript, Vitest, `@zcode/contracts`, `@zcode/adapters`, `@zcode/core`, `@zcode/bootstrap`, ZCode Protocol.
+**Tech Stack:** TypeScript, Vitest, `@zcode/contracts`, `@zcode/adapters`, `@zcode/core`, `@zcode/bootstrap`, Nekode Protocol.
 
 ## Global Constraints
 
@@ -737,7 +737,7 @@ Expected: tests cover restored snapshot, stale snapshot fallback, legacy session
 
 - [ ] **Step 1: Add app-level platform injection for default shell resolution**
 
-In `apps/zcode-cli/packages/bootstrap/src/app/types.ts`, add to `ZCodeAppOptions`:
+In `apps/zcode-cli/packages/bootstrap/src/app/types.ts`, add to `NekodeAppOptions`:
 
 ```ts
 platform?: NodeJS.Platform | string;

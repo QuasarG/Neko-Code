@@ -6,12 +6,12 @@
 
 桌面端提供两处 **资源管理器** 入口，都打开同一个独立单例窗口：macOS 原生菜单栏的 Help 菜单，以及所有桌面平台右上角的问号帮助菜单（`WorkspaceHelpMenuButton`，2026-09-11 补入——Windows/Linux 没有原生菜单栏，Windows 自绘标题栏箭头菜单又已下线，此前 Windows 上没有任何入口）。Web 端不渲染该菜单项（`isDesktop` 由挂载处注入，见 `docs/windows-caption-help-menu.md`）。窗口顶部有四个 tab：**CPU**、**内存**、**存储**、**网络**（2026-09-10 裁决：存储管理从设置页整体迁入这里）。
 
-- **CPU / 内存 tab**：实时展示 ZCode 的 CPU 或内存占用，布局相同，只是指标卡与列表指标列换成当前 tab 的指标。切到「存储」或「网络」tab 时停止 CPU/内存的 1s 轮询。
-- **存储 tab**：本机 `.zcode` 数据目录的磁盘占用，按卷汇总、按类别拆分、可下钻与清理。产品与实现细节见 `docs/settings-storage-management.md`；下面「存储 tab 数据通路」只写与本窗口相关的接线。
+- **CPU / 内存 tab**：实时展示 Nekode 的 CPU 或内存占用，布局相同，只是指标卡与列表指标列换成当前 tab 的指标。切到「存储」或「网络」tab 时停止 CPU/内存的 1s 轮询。
+- **存储 tab**：本机 `.nekode` 数据目录的磁盘占用，按卷汇总、按类别拆分、可下钻与清理。产品与实现细节见 `docs/settings-storage-management.md`；下面「存储 tab 数据通路」只写与本窗口相关的接线。
 
 CPU / 内存 tab 的内容：
 
-- 左侧两块指标卡：**CPU**、**内存**。每块都有一根双层进度条——**灰色**表示整机总占用，**彩色（brand）**表示 ZCode 自身占用；数字显示 ZCode 占用与整机占用。
+- 左侧两块指标卡：**CPU**、**内存**。每块都有一根双层进度条——**灰色**表示整机总占用，**彩色（brand）**表示 Nekode 自身占用；数字显示 Nekode 占用与整机占用。
 - 右侧按三类分组列出进程，每组显示小计，可展开看到每个进程的名称、PID、CPU、内存：
   - **基础服务**：Electron main、GPU、所有 renderer（含 DevTools / WebContentsView）、window-scoped Host（utility）、Host 派生的非 Agent 子进程（终端 shell 等）、Agent CLI 进程及其非插件子进程（工具/命令子进程）、其它 Electron utility（network service 等）。
   - **内置插件**：官方市场（`zcode-plugins-official`）插件的 MCP 子进程树——当前即 `browser-use`（`node_repl` + plugin host）与 `computer-use`。
@@ -39,7 +39,7 @@ Resource Manager Renderer            preload (window.resourceManager.storage)   
 
 ## 口径
 
-- **CPU 统一为整机归一化百分比**：`100%` = 整机所有逻辑核心全部占满。左侧灰色条即 `os.cpus()` 两次采样间 busy/total；ZCode 占用 = 所有进程行 CPU 之和；各进程行也用同一口径，因此分组小计与总计可以直接相加。旧版进程监视器在 macOS 上按 Activity Monitor（单核 = 100%）展示，本版不再沿用。
+- **CPU 统一为整机归一化百分比**：`100%` = 整机所有逻辑核心全部占满。左侧灰色条即 `os.cpus()` 两次采样间 busy/total；Nekode 占用 = 所有进程行 CPU 之和；各进程行也用同一口径，因此分组小计与总计可以直接相加。旧版进程监视器在 macOS 上按 Activity Monitor（单核 = 100%）展示，本版不再沿用。
   - Electron 自身进程来自 `app.getAppMetrics().cpu.percentCPUUsage`：darwin / win32 已是整机口径；linux 上 Chromium 返回单核口径，进入快照前除以逻辑核心数（`normalizeElectronCpuToMachinePercent`）。
   - 外部进程（Agent / MCP / 终端）由 Host 侧采样器按 `Δcputime / Δwall / 逻辑核心数` 计算，首个样本没有差分基线，CPU 记 0。
 - **内存**：Electron 进程用 `workingSetSize`；外部进程用 RSS（macOS/Linux）或 WorkingSet（Windows）。整机总量 `os.totalmem()`，整机已用 `total - os.freemem()`（macOS 上与 `top` 的 PhysMem used 同口径，包含文件缓存）。
@@ -87,7 +87,7 @@ CLI observation 超时 → 本轮无映射；Agent 生命周期与业务 idle �
 ### 为什么这样分层
 
 - **main 进程禁止起外部进程采样**（历史 bug：同步 `ps` / PowerShell 曾把整个 App 卡死；异步 `execFile` 的 CreateProcess 阶段同样会阻塞 main）。所以外部进程的 CPU/内存一律在 **Window Host（utility 进程）** 内异步采样，且只在资源管理器窗口发起请求时才采样；窗口关闭后 Host 不再有任何周期性开销。
-- **插件归属只有 CLI 知道**：MCP 子进程由 Agent CLI 拉起，`ZCODE_PLUGIN_ID` / server name / `source.kind` 都在 CLI 内存里；现有 `process/mcpTelemetry` 通道为了遥测脱敏刻意不带 pid。因此新增一个纯内存、无 I/O 的协议请求 `process/childProcesses`，Host 用它把 pid 映射到插件。
+- **插件归属只有 CLI 知道**：MCP 子进程由 Agent CLI 拉起，`NEKODE_PLUGIN_ID` / server name / `source.kind` 都在 CLI 内存里；现有 `process/mcpTelemetry` 通道为了遥测脱敏刻意不带 pid。因此新增一个纯内存、无 I/O 的协议请求 `process/childProcesses`，Host 用它把 pid 映射到插件。
 - **Host 做进程树归属**：Host 是 Agent 的父进程，一次 `ps -axo pid=,ppid=,rss=,cputime=,comm=`（darwin）/ 扫描 `/proc/*/stat` + `/proc/<pid>/status`（linux）/ `Get-CimInstance Win32_Process`（win32）就能覆盖 Host 全部后代。每个后代按“最近的已知祖先”归属：MCP 根 pid → 对应插件；Agent pid → 基础服务 `cli`；无归属 → 基础服务 `host` 子进程。
 - **main 只合并**：`app.getAppMetrics()`（Electron 进程）+ 系统总量 + Host 回报；Agent 注册表里已知但 Host 尚未回报的 Agent 仍会出现在列表中（`sampled=false`，指标为 0），保证拓扑始终可见，E2E 也依赖这一点。
 
@@ -134,7 +134,7 @@ interface ResourceUsageSnapshot {
 - `createProcessResourceSampler()`：保存上一轮各 pid 的 `cpuTimeMs` 与时间戳，输出整机口径 `cpuPercent`；pid 消失后基线自动淘汰。
 - `attributeHostProcessTree()`（纯函数）：输入进程表、Host pid、Agent 列表（pid/workspacePath/provider）、各 Agent 的 MCP 子进程映射，输出 `HostResourceUsageProcess[]`。
 
-Host 入口 `packages/desktop/src/host/hostResourceUsage.ts` 把上述三者与 `IZCodeAgentService.collectLocalRuntimeChildProcesses()` 串起来，收到请求后回帖结果。
+Host 入口 `packages/desktop/src/host/hostResourceUsage.ts` 把上述三者与 `INekodeAgentService.collectLocalRuntimeChildProcesses()` 串起来，收到请求后回帖结果。
 
 ## 架构治理决策记录
 
@@ -185,8 +185,8 @@ contracts/spec:   packages/shared protocol.ts / channels.ts / validation.ts / zc
 ## UI 细节
 
 - 顶部 tab 用 `Tabs variant="line"`（与设置页插件 tab 同款胶囊触发器），test id `resource-manager-tab-{cpu|memory|storage}`；默认 CPU。
-- 窗口 900×600，系统默认标题栏；主题与字号沿用主窗口的 `localStorage`（`zcode-theme` / UI font size），语言用 `ZCodeIntlProvider` 的本地偏好。
-- 指标卡：`bg-card border-card-border rounded-xl`；进度条底色 `bg-surface-hover`、整机段 `bg-foreground-subtlest/40`（灰）、ZCode 段 `bg-brand`（彩）。
+- 窗口 900×600，系统默认标题栏；主题与字号沿用主窗口的 `localStorage`（`zcode-theme` / UI font size），语言用 `NekodeIntlProvider` 的本地偏好。
+- 指标卡：`bg-card border-card-border rounded-xl`；进度条底色 `bg-surface-hover`、整机段 `bg-foreground-subtlest/40`（灰）、Nekode 段 `bg-brand`（彩）。
 - 分组：三组固定顺序（基础服务 / 内置插件 / 社区插件），组头显示进程数、CPU 小计、内存小计；空组显示“暂无进程”。默认展开基础服务，其余按需展开；展开状态只存组件内。
 - 列表行：名称（`font-medium`，`title` 为完整名）、PID（`font-mono`）、CPU、内存；未采样行 CPU/内存显示 `—`。
 - 刷新频率 1s；请求串行（上一轮未返回不叠加）。

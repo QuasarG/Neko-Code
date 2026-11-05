@@ -78,7 +78,7 @@ Bootstrap 的 Registry `setModel`、reasoning level 修改和冷恢复统一调�
 
 ## 14. Protocol Session Entry 解析为 Selection
 
-ZCode Protocol 的 `session/create` 仍接受 wire 层结构化 model DTO，但进入 App Runtime 前直接转换为 `ModelSelection`，reasoning variant 写入 `options.reasoningLevel`，不再构造初始 `ModelRef`。Workspace generate text 仍是独立模型任务，暂时保留自己的旧输入，后续按独立任务迁移切片处理。
+Nekode Protocol 的 `session/create` 仍接受 wire 层结构化 model DTO，但进入 App Runtime 前直接转换为 `ModelSelection`，reasoning variant 写入 `options.reasoningLevel`，不再构造初始 `ModelRef`。Workspace generate text 仍是独立模型任务，暂时保留自己的旧输入，后续按独立任务迁移切片处理。
 
 新增协议入口测试确认 Runtime 收到完整 Selection 且配置中不存在 `modelRef`；目标测试 1 项通过。
 
@@ -220,7 +220,7 @@ Bootstrap 专项继续发现冷恢复断言和两个 fake app 仍从 `runtimeCon
 
 ## 37. 修复旧 CLI 导入边界的类型真源
 
-Desktop E2E 构建暴露 Bootstrap 一直被掩盖的两项类型错误：普通 `ZCodeConfigFileSchema` 有意把旧 `provider` 留作 passthrough unknown，但一次性导入器先用它解析、再假定该 unknown 已是旧 Provider 类型。专用 `parseLegacyCliModelConfig` 本来已经执行完整旧格式校验，现在直接把已校验的 `provider` 投影返回，导入器只消费这一个真源；普通 Runtime Config 仍不拥有 Provider 字段。
+Desktop E2E 构建暴露 Bootstrap 一直被掩盖的两项类型错误：普通 `NekodeConfigFileSchema` 有意把旧 `provider` 留作 passthrough unknown，但一次性导入器先用它解析、再假定该 unknown 已是旧 Provider 类型。专用 `parseLegacyCliModelConfig` 本来已经执行完整旧格式校验，现在直接把已校验的 `provider` 投影返回，导入器只消费这一个真源；普通 Runtime Config 仍不拥有 Provider 字段。
 
 Adapter 先行测试确认专用投影包含完整 Provider/Model 定义；实现后该测试、Bootstrap 导入器 9 项以及 Adapter/Bootstrap build 全部通过，原来阻断 Desktop E2E 的两项基线错误归零。
 

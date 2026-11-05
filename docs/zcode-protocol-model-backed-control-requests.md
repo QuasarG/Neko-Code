@@ -1,8 +1,8 @@
-# ZCode Protocol 模型型控制请求异步化
+# Nekode Protocol 模型型控制请求异步化
 
 ## 背景
 
-App 通过子进程 stdio 与 `apps/zcode-cli` 的 ZCode Protocol 通信。协议客户端把普通 request 当作短通信请求处理，默认 30 秒超时；agent 侧 NDJSON transport 又会串行处理进入的消息。若一个 protocol handler 在同步等待模型请求，后续消息会排队，甚至会挡住 agent -> app 反向 request 的 response。
+App 通过子进程 stdio 与 `apps/zcode-cli` 的 Nekode Protocol 通信。协议客户端把普通 request 当作短通信请求处理，默认 30 秒超时；agent 侧 NDJSON transport 又会串行处理进入的消息。若一个 protocol handler 在同步等待模型请求，后续消息会排队，甚至会挡住 agent -> app 反向 request 的 response。
 
 `session/send` 会快速 ACK，真实模型 turn 在后台运行，并通过 session event / `state.updated` 推送进度。过去 `session/compact` 和 `prompt/enhance` 同步等待模型请求时，会遇到同类问题：
 
@@ -100,9 +100,9 @@ UI 的“取消增强”必须调用 `prompt/enhance/cancel`，不能只让旧�
 
 ## App / Service 责任
 
-- `ZCodeAgentService.enhancePrompt()` 可继续对 UI 暴露 Promise，但内部应封装 start、result notification 和 cancel。
+- `NekodeAgentService.enhancePrompt()` 可继续对 UI 暴露 Promise，但内部应封装 start、result notification 和 cancel。
 - service 持有 pending prompt enhance job；relay 和 desktop main 只做透传，不持有业务状态。
-- `ZCodeSessionService.compactSession()` 和 task facade 的 `compactSession()` 返回 ACK 后不再广播 terminal snapshot；终态由 session event / snapshot 同步驱动。
+- `NekodeSessionService.compactSession()` 和 task facade 的 `compactSession()` 返回 ACK 后不再广播 terminal snapshot；终态由 session event / snapshot 同步驱动。
 - 手机 replayable 路径不得绕过 shared host，也不得把 prompt enhance job 状态下沉到 relay/main。
 
 ## 验证清单
@@ -180,7 +180,7 @@ stream idle 计时器要等首个 SSE 事件才起跑，请求根本没发出去
 
 - runtime 侧的 `ProviderRuntimeHeadersPort.refreshBeforeModelRequest` 入参**不再有** `sessionId`。
 - workspace 级实现仍然是会话参数化的，单独命名为 `SessionRoutedProviderRuntimeHeadersPort`，
-  只出现在 `ZCodeAppOptions` 与协议装配层。
+  只出现在 `NekodeAppOptions` 与协议装配层。
 - 两者之间只有一座桥 `bindProviderRuntimeHeadersPort(port, clientSessionId)`，绑定唯一发生在
   create-app 为**主** runtime 装配时。类型上未绑定端口进不了 runtime deps，调用点因此无从选错。
 

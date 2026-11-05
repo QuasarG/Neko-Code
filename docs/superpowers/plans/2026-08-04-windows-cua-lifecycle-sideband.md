@@ -6,7 +6,7 @@
 
 **Architecture:** CLI 在原始 `SessionEvent` 进入协议投影时额外发送严格、精简、不可重放的 `computer-use/operation-event` 通知；通知与 v4 conversation frame 并行，且位于 `record.deliveryKind` 判断之前。Services 只用该通知驱动 `CuaOperationTurnTracker`，再沿既有 Host→Main `cua-operation-state` 链路显示浮层；旧 `session/event`、Renderer、snapshot 和 relay 都不拥有提示状态。
 
-**Tech Stack:** TypeScript 6、Zod、Vitest 4、ZCode Protocol NDJSON、Electron UtilityProcess/BrowserWindow、pnpm。
+**Tech Stack:** TypeScript 6、Zod、Vitest 4、Nekode Protocol NDJSON、Electron UtilityProcess/BrowserWindow、pnpm。
 
 ## Global Constraints
 
@@ -51,7 +51,7 @@
 
 - Produces: `zcodeProtocolMethods.computerUseOperationEvent === "computer-use/operation-event"`
 - Produces: `zcodeComputerUseOperationEventSchema`
-- Produces: `ZCodeComputerUseOperationEvent`
+- Produces: `NekodeComputerUseOperationEvent`
 
 - [ ] **Step 1: Write failing protocol contract tests**
 
@@ -164,7 +164,7 @@ Expected: PASS with zero failures.
 **Interfaces:**
 
 - Consumes: `SessionEvent`
-- Produces: `mapComputerUseOperationEvent(event): ZCodeComputerUseOperationEvent | undefined`
+- Produces: `mapComputerUseOperationEvent(event): NekodeComputerUseOperationEvent | undefined`
 - Emits: `{ method: zcodeProtocolMethods.computerUseOperationEvent, params }`
 
 - [ ] **Step 1: Write failing CLI projection and delivery tests**
@@ -247,12 +247,12 @@ Expected: PASS with zero failures.
 
 **Interfaces:**
 
-- `CuaOperationTurnTracker.accept(workspace, event: ZCodeComputerUseOperationEvent): void`
-- `ZCodeAgentService.wireClient` consumes `zcodeProtocolMethods.computerUseOperationEvent`
+- `CuaOperationTurnTracker.accept(workspace, event: NekodeComputerUseOperationEvent): void`
+- `NekodeAgentService.wireClient` consumes `zcodeProtocolMethods.computerUseOperationEvent`
 
 - [ ] **Step 1: Migrate tracker tests to the new event contract**
 
-Replace `ZCodeSessionEvent` fixtures with sideband fixtures using `kind`, `sequenceNumber` and `eventId`. Preserve every existing activation, exclusion, terminal, workspace isolation and reporter-failure assertion. Remove result/error fixture delivery because the sideband deliberately omits them; retain the assertion that state stays active until a turn terminal.
+Replace `NekodeSessionEvent` fixtures with sideband fixtures using `kind`, `sequenceNumber` and `eventId`. Preserve every existing activation, exclusion, terminal, workspace isolation and reporter-failure assertion. Remove result/error fixture delivery because the sideband deliberately omits them; retain the assertion that state stays active until a turn terminal.
 
 Add an explicit duplicate-id test:
 
@@ -271,11 +271,11 @@ expect(states).toHaveLength(1);
 
 Run: `pnpm exec vitest run packages/services/test/cuaOperationTurnTracker.test.ts`
 
-Expected: FAIL because `accept` still expects legacy `ZCodeSessionEvent` kinds.
+Expected: FAIL because `accept` still expects legacy `NekodeSessionEvent` kinds.
 
 - [ ] **Step 3: Implement the minimal sideband state machine adaptation**
 
-Import `ZCodeComputerUseOperationEvent`, replace `seq` with `sequenceNumber`, add a bounded `seenEventIds` set/order, and switch on the new kinds. Keep all existing canonical tool matching, non-operating actions, stop behavior, retired-turn protection, reporter isolation and workspace cleanup. Add a Chinese bug-cause comment explaining why legacy `session/event` and sideband sequence domains must not be mixed.
+Import `NekodeComputerUseOperationEvent`, replace `seq` with `sequenceNumber`, add a bounded `seenEventIds` set/order, and switch on the new kinds. Keep all existing canonical tool matching, non-operating actions, stop behavior, retired-turn protection, reporter isolation and workspace cleanup. Add a Chinese bug-cause comment explaining why legacy `session/event` and sideband sequence domains must not be mixed.
 
 - [ ] **Step 4: Run tracker GREEN**
 

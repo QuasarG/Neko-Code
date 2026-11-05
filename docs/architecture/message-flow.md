@@ -23,7 +23,7 @@ ConversationProjectionStore
 ConversationTimeline / Composer / StatusPanel
 ```
 
-UI 不调用旧 `sendPrompt()` 构造聊天状态，也不从 legacy task event 拼消息。`IZCodeTaskService` 仍可服务列表、元数据或过渡兼容面，但不是 V4 conversation 正文事实源。
+UI 不调用旧 `sendPrompt()` 构造聊天状态，也不从 legacy task event 拼消息。`INekodeTaskService` 仍可服务列表、元数据或过渡兼容面，但不是 V4 conversation 正文事实源。
 
 ## 输入时序
 

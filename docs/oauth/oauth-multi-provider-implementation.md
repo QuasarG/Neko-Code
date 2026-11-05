@@ -91,10 +91,10 @@ ZAI 环境变量：
 - `ZAI_BUSINESS_BASE_URL`：派生 `POST /api/auth/z/login`，用于把 ZAI OAuth access token 换成业务 token；测试环境为 `https://api.z.ai`
 - `ZAI_BUSINESS_LOGIN_URL`：完整业务 token 交换 URL override，优先级高于 `ZAI_BUSINESS_BASE_URL`
 
-ZAI 默认登录链路已切换为后端 JWT token 交换，授权入口和业务 token 交换入口按 `ZCODE_ENV=test|production` 选择：
+ZAI 默认登录链路已切换为后端 JWT token 交换，授权入口和业务 token 交换入口按 `NEKODE_ENV=test|production` 选择：
 
 - 授权页：由 `ZAI_<ENV>_OAUTH_ORIGIN` 派生 `/api/oauth/authorize`，生产默认为 `https://chat.z.ai/api/oauth/authorize`
-- token 交换：由 `ZCODE_<ENV>_BASE_URL` 派生 `/api/v1/oauth/token`
+- token 交换：由 `NEKODE_<ENV>_BASE_URL` 派生 `/api/v1/oauth/token`
 - 桌面端请求体：`{ code, redirect_uri, state }`
 - 本地保存的 `oauth:zai:access_token` 是后端返回的 `data.token`
 
@@ -124,13 +124,13 @@ ZAI OAuth 登录不再由桌面端直接请求三方 ZAI token 接口。桌面�
 
 行为说明：
 
-1. `credentialService.save` 自动加密后写入 `~/.zcode/v2/credentials.json`
+1. `credentialService.save` 自动加密后写入 `~/.nekode/v2/credentials.json`
 2. `credentialService.load` 自动解密并返回明文给上层业务
 3. 历史明文值（无 `enc:v1:` 前缀）保持兼容读取，避免升级后登录态失效
 
 密钥说明：
 
-- 优先使用环境变量 `ZCODE_CREDENTIAL_SECRET`
+- 优先使用环境变量 `NEKODE_CREDENTIAL_SECRET`
 - 未配置时使用本机上下文生成 fallback key（用于本地/远程模式下的最小可用加密）
 
 测试：

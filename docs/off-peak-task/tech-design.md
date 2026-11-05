@@ -130,7 +130,7 @@ flowchart LR
     subgraph Host["window Local Host utilityProcess<br/>按 workspaceKey 路由"]
       TaskSvc["IOffPeakTaskService<br/>create/pause/continue/cancel/list"]
       OPTool["offPeak/create · offPeak/list handler（D49）<br/>缺省解析 + 白名单预校 + workspace 注入"]
-      RunSvc["IZCodeTaskService<br/>createTask / resume / sendPrompt"]
+      RunSvc["INekodeTaskService<br/>createTask / resume / sendPrompt"]
       Adapter["idle plan provider 适配层<br/>HTTP 429/3105 + Retry-After"]
       PollSync["OffPeakTaskService sync<br/>批量 POST /ticket/status → 写 sqlite"]
     end
@@ -166,14 +166,14 @@ flowchart LR
   `next_poll_at` 是快照而不是逐任务定时器。
 - **排队重试只在 provider 适配层特殊处理**：仅 `providerId=builtin:offpeak-idle-plan` 的
   HTTP `429/3105` 豁免普通重试预算；普通 provider 的 429 语义不变。
-- 与 automation 共用 scheduler 进程与派发管道，但**数据表、消息类型、状态机全部独立**，不往 `ZCodeAutomation` 加字段。
+- 与 automation 共用 scheduler 进程与派发管道，但**数据表、消息类型、状态机全部独立**，不往 `NekodeAutomation` 加字段。
 
 ## 3. 领域模型与存储
 
 ### 3.1 TS 类型（`packages/shared/src/off-peak-types.ts`，已实现）
 
 ```ts
-export type ZCodeOffPeakTaskStatus =
+export type NekodeOffPeakTaskStatus =
   | "queued"
   | "paused"
   | "running"
@@ -181,24 +181,24 @@ export type ZCodeOffPeakTaskStatus =
   | "failed"
   | "cancelled"; // paused 为 D30-10 新增
 
-// D29-4：权限四档全开放（Ask/Edit automatically/Plan/Full access），直接复用现有 ZCodeTaskMode；
+// D29-4：权限四档全开放（Ask/Edit automatically/Plan/Full access），直接复用现有 NekodeTaskMode；
 // 现产品词表为 build/edit/plan/yolo（automationAgentConfigOptions 同源），默认 "build"（Ask for
 // approval）。旧稿的 "bypassPermissions" | "default" 两值类型作废。
 
-export interface ZCodeOffPeakTask {
+export interface NekodeOffPeakTask {
   offPeakTaskId: string; // 本地主键，同时用作服务端 task_id（稳定，跨多个 ticket）
   serverTicketId?: string; // 服务端取号返回的 Snowflake ticket_id；每次重新取号更新（D26）
   title: string; // 表单 Task title（D28）
   conversationId?: string; // 宿主对话 taskId；D30-8 创建不预建对话，首次派发 createTask 后回填
   sessionId?: string; // 首跑后回填；续跑/中断恢复 resume 用
   prompt: string; // 表单 Instructions
-  permissionMode: ZCodeTaskMode; // 权限四档（D29-4），默认 "build"（Ask before changes）
+  permissionMode: NekodeTaskMode; // 权限四档（D29-4），默认 "build"（Ask before changes）
   model?: string;
   thoughtLevel?: string; // 推理强度（D34，与 automation 对齐）；缺省走 workspace 默认
   workspaceKey: string; // resolveWorkspaceKey 规则
   workspacePath: string;
   workspaceIdentity?: string;
-  status: ZCodeOffPeakTaskStatus;
+  status: NekodeOffPeakTaskStatus;
   queuedAt: number; // 本地 scheduler FIFO/展示排序；服务端 FIFO 以 ticket 创建序为准
   startedAt?: number;
   endedAt?: number;
@@ -250,7 +250,7 @@ CREATE TABLE IF NOT EXISTS off_peak_tasks (
   conversation_id    TEXT,                 -- 宿主对话 taskId；D30-8 派发时 createTask 后回填
   session_id         TEXT,
   prompt             TEXT NOT NULL,
-  permission_mode    TEXT NOT NULL,        -- ZCodeTaskMode 权限四档（D29-4），默认 'build'
+  permission_mode    TEXT NOT NULL,        -- NekodeTaskMode 权限四档（D29-4），默认 'build'
   model              TEXT,                 -- 仅存量选择迁移；新版写入 NULL
   thought_level      TEXT,                 -- 仅存量选择迁移；新版写入 NULL
   model_selection    TEXT,                 -- 完整冻结 ModelSelection JSON；执行不得回读旧两列
@@ -326,7 +326,7 @@ sequenceDiagram
   participant S as scheduler (utilityProcess)
   participant DB as tasks-index.sqlite
   participant M as main (desktopCronScheduler Off-Peak route)
-  participant H as host (IZCodeTaskService)
+  participant H as host (INekodeTaskService)
   participant A as idle plan 适配层
   participant G as 服务端网关
   loop 有非终态任务时，共享 timer 按 next_poll_after
@@ -931,8 +931,8 @@ id/enabled/systemDisabledReason，不读取或选择 API Key。导航进入创�
 `OffpeakQueued`；generate/stream runner 只对该 reason 豁免 attempt budget，并使用
 `min(Retry-After ?? 60s, 5min)` 的 abort-aware 等待。stream 跨越可见输出边界后禁止重试。
 
-**⑤ `files_changed` 复用 task diff —— ✅ 成立（MR4 直接照 bots 先例）。**
-权威源是 session `fileChanges` 快照（工具写盘型，非 git diff），host 域 `getTaskSnapshot({taskId,...})` + `buildTaskChangeSummary(snapshot.fileChanges).fileCount`（`taskChangeSummary.ts:80`）；bots 完成通知已在终态这么用（`botsService.ts:4875`）。注意：**勿在 host 读 `meta.changeSummary`**（仅 renderer 合并缓存）；Bash 产生的改动不计入（相对 git status 偏少，接受）；off-peak 专属新 session 下 task 级 == run 级。`off_peak_tasks.files_changed` 列已随 MR1 建好，终态回填即可。
+**⑤ `files_changed` 复用 task diff —— ✅ 成立。**
+权威源是 session `fileChanges` 快照（工具写盘型，非 git diff），host 域 `getTaskSnapshot({taskId,...})` + `buildTaskChangeSummary(snapshot.fileChanges).fileCount`（`taskChangeSummary.ts:80`）。注意：**勿在 host 读 `meta.changeSummary`**（仅 renderer 合并缓存）；Bash 产生的改动不计入（相对 git status 偏少，接受）；off-peak 专属新 session 下 task 级 == run 级。`off_peak_tasks.files_changed` 列已随 MR1 建好，终态回填即可。
 
 **⑥ `client/configs` 拉取 —— ✅ 仅保留产品曝光开关。**
 `bigmodelCodingPlanSubscriptionProvider` 只解析 `enable_offpeak_task`，UI 进入相关入口时请求强刷；

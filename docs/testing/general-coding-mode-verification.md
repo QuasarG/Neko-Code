@@ -7,14 +7,14 @@
 | Developer intent / capability | M1 通用与编程模式的展示差异与面板保留                                                                   |
 | Change layer                  | presentation、option-source、draft-default、validation、persistence                                     |
 | Operating mode                | implementation-handoff；按已确认的产品语义补齐收尾验证                                                  |
-| Primary seeds                 | `createZCodeStore`、`useIsGeneralMode`、`useAppPanels`、`ToolCallBlockComponent`、`ConversationRowView` |
+| Primary seeds                 | `createNekodeStore`、`useIsGeneralMode`、`useAppPanels`、`ToolCallBlockComponent`、`ConversationRowView` |
 | Out of scope                  | 模型提示词、产物管理、统一文件预览、设置按钮位移、修改 continuous/replayable 协议                       |
 
 ## UI Surface Matrix
 
 | 用户场景 / UI 入口      | 共享实现                                                 | 展示/权威 owner、默认与落点           | 校验 / 提交动作                     | 模式边界 / 隔离不变量                      |
 | ----------------------- | -------------------------------------------------------- | ------------------------------------- | ----------------------------------- | ------------------------------------------ |
-| 设置外观 / 头像菜单切换 | `settingsCodePreview` / `WorkspaceSidebarFooter`         | ZCodeStore；默认 coding；localStorage | setInterfaceMode / 现有广播         | Desktop/Web 共用；不改任务模式、模型或权限 |
+| 设置外观 / 头像菜单切换 | `settingsCodePreview` / `WorkspaceSidebarFooter`         | NekodeStore；默认 coding；localStorage | setInterfaceMode / 现有广播         | Desktop/Web 共用；不改任务模式、模型或权限 |
 | 查看命令与文件修改      | `ToolCallBlocks` 四个 renderer                           | 原始 tool 节点，只派生展示            | canToggle/forceOpen、标题与详情过滤 | 不删除原始结果；文件点击仍沿用既有预览     |
 | 思考 / 正式回答         | `ConversationRowView` / `MessageResponse`                | 原始 row；代码预览偏好                | 思考原文展示、forceCodeWrap         | 流式/完成均应用；不写回原文                |
 | 状态 Git 区 / 轮次汇总  | `conversationStatusPanelModel` / `ConversationTurnGroup` | 原始 Git 与任务投影                   | 隐藏 Git model / 汇总               | 不停止 Git 查询或改写仓库                  |
@@ -39,7 +39,7 @@
 
 ## State Owners And Commit Sinks
 
-详见 [功能 spec](../ui/general-coding-mode.md) 的状态图。ZCodeStore 拥有模式；useAppPanels/taskSidePaneMemory 拥有面板；TerminalSession 拥有 PTY；CLI/runtime 拥有原始任务数据。设置服务环境修复只改变显式 Dev home 下的配置位置。
+详见 [功能 spec](../ui/general-coding-mode.md) 的状态图。NekodeStore 拥有模式；useAppPanels/taskSidePaneMemory 拥有面板；TerminalSession 拥有 PTY；CLI/runtime 拥有原始任务数据。设置服务环境修复只改变显式 Dev home 下的配置位置。
 
 ## Must-Preserve Invariants
 
@@ -123,13 +123,13 @@
 首次从干净构建运行（需仓库依赖已安装）：
 
 ```bash
-ZCODE_E2E_MANUAL_REVIEW=1 \
-ZCODE_BUILTIN_PROVIDER_CONFIG_FILE="$PWD/config/provider/zcode-builtin.json" \
+NEKODE_E2E_MANUAL_REVIEW=1 \
+NEKODE_BUILTIN_PROVIDER_CONFIG_FILE="$PWD/config/provider/zcode-builtin.json" \
   mise exec -- pnpm --filter @zcode/desktop test:e2e -- \
   --spec './test/e2e/ui-shell/manual-review/pending/general-coding-mode.test.ts'
 ```
 
-本轮先完成完整 E2E 构建，后续只修改测试时使用框架的 `ZCODE_E2E_SKIP_BUILD=1 ZCODE_E2E_SKIP_AGENT_BUILD=1` 复用构建。显式 provider config 防止测试启动回到无法完成的远端配置初始化；不改变模型响应，也不发送对话请求。
+本轮先完成完整 E2E 构建，后续只修改测试时使用框架的 `NEKODE_E2E_SKIP_BUILD=1 NEKODE_E2E_SKIP_AGENT_BUILD=1` 复用构建。显式 provider config 防止测试启动回到无法完成的远端配置初始化；不改变模型响应，也不发送对话请求。
 
 Electron 通过报告：`packages/desktop/.e2e-artifacts/desktop-e2e-20260910161155755-p86485-1e1dbe00b0b94651/summary.md`。
 
@@ -154,6 +154,6 @@ Windows/Linux 原生运行、实际手机远控、其他语言/主题、Docker r
 
 用户已确认验收，将同一文件内 MODE-01 与 MODE-02/03 两个测试转正到 `packages/desktop/test/e2e/ui-shell/general-coding-mode.test.ts`，修正 helper 相对路径并同步目录与矩阵引用。上文 pending 路径和状态保留为历史验证记录。
 
-现有 `e2e:promote` 脚本仅支持 conversation-session，dry run 拒绝 ui-shell 路径；本次按原领域直接迁移，不改脚本或挪入错误领域。用例只操作 UI 与本地 PTY，不发送模型请求，因此没有 case-local 模型响应 fixture。正式路径的运行不使用 `ZCODE_E2E_MANUAL_REVIEW`。Docker preset admission 尚未执行，不声明 Docker CI 覆盖。
+现有 `e2e:promote` 脚本仅支持 conversation-session，dry run 拒绝 ui-shell 路径；本次按原领域直接迁移，不改脚本或挪入错误领域。用例只操作 UI 与本地 PTY，不发送模型请求，因此没有 case-local 模型响应 fixture。正式路径的运行不使用 `NEKODE_E2E_MANUAL_REVIEW`。Docker preset admission 尚未执行，不声明 Docker CI 覆盖。
 
 转正验证：macOS 正式路径 2/2 通过（未开启 manual-review），报告 `packages/desktop/.e2e-artifacts/desktop-e2e-20260914135304096-p28302-df659cf52d0d2fbd/summary.md`。typecheck、desktop typecheck:e2e、lint、架构检查通过。额外执行 conversation coverage audit 失败；将全部本轮修改临时恢复到 HEAD 后复跑，审计输出完全相同，确认为既有统计/生成文档漂移，本次未新增审计失败。

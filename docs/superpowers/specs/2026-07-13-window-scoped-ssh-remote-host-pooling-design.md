@@ -12,7 +12,7 @@
 
 ## 背景与当前问题
 
-当前 Desktop 本地窗口只创建一个 Local Host。一个 Local Host 内的 `ZCodeAgentService` 按
+当前 Desktop 本地窗口只创建一个 Local Host。一个 Local Host 内的 `NekodeAgentService` 按
 `workspaceKey` 管理多个 Agent 进程，因此同一窗口内的多个本地 workspace 共享 Host 进程。
 
 SSH remote workspace 当前不同：`createRemoteWorkspaceSession()` 每次都会生成新的
@@ -30,7 +30,7 @@ remoteSessionId
 ```
 
 远端 `zcode-server` 本身并没有“一进程只能服务一个 workspace”的限制。它通过
-`createLocalServices()` 创建的 `ZCodeAgentService`、`ZCodeSessionService`、task index 和 provider registry
+`createLocalServices()` 创建的 `NekodeAgentService`、`NekodeSessionService`、task index 和 provider registry
 状态都已经按 `workspaceKey = workspaceIdentity?.trim() || workspacePath` 隔离。真正需要调整的是 Desktop
 Main 的 Host/session 生命周期和 MessagePort 路由，而不是重写远端 Agent 协议。
 
@@ -126,7 +126,7 @@ Main 的 Host/session 生命周期和 MessagePort 路由，而不是重写远端
 | `createRemoteWorkspaceServiceCollection()` | 组合本地 app-global service、远端 service 和 wrapper。 | `packages/desktop/src/host/remoteWorkspaceServiceCollection.ts` |
 | `connectRemote()` | 一次 SSH backend、远端 server stdio 与 RPC client 的完整连接。 | `packages/server/src/remote/connect.ts` |
 | `createLocalServices()` | 远端 server 的多 workspace service owner。 | `packages/services/src/node.ts` |
-| `ZCodeAgentProcessManager` | 已按 workspaceKey 复用/隔离 Agent 进程。 | `packages/services/src/zcode-agent/zcodeAgentProcessManager.ts` |
+| `NekodeAgentProcessManager` | 已按 workspaceKey 复用/隔离 Agent 进程。 | `packages/services/src/zcode-agent/zcodeAgentProcessManager.ts` |
 | `remoteWorkspaceSessionStore` | Renderer 按 remoteSessionId 注册 services，再按 identity/path 绑定 workspace。 | `packages/ui/src/store/remoteWorkspaceSessionStore.ts` |
 | `webRemoteControlSharedHostAttachments` | 手机 attachment 需要从逻辑 session 找到共享进程。 | `packages/desktop/src/main/webRemoteControlSharedHostAttachments.ts` |
 | `TaskRealtimeBus` | Host delivery scope、owner/lease 与 session route 的 Main 侧路由器。 | `packages/desktop/src/main/taskRealtimeBus.ts` |
@@ -143,7 +143,7 @@ Main 的 Host/session 生命周期和 MessagePort 路由，而不是重写远端
 | RPC attachment | Remote Host attachment map | Main session `attachmentId` | Attach/DetachServicePort |
 | workspace context | Renderer tab/history, bound into Main session | Host realtime scope | workspacePath + workspaceIdentity |
 | workspace isolation key | `resolveWorkspaceKey(context)` | Agent/task/provider maps | workspaceKey |
-| remote Agent process | 远端 `ZCodeAgentProcessManager` | process lifecycle reports | process by workspaceKey |
+| remote Agent process | 远端 `NekodeAgentProcessManager` | process lifecycle reports | process by workspaceKey |
 | Provider registry applied revision | 远端 workspace runtime | UI sync coordinator | appliedProviderRevision by workspaceKey |
 | task/session/stream state | 远端 Agent/session services | desktop projection/mobile replay mirror | protocol events/snapshots |
 
@@ -421,7 +421,7 @@ Main 删除该窗口所有 pool entry，释放所有 session/attachment，向每
 ### 远端 stdio server 退出
 
 SSH transport 关闭会让远端 `zcode-server` 的 stdin 收到 `end` / `error`，或者让进程收到
-`SIGHUP` / `SIGTERM` / `SIGINT`。远端 server 是其内部 `ZCodeAgentProcessManager` 的进程所有者，
+`SIGHUP` / `SIGTERM` / `SIGINT`。远端 server 是其内部 `NekodeAgentProcessManager` 的进程所有者，
 因此不能在该事件里直接 `process.exit()`；必须先停止 RPC，再等待所有 workspace Agent 的
 graceful + force cleanup 完成，最后退出 server：
 
@@ -485,7 +485,7 @@ cleanup Promise，直接以 `1` 退出。deadline timer 必须保持 ref，确�
 共享 Remote Host 中只创建一次本地混合 ServiceCollection：
 
 - 本地权威：setting、credential、OAuth、model provider、usage stats、coding plan、broadcast 等。
-- 本地 wrapper：ZCode Task、ZCode Session、Repo Wiki 等。
+- 本地 wrapper：Nekode Task、Nekode Session、Repo Wiki 等。
 - 远端实现：file、git、terminal、file watcher、Agent、skills、MCP/plugin sync 等。
 
 远端 `zcode-server` 内继续按 workspaceKey 管理：
@@ -561,7 +561,7 @@ owner/lease、owner command、pending permission/elicitation/command 和 stale r
 - 新 remote session、registry revision 变化、强制刷新或 pending 重试已经明确要求下发 Provider
   Registry 时，禁止在下发前调用 `getWorkspaceRuntimeIdentity`。Registry 应用成功后再读取 runtime
   identity；只有同 session、同 revision 的 unchanged 判定才允许先探测 identity 以发现 Agent 重建。
-- Registry 应用后的 identity 探针仍返回 `ZCODE_AGENT_PROVIDER_NOT_READY` 时，保留一次有界重放保护；
+- Registry 应用后的 identity 探针仍返回 `NEKODE_AGENT_PROVIDER_NOT_READY` 时，保留一次有界重放保护；
   该错误表示应用回包后 runtime 被替换，不再属于正常冷启动路径。
 - Node `ExperimentalWarning` / `DeprecationWarning` / `Warning` 由 host 结构化为一条 `warn`；默认
   stderr/console 路径不得再额外上报一条 `error`。

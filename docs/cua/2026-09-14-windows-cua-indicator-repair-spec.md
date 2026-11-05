@@ -6,7 +6,7 @@ Accepted（2026-09-14）
 
 ## 目标
 
-Windows 顶部提示条（`ZCode 正在操作电脑` / `ZCode is controlling your computer`）在模型使用
+Windows 顶部提示条（`Nekode 正在操作电脑` / `Nekode is controlling your computer`）在模型使用
 Computer Use 期间可见，并且**在任何情况下都能关闭**。
 
 指示器保持在 desktop main 侧（`windowsCuaOperationIndicator.ts`，2026-08-04 的既有实现），
@@ -116,7 +116,7 @@ Reporter 与边界回调的异常都被吞掉并只记 warn（`report` / `notify
 `cua-dev-mcp-runtime-assets.md`），且 tracker 只从 live sideband 喂入
 （`zcodeAgentService.ts:1910`），历史 transcript 的只读解析到不了它。
 
-**消费者已核实**（2026-09-14）：`ZCodeComputerUseOperationEvent` 与
+**消费者已核实**（2026-09-14）：`NekodeComputerUseOperationEvent` 与
 `zcodeComputerUseOperationEventSchema` 的引用只出现在三处——`packages/shared`（定义与其
 测试）、`packages/services/src/zcode-agent/{zcodeAgentService,cuaOperationTurnTracker}.ts`
 及其测试、`apps/zcode-cli/packages/bootstrap/src/zcode-protocol/computer-use-operation-event.ts`。

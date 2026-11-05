@@ -5,9 +5,9 @@
 当前模型供应商链路已经分成两层事实源：
 
 - Host `modelProviderService` 管理 app 侧 provider 配置、API Key、endpoint、catalog 导入和落盘。
-- ZCode Agent server 接收 Host 生成的 provider registry snapshot，并维护运行态模型目录、当前模型和 reasoning/thought level。
+- Nekode Agent server 接收 Host 生成的 provider registry snapshot，并维护运行态模型目录、当前模型和 reasoning/thought level。
 
-设置页已经支持从 `models.dev` 导入 provider、自定义 provider、编辑模型 id 列表和 provider 基础字段。聊天框在 ZCode Agent 路径下优先使用 agent 返回的 `settings.model.available/current`，Host provider registry 通过 `workspace/updateProviderRegistry` 热同步给 agent。
+设置页已经支持从 `models.dev` 导入 provider、自定义 provider、编辑模型 id 列表和 provider 基础字段。聊天框在 Nekode Agent 路径下优先使用 agent 返回的 `settings.model.available/current`，Host provider registry 通过 `workspace/updateProviderRegistry` 热同步给 agent。
 
 现在要把开发阶段的中国 LLM catalog、provider 拖拽排序和单模型运行时 metadata 纳入正式设计。该设计只描述 app/host/agent registry 之间的契约与实现边界，不改变远控链路的 ownership 规则。
 
@@ -17,7 +17,7 @@
 - catalog 数据模型贴合 `zcode.model-providers.v1` JSON schema：保留 `kind`、`endpoints.baseURL + paths`、`model.kinds`、`modalities` 和 reasoning patch，不伪装成 `models.dev`。
 - provider 排序支持拖拽，排序结果持久化，并由 UI 同时应用到设置页 provider 导航和聊天框 provider 分组顺序。
 - 单模型字段从旧的 `string[] + metadata map` 收敛成模型对象数组，避免新旧字段长期双写。
-- catalog 导入后的模型能力进入 `ModelProviderConfig`，再由 `convertModelProviderConfigToZCodeProviderInput` 投影到 ZCode Protocol 的 `ZCodeModelProviderInput.models[*]`。
+- catalog 导入后的模型能力进入 `ModelProviderConfig`，再由 `convertModelProviderConfigToNekodeProviderInput` 投影到 Nekode Protocol 的 `NekodeModelProviderInput.models[*]`。
 - 保持桌面、本地远程 workspace、手机 `/remote` shared-host attachment 的 provider registry 同步语义不变。
 
 ## 非目标
@@ -36,7 +36,7 @@
 - `reasoning.levels[level][kind]` 是请求参数 patch，不是最终 providerOptions，也不包含 UI label、rank 或 enabled。转换层需要把公开 JSON 的 `openai-compatible` namespace 映射成 AI SDK 内部的 `openaiCompatible`。
 - 现有 `ModelProviderConfig.models` 是 `string[]`，但如果本阶段正式切换到模型对象数组，就必须提供旧 `model-providers.json` 的一次性自动迁移，否则升级用户的 provider 会因为 schema 不匹配而丢失或读不出来。
 - 现有 `sortModelProvidersForDisplay` 会按内置 provider bucket 重排，普通数组顺序不能代表用户排序。
-- ZCode Protocol 已有 `ZCodeModelReasoningState`：
+- Nekode Protocol 已有 `NekodeModelReasoningState`：
   - `enabled`
   - `levels: { value, label, description? }[]`
   - `defaultLevel?`
@@ -205,7 +205,7 @@ interface ModelProviderModelConfig extends ModelProviderCatalogModel {
 
 ### 状态归属
 
-provider 展示顺序是 UI/设置偏好，不影响 agent 请求行为。它不进入 `ZCodeModelProviderInput`，也不因为单纯排序变更触发 provider registry revision。
+provider 展示顺序是 UI/设置偏好，不影响 agent 请求行为。它不进入 `NekodeModelProviderInput`，也不因为单纯排序变更触发 provider registry revision。
 
 排序持久化独立于 provider runtime config：
 
@@ -232,7 +232,7 @@ interface ModelProviderDisplayOrderState {
 - 设置页导航：在每个可拖拽分组内应用 display order。
 - 聊天框模型选择器：先按 agent 返回的 `settings.model.available` 构建 provider 分组，再按本地 display order 重排分组；组内模型顺序仍使用 agent/catalog 顺序。这样 display order 不需要进入 registry，也能影响聊天框展示。
 
-`buildProviderRegistrySnapshot` 仍可按稳定规则排序 provider 以保证 revision 可复现。只编辑 display order 不调用 `convertModelProviderConfigToZCodeProviderInput`，也不改变 provider registry revision。
+`buildProviderRegistrySnapshot` 仍可按稳定规则排序 provider 以保证 revision 可复现。只编辑 display order 不调用 `convertModelProviderConfigToNekodeProviderInput`，也不改变 provider registry revision。
 
 ### 拖拽交互
 
@@ -256,9 +256,9 @@ interface ModelProviderDisplayOrderState {
 
 不落盘 UI label、description、rank 或 `enabled`。UI 展示 label 由 i18n 根据 level id 派生，例如 `off`、`enabled`、`high`、`max`；未知 level 直接显示原始 value。
 
-### 投影到 ZCode Protocol
+### 投影到 Nekode Protocol
 
-`convertModelProviderConfigToZCodeProviderInput` 构造每个 `models[*]` 时：
+`convertModelProviderConfigToNekodeProviderInput` 构造每个 `models[*]` 时：
 
 1. 选择 effective kind：`model.defaultKind ?? provider.defaultKind`。
 2. 校验 effective kind 存在于 `model.kinds` 和 `provider.endpoints.paths`。不满足时禁用该模型或跳过，并记录 warn。
@@ -269,7 +269,7 @@ interface ModelProviderDisplayOrderState {
    - `set` 按 path 写入嵌套对象。
    - `unset` 在生成 provider options 时删除对应 path，或用统一 sentinel 在最终运行时应用前删除。
    - namespace 映射为 `anthropic -> anthropic`、`openai -> openai`、`openai-compatible -> openaiCompatible`。
-7. 生成 `ZCodeModelReasoningState.levels` 时只填 `{ value, label }`，label 由 i18n/本地映射生成。
+7. 生成 `NekodeModelReasoningState.levels` 时只填 `{ value, label }`，label 由 i18n/本地映射生成。
 8. `defaultLevel` 只有在存在于 levels 中时透传；否则使用第一个 level。
 
 如果模型没有 reasoning patch，不生成 label-only level，也不声明可选择 thought levels。
@@ -286,14 +286,14 @@ v1 不提供“新增任意 reasoning level”或“高级 JSON 参数编辑”�
 
 ## Agent Registry 投影
 
-`convertModelProviderConfigToZCodeProviderInput` 需要把 v2 provider config 投影到当前 ZCode Protocol：
+`convertModelProviderConfigToNekodeProviderInput` 需要把 v2 provider config 投影到当前 Nekode Protocol：
 
 - provider `kind` 使用 effective kind。
 - provider `baseURL` 使用按 effective kind 解析后的 runtime baseURL。legacy 迁移产生的空 path 表示 `baseURL` 已经是旧 adapter-ready URL。
 - `models[*].modelId` 使用 kind-aware 模型名。
 - `models[*].label` 使用模型 `name`。
 - `models[*].contextWindow`、`maxOutputTokens`、`supportsImages` 从模型对象透传/推导。
-- `models[*].reasoning` 使用 patch 转换后的 `ZCodeModelReasoningState`。
+- `models[*].reasoning` 使用 patch 转换后的 `NekodeModelReasoningState`。
 - `models[*].providerOptions.supportedFormats` 不再作为主要事实源；如果当前 agent 仍依赖它过滤格式，可在投影阶段由 `model.kinds` 临时生成，后续收敛到 kind 语义。
 
 修改 provider/model runtime metadata 会触发 registry snapshot revision，影响下一轮 turn。只修改 display order 不触发 registry snapshot revision。
@@ -318,7 +318,7 @@ v1 不提供“新增任意 reasoning level”或“高级 JSON 参数编辑”�
   - `zcode.model-providers.v2` provider store 解析。
   - 旧裸数组 `model-providers.json` 自动迁移到 v2。
   - reasoning patch 的 `set` / `unset` 校验和 namespace 映射。
-  - `convertModelProviderConfigToZCodeProviderInput` 透传 context、output、modalities 推导能力和 reasoning。
+  - `convertModelProviderConfigToNekodeProviderInput` 透传 context、output、modalities 推导能力和 reasoning。
 - service 测试覆盖：
   - `models.dev` adapter 继续可用，并输出统一 catalog model。
   - `china-llm-zcode-dev` adapter 能解析本地 catalog。
@@ -348,4 +348,4 @@ v1 不提供“新增任意 reasoning level”或“高级 JSON 参数编辑”�
 
 ## 后续事项
 
-中国 LLM catalog 的 CDN 化是明确后续事项：在开发阶段使用本地 `models_catalog_china_llm_zcode_2026-06-03.json`，等 catalog 审核和发布流程稳定后，把 `china-llm-zcode-dev` loader 切换为 CDN 下载，并保留本地 fallback 供开发调试。该切换不得改变 provider 落盘 schema 或 ZCode Protocol 投影。
+中国 LLM catalog 的 CDN 化是明确后续事项：在开发阶段使用本地 `models_catalog_china_llm_zcode_2026-06-03.json`，等 catalog 审核和发布流程稳定后，把 `china-llm-zcode-dev` loader 切换为 CDN 下载，并保留本地 fallback 供开发调试。该切换不得改变 provider 落盘 schema 或 Nekode Protocol 投影。

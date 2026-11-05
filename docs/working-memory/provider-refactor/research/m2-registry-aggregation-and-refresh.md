@@ -135,7 +135,7 @@ Provider Store / Family Settings / Runtime Headers / Plan 状态
 ```
 
 代码曾位于 `packages/services/src/model-provider/modelProviderService.ts`。`getProviderRegistrySnapshot()` 缓存
-`ZCodeProviderRegistrySnapshot`；保存或删除 Provider、Plan 状态和运行时 Header 变化时，
+`NekodeProviderRegistrySnapshot`；保存或删除 Provider、Plan 状态和运行时 Header 变化时，
 `emitProviderRegistryChanged()` 会使缓存失效、重新读取并在事件中携带完整 Snapshot。
 
 迁移前 Host 到 Core Worker 的链路如下：
@@ -144,7 +144,7 @@ Provider Store / Family Settings / Runtime Headers / Plan 状态
 ModelProviderService.onDidChangeProviderRegistry
                     |
                     v
-ZCodeAgentService
+NekodeAgentService
 ├─ 对每个 active workspace 排队
 ├─ 用 revision / generatedAt 去重和防旧快照覆盖
 └─ workspace/updateProviderRegistry

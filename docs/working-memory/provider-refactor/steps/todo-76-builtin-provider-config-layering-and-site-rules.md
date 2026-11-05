@@ -46,7 +46,7 @@ Model ID
 
 ### Built-in Provider Instance Model overlay
 
-表示 ZCode Builtin Config 为某个确定 `providerId + modelId` 提供的精确模型覆盖。
+表示 Nekode Builtin Config 为某个确定 `providerId + modelId` 提供的精确模型覆盖。
 
 ### Personal Provider Instance Model overlay
 
@@ -96,7 +96,7 @@ Research 文档只记录证据。
 | `reasoningLevel.map` | Model + API Schema | 可以 | 无可靠映射则不可用 |
 | `maxOutputTokens.map` | API Schema | 可以 | 无可靠映射则不可用 |
 | `support_pdf` | Model | 可以 | 不声明支持 |
-| `supportsToolCall` | Model/API | 可以 | 不能关闭 ZCode 必需能力 |
+| `supportsToolCall` | Model/API | 可以 | 不能关闭 Nekode 必需能力 |
 | `supportsJsonSchemaOutput` | Model/API | 可以 | 未确认不声明支持 |
 | 搜索/系统消息能力 | API 基线 | 可以 | 未确认不声明支持 |
 
@@ -163,8 +163,8 @@ Provider Site 规则应保持简单、具体、可读；代理地址不会因为
 
 - Built-in Model Config 的序列化输出和实际 `config/provider/zcode-builtin.json` 已拆为 `modelRules`、`modelApiRules`、`providerSiteRules`、`templateModelRules` 和 `providerModelRules`，Resolver 仍按约定顺序逐组追加，未引入动态优先级。
 - Builtin 的三类匹配规则仍在内部复用同一个 `match` Rule 与 `ModelConfigOverlay`；Personal 不再进入这条通用 match 管线。
-- `parseZCodeBuiltinModelConfigRules` 读取新分组并按固定顺序合并；旧 `matchRules` 读取分支仅保留给尚未同步的开发期测试 Fixture，编码输出不会再生成旧字段。正式内置文件已不再使用旧字段。
-- `toZCodeBuiltinJSON` 按字段存在情况把无 API/URL 条件的规则归入 `modelRules`，带 `apiMatch` 的归入 `modelApiRules`，带 `baseURLMatch` 的归入 `providerSiteRules`。
+- `parseNekodeBuiltinModelConfigRules` 读取新分组并按固定顺序合并；旧 `matchRules` 读取分支仅保留给尚未同步的开发期测试 Fixture，编码输出不会再生成旧字段。正式内置文件已不再使用旧字段。
+- `toNekodeBuiltinJSON` 按字段存在情况把无 API/URL 条件的规则归入 `modelRules`，带 `apiMatch` 的归入 `modelApiRules`，带 `baseURLMatch` 的归入 `providerSiteRules`。
 - 新增跨层顺序测试、实际文件分组完整性测试，并通过 Provider/Provider Node/Runtime 相关测试（此前 54 tests，本次迁移回归 30 tests）。`pnpm typecheck` 通过，`pnpm lint` 通过（0 error）。
 
 本轮没有改动 Runtime、Adapter 或 Model Selection 的消费路径；它们继续消费同一个 `ModelConfigRules.resolve` 结果。134 条现有 Builtin 规则已按字段语义完成机械归类，规则内容和组内顺序保持不变。Personal 配置另行收敛为仅精确 `provider-model`，不再保留全局 match；74/79 的能力规则调整仍随各自 Todo 收口。

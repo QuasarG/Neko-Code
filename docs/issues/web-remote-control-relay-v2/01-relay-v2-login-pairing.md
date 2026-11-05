@@ -82,7 +82,7 @@
 
 ### C. 桌面端：连接与 token
 
-- 每次建连前用 JWT 调用 token 接口申请 `role=device` 的一次性 token；WebSocket 地址为 `wss://<endpoint origin>/api/v1/remote/ws2?token=<token>&mid=<deviceMid>`。任何一次 WebSocket 失败都重新申请 token，不复用 URL。删除 `X-Device-ID` 请求头。`ZCODE_WEB_REMOTE_CONTROL_RELAY_WS_URL` 调试覆盖保留，语义改为 V2 地址；test endpoint 继续映射到测试域名。
+- 每次建连前用 JWT 调用 token 接口申请 `role=device` 的一次性 token；WebSocket 地址为 `wss://<endpoint origin>/api/v1/remote/ws2?token=<token>&mid=<deviceMid>`。任何一次 WebSocket 失败都重新申请 token，不复用 URL。删除 `X-Device-ID` 请求头。`NEKODE_WEB_REMOTE_CONTROL_RELAY_WS_URL` 调试覆盖保留，语义改为 V2 地址；test endpoint 继续映射到测试域名。
 - `auth_init` 只带 `device_sid`、`meta`、`client_ts`，不带 `role`；`pair_status_query` 不带 `device_sid`；`client_ts` 使用 Unix 秒。
 - 心跳基准 5 秒、jitter ±1 秒、ACK watchdog 15 秒；沿用递归 `setTimeout`、不补发历史心跳、watchdog 触发重连附加小幅随机延迟的既有约束。
 - `KICKED` 有界重试：延迟 2~5 秒随机后换新 token 重连一次；60 秒内再次收到 `KICKED` 则停止自动重连，状态置 `kicked`，对外 failure 为 `session-conflict`。

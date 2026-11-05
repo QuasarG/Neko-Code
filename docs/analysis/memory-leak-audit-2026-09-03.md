@@ -47,7 +47,7 @@
 
 ### UI-H2 ✔ task snapshot 内存缓存无上限
 
-- `packages/ui/src/hooks/useZCodeTaskService.ts:15-18`：`snapshotCacheByService: WeakMap<service, Map<key, {etag, snapshot}>>`，外层 key 是 app 级单例等于永久；内层 value 是完整 `ZCodeTaskSnapshot`（含 messages）。只在 `:276` snapshot 为空时删。持久层同文件有 20 条 / 2MB / 256KB 三重上限，内存层没有。
+- `packages/ui/src/hooks/useNekodeTaskService.ts:15-18`：`snapshotCacheByService: WeakMap<service, Map<key, {etag, snapshot}>>`，外层 key 是 app 级单例等于永久；内层 value 是完整 `NekodeTaskSnapshot`（含 messages）。只在 `:276` snapshot 为空时删。持久层同文件有 20 条 / 2MB / 256KB 三重上限，内存层没有。
 - 增长：每打开一个 task +1，同 task 换 messageLimit/model/thoughtLevel 再 +1。
 
 ### MAIN-H1 ✔ `will-download` 监听挂在进程级 defaultSession，关窗必漏
@@ -134,7 +134,7 @@
 ## 三、低危（摘要）
 
 - main：`closedTabIds` tombstone 无上限；`closeWindow()` 绕过 `closeTab()` 遗留 downloads/scope 表；`sessionRoutes` session 关闭不删；`desktopRemoteSessions` `PendingConnect` 无超时；`webRemoteControlManager.stopWindowRuntime` 不删 `availableTasksByWindowId`；`promptAttachmentTransferService` 未订阅的 emitter 永驻；host→main pending 请求无超时；`hostLogRelay.rawLogs` 首条结构化日志前无界；`fetchRemoteAppConfig` 无超时无大小上限；`applicationIcons` 永久缓存 null。
-- services：`ZCodeAgentProcessManager.ownedProcesses` cleanup 失败永久保留；`attachmentFlowRoutes` commit/abort 不删；syncer per-workspace 状态无释放入口；`workspaceProviderRegistryByKey` 只增；feedback `uploadOssForm` 缺 error 监听 Promise 永不 settle；feishu `typingReactionIds` 模块级只在 DELETE 成功后删、`userDisplayNameCache` 不驱逐；`bindCodes`/`recentRemoteReconnectAtByKey` 不修剪；`cuaOperationTurnTracker.lastSeqBySession` session-closed 不清；`featureGates` 按 apiKey 累积。
+- services：`NekodeAgentProcessManager.ownedProcesses` cleanup 失败永久保留；`attachmentFlowRoutes` commit/abort 不删；syncer per-workspace 状态无释放入口；`workspaceProviderRegistryByKey` 只增；feedback `uploadOssForm` 缺 error 监听 Promise 永不 settle；feishu `typingReactionIds` 模块级只在 DELETE 成功后删、`userDisplayNameCache` 不驱逐；`bindCodes`/`recentRemoteReconnectAtByKey` 不修剪；`cuaOperationTurnTracker.lastSeqBySession` session-closed 不清；`featureGates` 按 apiKey 累积。
 - ui：`useComposerAttachments` 三个 Map ref 无卸载清理（在途上传不 abort）；`conversationProjectionStore.close()` 不清 listeners/snapshot；`optimisticCommands` 非 sendText 无 TTL；`useRemoteConnectionLogs` 无上限；`workspaceHomePathCache`/`statusCache` key 含重连 id；`ToolLayout.toolLayoutOpenState` 无界；`ConversationRowView` PDF 预览 blob/Abort 无卸载清理。
 - cli：`sleep()` 正常唤醒不移除 abort 监听；协议 record 内 `seqBySourceEventKey`/`streamedToolCallIdsWithInput` 无界；`RawSequenceState.seenEventIds/appliedEventIds` 无界；`waitForBackgroundTask` 中止后残留续体；`requestClient` 重播每小时约 360 个 pending key；MCP telemetry 采样失败记录不释放；`node-repl` 闭包钉住首个 context。
 - rpc/shared：`getChannel` filter 无匹配时监听器挂起；`EventMultiplexer.disposables` 连接断开不移除；`CancellationTokenSource` 只 cancel 不 dispose。
@@ -165,14 +165,14 @@
 
 ## 七、验证建议
 
-- 修复前先抓运行时证据：renderer 用 DevTools heap snapshot 对比 `TokenizedCode`/`ZCodeTaskSnapshot` 实例数；host/CLI 用 `process.memoryUsage()` 定时打点 + `--heapsnapshot-signal`，对比 `SessionEvent`、`PendingStreamBatch`、`streamSubscriptions` 大小。
+- 修复前先抓运行时证据：renderer 用 DevTools heap snapshot 对比 `TokenizedCode`/`NekodeTaskSnapshot` 实例数；host/CLI 用 `process.memoryUsage()` 定时打点 + `--heapsnapshot-signal`，对比 `SessionEvent`、`PendingStreamBatch`、`streamSubscriptions` 大小。
 - 复现脚本：开关窗口 20 次看 main 进程 `defaultSession.listenerCount("will-download")`；一个 session 连续跑 30 轮流式输出看 CLI RSS 曲线；bot 场景断开远端 workspace 后观察 typing 请求是否停止。
 
 ## 八、2026-09-04 真机日志观察（诊断日志上线后）
 
 - **event store 保留策略已验证**：父 session 下一 turn 开始时淘汰量与上一 turn 瞬态数完全一致；subagent 子 session 一次性 turn 靠 2 分钟时间兜底清掉（7554 行 → 254 行）。子 session record 完成后约 3~7 分钟被池子回收。
 - **`v4.detachedLive` 每跑一次 subagent +1 且不回落**：审计 CLI-H2 成立，待修。
-- **host 进程 RSS 反复冲到 1.5GB、externalKb 1.3GB，几分钟后回落**：时间点与 repo snapshot（checkpoint）capture 一致。原因是 `repoSnapshotFilter.ts` 对 `.git/` 内部文件无条件放行（绕过 1MB 单文件上限与全部排除规则），本仓库 `.git` 1.2GB，于是**每次 prompt 发送和每个 turn 结束**都打包、sha256、AES 加密并尝试上传一个 1.3GB 的 `.tar.gz.enc`；本 workspace `failureCount=9`，`~/.zcode/v2/checkpoints/*/pending` 下积压 1.77GB（8/27 起）、1.26GB、0.66GB 未上传产物，`~/.zcode/v2` 共 7.6GB。这是产品/spec 层问题（`repo-snapshot-sidecar.md` 要求完整 Git 元信息），不是泄漏；需决策：排除 `.git/objects/pack` 或给 `.git` 设总量上限，或 workspace 超阈值时跳过 capture。
+- **host 进程 RSS 反复冲到 1.5GB、externalKb 1.3GB，几分钟后回落**：时间点与 repo snapshot（checkpoint）capture 一致。原因是 `repoSnapshotFilter.ts` 对 `.git/` 内部文件无条件放行（绕过 1MB 单文件上限与全部排除规则），本仓库 `.git` 1.2GB，于是**每次 prompt 发送和每个 turn 结束**都打包、sha256、AES 加密并尝试上传一个 1.3GB 的 `.tar.gz.enc`；本 workspace `failureCount=9`，`~/.nekode/v2/checkpoints/*/pending` 下积压 1.77GB（8/27 起）、1.26GB、0.66GB 未上传产物，`~/.nekode/v2` 共 7.6GB。这是产品/spec 层问题（`repo-snapshot-sidecar.md` 要求完整 Git 元信息），不是泄漏；需决策：排除 `.git/objects/pack` 或给 `.git` 设总量上限，或 workspace 超阈值时跳过 capture。
 - **远控 relay 互踢死循环**：两个桌面实例用同一账号连 relay，各约 22 次/分钟重连、无退避（另一实例当日 6000+ 次）。对应审计 `webRemoteControlTransport` 重连无退避项。
 - **renderer 每 ~25s 一波 10 次 `listTaskList`**（整轮 1189 次），对应审计 UI M6 版本号失效放大。
 - **main `taskBus.sessionRoutes` 2565 条**只增不减（约 250KB），对应审计 L4。

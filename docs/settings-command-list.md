@@ -37,7 +37,7 @@ Command form scope
               |
               +-- resolve target Host service
               |
-              +-- write workspacePath/.zcode/commands
+              +-- write workspacePath/.nekode/commands
 ```
 
 ## Impact brief

@@ -64,7 +64,7 @@ Expected: new tests fail because catalog overrides do not contain reasoning for 
 - Modify: `apps/zcode-cli/packages/bootstrap/src/zcode-protocol/workspace-model-catalog.ts`
 
 **Interfaces:**
-- Consumes: `ZCodeModelProviderConfig`, `ZCodeModelProviderModel`.
+- Consumes: `NekodeModelProviderConfig`, `NekodeModelProviderModel`.
 - Produces: `createDynamicProviderDefaultReasoning(provider, model)`.
 
 - [ ] **Step 1: Update helper signature**

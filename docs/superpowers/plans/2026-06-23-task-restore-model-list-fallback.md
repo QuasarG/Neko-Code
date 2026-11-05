@@ -53,7 +53,7 @@ Expected: PASS.
 ### Task 2: Stop Provider Snapshot First-Model Restore Fallback
 
 **Files:**
-- Modify: `packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+- Modify: `packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 - Modify: `packages/ui/src/lib/zcodeTaskResumeModel.ts`
 - Modify: `packages/ui/src/hooks/useTaskRestore.ts`
 
@@ -67,7 +67,7 @@ Update the restore test so an available provider snapshot still returns the orig
 
 - [x] **Step 2: Run test to verify it fails**
 
-Run: `pnpm vitest run packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+Run: `pnpm vitest run packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 Expected: FAIL because current code returns provider snapshot fallback.
 
 - [x] **Step 3: Write minimal implementation**
@@ -76,7 +76,7 @@ Remove the provider snapshot fallback helper and keep only availability detectio
 
 - [x] **Step 4: Run test to verify it passes**
 
-Run: `pnpm vitest run packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts`
+Run: `pnpm vitest run packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts`
 Expected: PASS.
 
 ### Task 3: Final Verification
@@ -86,7 +86,7 @@ Expected: PASS.
 
 - [x] **Step 1: Run targeted tests**
 
-Run: `pnpm vitest run packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/useTaskRestoreRuntimeSnapshot.test.ts`
+Run: `pnpm vitest run packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/useTaskRestoreRuntimeSnapshot.test.ts`
 Expected: PASS.
 
 - [x] **Step 2: Run required checks**
@@ -101,6 +101,6 @@ Expected: exit 0; existing warnings may remain.
 
 Run:
 ```bash
-git add docs/superpowers/specs/2026-06-23-task-restore-model-list-fallback-design.md docs/superpowers/plans/2026-06-23-task-restore-model-list-fallback.md packages/ui/src/ChatInputToolbar.tsx packages/ui/src/chat-input-toolbar/modelSelection.ts packages/ui/src/hooks/useTaskRestore.ts packages/ui/src/lib/zcodeTaskResumeModel.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/useZCodeChatSendPromptQueuePolicy.test.ts
+git add docs/superpowers/specs/2026-06-23-task-restore-model-list-fallback-design.md docs/superpowers/plans/2026-06-23-task-restore-model-list-fallback.md packages/ui/src/ChatInputToolbar.tsx packages/ui/src/chat-input-toolbar/modelSelection.ts packages/ui/src/hooks/useTaskRestore.ts packages/ui/src/lib/zcodeTaskResumeModel.ts packages/ui/test/chatInputToolbarModelGroups.test.ts packages/ui/test/useNekodeChatSendPromptQueuePolicy.test.ts
 git commit -m "fix: use visible model list for task restore fallback"
 ```

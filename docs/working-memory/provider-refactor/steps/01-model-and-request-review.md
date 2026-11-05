@@ -45,7 +45,7 @@ M1 已经建立统一的 `Model` / `ModelRequest` 调用边界，主 Agent、Com
 普通 Runtime 的装配链已经明确：
 
 ```text
-createZCodeApp
+createNekodeApp
     |
     v
 Runtime Model Factory

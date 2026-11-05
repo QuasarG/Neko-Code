@@ -1,8 +1,8 @@
-# ZCode Agent 用「已有 Node + 编译产物 zcode.cjs」运行（桌面 & 远端）
+# Nekode Agent 用「已有 Node + 编译产物 zcode.cjs」运行（桌面 & 远端）
 
 ## 核心思路
 
-ZCode Agent 以前每个平台都内置一份独立的原生二进制 `zcode-agent`（SEA：官方 Node + `zcode.cjs` + TUI 资源 + 官方插件），单平台 ~180MB，里面**自带一份 Node**。
+Nekode Agent 以前每个平台都内置一份独立的原生二进制 `zcode-agent`（SEA：官方 Node + `zcode.cjs` + TUI 资源 + 官方插件），单平台 ~180MB，里面**自带一份 Node**。
 
 但无论桌面还是远端，运行 agent 的环境里**本来就已经有一份 Node**：
 
@@ -11,13 +11,13 @@ ZCode Agent 以前每个平台都内置一份独立的原生二进制 `zcode-age
 
 所以 agent 没必要再带一份 Node，直接用这份已有的 Node 执行编译产物 `zcode.cjs` 即可。
 
-关键前提：**ZCode Agent 没有任何原生 NAPI 插件**——`ripgrep` 是 WASM/WASI，其余依赖（cheerio / iconv-lite / jimp / ai-sdk / mcp-sdk / zod 等）全是纯 JS。`zcode.cjs` 是 esbuild 打的单文件 bundle（除 `@zcode/tui` 外全部 inline），跨平台同一份；`app-server` 命令路径永不加载 `@zcode/tui`，所以远端只需要这一个文件、无需 node_modules，桌面也不打包 TUI。
+关键前提：**Nekode Agent 没有任何原生 NAPI 插件**——`ripgrep` 是 WASM/WASI，其余依赖（cheerio / iconv-lite / jimp / ai-sdk / mcp-sdk / zod 等）全是纯 JS。`zcode.cjs` 是 esbuild 打的单文件 bundle（除 `@zcode/tui` 外全部 inline），跨平台同一份；`app-server` 命令路径永不加载 `@zcode/tui`，所以远端只需要这一个文件、无需 node_modules，桌面也不打包 TUI。
 
 收益：单平台 ~180MB → ~16MB；同一份 JS 跨平台；桌面/远端统一一种 agent 形态。
 
 ## 运行方式
 
-**桌面**（`zcodeAgentProcessManager.ts: resolveElectronRuntimeZCodeAgentCommand`，`process.versions.electron` 为闸门）：
+**桌面**（`zcodeAgentProcessManager.ts: resolveElectronRuntimeNekodeAgentCommand`，`process.versions.electron` 为闸门）：
 
 ```
 process.execPath  <Electron Helper>
@@ -25,7 +25,7 @@ process.execPath  <Electron Helper>
   env:  { ELECTRON_RUN_AS_NODE: "1" }   // 必须，否则子进程被当成 Chromium 子进程卡在 GPU 初始化
 ```
 
-**远端**：完整 archive 将 `zcode.cjs` 放入 immutable release 的 `runtime/`，Server Core 按 release manifest 创建 Workspace Agent；不再向 `~/.zcode/server/agents/glm/` 部署散文件或 wrapper。
+**远端**：完整 archive 将 `zcode.cjs` 放入 immutable release 的 `runtime/`，Server Core 按 release manifest 创建 Workspace Agent；不再向 `~/.nekode/server/agents/glm/` 部署散文件或 wrapper。
 
 ## 实现
 
@@ -34,8 +34,8 @@ esbuild `target` 从 `node26` 降到 **`node22`**，取两端运行时里最低�
 
 **桌面**
 - `zcode-agent-runtime.ts`：描述符加 `nodeBundleEntryFile: "zcode.cjs"` + `resolveNodeBundleSegments()`。
-- `providerRuntimeResolver.ts`：`findZCodeAgentRuntimeNodeBundle()` 定位 `resources/glm/zcode.cjs`。
-- `zcodeAgentProcessManager.ts`：`resolveElectronRuntimeZCodeAgentCommand`，插在 monorepo dev 与 native-binary 兜底之间。
+- `providerRuntimeResolver.ts`：`findNekodeAgentRuntimeNodeBundle()` 定位 `resources/glm/zcode.cjs`。
+- `zcodeAgentProcessManager.ts`：`resolveElectronRuntimeNekodeAgentCommand`，插在 monorepo dev 与 native-binary 兜底之间。
 - 打包：`prepare:agent-bundle`（`prepare-agent-node-bundle.mjs`）构建 cli、把 `zcode.cjs` stage 进 `bundled-agents/<平台>/glm/`、删掉旧原生 `zcode-agent`；`prepare:runtime-assets` 本机列表用它替换 `prepare:glm`；electron-builder 整目录拷 `resources/glm`。
 
 **远端**

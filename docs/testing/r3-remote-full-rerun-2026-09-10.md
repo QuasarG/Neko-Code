@@ -67,7 +67,7 @@ soak 批次结案:soak-reconnect 50 轮全绿;soak-dual 56 轮(5 分钟定案轮
 3. **DOM 虚拟化对账**:全量收尾对账在高轮次下必失效;逐轮增量对账(标记刚发送必在窗口底部)+ 等待式回显(容忍断网轮重挂载)是正确模式(§55)
 4. **主控 exit= 陷阱**:完成标记的 exit 值是 runner 进程码恒 0,判 PASS/FAIL 必须读 results.json(§54 附记)
 5. **删除器模式**:等 `[rec] <case> exit=`(until grep -q,勿用 `grep -c` 计数比较——zsh 零匹配时 `$()` 捕获双行致整数比较死循环)→ sleep 5 → 读 results.json status → FAIL 才删标记 → 主控重调度;PASS 不动;删标记用**全量重写**(open w + replace,同路径不换 inode,tail 监控不丢;r+ seek 原地写单字节实测不可靠,§59 附记)
-6. **FAIL 现场保留**:wdio.conf `onComplete` 曾无条件删 case home,已改 `exitCode!==0 && ZCODE_E2E_KEEP_HOME_ON_FAIL=1` 时保留(§47)
+6. **FAIL 现场保留**:wdio.conf `onComplete` 曾无条件删 case home,已改 `exitCode!==0 && NEKODE_E2E_KEEP_HOME_ON_FAIL=1` 时保留(§47)
 7. **ssh2 噪音**:REQUEST_FAILURE 紧跟 keepalive ping 的是 sshd 拒 global request,无害,勿误判连接故障(§57)
 
 ## 环境侧修复史(假失败消除)

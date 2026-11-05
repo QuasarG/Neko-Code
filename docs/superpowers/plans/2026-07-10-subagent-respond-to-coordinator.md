@@ -2,11 +2,11 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 为普通 ZCode subagent 增加 child-only 的 `RespondToCoordinator` 工具，使 child 收到 main 通过 `SendMessage` 注入的 coordinator 消息后，可以把回复投递回父 runtime，同时继续当前长程任务。
+**Goal:** 为普通 Nekode subagent 增加 child-only 的 `RespondToCoordinator` 工具，使 child 收到 main 通过 `SendMessage` 注入的 coordinator 消息后，可以把回复投递回父 runtime，同时继续当前长程任务。
 
 **Architecture:** 保留现有 `main -> SendMessage -> child steerTurn` 路径不变。新增 `child -> RespondToCoordinator -> CoordinatorResponsePort -> parent runtime command queue` 路径；父 runtime 使用独立的 `subagent-message` command，在 active loop 下一次合法 provider request 前合流，或在 idle 时启动 model-only turn。回复不会成为真实用户消息，不复用 background task completion 的 `task-notification` 语义，也不会直接并发调用父模型。
 
-**Tech Stack:** TypeScript、Zod、Vitest、ZCode tool registry/executor、AgentRuntime command queue、ZCode Protocol、WebdriverIO provider replay E2E。
+**Tech Stack:** TypeScript、Zod、Vitest、Nekode tool registry/executor、AgentRuntime command queue、Nekode Protocol、WebdriverIO provider replay E2E。
 
 ## Execution Baseline
 
@@ -140,7 +140,7 @@ Provider-visible payload：
 | `docs/conversation-session-case-catalog.md`                                    | 新增 BG25 accepted case                                                           |
 | `docs/testing/conversation-session-background-e2e-coverage-matrix.md`          | 增加 response channel 维度和 planned/covered 状态                                 |
 | `docs/testing/conversation-session-e2e-coverage-matrix.md`                     | 登记 BG25                                                                         |
-| 历史差异审计文档（已删除）                                        | 标记为 ZCode narrow extension，不误报为完整 Agent Teams 能力                      |
+| 历史差异审计文档（已删除）                                        | 标记为 Nekode narrow extension，不误报为完整 Agent Teams 能力                      |
 | `apps/zcode-cli/packages/contracts/src/tools/index.ts`                         | 导出 tool contract                                                                |
 | `apps/zcode-cli/packages/contracts/src/index.ts`                               | 导出 coordinator port                                                             |
 | `apps/zcode-cli/packages/contracts/src/interfaces/session-store.port.ts`       | 增加 `subagent_message` synthetic source                                          |
@@ -311,7 +311,7 @@ assistant step 中继续发出下一项工作工具调用。
 增加一条 scope note，明确：
 
 ```markdown
-RespondToCoordinator 是 ZCode 为普通 local_agent 增加的窄 child-to-parent reply channel。
+RespondToCoordinator 是 Nekode 为普通 local_agent 增加的窄 child-to-parent reply channel。
 它不表示已实现 Agent Teams，也不改变默认 main-only SendMessage 的语义。
 ```
 
@@ -1494,14 +1494,14 @@ expect(providerText).not.toContain("<system-reminder");
 
 ```ts
 // canonical persisted shape：当前 visibility 逻辑应直接隐藏，用作回归断言。
-expect(getZCodeUserVisibleMessages([messageWithInfoVisibilityModelOnly])).toEqual([]);
+expect(getNekodeUserVisibleMessages([messageWithInfoVisibilityModelOnly])).toEqual([]);
 
 // source-only replay fallback：没有 visibility 但 source= subagent_message 时也必须隐藏。
-expect(getZCodeUserVisibleMessages([sourceOnlySubagentMessage])).toEqual([]);
+expect(getNekodeUserVisibleMessages([sourceOnlySubagentMessage])).toEqual([]);
 
 // title 不得采用 synthetic reply；仍选择真实 user text 或 target title fallback。
 expect(
-  resolveZCodeVisibleSessionTitle({
+  resolveNekodeVisibleSessionTitle({
     messages: [sourceOnlySubagentMessage, realUserMessage],
     target: null,
   }),
@@ -1570,7 +1570,7 @@ if (source === "background_task" || source === "subagent_message") {
 "subagent_message",
 ```
 
-并让 `isZCodeModelOnlySyntheticUserMessage()` 同时检查 `message.info.source`，不能只检查 text part metadata：
+并让 `isNekodeModelOnlySyntheticUserMessage()` 同时检查 `message.info.source`，不能只检查 text part metadata：
 
 ```ts
 if (MODEL_ONLY_SYNTHETIC_NOTICE_SOURCES.has(String(message.info.source ?? ""))) {

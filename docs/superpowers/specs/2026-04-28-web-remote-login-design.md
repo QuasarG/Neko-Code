@@ -269,13 +269,13 @@ Service 模块，对应桌面端 `OAuthService` 在 Web runtime 的等价物，�
 
 ### `packages/web/src/auth/WebLoginPage.tsx`
 
-全屏登录 UI 组件，显示 ZCode logo 和“用 ZAI 登录”按钮。
+全屏登录 UI 组件，显示 Nekode logo 和“用 ZAI 登录”按钮。
 
 UI 约束：
 
 - 修改或新增 UI 前必须遵守根目录 `DESIGN.md`。
 - 使用语义颜色 token（如 `bg-background`、`text-foreground`、`bg-card`、`border-border`），兼容由 Zai 接管的 Light Theme / Dark Theme。
-- 文案必须兼容 `zh-CN` / `en-US`；因为登录页发生在完整 `ZCodeIntlProvider` 之前，需要提供轻量 locale resolver 或复用已有 i18n 字典。
+- 文案必须兼容 `zh-CN` / `en-US`；因为登录页发生在完整 `NekodeIntlProvider` 之前，需要提供轻量 locale resolver 或复用已有 i18n 字典。
 - 按现有按钮体系实现主按钮，不写死临时颜色、圆角、字号。
 - 布局需要适配手机竖屏、桌面宽屏和较长英文文案。
 

@@ -2,7 +2,7 @@
 
 > 状态：已实现。
 > 上位：`2026-07-07-browser-use-cdp-node-repl-spec.md`。
-> 范围：定义跨 agent/协议/main 三处同源的 `BrowserCommand` 契约、agent 侧 `BrowserControlPort` 端口、以及 ZCode Protocol 的 `interaction/browserExecute` 方法。纯契约层，不含实现（broker/桥/CDP 在 T4/T5）。
+> 范围：定义跨 agent/协议/main 三处同源的 `BrowserCommand` 契约、agent 侧 `BrowserControlPort` 端口、以及 Nekode Protocol 的 `interaction/browserExecute` 方法。纯契约层，不含实现（broker/桥/CDP 在 T4/T5）。
 
 ## 1. 关键事实：@zcode/shared 单一来源
 
@@ -57,7 +57,7 @@
 ## 5. Port 注入链（沿 executionPort 同路）
 
 `browserControlPort` 完全仿 `executionPort` 全链透传：
-- `ZCodeAppOptions`（`bootstrap/src/app/types.ts`）加 `browserControlPort?: BrowserControlPort`（可选，缺省则 agent.browsers 报 unavailable）。
+- `NekodeAppOptions`（`bootstrap/src/app/types.ts`）加 `browserControlPort?: BrowserControlPort`（可选，缺省则 agent.browsers 报 unavailable）。
 - `create-app.ts` 把 `options.browserControlPort` 透传进 agent-runtime deps（仿 220/346/394/437 行 executionPort）。
 - `ToolExecutionContext`（`core/src/tool/types.ts`）加 `browserControlPort?`；`call-runner.ts`/`impl.ts`/`agent-runtime.ts` 组装 context 时透传（仿 executionPort）。
 - T6 的 node_repl handler 从 `context.browserControlPort` 拿到它，注入给 browser-client 的 `execute`。
@@ -68,4 +68,4 @@
 - `zcodeBrowserExecuteParamsSchema`/`ResultSchema` round-trip（构造→parse→一致）。
 - 方法表存在：`zcodeProtocolMethods.interactionBrowserExecute === "interaction/browserExecute"`；契约表含该条目且 params/result 是 zod schema。
 - 若 protocol 内 command schema 与 browser-use/commands 分别声明：一个 round-trip 测证明二者对同一对象解析一致（防漂移）。
-- typecheck：ZCodeAppOptions/ToolExecutionContext 加字段后全链编译通过。
+- typecheck：NekodeAppOptions/ToolExecutionContext 加字段后全链编译通过。

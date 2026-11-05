@@ -6,16 +6,16 @@
 - 修订：2026-09-07 合并 Provider 重构 M2（Provider 重构 M1~M4 + Remote Provider Provisioning）后，§1/§2/§3.1/§6.2/§7.1/§8/§10/§11 中的模型配置语义改为「设置页绑定本地 + Provisioning 自动单向下发」；Provider 侧以 [Remote Provider Provisioning](../remote/provider-provisioning.md) 与 [SSH 远端 Workspace 状态权威边界](../ssh-remote-app-global-state-authority.md) 为事实文档，合并过程与决策见 [r3-provider-refactor-merge.md（已归档）](../archive/remote-r3/r3-provider-refactor-merge.md)
 - 阶段：统一多端远程架构 R3 / D5—D11
 - 发布方式：SSH、WSL、Docker 在同一 App 版本统一切换新主链；不按连接方式分版本或灰度；R3 App 内不保留可运行的旧远程主链
-- 核心目标：引入 Source Server、`sourceServerId`、Connection Profile、Transport Adapter、Source 权威、身份迁移与版本兼容，让三种连接方式在「窗口级 Local Host（R1）↔ 常驻 ZCode Server daemon（R2）」的新主链上完成产品闭环
+- 核心目标：引入 Source Server、`sourceServerId`、Connection Profile、Transport Adapter、Source 权威、身份迁移与版本兼容，让三种连接方式在「窗口级 Local Host（R1）↔ 常驻 Nekode Server daemon（R2）」的新主链上完成产品闭环
 
 本文基于：
 
-- [ZCode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)（D5—D11 定义）
+- [Nekode 统一多端远程连接架构与产品方案（评审稿）](https://internal-docs.example.invalid/redacted)（D5—D11 定义）
 - [R1 窗口级单 Host 进程重构规格](./r1-single-window-host-refactor.md)（已实施，当前架构事实）
 - [R2 独立 Server CLI 与 daemon 规格](./r2-server-cli-and-daemon.md)（已实施；`verify-remote-ssh.mjs` 为 R3 SSH Transport 的最小形态预演）
 - [R3 Source Server 发布测试方案（历史，已归档）](../archive/remote-r3/r3-source-server-release-test-plan.md)：REMOTE-01—15 稳定编号现由 [conversation-session-case-catalog.md](../conversation-session-case-catalog.md) 承载，当前执行方案见 [r3-remote-automation-plan.md](../testing/r3-remote-automation-plan.md)
 - [远程工作区投影与持久化兼容](./remote-domain-simplification-and-conversation-workspace-spec.md)（统一 projection、open set、strict schema 与 R4 剩余事项）
-- [ZCode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)（目标架构背景）
+- [Nekode Lite / Server 统一多端架构实施计划](./unified-zcode-lite-server-multi-server-plan.md)（目标架构背景）
 - [Remote Target 抽象](./remote-target-abstraction.md)（现有旧主链的 target/backend 事实）
 
 R3 交付：
@@ -56,7 +56,7 @@ R3 不交付：
 | 服务集合         | 三种连接方式统一采用「全转发」模式（与现有 server transport 的 `createServerRemoteWorkspaceServiceCollection` 一致）；`LegacyRemoteWorkspaceRpcContract` 更名为版本化的 `RemoteWorkspaceRpcContract` 并作为握手校验的一部分                                                                                                                                                                                                                                                                                                                                                             |
 | 连接记录模型     | `lastWorkspaceSession` 的「连接与 workspace 合一实体」拆分为三实体：`SourceServerRecord`（握手后建立）、`ConnectionProfile`（线路+凭据引用）、workspace 打开历史（引用前两者）。凭据 key 从 `remote-workspace:<workspaceKey>:*` 迁到 `connection-profile:<profileId>:*`                                                                                                                                                                                                                                                                                                                 |
 | 远端数据迁移     | **R3 不做破坏性 key 重写**。Server Core 维护 path → canonical key 的 alias 解析层，按 workspace 打开惰性执行；单线路历史零数据改动（新旧版本读写同一批行，回退与混连天然兼容）；仅多线路变体历史做一次性合并到 canonical（备份 + ledger），失败按 workspace 粒度阻止打开、不阻塞连接。R4 才执行 server-local 清洁化                                                                                                                                                                                                                                                                     |
-| 目录共存         | 旧主链资产（`~/.zcode/server` 下 `node`、`zcode-server.cjs`、`agents/`、`tools/`、`build/` 散文件）与 R2 release 布局同目录共存。R3 安装不清理旧散文件（保护未升级 Desktop 的回滚路径），清理留待 R4                                                                                                                                                                                                                                                                                                                                                                                    |
+| 目录共存         | 旧主链资产（`~/.nekode/server` 下 `node`、`zcode-server.cjs`、`agents/`、`tools/`、`build/` 散文件）与 R2 release 布局同目录共存。R3 安装不清理旧散文件（保护未升级 Desktop 的回滚路径），清理留待 R4                                                                                                                                                                                                                                                                                                                                                                                    |
 | 自动重连         | 启动按最近在线排序尝试全部保存连接，不按 7 天过滤（并发和单次预算见[当前恢复合同](../remote/desktop-remote-session-renderer-reattach.md)，各尝试一次）；在线断连按 2/4/8s 重试 3 次；离线每 2 分钟静默探测。仅对「凭据可静默获得」的 Profile 生效；需要交互（密码未存、版本不兼容、迁移失败）时停在离线态等待用户                                                                                                                                                                                                                                                                       |
 | 窗口模型         | 沿用 R1 窗口级隔离；一期按单窗口（主窗口）设计与验收，启动自动重连由主窗口 Host 执行，多窗口行为不做产品承诺                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | 远端 automation  | 一期不支持。cron 调度与 run 生命周期当前在窗口 Host 进程内（`cronAutomationRepo`/`cronRunLifecycle`），迁往 Core 涉及调度器移植、错过补跑语义（方案已列为后续能力）与管理 UI 多 Source 化，改动独立且不小；daemon 常驻已为后续实现铺路，R3 架构不设障碍                                                                                                                                                                                                                                                                                                                                 |
@@ -126,7 +126,7 @@ interface SourceServerResolveWorkspaceResult {
 /** 双端构建产物内嵌的兼容清单。 */
 interface CompatibilityManifest {
   schemaVersion: 1;
-  productVersion: string; // = ZCODE_VERSION
+  productVersion: string; // = NEKODE_VERSION
   minCompatibleVersion: string;
 }
 ```
@@ -164,7 +164,7 @@ SSH 线路身份继续使用 `remote:ssh:<host>:<port>:<username>:<posixPath>`�
 若远端拒绝账号，沿用认证失败提示，不能报 `remote-project.invalid-host-identity`，
 也不能让该连接的失败状态阻断整个远程项目目录读取。回归场景见 SSH-P0-CONN-09。
 
-现状问题：旧 identity `remote:ssh:<host>:<port>:<user>:<path>` 把线路编进身份（`packages/shared/src/remote-workspace-identity.ts`），换 IP/别名即形成新 key 丢历史；同一目录经多条线路连接会在远端两套数据库（`~/.zcode/v2/tasks-index.sqlite`、`~/.zcode/cli/db/db.sqlite`）留下多套并行历史。
+现状问题：旧 identity `remote:ssh:<host>:<port>:<user>:<path>` 把线路编进身份（`packages/shared/src/remote-workspace-identity.ts`），换 IP/别名即形成新 key 丢历史；同一目录经多条线路连接会在远端两套数据库（`~/.nekode/v2/tasks-index.sqlite`、`~/.nekode/cli/db/db.sqlite`）留下多套并行历史。
 
 R3 的身份分三层。核心取舍：**控制端身份彻底 route 无关；远端存储 key 在迁移窗口期保持旧格式（canonical key），保证旧版本 Desktop 回退/混连时读写同一批数据**；存储 key 的 server-local 清洁化推迟到 R4（旧版本退出支持窗口后）。
 
@@ -267,7 +267,7 @@ Window Host（R3）
    │  └─ @zcode/rpc 服务集合（全转发）+ 多 logical remote session（remoteSessionId）
    │                         │
    │                         ▼
-   │              远端 ZCode Server daemon（R2）
+   │              远端 Nekode Server daemon（R2）
    │              OS service / detached ── Supervisor ── Server Core ── Workspace Agent CLI
    │              Desktop 断开只释放 attachment；daemon 与任务继续运行
    └─ ControllerProjection（source 维度 = sourceServerId）
@@ -420,7 +420,7 @@ probe：status.json ready + Core PID 存活 ──► 复用端口 ──► 握
 - daemon 启动 owner 仍由 Server CLI 在 OS service 与 detached Supervisor 之间选择，不新增重试、状态缓存、启动锁或并行启动路径。同一 canonical server root 只有一个 Supervisor 和 Core，由现有 `server.lock` 保证：后到的 Supervisor 取锁失败就退出，不改 status。以前注册成功的 enabled unit 与 fallback 同时启动、两个 CLI 同时回退时，后到者取锁失败，结果与 WSL/Docker 的 fallback 相同。运行中的 Supervisor 失去锁时不再写 status，停止 Core 后结束，规则见 [R2](r2-server-cli-and-daemon.md)（2026-10-26）：锁文件不存在（server root 被删除或替换）以退出码 1 结束，由服务管理器或下一次 `serve --daemon` 拉起新实例；锁已换了 owner 以退出码 0 结束，新 owner 已在运行，服务管理器不重启。
 - `serve --daemon --json` 非零退出时，Adapter 必须优先解析 stdout 的结构化 `{ error, code?, retryable? }`，再把 stderr 作为补充诊断。Node warning、登录 banner 或 shell 噪音不得覆盖真实 CLI 错误。
 - Server CLI `--json` 的结果（成功或失败）是 stdout 中最后一个单行 JSON 对象；Adapter 读取结果时跳过其前后的纯文本行。部分 SSH 堡垒机会把远端 stderr 合并进 stdout，并在 stdout 结束后才投递，Node warning 因此可能排在结果行之后，不能把最后一个非空行当作结果。
-- Source Server bootstrap 可执行文件放在最终可执行根（`~/.zcode/server`）的临时 staging 内，不从常见 `noexec` 的 `/tmp` 执行；archive 临时文件仍须在成功、失败和取消后清理。
+- Source Server bootstrap 可执行文件放在最终可执行根（`~/.nekode/server`）的临时 staging 内，不从常见 `noexec` 的 `/tmp` 执行；archive 临时文件仍须在成功、失败和取消后清理。
 - 远端直下只把 curl/wget、tar 和 SHA-256 工具作为必需能力；awk/wc/date 等仅用于增强进度，缺失时降级为无速度进度而不是阻断下载。Desktop 下载后上传同样必须在上传前探测 tar，避免传完大 archive 才失败。
 - macOS 构建 POSIX archive 时必须显式禁用 bsdtar xattr/PAX metadata；仅设置 `COPYFILE_DISABLE=1` 不足以移除 `LIBARCHIVE.xattr.*`，否则 Linux 解压会按条目刷出数千行 unknown extended header 并掩盖真实错误。
 
@@ -444,13 +444,13 @@ probe ──已安装且 daemon ready──────────────�
 - 判定为需要更新之后，两种策略的更新逻辑必须完全一致：连接流程只把 Profile 置为 `needs-upgrade + updateAvailability: required` 并以 `source-server-upgrade-required` 拒绝连接，不得在连接流程内直接执行 archive update；更新本身统一由 §6.3 的 `updateSource → Manager.updateServer` 执行（`updating` 状态、操作日志、`force:false` 先行、running-task guard 后由用户显式确认再 `force:true`）。因此连接向导内的自动更新、启动重连/断线恢复的「立即更新」入口和强制更新确认对开发态同样生效。（R3A-B-06 修正：此前开发态在连接流程内直接 `installOrUpdate`，guard 只能表现为普通连接失败，UI 没有强制更新入口。）
 - 开发态内容刷新只接受本轮本地 staging 的 descriptor/archive，并统一走 Desktop 上传；即使 SSH Profile 保存的是 `remote-download` 也不得改从 CDN 获取同版本产物。若本地产物缺失、校验失败或更新被 running-task guard 阻断，连接必须 fail-closed，禁止回退 CDN 或继续运行旧 release。
 - 开发态 `bootstrap:with-remote` 必须调用与 CI 相同的 Source Server staging 入口并刷新 descriptor/archive；普通 `bootstrap` 继续跳过远端资源。成功返回表示所有仓库源码派生的 runtime、插件与 archive 都在本轮构建，只有固定版本且经校验的外部二进制允许复用缓存。staging 开始先使旧 descriptor 失效，四个平台 archive 全部原子落盘并校验后再原子发布新 descriptor；失败不得留下可被开发连接消费的旧 generation。Linux 开发专用入口 `prepare:remote-assets:linux` 复用同一路径，只构建并发布 `linux-x64` / `linux-arm64`，descriptor 只列本轮目标，不混入历史 macOS 条目；环境与使用约定见 [Bootstrap 命令](../bootstrap.md)。
-- 远端 `~/.zcode/server` 内旧主链散文件（`node`、`zcode-server.cjs`、`agents/`、`build/`、`tools/`）与 R2 布局共目录：R3 安装**不删除**这些旧文件——未升级的旧版本 Desktop 仍依赖它们运行旧主链；清理属于 R4。R2 的 uninstall allowlist 需扩展列出这批旧路径，保证 R3 之后的 `zcode uninstall` 能一并清理并写入 `preservedPaths` 对账。
+- 远端 `~/.nekode/server` 内旧主链散文件（`node`、`zcode-server.cjs`、`agents/`、`build/`、`tools/`）与 R2 布局共目录：R3 安装**不删除**这些旧文件——未升级的旧版本 Desktop 仍依赖它们运行旧主链；清理属于 R4。R2 的 uninstall allowlist 需扩展列出这批旧路径，保证 R3 之后的 `zcode uninstall` 能一并清理并写入 `preservedPaths` 对账。
 
 ## 6. 握手、鉴权与版本兼容
 
 ### 6.1 ingress 鉴权（补 R2 遗留的安全边界）
 
-R2 的 loopback-only 是网络位置边界：多用户服务器上任何本地进程都能访问 `/ws` 与 capability 签发端点。R3 隧道把这个端口暴露给「任何能连到该机器的 ZCode 用户」，必须先收口：
+R2 的 loopback-only 是网络位置边界：多用户服务器上任何本地进程都能访问 `/ws` 与 capability 签发端点。R3 隧道把这个端口暴露给「任何能连到该机器的 Nekode 用户」，必须先收口：
 
 - daemon 启动时在 `<serverRoot>/run/ingress-token` 写入随机 token（0600，每次 daemon 启动轮换）；
 - Core ingress 对 `/api/*`、`/ws`、`/ws/host` 全部要求 `authorization: Bearer <token>`（或 `?token=`，复用现有 server transport 客户端已实现的携带方式）；`/api/server-info` 允许匿名返回**仅版本与兼容字段**的降级形态，供升级提示使用；
@@ -717,7 +717,7 @@ Source transport 断开
   prepare 与 attachment 换代在跨 `await` 前捕获 epoch，恢复后必须同时校验 entry owner、epoch、
   `closePhase/state` 和 logical session identity；期间到达 terminal close 时旧 flight 必须 fail-closed，
   禁止重新发布 online。
-- `connectionKey + workspaceKey` 同时只能有一个 online/recovering logical owner。Bot/手机触发的重连必须
+- `connectionKey + workspaceKey` 同时只能有一个 online/recovering logical owner。手机触发的重连必须
   join 已有 recovery，返回换代后的唯一 session；不得另建第二个 logical session 再由上层事后清理。
 - logical replacement 的提交与回滚单位是单个 `connectionKey + workspaceKey`，不是整个 Source entry。
   同一物理 Source 上 workspace A 的 Controller/Main attachment 已完成 generation 换代后，workspace B 的
@@ -756,8 +756,7 @@ Source transport 断开
 - Renderer 必须区分自动恢复与用户手动重连：自动恢复显示当前尝试次数与固定预算（1/3、2/3、3/3），
   手动重连不伪造自动重试计数；预算耗尽进入明确终态并展示 Host 提供的 `reasonCode/retryable` 映射。
   recovering 期间 scoped services 已释放，sidebar 的 workspace 展开、task 点击、新建任务及写操作全部
-  fail-closed，直到 replacement attachment ready。Bot 的连接状态查询只认 attachable route，不得把 closed /
-  recovering route 报为 connected。
+  fail-closed，直到 replacement attachment ready。
 - Manager 的每次 retry 状态必须穿过 Registry/Main 到达 Renderer；Registry 处于 recovering 时不能把后续
   recoverable close 当作重复终态丢弃。预算耗尽使用公开 `reasonCode` 与本地化文案收口，不得用 Host 内
   硬编码中文正文覆盖客户端 locale。
@@ -795,7 +794,7 @@ Source transport 断开
 
 服务集合落点：三种 transport 统一改用 `createServerRemoteWorkspaceServiceCollection({ connectionServices, sourceServices })` 的全转发模式（`packages/desktop/src/host/remoteWorkspaceServiceCollection.ts`），删除 SSH/WSL/Docker 专用的「本地权威混装」分支；`onDynamicSessionRuntimePreferencesRequest` 反向桥随 desktop-attached 模式一并退役。全转发集合同时把 Host 私有的 `RemoteProviderProvisioningExecutor`（本机 `ProviderProvisioningSource` + 远端 `IProviderProvisioningTargetService`）登记在 WeakMap 上供 Main 调度，不进入 Renderer RPC（§8.3）。
 
-全转发下 app-global 类服务（OAuth、usage-stats、bots、coding-plan-subscription 等）在 remote scope 的行为需在实施切片 5 按 channel 清单逐项确认，其中已定：远端 Source 不能直接发起浏览器 OAuth（控制端浏览器无法服务远端回调），而是由 Provider Provisioning 自动接收本机当前 active OAuth 会话（allowlist 凭据）；目标未持有可用模型时，对话区显示「此远程设备尚无可用模型，请先在本机配置模型，保存后会自动同步到远程设备」，配置 / 升级动作始终指向本机。
+全转发下 app-global 类服务（OAuth、usage-stats、coding-plan-subscription 等）在 remote scope 的行为需在实施切片 5 按 channel 清单逐项确认，其中已定：远端 Source 不能直接发起浏览器 OAuth（控制端浏览器无法服务远端回调），而是由 Provider Provisioning 自动接收本机当前 active OAuth 会话（allowlist 凭据）；目标未持有可用模型时，对话区显示「此远程设备尚无可用模型，请先在本机配置模型，保存后会自动同步到远程设备」，配置 / 升级动作始终指向本机。
 
 实施确认后的 `RemoteWorkspaceRpcContract v1` 清单：
 
@@ -807,7 +806,7 @@ Source transport 断开
 | onboarding-record                                                       | Source Server 全转发（与 setting/OAuth 同源）                                                  | 不借用控制端记录；手机 replayable allowlist 放行，见 onboarding-record-spec §5.1                                                                                                                                                   |
 | provider-settings/model-selection/media-preview                         | Source Server 全转发（远端 Facade 读远端 Registry）                                            | 设置页「模型设置」不消费远端 `provider-settings`（永远绑定本地，§8.2）；对话区 / Subagents / Automation 模型目录消费目标 Host 的 `model-selection`；`media-preview` 是合同必有 channel，由 `assertRemoteWorkspaceRpcContract` 校验 |
 | provider-provisioning-target                                            | 远端 Environment 内部 Provisioning target；**Host-only**                                       | 不在 `RemoteWorkspaceRpcContract v1` 内，不进 Renderer、不进手机 allowlist；`/ws` replayable 连接拿到抛错 stub（§8.3.4）                                                                                                           |
-| OAuth/usage-stats/coding-plan/client-scenes/bots                        | Source Server 全转发                                                                           | 远端不直接启动浏览器 OAuth；消费 Provisioning 下发的会话且不回落控制端服务                                                                                                                                                         |
+| OAuth/usage-stats/coding-plan/client-scenes                             | Source Server 全转发                                                                           | 远端不直接启动浏览器 OAuth；消费 Provisioning 下发的会话且不回落控制端服务                                                                                                                                                         |
 | skills/MCP/plugins/commands/hooks/subagents/memory/output/settings-sync | Source Server 全转发                                                                           | Source 离线 fail-closed                                                                                                                                                                                                            |
 | conversation-share                                                      | Source Server 使用目标 OAuth/JWT、HTTP、Rows/File 执行；Desktop 转发 trusted attachment 上下文 | SSH/WSL/Docker 可发布；Server 直连与手机仍禁用；详见会话分享 spec 的 R3 权威约定                                                                                                                                                   |
 | prompt-attachment-transfer                                              | Source 本地实现保留；SSH/WSL/Docker 的 Window Host attachment 覆盖跨机 staging                 | 复用当前 Transport backend 上传 desktop localPath；operation 由 attachment 持有，关闭时取消未 adopt 内容；不引入 Resource Store，见附件物化 spec                                                                                   |
@@ -822,7 +821,7 @@ Source transport 断开
 ```text
 fileService gitService gitCheckpointService systemService terminalService
 settingService onboardingRecordService credentialService broadcastService
-zcodeTaskService zcodeAgentService zcodeSessionService conversationShareService botsService fileWatcherService oauthService
+zcodeTaskService zcodeAgentService zcodeSessionService conversationShareService fileWatcherService oauthService
 providerSettingsService modelSelectionService mediaPreviewService          ← 2026-09-07 起替代 modelProviderService / providerSyncService
 sourceServerWorkspaceService usageStatsService codingPlanSubscriptionService clientScenesService
 skillsService skillSyncService mcpSyncService pluginSyncService pluginsService pluginManagementService
@@ -925,7 +924,7 @@ EnvironmentCoordinator               (registered by                             
     -> attachRendererPort(win, route, "source-server-reconnected")
 ```
 
-- 屏障只作用于 `environment-online` 触发的首连；同一 Environment 的第二个 Workspace join 已有 lane，不产生第二次首次同步（E2E `SSH-P0-TASK-01` 断言远端 `~/.zcode/v2/provider-provisioning-state.json` 的 `records[]` 在第二个 Workspace 连接后不增加）。
+- 屏障只作用于 `environment-online` 触发的首连；同一 Environment 的第二个 Workspace join 已有 lane，不产生第二次首次同步（E2E `SSH-P0-TASK-01` 断言远端 `~/.nekode/v2/provider-provisioning-state.json` 的 `records[]` 在第二个 Workspace 连接后不增加）。
 - 重连必须重新 register：lane 以 `remoteSessionId` 登记、execute 闭包也绑定旧 sessionId，Source 换代后若不重注册，后续下发会命中 Host 已失效的旧 session，远端再也收不到配置。重新 register 触发一次 `environment-online` 整份重下发，补齐离线期间的本机配置变更；单测 `desktopRemoteSessions.test.ts` 覆盖「重连后以新 sessionId 重新登记并重新下发」与「重连触发的失败只 warn」。
 - Environment key 由 `buildRemoteEnvironmentKey(target)` 按 transport 派生（`ssh:<hostKey>` / `wsl:<distro>` / `docker:<container>` / `server:<serverId|url>`），不是 `sourceServerId`；同一 Source 经不同线路连接会形成不同 lane（各自首连同步，结果幂等）。收敛到 `sourceServerId` 是后续可选项，见 [r3-provider-refactor-merge.md（已归档）](../archive/remote-r3/r3-provider-refactor-merge.md)。
 
@@ -940,8 +939,8 @@ EnvironmentCoordinator               (registered by                             
        └─ 兼容 → /ws/host → assertRemoteWorkspaceRpcContract → Provisioning 首连屏障（§8.3.2）
 ```
 
-- `ZCODE_MIN_COMPATIBLE_VERSION` 默认等于产品版本（根 `package.json` 未声明 `zcodeCompatibility`），因此不带 Provisioning target 的旧 daemon 在握手阶段就被判「需升级」并先走 §6.3 更新，更新后的 Core 必然注册 target；R3 主链不会对 pre-Provisioning daemon 发出 Envelope。
-- `unsupported` 拒连语义按 Provisioning 事实文档原样保留，仍覆盖：本机 `ProviderProvisioningSource` 不可用（Window Host 尚无 active local services，`sourceServices` 为空）、远端 Core 未注册 target（例如 `kind:"server"` dev 直连到未配置 `ZCODE_SERVER_AUTH_TOKEN` 的 `packages/server` HTTP zcode-server）。
+- `NEKODE_MIN_COMPATIBLE_VERSION` 默认等于产品版本（根 `package.json` 未声明 `zcodeCompatibility`），因此不带 Provisioning target 的旧 daemon 在握手阶段就被判「需升级」并先走 §6.3 更新，更新后的 Core 必然注册 target；R3 主链不会对 pre-Provisioning daemon 发出 Envelope。
+- `unsupported` 拒连语义按 Provisioning 事实文档原样保留，仍覆盖：本机 `ProviderProvisioningSource` 不可用（Window Host 尚无 active local services，`sourceServices` 为空）、远端 Core 未注册 target（例如 `kind:"server"` dev 直连到未配置 `NEKODE_SERVER_AUTH_TOKEN` 的 `packages/server` HTTP zcode-server）。
 - `unsupported` / `failed` / `rollback_failed` 首连一律走正式连接失败通道：不发布 Remote Workspace ready、不发送 Secret、不静默重试；Renderer 看到普通连接失败与日志，用户修正后重连即重试。
 
 #### 8.3.4 非桌面 clientMode 拒绝 stub
@@ -965,17 +964,17 @@ Window Host（windowHostAttachmentRpcPolicy.ts）
 
 ```text
 zcode-server-cli 构建
-  tsup define SERVER_CLI_DEFINES = { __ZCODE_VERSION__, __ZCODE_MIN_COMPATIBLE_VERSION__, __ZCODE_BUILTIN_PROVIDER_CONFIG_JSON__ }
+  tsup define SERVER_CLI_DEFINES = { __NEKODE_VERSION__, __NEKODE_MIN_COMPATIBLE_VERSION__, __NEKODE_BUILTIN_PROVIDER_CONFIG_JSON__ }
         │
 Core 启动（server-core/core.ts runServerCore）
-  layout = resolveServerLayout(ZCODE_SERVER_ROOT)
-  ├─ ZCODE_BUILTIN_PROVIDER_CONFIG_FILE 显式指定 ──► 直接使用该文件
-  ├─ 否则 materializeZCodeBuiltinProviderConfig({ runtimeRoot: layout.serverRoot, content })
-  │     └─► ~/.zcode/server/config/provider/zcode-builtin-<sha256(content)>.json（tmp + rename；同 hash 幂等，内容不一致则失败）
+  layout = resolveServerLayout(NEKODE_SERVER_ROOT)
+  ├─ NEKODE_BUILTIN_PROVIDER_CONFIG_FILE 显式指定 ──► 直接使用该文件
+  ├─ 否则 materializeNekodeBuiltinProviderConfig({ runtimeRoot: layout.serverRoot, content })
+  │     └─► ~/.nekode/server/config/provider/zcode-builtin-<sha256(content)>.json（tmp + rename；同 hash 幂等，内容不一致则失败）
   └─ 两者皆无 ──► 启动失败（fail-closed）
 ```
 
-- 物化目录是 `serverRoot`（`~/.zcode/server`），**不是** release 自带的 `runtime/`：release 目录不可变，同一 releaseId 重装时会重算整棵树的内容哈希，多出的物化文件会让该目录被判为损坏副本并整体替换（[R2 immutable promote](./r2-server-cli-and-daemon.md)）；文件名含内容 hash，跨 release 共用安全。`config/` 目前不在 `zcode uninstall` allowlist 内，卸载后会作为 `preservedPaths` 保留（见 [r2-server-cli-and-daemon.md](./r2-server-cli-and-daemon.md)）。
+- 物化目录是 `serverRoot`（`~/.nekode/server`），**不是** release 自带的 `runtime/`：release 目录不可变，同一 releaseId 重装时会重算整棵树的内容哈希，多出的物化文件会让该目录被判为损坏副本并整体替换（[R2 immutable promote](./r2-server-cli-and-daemon.md)）；文件名含内容 hash，跨 release 共用安全。`config/` 目前不在 `zcode uninstall` allowlist 内，卸载后会作为 `preservedPaths` 保留（见 [r2-server-cli-and-daemon.md](./r2-server-cli-and-daemon.md)）。
 - 远端 Built-in Release 不随 Provisioning 复制：本机 Personal Layer 引用远端 Built-in 不存在的 Provider/Model 时，目标返回结构化错误并回滚本次配置写入。
 
 #### 8.3.6 最近结果与失败重试（数据同步页）
@@ -1095,7 +1094,7 @@ Repo 不再独立建表/补列。旧 schema、未完成计划与回退兼容规�
 
 ### 9.1 控制端迁移（App 升级后首次启动）
 
-输入：`~/.zcode/v2/setting.json#lastWorkspaceSession[kind="remote"]`（连接与 workspace 合一，≤20 条）+ `credentials.json` 中 `remote-workspace:<workspaceKey>:{password,private-key-passphrase,server-token}`。
+输入：`~/.nekode/v2/setting.json#lastWorkspaceSession[kind="remote"]`（连接与 workspace 合一，≤20 条）+ `credentials.json` 中 `remote-workspace:<workspaceKey>:{password,private-key-passphrase,server-token}`。
 
 ```text
 每条 remote entry
@@ -1107,7 +1106,7 @@ Repo 不再独立建表/补列。旧 schema、未完成计划与回退兼容规�
 ```
 
 - 迁移是纯本地、幂等、schema 解析阶段完成（沿用 `migrateLegacyWorkspaceSession` 的既有模式）；失败不阻塞 App 启动，只影响连接页展示并可重试。Directory 的 rejected initialize flight 必须清空，允许后续显式重试；Window Host 无论迁移结果如何都必须先暴露 local base attachment，禁止让 Source Server 目录故障把本地工作区一起卡死。
-- 同一 target 存在多份凭据（不同 workspace 条目各存一份）时，非敏感 target 元数据取 `lastOpenedAt` 最新条目；密码与私钥口令分别取按 `lastOpenedAt` 降序扫描后第一个“credential value 实际存在”的条目。空源不得遮蔽较旧的有效 sibling。本机无法解密的值（`ZCODE_CREDENTIAL_DECRYPT_FAILED`）按“无可用值”处理：记一条 warn（不含 key 与 value），继续扫描，原记录不删除、不改写；不得因此中断迁移。其他读取错误（凭据文件损坏、IO 失败）仍让本次迁移失败并回滚。
+- 同一 target 存在多份凭据（不同 workspace 条目各存一份）时，非敏感 target 元数据取 `lastOpenedAt` 最新条目；密码与私钥口令分别取按 `lastOpenedAt` 降序扫描后第一个“credential value 实际存在”的条目。空源不得遮蔽较旧的有效 sibling。本机无法解密的值（`NEKODE_CREDENTIAL_DECRYPT_FAILED`）按“无可用值”处理：记一条 warn（不含 key 与 value），继续扫描，原记录不删除、不改写；不得因此中断迁移。其他读取错误（凭据文件损坏、IO 失败）仍让本次迁移失败并回滚。
 - 新建 Profile 与迁移使用同一凭据 seam：拥有 plaintext target 的 Host 生成 `profileId` 后，把密码/私钥口令写入 `connection-profile:<profileId>:*` 并在同一持久化操作中写入引用。迁移只有在 value 复制成功后才写新引用；空源继续表达需要交互凭据，禁止制造悬空 key。
 - R4 兼容窗口内，Renderer 为旧 Desktop 投影 stable Source workspace 时，必须把 Profile secret 物化到每个 workspace 独立的 `remote-workspace:<legacyWorkspaceKey>:*` mirror，且先写 secret、后提交 `lastWorkspaceSession` 引用。旧 key 仅用于回退兼容，当前主链仍只消费 Profile credential。
 - `sourceServerDirectoryMigrationVersion=1` 不代表 credential 一定完整；Host initialize 对 active SSH Profile 做幂等审计，仅用相同标准化 route 的 legacy siblings 修复缺失或无法解密的 canonical value，不按 alias/hostname 相似度猜测。
@@ -1174,8 +1173,8 @@ Core workspace 定位层收到 { workspacePath, legacyRouteHint? }
   | `task_group_view_node_orders`                            | 只改 `node_type='task'` 且 `node_key=[workspaceKey,taskId]` 的结构化 key；canonical 已有同 key 时保留 canonical 顺序                                                                                                                                                                                                                                                                                                                                                                                                                        |
   | `automations` / `automation_runs`                        | `workspace_key` 全量 rekey；存在 `workspace_identity` 时同步改为 canonical；对象 id、task/session 引用与运行状态不改写                                                                                                                                                                                                                                                                                                                                                                                                                      |
   | `off_peak_tasks`                                         | 按 §9.1 的闲时绑定冲突裁决保留 canonical 活跃行、取消 source 冲突行后全量 rekey；保留全部历史及对象引用，非冲突行运行状态不变                                                                                                                                                                                                                                                                                                                                                                                                               |
-  | `~/.zcode/cli/db/db.sqlite#session`                      | 只把同 path 变体的 `workspace_id` 改为 canonical；messages/parts 正文不改写                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-  | `~/.zcode/v2/sessions/<hash>`                            | 递归合并 source hash 目录：目标不存在则移动；同相对路径且字节相同则去重；类型不同或字节不同则在任何备份/搬运前整 workspace fail-closed                                                                                                                                                                                                                                                                                                                                                                                                      |
+  | `~/.nekode/cli/db/db.sqlite#session`                      | 只把同 path 变体的 `workspace_id` 改为 canonical；messages/parts 正文不改写                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+  | `~/.nekode/v2/sessions/<hash>`                            | 递归合并 source hash 目录：目标不存在则移动；同相对路径且字节相同则去重；类型不同或字节不同则在任何备份/搬运前整 workspace fail-closed                                                                                                                                                                                                                                                                                                                                                                                                      |
 
 - 重复 task 的 meta 合并仍按字段进行：较新记录缺少某字段时保留较旧记录的值，不能用较新行的
   NULL 投影覆盖该值。旧 meta 未携带字段时，保留双方索引中较新行优先的非空投影，兼容历史
@@ -1343,7 +1342,7 @@ R3 保留源码但已从生产入口不可达、R4 再物理删除：
 - `buildRemoteWorkspaceIdentity` 的 SSH/WSL/Docker 构造。Host 仍在没有历史精确值时用它生成 `legacyRouteHint`，它不是正式 stable identity；随 R4 删除 hint 时一并删除；
 - 旧连接记录（`lastWorkspaceSession` remote entry、`remote-workspace:*` credential key）的读取与解析；
 - `parseRemoteWorkspaceIdentity` 对 `remote:ssh/wsl/docker:*` 的解析（远端迁移扫描用）；
-- 远端 `~/.zcode/server` 旧散文件（未升级 Desktop 的回滚依赖）；
+- 远端 `~/.nekode/server` 旧散文件（未升级 Desktop 的回滚依赖）；
 - 迁移 ledger/报告的兼容读取。
 
 长期保留：`IRemoteBackend` 三实现的 exec/upload/detect 原语（Adapter 底座）、`kind:"server"` dev 直连、手机 attachment 全链路。

@@ -21,15 +21,15 @@ desktop main 进程
         ▼
   └ resolveDesktopContextPromptEnabledForHost()  ← Host fork 时同步读快照
         ▼
-  └ spawnHostProcess(env: ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED="0"|"1")  ← 烤进子进程 env
+  └ spawnHostProcess(env: NEKODE_DESKTOP_CONTEXT_PROMPT_ENABLED="0"|"1")  ← 烤进子进程 env
         │  （desktopHostProcess.ts:291）
         ▼
 Host 子进程（Local Host / Remote Host）
   └ services/node.ts:614-621 顶层 const 只读一次 env → desktopContextPromptEnabled
         ▼
-  └ resolveZCodeAgentPresentationSurface({...})  ← 只在 Host 启动时算一次
+  └ resolveNekodeAgentPresentationSurface({...})  ← 只在 Host 启动时算一次
         ▼
-  └ ZCodeAgentProcessManager.presentationSurface（Host 生命周期内冻结）
+  └ NekodeAgentProcessManager.presentationSurface（Host 生命周期内冻结）
         ▼
   └ spawn CLI: --surface desktop | （缺省）--surface terminal
         ▼
@@ -140,7 +140,7 @@ app.whenReady
 
 | 名称 | 位置 | 说明 |
 |---|---|---|
-| `ZCODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV` | `packages/shared/src/runtimeEnv.ts` | Main→Host 的 env 名（`"0"`/`"1"`） |
+| `NEKODE_DESKTOP_CONTEXT_PROMPT_ENABLED_ENV` | `packages/shared/src/runtimeEnv.ts` | Main→Host 的 env 名（`"0"`/`"1"`） |
 | `DESKTOP_CONTEXT_PROMPT_REQUEST_TIMEOUT_MS` | `desktopContextPromptRollout.ts:9` | 单次请求超时 3s |
 | `DESKTOP_CONTEXT_PROMPT_CACHE_TTL_MS` | `desktopContextPromptRollout.ts:10` | 成功缓存 TTL 1h |
 | `DESKTOP_FIRST_HOST_SPAWN_DECISION_TIMEOUT_MS` | `packages/desktop/src/main/index.ts` | 首 Host 门禁超时 2s |

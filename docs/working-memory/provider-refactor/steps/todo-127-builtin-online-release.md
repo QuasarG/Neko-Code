@@ -145,7 +145,7 @@ App 正常 Account 重建与 Worker 协议继续复用。Managed Worker 收到�
 
 ### Feature Summary
 
-模式为 planning；能力是 Built-in 在线配置供给，改动层为 option-source、validation、persistence 和生命周期。主要 seeds：`fetchZCodeBuiltinRemoteRelease`、`fetchCliZCodeBuiltinRelease`、`ZCodeBuiltinRemoteSynchronizer`、`NodeProviderConfigRuntime`、`NodeProviderRegistryRuntime`、`ProviderRegistryService`、Standalone Account 装配。
+模式为 planning；能力是 Built-in 在线配置供给，改动层为 option-source、validation、persistence 和生命周期。主要 seeds：`fetchNekodeBuiltinRemoteRelease`、`fetchCliNekodeBuiltinRelease`、`NekodeBuiltinRemoteSynchronizer`、`NodeProviderConfigRuntime`、`NodeProviderRegistryRuntime`、`ProviderRegistryService`、Standalone Account 装配。
 
 ### UI Surface Matrix
 
@@ -172,7 +172,7 @@ App 与 CLI 共用 Release、下载和刷新算法，网络能力由装配层注
 
 已使用 feature-boundary-planner 的语义图和 domain map；当前无 codegraph 工具，未执行 codegraph 深度 2 扫描。改用直接源码调用／订阅追踪并运行复现，不能宣称已完成机械影响面扫描。
 
-已追踪 App `node.ts → fetchZCodeBuiltinRemoteRelease → Source → Config → Registry`、`useModelProviders → refreshSources`、CLI `prepareCliProviderRuntimeEnv → bootstrap`、Host `zcodeAgentService → Account 同步`。语义图中的旧 remote provider authority／defaultModelRef 文字有历史漂移，现行 Design V2 的目标 Environment 权威优先；本 Todo 不改图谱或恢复旧行为。拟增图关系为在线源传输→现有 Model capability Source，实施稳定后再整理，不在审查中扩大范围。
+已追踪 App `node.ts → fetchNekodeBuiltinRemoteRelease → Source → Config → Registry`、`useModelProviders → refreshSources`、CLI `prepareCliProviderRuntimeEnv → bootstrap`、Host `zcodeAgentService → Account 同步`。语义图中的旧 remote provider authority／defaultModelRef 文字有历史漂移，现行 Design V2 的目标 Environment 权威优先；本 Todo 不改图谱或恢复旧行为。拟增图关系为在线源传输→现有 Model capability Source，实施稳定后再整理，不在审查中扩大范围。
 
 ### Unresolved Questions / Planning Handoff
 

@@ -1,10 +1,10 @@
-# ZCode 项目架构分析与改进建议
+# Nekode 项目架构分析与改进建议
 
 > **状态：2026-06-10 历史审计。** V4 竖切和窗口作用域 Local/Remote Host 重构后，本文的规模、路径、
 > 多窗口与旧协议判断不再代表当前事实。当前架构请读
 > `docs/architecture/zcode-code-architecture-overview.md`。
 
-> 调研范围：z\-code monorepo（v2\.15\.1，pnpm workspace），含嵌套独立 monorepo `apps/zcode-cli`（ZCode Agent，v0\.14\.1）。数据来源于仓库实际文件统计与文档核对，日期 2026\-06\-10。
+> 调研范围：z\-code monorepo（v2\.15\.1，pnpm workspace），含嵌套独立 monorepo `apps/zcode-cli`（Nekode Agent，v0\.14\.1）。数据来源于仓库实际文件统计与文档核对，日期 2026\-06\-10。
 > 
 > 
 
@@ -21,14 +21,14 @@ shared ← rpc ← services ← client ← server
 |包|职责|TS 源码行数|
 |---|---|---|
 |@zcode/rpc|VS Code 风格 7 层 IPC 框架，传输无关、类型安全|4,934|
-|@zcode/shared|共享类型 \+ zod schema \+ ZCode Protocol 契约|20,531|
-|@zcode/services|35 个业务子域服务（agent/session/git/bots/oauth…）|96,506|
+|@zcode/shared|共享类型 \+ zod schema \+ Nekode Protocol 契约|20,531|
+|@zcode/services|35 个业务子域服务（agent/session/git/oauth…）|96,506|
 |@zcode/client|RPC 桥接（MessagePort / WebSocket → service 代理）|945|
 |@zcode/server|后端入口（Hono HTTP/WS、stdio、Remote SSH）|11,923|
 |@zcode/ui|平台无关 React 19 组件库（桌面/手机共用）|267,181|
 |@zcode/web|Vite SPA（web 端 \+ 手机远控 /remote、/remote/v3）|6,917|
 |@zcode/desktop|Electron 41 桌面端（main/host/preload/renderer）|39,161|
-|apps/zcode\-cli|嵌套 monorepo，ZCode Agent / app\-server，14 个子包|181,683|
+|apps/zcode\-cli|嵌套 monorepo，Nekode Agent / app\-server，14 个子包|181,683|
 
 全仓 TS 总量约 **63 万行**，其中 ui 占比约 57%。
 
@@ -40,7 +40,7 @@ shared ← rpc ← services ← client ← server
   过时：当前是每个 BrowserWindow 一个 Local Host，同一窗口的多个本地 workspace 按 workspaceKey 共用该
   Host；远程 workspace 另由窗口/目标作用域的 Remote Host 承载。
 
-- **App ↔ Agent**：通过 `zcode app-server --stdio` 子进程，stdio NDJSON 传输 ZCode Protocol（JSON\-RPC 风格 envelope，单一版本号，无 capabilities 握手）。
+- **App ↔ Agent**：通过 `zcode app-server --stdio` 子进程，stdio NDJSON 传输 Nekode Protocol（JSON\-RPC 风格 envelope，单一版本号，无 capabilities 握手）。
 
 - 传输统一收敛在 `@zcode/rpc` 的 `IMessagePassingProtocol` 抽象上：桌面 MessagePort、Web WebSocket、远程 SSH stdio\-socket。
 
@@ -78,49 +78,45 @@ shared ← rpc ← services ← client ← server
 desktop main/host、services 大部分服务、ui hooks/lib/store 普遍 `disable max-lines`，规则形同虚设。
 建议：要么按层分级提高阈值（如 800/1000）并清理 disable，要么对新增 disable 设卡口。
 
-**3\. botsService\.ts 单文件 7,015 行**
-全仓最大生产文件（`packages/services/src/bots/botsService.ts`），telegram/weixin/feishu provider 逻辑过度集中。
-建议：按 provider \+ 公共编排层拆分。
-
 ### P1：架构债，建议排期
 
-**4\. packages/shared 退化为大杂烩**
+**3\. packages/shared 退化为大杂烩**
 文档宣称"零依赖、纯类型"，实际依赖 zod，`index.ts` 含 63 处 `export *`，58 个文件含运行时逻辑，内嵌 2,530 行协议 schema。
 建议：拆出 `@zcode/protocol`（协议契约）与 `@zcode/shared-runtime`，恢复 shared 的纯类型定位；至少先更新架构文档与现实对齐。
 
-**5\. desktop/src/main 过重（约 18,000 行 / 70\+ 文件）**
+**4\. desktop/src/main 过重（约 18,000 行 / 70\+ 文件）**
 web 远控相关 7 个文件（manager、transport、relay auth、attachment、reconnect、feature gate、status events）混在 main 目录。
 建议：抽成独立子模块或独立包，main 回归"纯调度"定位。
 
-**6\. task vs session 双轨命名**
+**5\. task vs session 双轨命名**
 协议层已统一为 session，但产品层仍大量保留 taskId（`zcodeTaskServiceAdapter.ts` 4,113 行、`taskIndexRepo.ts` 2,364 行等），迁移期双主键语义增加认知负担。
 建议：制定明确的 deprecation 路线和完成时间点。
 
-**7\. logger 实现多套并存**
+**6\. logger 实现多套并存**
 client、desktop main、ui、services serviceLogger、zcode\-cli contracts 至少 5 套，外加各 service 自建 logger，跨层日志格式/级别/落盘策略难统一。
 建议：抽统一日志门面，各端只做 sink 适配。
 
-**8\. packages/ui 膨胀且混入 vendored 第三方组件**
+**7\. packages/ui 膨胀且混入 vendored 第三方组件**
 26\.7 万行 / 1,102 文件；`components/ui`（shadcn）与 `components/ai-elements` 被 oxlint 和 knip 同时 ignore，既不 lint 也不做死代码审计。
 建议：第三方组件独立为 `ui-primitives` 包或改为 npm 依赖，让业务组件库恢复可审计。
 
 ### P2：清理类
 
-**9\. 已删除运行时的幽灵目录**
+**8\. 已删除运行时的幽灵目录**
 只剩 dist/ 和 tsbuildinfo，无 package\.json 无源码，应删除。
 
-**10\. docs 中残留旧协议引用**
+**9\. docs 中残留旧协议引用**
 代码侧旧协议运行时已删除，相关文档需核对清理或标记 deprecated。
 
-**11\. formal-proof 不在 CI 链路**
+**10\. formal-proof 不在 CI 链路**
 无 package\.json，不在根 typecheck/build 列表，形式化验证易漏跑。建议补 package\.json 并加独立 CI job。
 
-**12\. i18n locale 单文件 3,000\+ 行**
+**11\. i18n locale 单文件 3,000\+ 行**
 en\-US\.ts / zh\-CN\.ts 持续膨胀，建议按命名空间拆分（locales/en/settings\.ts 等）。
 
 ## 三、总结
 
-ZCode 的核心架构（分层依赖、RPC 抽象、协议单一真相源、continuous/replayable 双链路隔离、形式化验证）设计质量较高，文档与代码主链路一致性好。主要风险集中在三类：**规模失控**（shared/ui/desktop\-main/超大 service 文件）、**治理工具腐化**（依赖图过时、lint 规则被批量绕过）、**迁移残留**（旧协议遗迹、task/session 双轨）。建议优先恢复治理工具的有效性（P0），再分期偿还架构债（P1）。
+Nekode 的核心架构（分层依赖、RPC 抽象、协议单一真相源、continuous/replayable 双链路隔离、形式化验证）设计质量较高，文档与代码主链路一致性好。主要风险集中在三类：**规模失控**（shared/ui/desktop\-main/超大 service 文件）、**治理工具腐化**（依赖图过时、lint 规则被批量绕过）、**迁移残留**（旧协议遗迹、task/session 双轨）。建议优先恢复治理工具的有效性（P0），再分期偿还架构债（P1）。
 
 # 第二部分（深挖）：为什么 Bug 频发——根因分析
 
@@ -185,7 +181,7 @@ ZCode 的核心架构（分层依赖、RPC 抽象、协议单一真相源、cont
 |useRef 镜像状态 hack|125 处|绕过 React 数据流|
 |防循环/防重入布尔旗|109 处|重入即破坏不变量|
 
-- hooks 目录 77 个文件 **2\.5 万行**，最大单 hook `useZCodeChatSendPrompt.ts` 1,892 行、`useTaskRestore.ts` 1,753 行。
+- hooks 目录 77 个文件 **2\.5 万行**，最大单 hook `useNekodeChatSendPrompt.ts` 1,892 行、`useTaskRestore.ts` 1,753 行。
 
 - **42 项依赖数组**：`useTaskStreamEvents.ts:624-666` 的事件订阅 effect 有 42 个依赖，任一 setter 引用变化都会 teardown 重建整个流订阅，期间事件丢失——然后再用 seq 防护补，**形成"重订阅丢事件 → 补 stale 防护 → 复杂度上升 → 更多 bug"的恶性循环**。
 
@@ -213,7 +209,7 @@ ZCode 的核心架构（分层依赖、RPC 抽象、协议单一真相源、cont
 
     - `zcodeTaskServiceAdapter.ts:752`：`getTaskMeta().catch(() => null)` 把 DB 真错误伪装成"无旧数据"，触发一连串 legacy 兜底；
 
-    - `useZCodeConfig.ts:1227/1293`：config 读取失败静默回退 default，用户看到的不是真配置。
+    - `useNekodeConfig.ts:1227/1293`：config 读取失败静默回退 default，用户看到的不是真配置。
 
 - **80\+ 处"兜底"中文注释**，多数注释本身写着"Bugfix: …兜底"——即每个兜底都是上一个 bug 的补丁，掩盖根因并在下游制造新的不一致。
 

@@ -1,4 +1,4 @@
-# ZCode 移动端事件推送开发规格
+# Nekode 移动端事件推送开发规格
 
 ## 1. 目标与规则
 
@@ -57,7 +57,7 @@ Host/services 观察 CLI/runtime 权威投影，独立于手机订阅与 Rendere
 
 ### 3.2 HTTP 上报
 
-- `GET /api/v1/remote/notification/status` 使用 ZCode Bearer JWT，返回 `data: {protocol_version:1,event_transport:"http",status:"available|unavailable|unknown"}`。新桌面必须确认 HTTP 能力，不回退 WebSocket。
+- `GET /api/v1/remote/notification/status` 使用 Nekode Bearer JWT，返回 `data: {protocol_version:1,event_transport:"http",status:"available|unavailable|unknown"}`。新桌面必须确认 HTTP 能力，不回退 WebSocket。
 - `POST /api/v1/remote/notification/events` 使用同一认证，正文为 `{device_sid,event}`。event 沿用 version、event_id、kind、workspace_id、session_id、run_id、interaction_id、state、occurred_at、locale。
 - 复用现有桌面注册 API 和串行注册 owner 获取 DeviceSID，不为通知另建一份设备身份。
 - server 从 JWT 获取用户，检查 DeviceSID 归属；正文不允许指定接收用户。未认证或设备越权拒绝，未知版本和业务类型 ignored。
@@ -164,7 +164,7 @@ sign = md5(appid + "&" + timestamp + "&" + secret)
   "device_ids": ["dev_example"],
   "kind": "task_completed",
   "title": "修复登录接口超时",
-  "body": "任务已完成\nZCode 远程控制 · macOS",
+  "body": "任务已完成\nNekode 远程控制 · macOS",
   "dedup_key": "zcode:task:example",
   "data": {
     "v": "1",
@@ -251,19 +251,19 @@ HTTP 401/业务 code=401 按签名错误处理，code=400 为参数错误，code
 
 ## 会话标题、桌面来源与通知直达
 
-HTTP 事件增加可选 session_title、desktop_platform（windows/macos/linux）。Host 从当前会话投影取标题；Main 覆盖为桌面宿主平台。标题变化本身不触发通知。server 将标题清理并限制为 40 UTF-16 单位；空值按语言显示“未命名会话”/“Untitled conversation”。正文为事件文案加换行及“ZCode 远程控制 · macOS”等来源，限制 100 UTF-16 单位，不拆分 Unicode 码点。不显示项目、hostname 或任务正文。
+HTTP 事件增加可选 session_title、desktop_platform（windows/macos/linux）。Host 从当前会话投影取标题；Main 覆盖为桌面宿主平台。标题变化本身不触发通知。server 将标题清理并限制为 40 UTF-16 单位；空值按语言显示“未命名会话”/“Untitled conversation”。正文为事件文案加换行及“Nekode 远程控制 · macOS”等来源，限制 100 UTF-16 单位，不拆分 Unicode 码点。不显示项目、hostname 或任务正文。
 
 五类中文文案：有问题需要你回复、有一项操作等待你确认、有一份计划等待你确认、任务已完成、任务执行失败，请查看。旧事件无平台时仅显示产品来源；新字段不参与幂等。交互类点击载荷补充 interaction_id，其他既有标识不变。
 
-手机仅将 source=zcode/open_target=zcode_remote_control 路由到 ZCode 页面。当前环境、目标账号、来源 device_sid、workspace_id、conversation_id 共同定位。手机对已认证工作区 key（trim 后 identity 优先，否则 path）按 UTF-8 SHA-256 小写 hex 匹配，不通过名称定位，不信任通知提供的 URL。复用现有远控 session/selectTask；不依赖任务首屏列表。
+手机仅将 source=zcode/open_target=zcode_remote_control 路由到 Nekode 页面。当前环境、目标账号、来源 device_sid、workspace_id、conversation_id 共同定位。手机对已认证工作区 key（trim 后 identity 优先，否则 path）按 UTF-8 SHA-256 小写 hex 匹配，不通过名称定位，不信任通知提供的 URL。复用现有远控 session/selectTask；不依赖任务首屏列表。
 
 ```text
-点击 → 账号门禁 → ZCode 来源桌面 → 远控连接 → 工作区摘要匹配 → 会话最新状态
+点击 → 账号门禁 → Nekode 来源桌面 → 远控连接 → 工作区摘要匹配 → 会话最新状态
         └ 未登录暂存         └ 不可达提示重试                  └ 交互仍待处理才定位
 ```
 
-手机单一导航 owner 管理目标，最新点击替代旧目标；切号或退出取消旧异步操作。未登录保留本次 ZCode 点击，其他通知行为不变；账号不匹配不自动切号。远控关闭不自动开启，桌面离线不新增云端副本。缺定位字段的旧通知仅进入 ZCode 入口。端到端验证冷/热启动、本地/远程工作区、切号、连续点击、断线、会话删除及已解决交互。日志仅记录关联 ID 和结果，不记录标题正文或凭据。
+手机单一导航 owner 管理目标，最新点击替代旧目标；切号或退出取消旧异步操作。未登录保留本次 Nekode 点击，其他通知行为不变；账号不匹配不自动切号。远控关闭不自动开启，桌面离线不新增云端副本。缺定位字段的旧通知仅进入 Nekode 入口。端到端验证冷/热启动、本地/远程工作区、切号、连续点击、断线、会话删除及已解决交互。日志仅记录关联 ID 和结果，不记录标题正文或凭据。
 
-实现边界：本轮复用手机 Remote control → ZCode 的远控 session 和会话页面。通过实时 pendingInteractions.anchorRowId 定位现有工具卡片，已解决、自动解决或锚点不可见时不猜测；不新增审批操作按钮。
+实现边界：本轮复用手机 Remote control → Nekode 的远控 session 和会话页面。通过实时 pendingInteractions.anchorRowId 定位现有工具卡片，已解决、自动解决或锚点不可见时不猜测；不新增审批操作按钮。
 
 HTTP 通知由独立 MobilePushController 调用通知服务，设备归属校验不经过 RelayService。当前请求内同步调用一次下游，删除 goroutine、任务组、退出等待及重试。桌面上报总预算20秒，下游默认5秒。只有上游受理/确认去重返回 accepted；本地重复或规则跳过 ignored；调用失败 rejected；解决状态写入成功的 accepted 只表示状态同步完成。超时不证明未发送，不更换 dedup_key 补发。

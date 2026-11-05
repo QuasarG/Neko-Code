@@ -76,7 +76,7 @@ trigger 图标随当前值切换（与会话 composer 一致），菜单固定 `
 领域类型位于 `packages/shared/src/off-peak-types.ts`（勿混入 automation-types）：
 
 ```ts
-type ZCodeOffPeakTaskStatus =
+type NekodeOffPeakTaskStatus =
   | "queued" // 排队等服务端授权
   | "paused" // 用户 Pause，停止派发（D30-10）
   | "running" // 执行中
@@ -84,20 +84,20 @@ type ZCodeOffPeakTaskStatus =
   | "failed"
   | "cancelled"; // 终态
 
-interface ZCodeOffPeakTask {
+interface NekodeOffPeakTask {
   offPeakTaskId: string; // 本地主键，同时用作服务端 task_id（D26）
   serverTicketId?: string; // 服务端 Snowflake ticket_id；重新取号时更新（D26）
   title: string; // 表单 Task title（D28）
   conversationId?: string; // 宿主对话 taskId；D30-8 创建不预建对话，首次派发后回填（兼作"已派发过"信号）
   sessionId?: string; // 首跑后回填；续跑/中断恢复 resume 用（"存在 = 已有真实会话"的语义各处依赖，禁止预填）
   prompt: string; // 表单 Instructions
-  permissionMode: ZCodeTaskMode; // 权限四档全开放（D29-4）；现产品词表 build/edit/plan/yolo，默认 "build"（Ask before changes）
+  permissionMode: NekodeTaskMode; // 权限四档全开放（D29-4）；现产品词表 build/edit/plan/yolo，默认 "build"（Ask before changes）
   model?: string;
   thoughtLevel?: string; // 推理强度（D34，与 automation 对齐）；缺省走 workspace 默认
   workspaceKey: string; // workspaceIdentity?.trim() || workspacePath
   workspacePath: string;
   workspaceIdentity?: string;
-  status: ZCodeOffPeakTaskStatus;
+  status: NekodeOffPeakTaskStatus;
   queuedAt: number;
   startedAt?: number;
   endedAt?: number;
@@ -554,7 +554,7 @@ stateDiagram-v2
 
 CLI/TUI 的输入默认值命名为 `cliDefaultSelection`，复用 `provider_config.json` 的 `config.defaultModelSelection` 与现有普通 session entry。`/model`、`/effort` 只改变输入默认值及原有记忆位置，发送才更新运行时 Session Selection。无配置或数据库迁移。加速卡通过 `selectionFallback.target` 传入该条用户消息的普通选择；Core 的 `highspeedFallbackSelection` 固定本轮接纳前的 Session 候选，用于加速卡过期或请求失败回退，与闲时续票无关。
 
-自动 Project Memory 提取仍跳过：具体是成功结束后的后台项目记忆提取，不修改会话 Memory 开关。child runtime 内嵌 Bash 的结束清理与普通 Agent 一致。
+旧版 Project Memory Extraction 已随 Workspace Memory 删除；闲时任务不产生任何旧版记忆提取，也不修改 Neko Memory。child runtime 内嵌 Bash 的结束清理与普通 Agent 一致。
 
 ## 6. 复用点速查（feat/cron 基建）
 
@@ -563,7 +563,7 @@ CLI/TUI 的输入默认值命名为 `cliDefaultSelection`，复用 `provider_con
 | scheduler utility process + 事务认领模式      | `packages/desktop/src/scheduler/`                              |
 | tasks-index.sqlite + Repo 模式                | `packages/services/src/session/automationRepo.ts` 仿写         |
 | dispatch→main→host→createTask/sendPrompt 管道 | `desktopCronScheduler.ts` / host 域                            |
-| 权限模式                                      | `ZCodeTaskMode` 现有 `bypassPermissions` / `default`，无新模式 |
+| 权限模式                                      | `NekodeTaskMode` 现有 `bypassPermissions` / `default`，无新模式 |
 | 敏感操作确认                                  | 现有 permission_request / elicitation 链路                     |
 | 通知                                          | `desktopNotifications.ts`                                      |
 | 内置不可见 provider                           | Start plan 机制（provider 注入路径核对后复用）                 |
