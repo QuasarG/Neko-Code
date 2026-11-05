@@ -1,8 +1,8 @@
 import { delimiter, dirname } from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { UnauthorizedError } from "@modelcontextprotocol/client";
-import { ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
-import type { SharedZCodeCredentialStore } from "../src/auth/shared-credentials.js";
+import { NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
+import type { SharedNekodeCredentialStore } from "../src/auth/shared-credentials.js";
 
 const {
   capturedClientInfo,
@@ -303,7 +303,7 @@ describe("createMcpAdapter", () => {
         arguments: { code: "1 + 1" },
         name: "js",
         _meta: {
-          "com.zcode/request-context": {
+          "com.nekode/request-context": {
             parent_span_id: "parent-1",
             runtime_scope: "subagent",
             session_id: "session-1",
@@ -341,7 +341,7 @@ describe("createMcpAdapter", () => {
 
     const meta = clientCallToolMock.mock.calls.at(-1)?.[0]._meta;
     expect(meta).toMatchObject({ root_session_id: "session-1", session_id: "subagent-1" });
-    expect(meta["com.zcode/request-context"]).toMatchObject({
+    expect(meta["com.nekode/request-context"]).toMatchObject({
       root_session_id: "session-1",
       session_id: "subagent-1",
     });
@@ -890,7 +890,7 @@ describe("createMcpAdapter", () => {
     const adapter = createMcpAdapter({
       env: {
         PATH: dirname(process.execPath),
-        ZCODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
+        NEKODE_AGENT_CA_CERT: "/tmp/root-ca.pem",
       },
       network: {
         httpProxy: "127.0.0.1:8888",
@@ -930,7 +930,7 @@ describe("createMcpAdapter", () => {
   it("appends the injected node fallback after the server env", async () => {
     const resolve = vi.fn(async () => ({
       binDir: "/fallback/bin",
-      env: { ZCODE_NODE_FALLBACK_EXEC_PATH: "/electron" },
+      env: { NEKODE_NODE_FALLBACK_EXEC_PATH: "/electron" },
     }));
     const adapter = createMcpAdapter({
       env: { PATH: dirname(process.execPath) },
@@ -946,14 +946,14 @@ describe("createMcpAdapter", () => {
 
     const options = capturedStdioOptions[0] as { env?: Record<string, string> };
     expect(options.env?.PATH).toBe(["/plugin/bin", "/fallback/bin"].join(delimiter));
-    expect(options.env?.ZCODE_NODE_FALLBACK_EXEC_PATH).toBe("/electron");
+    expect(options.env?.NEKODE_NODE_FALLBACK_EXEC_PATH).toBe("/electron");
     expect(resolve).toHaveBeenCalledTimes(1);
   });
 
   it("restores captured user network env into stdio MCP transports", async () => {
     const adapter = createMcpAdapter({
       env: {
-        [ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
+        [NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
           NODE_EXTRA_CA_CERTS: "/tmp/user-ca.pem",
           http_proxy: "http://user-proxy:8080",
         }),
@@ -973,13 +973,13 @@ describe("createMcpAdapter", () => {
       PATH: dirname(process.execPath),
       http_proxy: "http://user-proxy:8080",
     });
-    expect(options.env?.[ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
+    expect(options.env?.[NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
   });
 
   it("passes proxy-aware fetch into HTTP and SSE MCP transports", async () => {
     const adapter = createMcpAdapter({
       env: {
-        ZCODE_HTTP_PROXY: "http://127.0.0.1:8888",
+        NEKODE_HTTP_PROXY: "http://127.0.0.1:8888",
       },
       network: {},
     });
@@ -1061,7 +1061,7 @@ describe("createMcpAdapter", () => {
       type: "http",
       url: "https://mcp.example.test",
       headers: {
-        "X-ZCode": "1",
+        "X-Nekode": "1",
       },
       oauth: {
         type: "client_credentials",
@@ -1098,7 +1098,7 @@ describe("createMcpAdapter", () => {
       };
     };
 
-    expect(httpOptions.requestInit?.headers).toEqual({ "X-ZCode": "1" });
+    expect(httpOptions.requestInit?.headers).toEqual({ "X-Nekode": "1" });
     expect(httpOptions.authProvider?.clientInformation()).toEqual({
       client_id: "http-client",
       client_secret: "http-secret",
@@ -1129,7 +1129,7 @@ describe("createMcpAdapter", () => {
       url: "https://mcp.example.test/mcp",
       oauth: {
         type: "authorization_code",
-        clientName: "ZCode",
+        clientName: "Nekode",
       },
     });
 
@@ -1162,7 +1162,7 @@ describe("createMcpAdapter", () => {
         url: "https://mcp.example.test/mcp",
         oauth: {
           type: "authorization_code",
-          clientName: "ZCode",
+          clientName: "Nekode",
         },
       },
     });
@@ -1181,7 +1181,7 @@ describe("createMcpAdapter", () => {
         url: "https://mcp.example.test/mcp",
         oauth: {
           type: "authorization_code",
-          clientName: "ZCode",
+          clientName: "Nekode",
         },
       },
     });
@@ -1220,7 +1220,7 @@ describe("createMcpAdapter", () => {
         url: "https://mcp.example.test/mcp",
         oauth: {
           type: "authorization_code" as const,
-          clientName: "ZCode",
+          clientName: "Nekode",
         },
       },
     };
@@ -1265,7 +1265,7 @@ describe("createMcpAdapter", () => {
         url: "https://mcp.example.test/mcp",
         oauth: {
           type: "authorization_code" as const,
-          clientName: "ZCode",
+          clientName: "Nekode",
         },
       },
     };
@@ -1323,7 +1323,7 @@ describe("createMcpAdapter", () => {
           type: "http",
           url: "https://mcp.example.test/mcp",
           timeoutMs: 2_000,
-          oauth: { type: "authorization_code", clientName: "ZCode" },
+          oauth: { type: "authorization_code", clientName: "Nekode" },
         },
         { oauthAuthorizationTimeoutMs: 20 },
       );
@@ -1622,7 +1622,7 @@ describe("createMcpAdapter", () => {
   });
 
   it("converges Phase 2 orchestration errors to a retryable failed server status", async () => {
-    const credentialError = new Error("Unable to read shared ZCode credentials");
+    const credentialError = new Error("Unable to read shared Nekode credentials");
     const credentialStore = {
       filePath: "/tmp/zcode-unreadable-credentials.json",
       load: vi.fn(async () => {
@@ -1631,7 +1631,7 @@ describe("createMcpAdapter", () => {
       loadMany: vi.fn(async () => {
         throw credentialError;
       }),
-    } as unknown as SharedZCodeCredentialStore;
+    } as unknown as SharedNekodeCredentialStore;
     clientConnectMock.mockRejectedValue(new UnauthorizedError());
     const adapter = createMcpAdapter({
       mcpOAuth: {
@@ -1650,7 +1650,7 @@ describe("createMcpAdapter", () => {
       await expect(adapter.connectConfiguredServers({ broken: config })).resolves.toMatchObject({
         statuses: {
           broken: {
-            error: "Unable to read shared ZCode credentials",
+            error: "Unable to read shared Nekode credentials",
             failureKind: "oauth_authorization_failed",
             status: "failed",
           },
@@ -1693,7 +1693,7 @@ describe("createMcpAdapter", () => {
       url: "https://mcp.example.test/mcp",
       oauth: {
         type: "authorization_code",
-        clientName: "ZCode",
+        clientName: "Nekode",
       },
     });
 

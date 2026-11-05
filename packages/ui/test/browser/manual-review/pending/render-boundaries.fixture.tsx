@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { Streamdown } from "streamdown";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { NekodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { ConversationTurnNavigator } from "@/v4/ConversationTurnNavigator.js";
 import { createConversationTurnRenderUnitsSelector } from "@/v4/conversationTurnRenderUnits.js";
@@ -15,7 +15,7 @@ import {
   resolveComposerScope,
   V4_DRAFT_SCOPE_ROOT,
 } from "@/v4/composer/composerDraftStore.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { AssistantCodeCommentFeatureProvider } from "@/AssistantCodeCommentFeatureProvider.js";
 import { projectAssistantCodeComments } from "@/lib/assistantCodeComment.js";
 import { useConversationTimelineFind } from "@/v4/useConversationTimelineFind.js";
@@ -28,7 +28,7 @@ const theme = params.get("theme") === "light" ? "light" : "dark";
 document.documentElement.className = `${theme} theme-zai-${theme}`;
 const workspace = "/render-boundary";
 if (params.get("group") === "1")
-  useZCodeSessionStore
+  useNekodeSessionStore
     .getState()
     .startDraft(workspace, undefined, undefined, { taskGroupId: "group-a" });
 persistV4ComposerDraft(
@@ -72,7 +72,7 @@ function DraftOwner() {
       lifecycle: () => owner.captureComposerContentLifecycleCommit(),
       clearGroup: () => {
         clearV4ComposerDraftTaskGroup(workspace, undefined, resolveComposerScope(null));
-        useZCodeSessionStore.getState().clearDraftTaskGroup(workspace);
+        useNekodeSessionStore.getState().clearDraftTaskGroup(workspace);
       },
     },
   });
@@ -359,7 +359,7 @@ function SearchNavigation() {
   );
 }
 createRoot(document.getElementById("root")!).render(
-  <ZCodeIntlProvider initialLocale="en-US">
+  <NekodeIntlProvider initialLocale="en-US">
     <TooltipProvider>
       {params.get("mode") === "draft" ? (
         <DraftOwner />
@@ -375,5 +375,5 @@ createRoot(document.getElementById("root")!).render(
         <Navigation />
       )}
     </TooltipProvider>
-  </ZCodeIntlProvider>,
+  </NekodeIntlProvider>,
 );

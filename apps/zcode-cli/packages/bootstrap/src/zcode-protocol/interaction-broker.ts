@@ -31,10 +31,10 @@ import {
   zcodePermissionResponseSchema,
   zcodeProtocolMethods,
   zcodeUserInputResponseSchema,
-  type ZCodePermissionOption,
-  type ZCodePermissionResponse,
-  type ZCodeUserInputQuestion,
-  type ZCodeUserInputResponse,
+  type NekodePermissionOption,
+  type NekodePermissionResponse,
+  type NekodeUserInputQuestion,
+  type NekodeUserInputResponse,
 } from "@zcode/shared";
 import type {
   V4InteractionAnswer,
@@ -43,7 +43,7 @@ import type {
 import {
   PROTOCOL_CLIENT_REQUEST_ERROR_CODES,
   ProtocolRequestError,
-  type ZCodeProtocolAgentServerContext,
+  type NekodeProtocolAgentServerContext,
 } from "./server-types.js";
 import {
   buildProtocolPermissionOptions,
@@ -64,7 +64,7 @@ interface RegisteredRequestOptions extends PermissionBrokerRequestOptions {
 }
 
 export function createProtocolInteractionBroker(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
 ): PermissionBrokerPort {
   return {
     requestPermission(request, options) {
@@ -103,7 +103,7 @@ export function createProtocolInteractionBroker(
 }
 
 async function requestPermission(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   request: PermissionBrokerRequest,
   options?: RegisteredRequestOptions,
 ): Promise<PermissionBrokerResult> {
@@ -135,7 +135,7 @@ async function requestPermission(
         zcodePermissionResponseSchema,
         withInteractionRequestRecovery(options, signal),
       ),
-    // v4 answer → ZCodePermissionResponse：optionId 语义来自 v4 reducer 合成的
+    // v4 answer → NekodePermissionResponse：optionId 语义来自 v4 reducer 合成的
     // allowOnce/allowAlways/deny（见 product-projection onPermissionRequested）。
     (answer) => {
       // 工作流确认窗里调整过的设置随放行应答一起走（docs/dynamic-workflow/launch.md
@@ -196,9 +196,9 @@ async function requestPermission(
  */
 function v4AnswerToPermissionResponse(
   answer: V4InteractionAnswer,
-  permissionOptions: ZCodePermissionOption[],
+  permissionOptions: NekodePermissionOption[],
   toolName: string,
-): ZCodePermissionResponse & {
+): NekodePermissionResponse & {
   reasonSource?: PermissionBrokerResult["reasonSource"];
   sessionPermissionUpdates?: PermissionBrokerResult["sessionPermissionUpdates"];
 } {
@@ -248,7 +248,7 @@ function v4AnswerToPermissionResponse(
  * 后者靠合成（不持久化）的 PermissionRequested / PermissionResolved 事件推进投影。
  */
 export async function requestMcpElicitation(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   request: McpElicitationRequest,
   options?: { signal?: AbortSignal },
 ): Promise<McpElicitationResult> {
@@ -295,7 +295,7 @@ export async function requestMcpElicitation(
     reason: request.message,
     input,
   });
-  let response: ZCodeUserInputResponse;
+  let response: NekodeUserInputResponse;
   try {
     response = await raceClientRequestWithV4Interaction(
       context,
@@ -340,7 +340,7 @@ export async function requestMcpElicitation(
 }
 
 async function requestUserInput(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   request: PermissionBrokerRequest,
   options?: RegisteredRequestOptions,
 ): Promise<PermissionBrokerResult> {
@@ -395,7 +395,7 @@ async function requestUserInput(
   return userInputResponseToBrokerResult(request, response);
 }
 
-function v4AnswerToUserInputResponse(answer: V4InteractionAnswer): ZCodeUserInputResponse {
+function v4AnswerToUserInputResponse(answer: V4InteractionAnswer): NekodeUserInputResponse {
   // answer.action 存在（host adapter respondElicitation 收敛路径）
   // 时按旧 respondUserInput 语义精确直传——content 携带多题 answers/annotations，
   // normalizeAskUserQuestionResponseContent 继续负责 schema 收敛。
@@ -415,7 +415,7 @@ function v4AnswerToUserInputResponse(answer: V4InteractionAnswer): ZCodeUserInpu
 }
 
 async function requestExitPlanModeApproval(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   request: PermissionBrokerRequest,
   options?: RegisteredRequestOptions,
 ): Promise<PermissionBrokerResult> {
@@ -451,7 +451,7 @@ async function requestExitPlanModeApproval(
   return planApprovalResponseToBrokerResult(response);
 }
 
-function v4AnswerToPlanApprovalResponse(answer: V4InteractionAnswer): ZCodeUserInputResponse {
+function v4AnswerToPlanApprovalResponse(answer: V4InteractionAnswer): NekodeUserInputResponse {
   // 同 v4AnswerToUserInputResponse——host adapter 收敛路径直传
   // action/content，planApprovalResponseToBrokerResult 继续做 approve/feedback 归一。
   if (answer.action) {
@@ -472,7 +472,7 @@ function v4AnswerToPlanApprovalResponse(answer: V4InteractionAnswer): ZCodeUserI
   return { action: "decline" };
 }
 
-function createExitPlanModeApprovalQuestion(): ZCodeUserInputQuestion {
+function createExitPlanModeApprovalQuestion(): NekodeUserInputQuestion {
   return {
     header: "Plan",
     options: [
@@ -502,7 +502,7 @@ function withInteractionRequestRecovery(
   };
 }
 
-function mapAskUserQuestion(question: AskUserQuestion): ZCodeUserInputQuestion {
+function mapAskUserQuestion(question: AskUserQuestion): NekodeUserInputQuestion {
   return {
     header: question.header,
     multiSelect: question.multiSelect,
@@ -518,7 +518,7 @@ function mapAskUserQuestion(question: AskUserQuestion): ZCodeUserInputQuestion {
 
 function userInputResponseToBrokerResult(
   request: PermissionBrokerRequest,
-  response: ZCodeUserInputResponse,
+  response: NekodeUserInputResponse,
 ): PermissionBrokerResult {
   if (response.action !== "accept") {
     return {
@@ -546,7 +546,7 @@ function userInputResponseToBrokerResult(
 }
 
 function planApprovalResponseToBrokerResult(
-  response: ZCodeUserInputResponse,
+  response: NekodeUserInputResponse,
 ): PermissionBrokerResult {
   if (response.action !== "accept") {
     return {
@@ -652,7 +652,7 @@ function normalizeAskUserQuestionAnswers(
 function createInteractionRegistrationOptions(
   request: PermissionBrokerRequest,
   kind: V4InteractionRegistrationOptions["kind"],
-  context?: ZCodeProtocolAgentServerContext,
+  context?: NekodeProtocolAgentServerContext,
   initialAutoResolution?: V4InteractionRegistrationOptions["initialAutoResolution"],
 ): V4InteractionRegistrationOptions {
   return {
@@ -692,7 +692,7 @@ function createInteractionRegistrationOptions(
 }
 
 async function readPersistedAutoResolution(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   request: PermissionBrokerRequest,
 ): Promise<V4InteractionRegistrationOptions["initialAutoResolution"]> {
   const sessionStore = context.deps?.sessionStore;

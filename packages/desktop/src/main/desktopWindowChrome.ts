@@ -73,7 +73,7 @@ function isCodingPlanEmbeddedWebviewSrc(src: string | undefined): boolean {
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     if (
       !isTrustedCodingPlanWebviewOrigin(url.origin, {
-        e2eStoreBridgeEnabled: process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1",
+        e2eStoreBridgeEnabled: process.env.VITE_NEKODE_E2E_STORE_BRIDGE === "1",
       })
     ) {
       return false;
@@ -100,7 +100,7 @@ function isCodingPlanWebviewUrl(src: string | undefined): boolean {
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     if (
       !isTrustedCodingPlanWebviewOrigin(url.origin, {
-        e2eStoreBridgeEnabled: process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1",
+        e2eStoreBridgeEnabled: process.env.VITE_NEKODE_E2E_STORE_BRIDGE === "1",
       })
     ) {
       return false;
@@ -119,7 +119,7 @@ function isCodingPlanPaymentCallbackUrl(src: string | undefined): boolean {
     if (url.protocol !== "http:" && url.protocol !== "https:") return false;
     if (
       !isTrustedCodingPlanWebviewOrigin(url.origin, {
-        e2eStoreBridgeEnabled: process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1",
+        e2eStoreBridgeEnabled: process.env.VITE_NEKODE_E2E_STORE_BRIDGE === "1",
       })
     ) {
       return false;
@@ -479,7 +479,7 @@ function attachEmbeddedBrowserWindowOpenHandler(options: {
       if (
         isTrustedRewardsUrl(url, {
           dev: !app.isPackaged,
-          e2e: process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1",
+          e2e: process.env.VITE_NEKODE_E2E_STORE_BRIDGE === "1",
         })
       )
         return;
@@ -728,7 +728,7 @@ export function createBrowserWindow(options: {
       : embeddedBrowserJavaScriptDialogPreloadPath;
     const isRewardsWebview = isTrustedRewardsUrl(targetUrl, {
       dev: !app.isPackaged,
-      e2e: process.env.VITE_ZCODE_E2E_STORE_BRIDGE === "1",
+      e2e: process.env.VITE_NEKODE_E2E_STORE_BRIDGE === "1",
     });
     if (isRewardsWebview) {
       webPreferences.preload = join(import.meta.dirname, "../preload/rewardsWebview.cjs");
@@ -753,7 +753,7 @@ export function createBrowserWindow(options: {
     delete params.allowpopups;
 
     // webview 内 target=_blank/window.open 如果完全禁用 popup 会表现为点击无响应；
-    // 如果放任 Electron 默认处理，又会创建脱离 ZCode 的 BrowserWindow。这里由宿主重新打开
+    // 如果放任 Electron 默认处理，又会创建脱离 Nekode 的 BrowserWindow。这里由宿主重新打开
     // allowpopups，并在 did-attach-webview 中用 setWindowOpenHandler 统一 deny 默认窗口创建，
     // 再把合法 URL 路由到内部 Browser tab 或系统浏览器。
     params.allowpopups = "true";

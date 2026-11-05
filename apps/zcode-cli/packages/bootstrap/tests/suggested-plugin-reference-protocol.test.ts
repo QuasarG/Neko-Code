@@ -2,9 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   buildPluginReferenceCatalog: vi.fn(),
-  getZCodePluginsOverview: vi.fn(),
-  resolveZCodePlugins: vi.fn(),
-  updateZCodePluginMarketplace: vi.fn(),
+  getNekodePluginsOverview: vi.fn(),
+  resolveNekodePlugins: vi.fn(),
+  updateNekodePluginMarketplace: vi.fn(),
 }));
 
 vi.mock("@zcode/core", () => ({
@@ -13,9 +13,9 @@ vi.mock("@zcode/core", () => ({
 
 vi.mock("../src/plugins.js", () => ({
   enrichCachedClaudeMarketplaceIconsForOverview: vi.fn(),
-  getZCodePluginsOverview: mocks.getZCodePluginsOverview,
-  resolveZCodePlugins: mocks.resolveZCodePlugins,
-  updateZCodePluginMarketplace: mocks.updateZCodePluginMarketplace,
+  getNekodePluginsOverview: mocks.getNekodePluginsOverview,
+  resolveNekodePlugins: mocks.resolveNekodePlugins,
+  updateNekodePluginMarketplace: mocks.updateNekodePluginMarketplace,
 }));
 
 import {
@@ -27,7 +27,7 @@ import {
 } from "@zcode/shared";
 import type { PluginReferenceCatalogEntry } from "@zcode/contracts";
 import { resolveSuggestedPluginReference } from "../src/zcode-protocol/plugin-reference-catalog.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 const STABLE_ID = "document-skills@zcode-plugins-official";
 const WORKSPACE = { workspacePath: "/workspace", workspaceKey: "ssh://host/workspace" };
@@ -38,8 +38,8 @@ const DESKTOP_BOUNDARY = {
 };
 const notify = vi.fn();
 
-function protocolContext(): ZCodeProtocolAgentServerContext {
-  return { notify } as unknown as ZCodeProtocolAgentServerContext;
+function protocolContext(): NekodeProtocolAgentServerContext {
+  return { notify } as unknown as NekodeProtocolAgentServerContext;
 }
 
 function catalogEntry(
@@ -77,12 +77,12 @@ describe("plugins/resolveSuggestedReference protocol", () => {
     entries = [];
     mocks.buildPluginReferenceCatalog.mockReset();
     mocks.buildPluginReferenceCatalog.mockImplementation(() => ({ plugins: entries }));
-    mocks.resolveZCodePlugins.mockReset();
-    mocks.resolveZCodePlugins.mockReturnValue({ diagnostics: [], plugins: [] });
-    mocks.updateZCodePluginMarketplace.mockReset();
-    mocks.updateZCodePluginMarketplace.mockResolvedValue({ diagnostics: [], marketplaces: [] });
-    mocks.getZCodePluginsOverview.mockReset();
-    mocks.getZCodePluginsOverview.mockReturnValue({
+    mocks.resolveNekodePlugins.mockReset();
+    mocks.resolveNekodePlugins.mockReturnValue({ diagnostics: [], plugins: [] });
+    mocks.updateNekodePluginMarketplace.mockReset();
+    mocks.updateNekodePluginMarketplace.mockResolvedValue({ diagnostics: [], marketplaces: [] });
+    mocks.getNekodePluginsOverview.mockReset();
+    mocks.getNekodePluginsOverview.mockReturnValue({
       availablePlugins: [],
       diagnostics: [],
       installedPlugins: [],
@@ -175,7 +175,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
 
     expect(result.status).toBe("unavailable");
     expect(result.diagnostics[0]?.code).toBe("plugin_suggested_reference_untrusted_source");
-    expect(mocks.updateZCodePluginMarketplace).not.toHaveBeenCalled();
+    expect(mocks.updateNekodePluginMarketplace).not.toHaveBeenCalled();
     expect(() => zcodePluginsResolveSuggestedReferenceResultSchema.parse(result)).not.toThrow();
   });
 
@@ -186,7 +186,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
     "returns %s for an installed official plugin without refreshing",
     async (status, enabled) => {
       entries = [catalogEntry({ enabled })];
-      mocks.getZCodePluginsOverview.mockReturnValue({
+      mocks.getNekodePluginsOverview.mockReturnValue({
         availablePlugins: [
           overviewCandidate({
             installed: true,
@@ -213,13 +213,13 @@ describe("plugins/resolveSuggestedReference protocol", () => {
         sourceTrust: "official",
         icon: "https://cdn.example/document-skills.svg",
       });
-      expect(mocks.updateZCodePluginMarketplace).not.toHaveBeenCalled();
+      expect(mocks.updateNekodePluginMarketplace).not.toHaveBeenCalled();
       expect(notify).not.toHaveBeenCalled();
     },
   );
 
   it("refreshes only zcode-plugins-official before exposing a missing candidate", async () => {
-    mocks.getZCodePluginsOverview.mockReturnValue({
+    mocks.getNekodePluginsOverview.mockReturnValue({
       availablePlugins: [
         overviewCandidate({ listing: { icon: "https://cdn.example/document-skills.svg" } }),
       ],
@@ -237,8 +237,8 @@ describe("plugins/resolveSuggestedReference protocol", () => {
       deliveryKind: "desktop-continuous",
     });
 
-    expect(mocks.updateZCodePluginMarketplace).toHaveBeenCalledOnce();
-    expect(mocks.updateZCodePluginMarketplace).toHaveBeenCalledWith(
+    expect(mocks.updateNekodePluginMarketplace).toHaveBeenCalledOnce();
+    expect(mocks.updateNekodePluginMarketplace).toHaveBeenCalledWith(
       expect.objectContaining({
         marketplace: "zcode-plugins-official",
         workingDirectory: "/workspace",
@@ -260,7 +260,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
 
   it("emits refreshing after the first local miss and before marketplace refresh settles", async () => {
     let settleRefresh!: (value: { diagnostics: never[]; marketplaces: never[] }) => void;
-    mocks.updateZCodePluginMarketplace.mockReturnValue(
+    mocks.updateNekodePluginMarketplace.mockReturnValue(
       new Promise((resolve) => {
         settleRefresh = resolve;
       }),
@@ -279,14 +279,14 @@ describe("plugins/resolveSuggestedReference protocol", () => {
         params: { operationId: "suggested-progress", state: "refreshing" },
       });
     });
-    expect(mocks.updateZCodePluginMarketplace).toHaveBeenCalledOnce();
+    expect(mocks.updateNekodePluginMarketplace).toHaveBeenCalledOnce();
 
     settleRefresh({ diagnostics: [], marketplaces: [] });
     await expect(pending).resolves.toMatchObject({ status: "unavailable" });
   });
 
   it("fails closed after a refresh failure even when an old snapshot still has a candidate", async () => {
-    mocks.updateZCodePluginMarketplace.mockResolvedValue({
+    mocks.updateNekodePluginMarketplace.mockResolvedValue({
       diagnostics: [
         {
           code: "plugin_archive_fetch_failed",
@@ -297,7 +297,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
       ],
       marketplaces: [],
     });
-    mocks.getZCodePluginsOverview.mockReturnValue({
+    mocks.getNekodePluginsOverview.mockReturnValue({
       availablePlugins: [overviewCandidate()],
       diagnostics: [],
       installedPlugins: [],
@@ -313,12 +313,12 @@ describe("plugins/resolveSuggestedReference protocol", () => {
 
     expect(result.status).toBe("unavailable");
     expect(result.diagnostics[0]?.code).toBe("marketplace_refresh_failed");
-    expect(mocks.getZCodePluginsOverview).not.toHaveBeenCalled();
+    expect(mocks.getNekodePluginsOverview).not.toHaveBeenCalled();
   });
 
   it("fails closed and aborts the official marketplace refresh at ten seconds", async () => {
     let refreshSignal: AbortSignal | undefined;
-    mocks.updateZCodePluginMarketplace.mockImplementation(
+    mocks.updateNekodePluginMarketplace.mockImplementation(
       (options: { abortSignal?: AbortSignal }) => {
         refreshSignal = options.abortSignal;
         return new Promise(() => {});
@@ -345,7 +345,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
       expect(refreshSignal?.aborted).toBe(true);
       expect(result.status).toBe("unavailable");
       expect(result.diagnostics[0]?.code).toBe("marketplace_refresh_failed");
-      expect(mocks.getZCodePluginsOverview).not.toHaveBeenCalled();
+      expect(mocks.getNekodePluginsOverview).not.toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }
@@ -353,7 +353,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
 
   it("reports cancellation separately from marketplace refresh failure", async () => {
     const controller = new AbortController();
-    mocks.updateZCodePluginMarketplace.mockImplementation(async () => {
+    mocks.updateNekodePluginMarketplace.mockImplementation(async () => {
       controller.abort();
       throw controller.signal.reason;
     });
@@ -369,7 +369,7 @@ describe("plugins/resolveSuggestedReference protocol", () => {
   });
 
   it("re-resolves installed state from the refreshed catalog", async () => {
-    mocks.updateZCodePluginMarketplace.mockImplementation(async () => {
+    mocks.updateNekodePluginMarketplace.mockImplementation(async () => {
       entries = [catalogEntry()];
       return { diagnostics: [], marketplaces: [] };
     });
@@ -380,12 +380,12 @@ describe("plugins/resolveSuggestedReference protocol", () => {
       ...DESKTOP_BOUNDARY,
     });
 
-    expect(mocks.resolveZCodePlugins).toHaveBeenCalledTimes(2);
+    expect(mocks.resolveNekodePlugins).toHaveBeenCalledTimes(2);
     expect(result.status).toBe("ready");
   });
 
   it("rejects a disappeared or identity-mismatched candidate after refresh", async () => {
-    mocks.getZCodePluginsOverview.mockReturnValue({
+    mocks.getNekodePluginsOverview.mockReturnValue({
       availablePlugins: [overviewCandidate({ marketplace: "personal" })],
       diagnostics: [],
       installedPlugins: [],

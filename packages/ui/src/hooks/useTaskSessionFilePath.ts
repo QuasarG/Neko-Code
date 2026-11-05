@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@/logger.js";
-import { useZCodeTaskService } from "@/hooks/useZCodeTaskService.js";
+import { useNekodeTaskService } from "@/hooks/useNekodeTaskService.js";
 
 /**
  * useWorkspaceActiveTaskState 的导出返回类型间接引用此接口，声明生成要求它可导出。
@@ -48,7 +48,7 @@ export function useTaskSessionFilePath(
   workspaceIdentity?: string,
   options: { enabled?: boolean } = {},
 ) {
-  const zcodeTaskService = useZCodeTaskService(workspacePath, undefined, workspaceIdentity);
+  const zcodeTaskService = useNekodeTaskService(workspacePath, undefined, workspaceIdentity);
   const [state, setState] = useState<TaskSessionFilePathState>(INITIAL_STATE);
   const requestVersionRef = useRef(0);
   const enabled = options.enabled ?? true;

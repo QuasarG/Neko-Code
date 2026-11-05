@@ -2,19 +2,19 @@
 
 ## Goal
 
-ZCode should load a bounded subset of Claude Code format plugins while keeping
-ZCode's runtime boundaries. The plugin ecosystem remains file-compatible with
-Claude Code where possible, but ZCode P0 only projects plugin-provided skills,
-custom commands, MCP servers and trusted official hooks into existing ZCode
+Nekode should load a bounded subset of Claude Code format plugins while keeping
+Nekode's runtime boundaries. The plugin ecosystem remains file-compatible with
+Claude Code where possible, but Nekode P0 only projects plugin-provided skills,
+custom commands, MCP servers and trusted official hooks into existing Nekode
 capability domains. Hook files from non-official third-party Marketplaces can be
-parsed for diagnostics, but are not injected into the runtime until ZCode has an
+parsed for diagnostics, but are not injected into the runtime until Nekode has an
 explicit trust and permission gate.
 
 This feature started as first-party packaged capabilities such as the iOS
 Simulator and Android Emulator plugins. Claude Code Marketplace compatibility
 extends the installation and discovery model, but it is still not a new arbitrary
 extension runtime. High-risk Claude plugin features are recognized and diagnosed
-before ZCode grows a matching runtime.
+before Nekode grows a matching runtime.
 
 See also `docs/claude-code-marketplace-plugin-compat.md` for the Marketplace
 implementation plan and phased V1a/V1b/V1c scope.
@@ -25,9 +25,9 @@ Official plugins are built as workspace packages, including
 `packages/document-skills-plugin`, `packages/skill-creator-plugin`,
 `packages/zcode-guide-plugin`, and `packages/restore-legacy-sessions-plugin`,
 but runtime plugin loading does not execute from those workspace paths and does
-not import plugin code into the ZCode app bundle. ZCode seeds first-party plugin
+not import plugin code into the Nekode app bundle. Nekode seeds first-party plugin
 files into the official plugin cache under
-`~/.zcode/cli/plugins/cache/zcode-plugins-official/...` and executes plugin MCP
+`~/.nekode/cli/plugins/cache/zcode-plugins-official/...` and executes plugin MCP
 servers from that cache. Users only enable or disable each capability.
 
 The Android Emulator plugin P0 supports macOS and Windows only. Linux hosts are
@@ -48,7 +48,7 @@ Android SDK `adb` and UI Automator commands.
 ## Marketplace classification
 
 The catalog's optional `publisherType` (`official` or `community`) describes who
-maintains a plugin within the ZCode marketplace. It does not grant trust or
+maintains a plugin within the Nekode marketplace. It does not grant trust or
 change installation identity, paths, or user/workspace configuration. Personal
 marketplaces remain personal regardless of their self-declared publisher type.
 
@@ -60,10 +60,10 @@ spec in the root `docs/plugins/` directory for presentation and scope semantics.
 
 ## Storage Layout
 
-ZCode stores plugin state under the CLI storage root:
+Nekode stores plugin state under the CLI storage root:
 
 ```text
-~/.zcode/cli/plugins/
+~/.nekode/cli/plugins/
   installed_plugins.json
   marketplaces/
     zcode-plugins-official/
@@ -118,13 +118,13 @@ only when the final installation is removed.
 
 Uninstalling a plugin is a thorough teardown so that a later reinstall starts
 clean. Removing a plugin by id (`<name>@<marketplace>`) tears down every piece of
-durable state ZCode created for it:
+durable state Nekode created for it:
 
 1. The plugin record in `installed_plugins.json`.
 2. The version-scoped cache directory at the record's `installPath`
    (`cache/<marketplace>/<name>/<version>/`).
 3. The persistent per-plugin data directory `data/<sanitized-plugin-id>/`,
-   including any `generated-commands/` ZCode materialized for the plugin. This is
+   including any `generated-commands/` Nekode materialized for the plugin. This is
    the "final installation is removed" case from the storage layout: data is kept
    across cache replacement on update, but uninstall deletes it.
 4. The plugin's user config entries `plugins.enabledPlugins[id]` and
@@ -147,8 +147,8 @@ that reports nothing was removed, rather than an error.
 The built-in marketplace name is `zcode-plugins-official`.
 
 External Claude Marketplace sources use `.claude-plugin/marketplace.json` as
-their canonical manifest location. ZCode may normalize the fetched marketplace
-manifest into `~/.zcode/cli/plugins/marketplaces/{marketplace}/marketplace.json`
+their canonical manifest location. Nekode may normalize the fetched marketplace
+manifest into `~/.nekode/cli/plugins/marketplaces/{marketplace}/marketplace.json`
 for local bookkeeping, but add/update must read `.claude-plugin/marketplace.json`
 first and only use a root `marketplace.json` fallback for local legacy data.
 
@@ -156,19 +156,19 @@ Startup must seed bundled official plugins before plugin discovery:
 
 ```text
 packages/android-emulator-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/android-emulator/0.1.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/android-emulator/0.1.0/
 packages/ios-simulator-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/ios-simulator/0.1.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/ios-simulator/0.1.0/
 packages/browser-use-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/browser-use/0.3.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/browser-use/0.3.0/
 packages/document-skills-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.4/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/document-skills/0.1.4/
 packages/restore-legacy-sessions-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/restore-legacy-sessions/0.1.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/restore-legacy-sessions/0.1.0/
 packages/skill-creator-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/skill-creator/0.1.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/skill-creator/0.1.0/
 packages/zcode-guide-plugin/
-  -> ~/.zcode/cli/plugins/cache/zcode-plugins-official/zcode-guide/0.3.0/
+  -> ~/.nekode/cli/plugins/cache/zcode-plugins-official/zcode-guide/0.3.0/
 ```
 
 `packages/bundled-skills/` is deliberately absent from this list: it is the CLI's
@@ -179,7 +179,7 @@ partition, and cannot be disabled or uninstalled.
 SEA releases embed the same files as SEA assets and extract them to the same
 official cache path on first startup or when the embedded plugin hash changes.
 The MCP command must point at the seeded cache directory, not the source
-workspace and not a module compiled into the ZCode SEA main bundle.
+workspace and not a module compiled into the Nekode SEA main bundle.
 
 Seeding replaces one plugin version directory only while it holds the seed lock
 for that version. It writes the new tree to a unique `<version>.tmp-*` sibling.
@@ -193,21 +193,21 @@ then promotes the temporary tree. Because the marker goes first, an interrupted
 deletion cannot leave a partial tree that looks current; the next startup seeds
 it again.
 
-A seed failure that ZCode cannot complete degrades only the affected plugin:
+A seed failure that Nekode cannot complete degrades only the affected plugin:
 transient errors after the retry budget, a seed lock timeout, `ENOENT` after a
-concurrent writer already promoted a current tree, and `EXDEV`. ZCode logs
+concurrent writer already promoted a current tree, and `EXDEV`. Nekode logs
 `Official plugin cache operation degraded`, keeps a usable older cache when one
 exists, and does not fail session startup or session resume. `EXDEV` is not
 retried, because it does not go away on retry.
 
-For bundled official plugins only, ZCode rewrites the seeded
+For bundled official plugins only, Nekode rewrites the seeded
 `.zcode-plugin/plugin.json` MCP server command at seed time. The rewritten
-command launches the current ZCode executable through the hidden
+command launches the current Nekode executable through the hidden
 `__zcode-plugin-host` entrypoint and asks it to import the cached MCP server file
 and call its exported `main()` function. In a SEA build this means the official
 plugin MCP servers run on the SEA-embedded Node.js runtime, but each server
 module is still loaded from
-`~/.zcode/cli/plugins/cache/zcode-plugins-official/...`.
+`~/.nekode/cli/plugins/cache/zcode-plugins-official/...`.
 
 The CLI main entry dispatches `__zcode-plugin-host` before importing the Agent
 command runner or provider initialization. It retains environment sanitization,
@@ -276,7 +276,7 @@ default to disabled unless `enabledPlugins[id]` is `true`.
 
 ## Manifest Discovery
 
-For a plugin root, ZCode reads the first manifest that exists:
+For a plugin root, Nekode reads the first manifest that exists:
 
 1. `.zcode-plugin/plugin.json`
 2. `.claude-plugin/plugin.json`
@@ -296,12 +296,12 @@ Code. P0 supports these fields:
 
 The selected manifest may contain MCP configuration directly in `mcpServers`.
 This is the preferred override point when `.zcode-plugin/plugin.json` needs
-ZCode-specific runtime wiring while `.claude-plugin/plugin.json` and `.mcp.json`
+Nekode-specific runtime wiring while `.claude-plugin/plugin.json` and `.mcp.json`
 remain Claude-compatible.
 
 Compatibility levels:
 
-- `run`: projected into an existing ZCode runtime capability.
+- `run`: projected into an existing Nekode runtime capability.
 - `install-time only`: used while installing or resolving plugin state, not as a
   runtime component.
 - `diagnostic only`: recognized and reported, but not executed.
@@ -372,7 +372,7 @@ resolve inside the plugin root and become `CustomCommandRoot` entries with
 `source: "plugin"`.
 
 Claude command filenames may include `_`, `-`, `:` and nested directory
-segments. ZCode keeps those names stable, for example
+segments. Nekode keeps those names stable, for example
 `commands/clean_gone.md` becomes `/clean_gone`.
 
 P0 also supports a `skills` frontmatter field in markdown commands. When a
@@ -381,7 +381,7 @@ expansion tells the model to load that skill before performing the command.
 
 ### Agents
 
-ZCode 枚举默认 `agents/*.md` 与 manifest `agents` 字符串或数组声明的插件根内目录。
+Nekode 枚举默认 `agents/*.md` 与 manifest `agents` 字符串或数组声明的插件根内目录。
 组件名称优先取 frontmatter `name`，缺失时取文件名；发现结果同时保存实际源文件 `path`。
 加载器只读取该路径，不从名称重新拼接文件名，也不为缺少路径的描述性组件猜测文件。
 文件读取失败保留 `agent_read_failed` 诊断，不查找替代文件。
@@ -394,7 +394,7 @@ ZCode 枚举默认 `agents/*.md` 与 manifest `agents` 字符串或数组声明�
 
 ### MCP
 
-ZCode loads MCP server config from both:
+Nekode loads MCP server config from both:
 
 1. plugin `.mcp.json`
 2. `manifest.mcpServers`
@@ -408,15 +408,15 @@ MCP config file. It is valid inside `.zcode-plugin/plugin.json`, for example:
   "mcpServers": {
     "ios-simulator": {
       "command": "node",
-      "args": ["${ZCODE_PLUGIN_ROOT}/dist/mcp/server.js"],
-      "cwd": "${ZCODE_PROJECT_DIR}"
+      "args": ["${NEKODE_PLUGIN_ROOT}/dist/mcp/server.js"],
+      "cwd": "${NEKODE_PROJECT_DIR}"
     }
   }
 }
 ```
 
 Manifest `mcpServers` wins on server-name collisions. That means a plugin can
-keep a Claude-compatible `.mcp.json` for Claude Code and put a ZCode-specific
+keep a Claude-compatible `.mcp.json` for Claude Code and put a Nekode-specific
 MCP command in `.zcode-plugin/plugin.json`.
 
 A `.mcp.json` file may use Claude's wrapper shape:
@@ -437,9 +437,9 @@ A plugin MCP server runs once per session by default. Official plugins
 process among all sessions of a workspace; such a server must keep its own state
 apart per session using the host's `_meta.session_id` (the document viewer
 plugins do, see `docs/plugins/2026-10-15-office-viewer-builtin-panels-spec.md`
-§8 in the repository root). ZCode ignores `isolation` on other plugins.
+§8 in the repository root). Nekode ignores `isolation` on other plugins.
 
-If a server has `command` but no `type`, ZCode infers `type: "stdio"`.
+If a server has `command` but no `type`, Nekode infers `type: "stdio"`.
 Server names are normalized for model-visible tool names by replacing
 non-identifier characters with underscores. A server named `ios-simulator`
 therefore exposes tools such as `mcp__ios_simulator__ios_preflight`; a server
@@ -454,16 +454,16 @@ Plugin component config may reference:
 ${CLAUDE_PLUGIN_ROOT}
 ${CLAUDE_PLUGIN_DATA}
 ${CLAUDE_PROJECT_DIR}
-${ZCODE_PLUGIN_ROOT}
-${ZCODE_PLUGIN_DATA}
-${ZCODE_PROJECT_DIR}
+${NEKODE_PLUGIN_ROOT}
+${NEKODE_PLUGIN_DATA}
+${NEKODE_PROJECT_DIR}
 ${user_config.KEY}
 ${GITHUB_TOKEN}
 ${TOKEN_PLAN_API_TOKEN}
-${ZCODE_SOME_ENV}
+${NEKODE_SOME_ENV}
 ```
 
-Claude and ZCode variable names are synonyms. MCP secret sinks (`stdio.env`,
+Claude and Nekode variable names are synonyms. MCP secret sinks (`stdio.env`,
 HTTP/SSE `headers`, and OAuth `clientSecret`) expand conventional process
 environment variable names such as `GITHUB_TOKEN` and `TOKEN_PLAN_API_TOKEN`.
 Missing referenced values disable only the affected MCP server and produce a
@@ -472,7 +472,7 @@ placeholder.
 
 Arbitrary process environment variables are intentionally not expanded in
 model-visible or process-list-visible fields such as `command`, `args`, `cwd`,
-`url`, OAuth `clientId`, or OAuth `scope`. Existing `ZCODE_*` runtime wiring
+`url`, OAuth `clientId`, or OAuth `scope`. Existing `NEKODE_*` runtime wiring
 variables remain available in those fields for backward compatibility.
 
 `userConfig` defaults are used when no explicit plugin option exists. Sensitive
@@ -489,10 +489,10 @@ P0 policy:
 - Explicit local plugin dirs are trusted for the current configuration.
 - Official cache plugins are loaded only when enabled in config.
 - Only bundled official cache plugins are automatically rewritten to the
-  internal ZCode/SEA plugin host.
+  internal Nekode/SEA plugin host.
 - Project-discovered plugin dirs are out of scope.
 - Hook files from non-official third-party Marketplace cache plugins are
-  diagnostic-only in P0. ZCode official cache plugins, Claude official
+  diagnostic-only in P0. Nekode official cache plugins, Claude official
   Marketplace cache plugins and explicit inline plugin dirs keep the existing
   trusted hook behavior.
 
@@ -577,7 +577,7 @@ Minimum P0 coverage:
 - Prefers `.zcode-plugin/plugin.json` over `.claude-plugin/plugin.json`.
 - Loads local plugin `skills`, `commands`, and `.mcp.json`.
 - Infers stdio MCP type when `command` is present.
-- Expands Claude and ZCode plugin variables.
+- Expands Claude and Nekode plugin variables.
 - Expands arbitrary process environment variables only in MCP secret sinks.
 - Keeps arbitrary process environment placeholders unresolved in command,
   argument, working-directory, URL, and non-secret OAuth fields.
@@ -589,7 +589,7 @@ Minimum P0 coverage:
   plugin host command only after each id is enabled.
 - Seeds default-enabled official plugins into CLI SEA, Electron desktop bundle, and remote agent resource layouts.
   Browser Use is runtime-backed and must include and validate `dist/mcp/server.js`,
-  `scripts/browser-client.mjs`, `docs/`, and both `skills/`; Document Skills, Skill Creator, and ZCode Guide
+  `scripts/browser-client.mjs`, `docs/`, and both `skills/`; Document Skills, Skill Creator, and Nekode Guide
   remain content-only.
 - CLI list/enable/disable preserves unrelated config.
 - CLI uninstall removes the installed record, cache directory, per-plugin data

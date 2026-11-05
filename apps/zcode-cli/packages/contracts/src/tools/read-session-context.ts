@@ -10,7 +10,7 @@ export const READ_SESSION_CONTEXT_MAX_TOKENS = 12000;
 // 3.16 Host 已持久化 session_ ID；读取必须接受原身份，不能改名前缀后查另一个会话。
 const SESSION_ID_PATTERN = /^(?:current|(?:sess|session)_[A-Za-z0-9._-]+)$/;
 
-export const ReadSessionContextStrategySchema = z.enum(["relevant", "handoff", "topic"]);
+export const ReadSessionContextStrategySchema = z.enum(["relevant", "handoff"]);
 
 export const ReadSessionContextInputSchema = z
   .object({
@@ -18,12 +18,12 @@ export const ReadSessionContextInputSchema = z
       .string()
       .regex(
         SESSION_ID_PATTERN,
-        "Session id must be current or use the sess_* or session_* format.",
+        "Session id must be current or use the sess_* or legacy session_* format.",
       )
       .optional()
       .default("current")
       .describe(
-        "For topic strategy omit this field to use the current task. Other strategies require the exact persisted sess_* or legacy session_* target.",
+        "The exact persisted sess_* or legacy session_* target; current means the current task.",
       ),
     query: z
       .string()
@@ -35,31 +35,7 @@ export const ReadSessionContextInputSchema = z
     strategy: ReadSessionContextStrategySchema.optional()
       .default("relevant")
       .describe(
-        "Use relevant for focused session retrieval, handoff for a continuation summary, or topic for original archived discussion in the current session.",
-      ),
-    cursor: z
-      .number()
-      .int()
-      .nonnegative()
-      .optional()
-      .describe("Topic archive page offset returned by the previous call."),
-    attachment: z
-      .object({
-        inputId: z
-          .string()
-          .min(1)
-          .max(256)
-          .optional()
-          .describe(
-            "Snapshot inputId from the topic history file; selects only an admitted input in this task.",
-          ),
-        messageId: z.string().min(1).max(256),
-        index: z.number().int().nonnegative().optional(),
-      })
-      .strict()
-      .optional()
-      .describe(
-        "With topic strategy, download an archived message attachment to a managed local file. Index selects a resource in rich text, starting at zero.",
+        "Use relevant for focused session retrieval or handoff for a continuation summary.",
       ),
     maxTokens: z
       .number()
@@ -70,11 +46,8 @@ export const ReadSessionContextInputSchema = z
       .describe("Approximate maximum tokens to return to the model."),
   })
   .strict()
-  .refine((value) => value.sessionId !== "current" || value.strategy === "topic", {
-    message: "Non-topic strategies require an explicit session id",
-  })
-  .refine((value) => !value.attachment || value.strategy === "topic", {
-    message: "Attachments require topic strategy",
+  .refine((value) => value.sessionId !== "current", {
+    message: "Reading requires an explicit session id",
   });
 
 export type ReadSessionContextInput = z.infer<typeof ReadSessionContextInputSchema>;

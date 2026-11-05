@@ -216,7 +216,7 @@ export declare function waitForCuaHelperStartup<T>(
   deadlineMs?: number,
 ): Promise<T>;
 
-export declare function isPotentialZCodeCuaAgentMcpServer(server: unknown): boolean;
+export declare function isPotentialNekodeCuaAgentMcpServer(server: unknown): boolean;
 
 export interface CuaScreenCaptureProbeResult {
   ok: boolean;

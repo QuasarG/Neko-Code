@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { BackgroundBashOutputResult } from "@zcode/shared";
 import { readBackgroundBashOutputFromOwner as readOutput } from "../src/zcode-protocol/background-work-owner.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 const output: BackgroundBashOutputResult = {
   kind: "output",
@@ -28,7 +28,7 @@ function setup(childResult?: BackgroundBashOutputResult) {
   const context = {
     sessions,
     deps: { sessionStore: { getSession } },
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
   return { context, rootRead, childRead, getSession };
 }
 

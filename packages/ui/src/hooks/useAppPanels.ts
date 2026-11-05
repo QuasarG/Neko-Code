@@ -33,6 +33,7 @@ import {
   openSubagentSessionSidePane,
   openSubagentDirectorySidePane,
   openSelectionSideChatPane,
+  openInjectionSidePane,
   openPlanDetailSidePane,
   openWorkflowRunSidePane,
   replaceWorkflowRunSidePane,
@@ -74,6 +75,7 @@ import {
   openBackgroundBashSidePane,
   type OpenScopedSubagentDirectorySideTabRequest,
   type OpenSelectionSideChatRequest,
+  type OpenScopedInjectionSideTabRequest,
   type OpenScopedPlanDetailSideTabRequest,
   type OpenScopedWorkflowRunSideTabRequest,
   type OpenScopedWorkflowRunDirectorySideTabRequest,
@@ -1044,6 +1046,22 @@ export function useAppPanels(options: {
     [commitOpenedSidePaneState, revealSidePaneForCurrentOwner],
   );
 
+  const handleOpenInjection = useCallback(
+    (request: OpenScopedInjectionSideTabRequest) => {
+      const workspaceKey = request.workspaceIdentity?.trim() || request.workspacePath || "";
+      revealSidePaneForCurrentOwner();
+      commitOpenedSidePaneState((current) =>
+        openInjectionSidePane(current, { ...request, workspaceKey }),
+      );
+      logger.debug("[App] 打开注入详情右侧 tab", {
+        parentSessionId: request.parentSessionId,
+        rowId: request.rowId,
+        workspaceKey,
+      });
+    },
+    [commitOpenedSidePaneState, revealSidePaneForCurrentOwner],
+  );
+
   const handleOpenPluginUi = useCallback(
     (request: OpenPluginUiSideTabRequest) => {
       const workspaceKey = request.workspaceIdentity?.trim() || request.workspacePath;
@@ -1692,6 +1710,7 @@ export function useAppPanels(options: {
     handleSyncSubagentSessionTabs,
     handleOpenSelectionSideChat,
     handleOpenPlanDetail,
+    handleOpenInjection,
     handleOpenPluginUi,
     handleOpenWorkflowRun,
     handleOpenWorkflowRunDirectory,

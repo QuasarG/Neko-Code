@@ -6,7 +6,6 @@ import type {
   ToolEntry,
   ToolRuntimePermissionCapabilityContext,
 } from "../types.js";
-import { applyMemoryFilePermission, targetsMemoryFile } from "./memory-file-permission.js";
 import { resolveRuntimePermissionCapability } from "./permission-capability.js";
 import type { ToolExecutorDeps } from "./types.js";
 
@@ -51,31 +50,12 @@ export function recheckPermissionHookModifiedInput(input: {
     input.projectRules,
     rulePolicy,
   );
-  decision = applyMemoryFilePermission({
-    decision,
-    executionInput: input.modifiedInput,
-    memoryRoot: input.deps.getMemoryRoot?.(),
-    toolName: input.toolCall.name,
-    workingDirectory,
-    workspaceRoot,
-  });
-
   if (decision.decision === "deny") {
     return {
       permissionDecision: decision,
     };
   }
-  if (
-    decision.decision !== "ask" ||
-    (decision.ruleId !== "rule.project.ask" &&
-      !targetsMemoryFile({
-        executionInput: input.modifiedInput,
-        memoryRoot: input.deps.getMemoryRoot?.(),
-        toolName: input.toolCall.name,
-        workingDirectory,
-        workspaceRoot,
-      }))
-  ) {
+  if (decision.decision !== "ask" || decision.ruleId !== "rule.project.ask") {
     return {};
   }
 

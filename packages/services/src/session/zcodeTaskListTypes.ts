@@ -1,35 +1,35 @@
-import type { WorkspacePurpose, ZCodeTaskMeta } from "@zcode/shared";
+import type { WorkspacePurpose, NekodeTaskMeta } from "@zcode/shared";
 
-export type ZCodeTaskListKind = "pinned" | "archived" | "timeline" | "active";
-export type ZCodeTaskListSortBy = "created" | "updated";
+export type NekodeTaskListKind = "pinned" | "archived" | "timeline" | "active";
+export type NekodeTaskListSortBy = "created" | "updated";
 
-export interface ZCodeTaskListWorkspaceScope {
+export interface NekodeTaskListWorkspaceScope {
   workspacePath: string;
   workspaceIdentity?: string;
   workspacePurpose?: WorkspacePurpose;
 }
 
-export interface ZCodeTaskListQuery {
-  kind: ZCodeTaskListKind | "all";
+export interface NekodeTaskListQuery {
+  kind: NekodeTaskListKind | "all";
   /** host 由存储 owner 确定全部范围，不接受 UI 已打开工作区作为历史目录。 */
-  workspaceScopes: ZCodeTaskListWorkspaceScope[] | "host";
-  sortBy: ZCodeTaskListSortBy;
+  workspaceScopes: NekodeTaskListWorkspaceScope[] | "host";
+  sortBy: NekodeTaskListSortBy;
   search?: string;
   limit?: number;
 }
 
-export type ZCodeTaskListItem = ZCodeTaskMeta & {
+export type NekodeTaskListItem = NekodeTaskMeta & {
   searchSnippet?: string;
   searchSnippets?: string[];
 };
 
-export interface ZCodeTaskListResult {
-  items: ZCodeTaskListItem[];
+export interface NekodeTaskListResult {
+  items: NekodeTaskListItem[];
   total: number;
   hasMore: boolean;
 }
 
-export interface ZCodeWorkspaceEventSubscriptionParams {
+export interface NekodeWorkspaceEventSubscriptionParams {
   workspacePath: string;
   workspaceIdentity?: string;
 }

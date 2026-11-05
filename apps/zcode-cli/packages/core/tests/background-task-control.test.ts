@@ -540,7 +540,7 @@ describe("background task control", () => {
       expect(notifications).toHaveLength(1);
       expect(notifications[0]).toContain("<status>killed</status>");
       // TaskStop 传入的停止者进入通知；killed 通知不带 usage。
-      expect(notifications[0]).toContain('<summary>Agent "Stop me" was stopped by ZCode</summary>');
+      expect(notifications[0]).toContain('<summary>Agent "Stop me" was stopped by Nekode</summary>');
       expect(notifications[0]).not.toContain("<usage>");
       // 终态随 originMeta 结构化下发；killed 不带 error。
       expect(notificationOriginMetas).toEqual([
@@ -568,7 +568,7 @@ describe("background task control", () => {
 
   // 停止者全链路：停止入口 → runtime.stopBackgroundTask → subagent stopTask → killed 通知 summary。
   it.each([
-    { initiator: "model", summary: "was stopped by ZCode" },
+    { initiator: "model", summary: "was stopped by Nekode" },
     { initiator: "user", summary: "was stopped by user" },
   ])(
     "carries the $initiator stop initiator from the stop entry into the killed notification",
@@ -1535,15 +1535,15 @@ describe("background task per-tool provider lookup", () => {
       status: "failed",
       runStatus: "errored",
       error: "script threw TypeError",
-      scriptPath: "/tmp/.zcode/workflow-drafts/audit.dwf.ts",
+      scriptPath: "/tmp/.nekode/workflow-drafts/audit.dwf.ts",
     });
 
     expect(text).toContain(
-      'The run\'s script is at .zcode/workflow-drafts/audit.dwf.ts. Edit that file in place, then call AmendWorkflow (run_id="dwfrun-1", path=".zcode/workflow-drafts/audit.dwf.ts")',
+      'The run\'s script is at .nekode/workflow-drafts/audit.dwf.ts. Edit that file in place, then call AmendWorkflow (run_id="dwfrun-1", path=".nekode/workflow-drafts/audit.dwf.ts")',
     );
     expect(text).not.toContain("Fix the script and submit it with AmendWorkflow");
     // 路径只进指引，不进 XML 块：用户面一概不显示它（spec 的「What the user sees」）。
-    expect(text.indexOf(".zcode/workflow-drafts")).toBeGreaterThan(
+    expect(text.indexOf(".nekode/workflow-drafts")).toBeGreaterThan(
       text.indexOf("</task-notification>"),
     );
   });
@@ -1564,11 +1564,11 @@ describe("background task per-tool provider lookup", () => {
       status: "cancelled",
       runStatus: "stopped",
       stopReason: "model",
-      scriptPath: "/tmp/.zcode/workflow-drafts/audit.dwf.ts",
+      scriptPath: "/tmp/.nekode/workflow-drafts/audit.dwf.ts",
     });
 
     expect(text).toContain(
-      "Its script is at .zcode/workflow-drafts/audit.dwf.ts: edit that file and pass `path`.",
+      "Its script is at .nekode/workflow-drafts/audit.dwf.ts: edit that file and pass `path`.",
     );
   });
 

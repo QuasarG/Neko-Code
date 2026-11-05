@@ -47,11 +47,11 @@ import {
 } from "./provider-registry-selection.js";
 import { isClosableSessionStore } from "./session-store.js";
 import { createSubagentObservation } from "./subagent-observation.js";
-import type { PrepareUserExecutionBoundary, ZCodeApp } from "./types.js";
+import type { PrepareUserExecutionBoundary, NekodeApp } from "./types.js";
 import type { CliDefaultSelection } from "./cli-default-selection.js";
 
 type SessionFacade = Pick<
-  ZCodeApp,
+  NekodeApp,
   | "readBackgroundBashOutput"
   | "cancelBackgroundTask"
   | "clearTarget"
@@ -360,10 +360,10 @@ export function createSessionFacade(deps: CreateSessionFacadeDeps): SessionFacad
         traceContext: input.traceContext ?? deps.traceContext,
       }),
     setTarget: async (input) =>
-      (await setTargetStatus("set", input)) as Awaited<ReturnType<ZCodeApp["setTarget"]>>,
+      (await setTargetStatus("set", input)) as Awaited<ReturnType<NekodeApp["setTarget"]>>,
     updateTargetStatus: async (status) =>
       (await setTargetStatus("status_updated", { status })) as Awaited<
-        ReturnType<ZCodeApp["updateTargetStatus"]>
+        ReturnType<NekodeApp["updateTargetStatus"]>
       >,
     clearTarget: async () => (await setTargetStatus("cleared", {})) as boolean,
     listModels: () => {

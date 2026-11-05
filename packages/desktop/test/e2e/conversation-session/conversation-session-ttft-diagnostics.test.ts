@@ -127,7 +127,7 @@ async function setInteractionBehavior(behavior: "queue" | "guide") {
 }
 
 describe("TTFT02 真实发送诊断到最终 OTLP", () => {
-  const configPath = join(dirname(DEFAULT_WORKSPACE), ".zcode", "cli", "config.json");
+  const configPath = join(dirname(DEFAULT_WORKSPACE), ".nekode", "cli", "config.json");
   let originalConfig: string | undefined;
   const runtimeEvidence: unknown[] = [];
   beforeEach(async () => {
@@ -169,7 +169,7 @@ describe("TTFT02 真实发送诊断到最终 OTLP", () => {
     });
     const processes = await browser.electron.execute((electron) => electron.app.getAppMetrics());
     runtimeEvidence.push({ renderer, processes });
-    const artifactDir = process.env.ZCODE_E2E_ARTIFACT_DIR;
+    const artifactDir = process.env.NEKODE_E2E_ARTIFACT_DIR;
     if (artifactDir)
       await writeFile(
         join(artifactDir, "ttft-diagnostics-performance.json"),
@@ -265,7 +265,7 @@ describe("TTFT02 真实发送诊断到最终 OTLP", () => {
           .flatMap((point) => point.attributes ?? [])
           .some((attribute) => forbidden.has(attribute.key)),
       ).toBe(false);
-      const artifactDir = process.env.ZCODE_E2E_ARTIFACT_DIR;
+      const artifactDir = process.env.NEKODE_E2E_ARTIFACT_DIR;
       if (artifactDir)
         await writeFile(
           join(artifactDir, "ttft-diagnostics-otlp.json"),
@@ -415,7 +415,7 @@ describe("TTFT02 真实发送诊断到最终 OTLP", () => {
     await focus();
     const before = (await spans()).filter((span) => span.name === "local_ttft").length;
     await sendV4Prompt(
-      "E2E_TTFT_DIAG_GUIDE_PARENT: Read .zcode-e2e/ttft-diagnostics/input.txt then reply ttft-diag-guide-ok.",
+      "E2E_TTFT_DIAG_GUIDE_PARENT: Read .nekode-e2e/ttft-diagnostics/input.txt then reply ttft-diag-guide-ok.",
     );
     await waitForV4ConversationState((state) => state.state === "streaming", "引导主轮未启动");
     await sendV4Prompt("E2E_TTFT_DIAG_GUIDE_INPUT: Keep the requested final answer.");

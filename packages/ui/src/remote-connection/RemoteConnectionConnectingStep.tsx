@@ -30,7 +30,7 @@ import { TID_SSH_ERROR } from "@zcode/shared/test-ids";
 import { cn } from "@/components/lib/utils.js";
 import { Button } from "@/components/ui/button.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import {
   formatRemoteLinkRailTarget,
@@ -323,7 +323,7 @@ export function RemoteConnectionConnectingStep({
   onCancelConnection?: () => void;
   onContinueToDirectory?: () => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const credentialInputId = useId();
   const platform = usePlatform();
   const openFeedbackSubmit = useFeedbackStore((state) => state.openSubmit);

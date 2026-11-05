@@ -27,7 +27,7 @@ describe("CLI 默认选择与 Session 续跑选择", () => {
       options: { reasoningLevel: "low" },
     };
     const common = {
-      env: { ZCODE_HOME: root },
+      env: { NEKODE_HOME: root },
       skipUserConfig: true,
       modelSelectionMode: "cli-default" as const,
       providerRegistry: createTestProviderRegistry([initial, selected, idle]),
@@ -93,7 +93,7 @@ describe("CLI 默认选择与 Session 续跑选择", () => {
     };
     const requests: string[] = [];
     const app = await createRegistryBackedTestApp({
-      env: { ZCODE_HOME: root },
+      env: { NEKODE_HOME: root },
       skipUserConfig: true,
       modelSelectionMode: "cli-default",
       providerRegistry: createTestProviderRegistry([initial, selected, idle]),

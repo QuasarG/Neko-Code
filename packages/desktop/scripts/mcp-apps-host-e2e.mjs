@@ -12,11 +12,11 @@ const desktop = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const root = resolve(desktop, "../..");
 const output = await mkdtemp(join(tmpdir(), "zcode-mcp-host-e2e-"));
 const fixture = join(desktop, "scripts/mcp-apps-host-fixture");
-const showcaseServer = process.env.ZCODE_SHOWCASE_SERVER;
+const showcaseServer = process.env.NEKODE_SHOWCASE_SERVER;
 if (process.argv.includes("--showcase-only")) {
   if (!showcaseServer)
     throw new Error(
-      "Set ZCODE_SHOWCASE_SERVER to the built Showcase dist/server.mjs from zcode-plugins",
+      "Set NEKODE_SHOWCASE_SERVER to the built Showcase dist/server.mjs from zcode-plugins",
     );
   await access(showcaseServer);
 }
@@ -206,9 +206,9 @@ for (const mode of modes) {
   await new Promise((accept, reject) => {
     const env = { ...process.env };
     if (process.argv.includes("--photocraft-background-only")) {
-      if (!env.ZCODE_PHOTOCRAFT_SERVER)
-        throw new Error("Set ZCODE_PHOTOCRAFT_SERVER to the built PhotoCraft dist/server.mjs");
-      env.ZCODE_PHOTOCRAFT_ONLY = "1";
+      if (!env.NEKODE_PHOTOCRAFT_SERVER)
+        throw new Error("Set NEKODE_PHOTOCRAFT_SERVER to the built PhotoCraft dist/server.mjs");
+      env.NEKODE_PHOTOCRAFT_ONLY = "1";
     }
     delete env.ELECTRON_RUN_AS_NODE;
     const child = spawn(
@@ -240,7 +240,7 @@ for (const mode of modes) {
         child.kill("SIGKILL");
         reject(new Error(`Electron fixture timed out (${mode})`));
       },
-      mode === "background" ? (process.env.ZCODE_PHOTOCRAFT_SERVER ? 300_000 : 180_000) : 90_000,
+      mode === "background" ? (process.env.NEKODE_PHOTOCRAFT_SERVER ? 300_000 : 180_000) : 90_000,
     );
     child.on("error", reject);
     child.on("exit", (code) => {

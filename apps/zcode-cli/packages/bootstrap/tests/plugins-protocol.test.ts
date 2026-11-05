@@ -3,9 +3,9 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// 协议 handler 只从 workspace 推导 storageRoot，user config 仍解析到 ~/.zcode/cli/config.json
+// 协议 handler 只从 workspace 推导 storageRoot，user config 仍解析到 ~/.nekode/cli/config.json
 // （getDefaultConfigPath 无 env 覆盖）。为隔离 restore/overview 的 user-config 往返，把 node:os
-// 的 homedir 重定向到一次性临时目录；tmpdir 等其余实现保留原值。这样 resolvePath("~/.zcode/cli")
+// 的 homedir 重定向到一次性临时目录；tmpdir 等其余实现保留原值。这样 resolvePath("~/.nekode/cli")
 // 落到隔离目录，绝不触碰真实 HOME。
 // 回归原因：vi.mock 会提升到普通 const 初始化之前；临时 HOME 也必须通过 vi.hoisted
 // 提前建立，否则 mock factory 读取 FAKE_HOME 时会命中 TDZ，导致整个 suite 无法收集。
@@ -37,7 +37,7 @@ import {
   zcodePluginsValidateResultSchema,
 } from "@zcode/shared";
 import { getCliStorageRoot, getPluginStorageRoot } from "../src/app/paths.js";
-import { installZCodeMarketplacePlugin } from "../src/plugins.js";
+import { installNekodeMarketplacePlugin } from "../src/plugins.js";
 import {
   addPluginMarketplace,
   describePlugin,
@@ -49,21 +49,21 @@ import {
   updatePlugin,
 } from "../src/zcode-protocol/plugins.js";
 import { withPluginStorageLock } from "../src/lib/plugin-storage-lock.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 afterAll(async () => {
   await rm(FAKE_HOME, { force: true, recursive: true });
 });
 
 // 协议契约层面的回归: 确保 plugins/list 与 plugins/setEnabled 已注册且 schema 可用。
-// 端到端发现逻辑由 bootstrap/tests/plugins.test.ts (resolveZCodePlugins) 覆盖。
+// 端到端发现逻辑由 bootstrap/tests/plugins.test.ts (resolveNekodePlugins) 覆盖。
 describe("plugins protocol contracts", () => {
   it("serializes marketplace mutations behind the workspace plugin storage lock", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-marketplace-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.NEKODE_STORAGE_DIR),
     );
     let releaseLock = (): void => {};
     let markLockEntered = (): void => {};
@@ -79,7 +79,7 @@ describe("plugins protocol contracts", () => {
 
     try {
       await lockEntered;
-      const mutation = addPluginMarketplace({} as ZCodeProtocolAgentServerContext, {
+      const mutation = addPluginMarketplace({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
         source: "unsupported-marketplace-source",
       }).then(
@@ -102,18 +102,18 @@ describe("plugins protocol contracts", () => {
     } finally {
       releaseLock();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
 
   it("describes a cached marketplace candidate while a long install holds the storage lock", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-describe-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.NEKODE_STORAGE_DIR),
     );
     const marketplaceDir = join(pluginStorageRoot, "marketplaces", "e2e-describe");
     await writeTestFile(
@@ -134,7 +134,7 @@ describe("plugins protocol contracts", () => {
     try {
       await entered.promise;
       const result = await Promise.race([
-        describePlugin({} as ZCodeProtocolAgentServerContext, {
+        describePlugin({} as NekodeProtocolAgentServerContext, {
           workspace: { workspacePath: root, workspaceKey: root },
           marketplace: "e2e-describe",
           pluginName: "local",
@@ -146,18 +146,18 @@ describe("plugins protocol contracts", () => {
     } finally {
       lock.resolve();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
 
   it("keeps describe behind the storage lock when the marketplace manifest must be written", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-protocol-describe-fetch-lock-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "storage");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "storage");
     const pluginStorageRoot = getPluginStorageRoot(
-      getCliStorageRoot(process.env.ZCODE_STORAGE_DIR),
+      getCliStorageRoot(process.env.NEKODE_STORAGE_DIR),
     );
     const lock = Promise.withResolvers<void>();
     const entered = Promise.withResolvers<void>();
@@ -167,7 +167,7 @@ describe("plugins protocol contracts", () => {
     });
     try {
       await entered.promise;
-      const describe = describePlugin({} as ZCodeProtocolAgentServerContext, {
+      const describe = describePlugin({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
         marketplace: "missing-marketplace",
         pluginName: "missing",
@@ -183,8 +183,8 @@ describe("plugins protocol contracts", () => {
     } finally {
       lock.resolve();
       await blocker;
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
@@ -220,8 +220,8 @@ describe("plugins protocol contracts", () => {
     const parsed = zcodePluginsListResultSchema.parse({
       plugins: [
         {
-          id: "skill-creator@zcode-plugins-official",
-          name: "skill-creator",
+          id: "zcode-guide@zcode-plugins-official",
+          name: "zcode-guide",
           enabled: true,
           source: "official",
           marketplace: "zcode-plugins-official",
@@ -237,11 +237,11 @@ describe("plugins protocol contracts", () => {
               matcher: "default",
               type: "command",
               command: 'bash "${CLAUDE_PLUGIN_ROOT}/hooks/stop-hook.sh"',
-              sourcePath: "/cache/skill-creator/hooks/hooks.json",
+              sourcePath: "/cache/zcode-guide/hooks/hooks.json",
               runnable: true,
             },
           ],
-          rootPath: "/cache/skill-creator/0.1.0",
+          rootPath: "/cache/zcode-guide/0.1.0",
           rootSource: "workspace",
           enabledSource: "workspace",
           optionSources: {
@@ -253,7 +253,7 @@ describe("plugins protocol contracts", () => {
         { code: "plugin_unsupported_component", message: "ignored", severity: "warning" },
       ],
     });
-    expect(parsed.plugins[0]?.name).toBe("skill-creator");
+    expect(parsed.plugins[0]?.name).toBe("zcode-guide");
     expect(parsed.plugins[0]?.hostMcpServerNames).toEqual(["node_repl"]);
     expect(parsed.plugins[0]?.hookDetails?.[0]?.event).toBe("Stop");
     expect(parsed.plugins[0]?.rootSource).toBe("workspace");
@@ -272,7 +272,7 @@ describe("plugins protocol contracts", () => {
     const pluginRoot = join(root, "plugins", "workspace-demo");
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({ plugins: { dirs: [pluginRoot], enabledPlugins: { "workspace-demo@inline": false } } }),
       );
       await writeTestFile(
@@ -283,7 +283,7 @@ describe("plugins protocol contracts", () => {
         }),
       );
 
-      const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
+      const result = await listPlugins({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
       });
 
@@ -302,8 +302,8 @@ describe("plugins protocol contracts", () => {
 
   it("keeps the User projection independent from Workspace enable overrides", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-config-view-"));
-    const pluginId = "skill-creator@zcode-plugins-official";
-    const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
+    const pluginId = "zcode-guide@zcode-plugins-official";
+    const userConfigPath = join(FAKE_HOME, ".nekode", "cli", "config.json");
     try {
       await writeTestFile(
         userConfigPath,
@@ -312,21 +312,21 @@ describe("plugins protocol contracts", () => {
         }),
       );
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({
           plugins: { enabledPlugins: { [pluginId]: false } },
         }),
       );
 
       const userResult = await listPlugins(
-        {} as ZCodeProtocolAgentServerContext,
+        {} as NekodeProtocolAgentServerContext,
         {
           workspace: { workspacePath: root, workspaceKey: root },
           configScope: "user",
         },
       );
       const workspaceResult = await listPlugins(
-        {} as ZCodeProtocolAgentServerContext,
+        {} as NekodeProtocolAgentServerContext,
         {
           workspace: { workspacePath: root, workspaceKey: root },
           configScope: "workspace",
@@ -355,7 +355,7 @@ describe("plugins protocol contracts", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-option-source-view-"));
     const pluginRoot = join(root, "user-plugin");
     const pluginId = "option-source-view@inline";
-    const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
+    const userConfigPath = join(FAKE_HOME, ".nekode", "cli", "config.json");
     try {
       await writeTestFile(
         join(pluginRoot, ".claude-plugin", "plugin.json"),
@@ -376,7 +376,7 @@ describe("plugins protocol contracts", () => {
         }),
       );
 
-      const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
+      const result = await listPlugins({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
         configScope: "workspace",
       });
@@ -396,14 +396,14 @@ describe("plugins protocol contracts", () => {
     const pluginId = "missing-fixture@personal-market";
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({
           plugins: { enabledPlugins: { [pluginId]: true } },
         }),
       );
 
       const result = await listPlugins(
-        {} as ZCodeProtocolAgentServerContext,
+        {} as NekodeProtocolAgentServerContext,
         {
           workspace: { workspacePath: root, workspaceKey: root },
           configScope: "workspace",
@@ -426,11 +426,11 @@ describe("plugins protocol contracts", () => {
 
   it("projects the host node_repl association for the official browser-use plugin", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-browser-host-mcp-protocol-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "cli");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "cli");
 
     try {
-      const result = await listPlugins({} as ZCodeProtocolAgentServerContext, {
+      const result = await listPlugins({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
       });
       expect(
@@ -438,8 +438,8 @@ describe("plugins protocol contracts", () => {
           ?.hostMcpServerNames,
       ).toEqual(["node_repl"]);
     } finally {
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
@@ -559,19 +559,19 @@ async function writeKnownMarketplaces(
 }
 
 // updatePlugin 走真实 bootstrap 路径：它从 workspace 的 config 推导 pluginStorageRoot，
-// 因此用 ZCODE_STORAGE_DIR 把存储根锚定到临时目录（storage.dir 以 "cli" 结尾时
+// 因此用 NEKODE_STORAGE_DIR 把存储根锚定到临时目录（storage.dir 以 "cli" 结尾时
 // getCliStorageRoot 原样返回，故 pluginStorageRoot = <storageDir>/plugins）。
 describe("updatePlugin handler diagnostics", () => {
-  const noopContext = {} as unknown as ZCodeProtocolAgentServerContext;
+  const noopContext = {} as unknown as NekodeProtocolAgentServerContext;
   let previousStorageDir: string | undefined;
 
   beforeEach(() => {
-    previousStorageDir = process.env.ZCODE_STORAGE_DIR;
+    previousStorageDir = process.env.NEKODE_STORAGE_DIR;
   });
 
   afterEach(() => {
-    if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-    else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+    if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+    else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
   });
 
   it("update returns diagnostics when a target fails to reinstall", async () => {
@@ -580,7 +580,7 @@ describe("updatePlugin handler diagnostics", () => {
     const pluginStorageRoot = getPluginStorageRoot(getCliStorageRoot(storageDir));
     const marketplaceRoot = join(root, "marketplace");
     const pluginRoot = join(marketplaceRoot, "plugins", "demo");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.NEKODE_STORAGE_DIR = storageDir;
 
     try {
       // Arrange: a directory marketplace declaring demo@1.0.0, installed into the
@@ -607,7 +607,7 @@ describe("updatePlugin handler diagnostics", () => {
       );
       await writeTestFile(join(pluginRoot, "skills", "demo", "SKILL.md"), "# demo");
 
-      const installResult = await installZCodeMarketplacePlugin({
+      const installResult = await installNekodeMarketplacePlugin({
         marketplace: "lazy-market",
         pluginName: "demo",
         pluginStorageRoot,
@@ -619,7 +619,7 @@ describe("updatePlugin handler diagnostics", () => {
       // Make reinstall fail: drop the persisted marketplace manifest dir AND the
       // source directory. ensureMarketplaceManifestAvailable then falls back to the
       // known record and re-fetches from the (now missing) directory source, which
-      // throws -> installZCodeMarketplacePlugin returns an error diagnostic.
+      // throws -> installNekodeMarketplacePlugin returns an error diagnostic.
       await rm(join(pluginStorageRoot, "marketplaces", "lazy-market"), {
         force: true,
         recursive: true,
@@ -639,30 +639,30 @@ describe("updatePlugin handler diagnostics", () => {
   });
 });
 
-// restoreBuiltinPlugin / overview 走真实 bootstrap 路径：storageRoot 由 ZCODE_STORAGE_DIR
+// restoreBuiltinPlugin / overview 走真实 bootstrap 路径：storageRoot 由 NEKODE_STORAGE_DIR
 // 锚定（storage.dir 以 "cli" 结尾时 getCliStorageRoot 原样返回，pluginStorageRoot =
 // <storageDir>/plugins）；suppressedBuiltins 必须写到 handler 实际解析的 user config，即
-// ~/.zcode/cli/config.json（文件头部已把 homedir 重定向到 FAKE_HOME，故落在隔离目录）。
+// ~/.nekode/cli/config.json（文件头部已把 homedir 重定向到 FAKE_HOME，故落在隔离目录）。
 describe("restoreBuiltinPlugin handler", () => {
-  const noopContext = {} as unknown as ZCodeProtocolAgentServerContext;
-  const builtinId = "skill-creator@zcode-plugins-official";
-  const userConfigPath = join(FAKE_HOME, ".zcode", "cli", "config.json");
+  const noopContext = {} as unknown as NekodeProtocolAgentServerContext;
+  const builtinId = "zcode-guide@zcode-plugins-official";
+  const userConfigPath = join(FAKE_HOME, ".nekode", "cli", "config.json");
   let previousStorageDir: string | undefined;
 
   beforeEach(() => {
-    previousStorageDir = process.env.ZCODE_STORAGE_DIR;
+    previousStorageDir = process.env.NEKODE_STORAGE_DIR;
   });
 
   afterEach(async () => {
-    if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-    else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+    if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+    else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
     await rm(userConfigPath, { force: true });
   });
 
   it("restoreBuiltinPlugin clears suppression via protocol handler", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-restore-handler-"));
     const storageDir = join(root, "cli");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.NEKODE_STORAGE_DIR = storageDir;
 
     try {
       // Arrange: user config (the path the handler actually reads/writes) suppresses
@@ -700,7 +700,7 @@ describe("restoreBuiltinPlugin handler", () => {
   it("restores a suppressed bundled plugin through the locked install handler without deadlocking", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-install-handler-"));
     const storageDir = join(root, "cli");
-    process.env.ZCODE_STORAGE_DIR = storageDir;
+    process.env.NEKODE_STORAGE_DIR = storageDir;
 
     try {
       await writeTestFile(
@@ -718,7 +718,7 @@ describe("restoreBuiltinPlugin handler", () => {
         installPlugin(noopContext, {
           workspace: { workspacePath: root, workspaceKey: root },
           marketplace: "zcode-plugins-official",
-          pluginName: "skill-creator",
+          pluginName: "zcode-guide",
         }),
         new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 1000)),
       ]);

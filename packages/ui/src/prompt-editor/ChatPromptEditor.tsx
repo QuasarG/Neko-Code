@@ -20,7 +20,7 @@ import {
   type LexicalChatInputHandle,
   type UserInputPresence,
 } from "@/LexicalChatInput.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import type { AppSlashCommand } from "@/slashCommandHelpers.js";
 import {
   hasWorkspaceFileDragPayload,
@@ -168,7 +168,7 @@ export function ChatPromptEditor({
   /** mention 面板开关（透传 LexicalChatInput）。 */
   enableMentionPanel?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const isInline = layout === "inline";
   const toolbarRef = useComposerToolbarFit({ iconOnly: isInline });
   const internalInputApiRef = useRef<LexicalChatInputHandle | null>(null);

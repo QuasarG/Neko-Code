@@ -19,7 +19,6 @@ import { resolveToolApproval } from "./approval-gate.js";
 import { createErrorResult, createPermissionErrorResult } from "./errors.js";
 import { emitPermissionDenied, emitPermissionResolved } from "./events.js";
 import { applyPreToolPermissionDecision } from "./hook-flow.js";
-import { applyMemoryFilePermission } from "./memory-file-permission.js";
 import {
   resolveRuntimePermissionCapability,
   resolveRuntimePermissionContext,
@@ -187,14 +186,6 @@ export async function resolveToolPermission(
       decision = applyPreToolPermissionDecision(decision, preToolHookResult, mode);
     }
     firstInput = false;
-    decision = applyMemoryFilePermission({
-      decision,
-      executionInput,
-      memoryRoot: deps.getMemoryRoot?.(),
-      toolName: toolCall.name,
-      workingDirectory: context.workingDirectory,
-      workspaceRoot: context.workspaceRoot,
-    });
     // 修复原因：统一审批流程曾丢失原日志合同；恢复关联字段，输入仍只记录结构摘要。
     deps.logger?.debug("Tool permission evaluated", {
       ...traceContextToLogContext(traceContext),

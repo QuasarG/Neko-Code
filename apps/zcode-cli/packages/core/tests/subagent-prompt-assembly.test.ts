@@ -7,8 +7,6 @@ import {
   modelMessageContentToText,
 } from "@zcode/contracts";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";
-import { buildPersistentAgentMemoryPrompt } from "../src/subagent/persistent-memory-prompt.js";
-import { resolvePersistentAgentMemoryRoot } from "../src/subagent/persistent-memory.js";
 import { createSubagentContextBuilder } from "../src/subagent/context-builder.js";
 import { MemoryFileSystem } from "./memory-test-utils.js";
 import { createTestSessionEventStore } from "./test-event-store.js";
@@ -67,7 +65,7 @@ function createParentContextSourcePort() {
           sources: [
             {
               scope: "user" as const,
-              filePath: "/Users/test/.zcode/AGENTS.md",
+              filePath: "/Users/test/.nekode/AGENTS.md",
               fileName: "AGENTS.md",
               content: USER_AGENTS_INSTRUCTION,
               bytesRead: USER_AGENTS_INSTRUCTION.length,
@@ -120,10 +118,8 @@ function countOccurrences(text: string, value: string): number {
 
 function expectInjectedAgentsMd(request: any, childTask: string): void {
   const messages = request.messages as any[];
-  const contextIndex = messages.findIndex(
-    (message) =>
-      message.role === "user" &&
-      modelMessageContentToText(message.content).includes(USER_AGENTS_INSTRUCTION),
+  const contextIndex = messages.findIndex((message) =>
+    modelMessageContentToText(message.content).includes(USER_AGENTS_INSTRUCTION),
   );
   const taskIndex = messages.findIndex(
     (message) =>
@@ -133,7 +129,6 @@ function expectInjectedAgentsMd(request: any, childTask: string): void {
   expect(taskIndex).toBeGreaterThan(contextIndex);
 
   const contextText = modelMessageContentToText(messages[contextIndex]?.content);
-  expect(contextText).toContain("<system-reminder>");
   expect(contextText).toContain("Codebase and user instructions are shown below.");
   expect(contextText).toContain(USER_AGENTS_INSTRUCTION);
   expect(contextText).toContain(WORKSPACE_AGENTS_INSTRUCTION);
@@ -152,8 +147,8 @@ function expectInjectedAgentsMd(request: any, childTask: string): void {
   expect(countOccurrences(text, WORKSPACE_AGENTS_INSTRUCTION)).toBe(1);
   expect(text).not.toContain(PROJECT_CONTEXT_SENTINEL);
   expect(text).not.toContain("# Memory");
-  expect(systemContents(request).join("\n")).not.toContain(USER_AGENTS_INSTRUCTION);
-  expect(systemContents(request).join("\n")).not.toContain(WORKSPACE_AGENTS_INSTRUCTION);
+  expect(systemContents(request).join("\n")).toContain(USER_AGENTS_INSTRUCTION);
+  expect(systemContents(request).join("\n")).toContain(WORKSPACE_AGENTS_INSTRUCTION);
   expect(systemContents(request).join("\n")).not.toContain("# agentsMd");
 }
 
@@ -167,7 +162,7 @@ function expectNoInjectedAgentsMd(request: any): void {
 }
 
 describe("subagent provider-visible prompt assembly", () => {
-  it("assembles Explore child system messages with ZCode prefix, agent prompt, notes, and environment context", async () => {
+  it("assembles Explore child system messages with Nekode prefix, agent prompt, notes, and environment context", async () => {
     const sessionId = createSessionId("subagent-prompt-explore");
     const contextSourcePort = createParentContextSourcePort();
     const resolveContext = vi.spyOn(contextSourcePort, "resolveContextSources");
@@ -247,14 +242,14 @@ describe("subagent provider-visible prompt assembly", () => {
     expectSystemMessagesCached(childRequests[0]);
     const systems = systemContents(childRequests[0]);
     expect(systems.map((content) => content.endsWith("\n"))).toEqual([false, false]);
-    expect(systems[0]).toBe("You are ZCode, an interactive agent");
-    expect(systems[1]).toMatch(/^\nYou are ZCode Explore/u);
+    expect(systems[0]).toBe("You are Nekode, an interactive coding agent");
+    expect(systems[1]).toMatch(/^\nYou are Nekode Explore/u);
     expect(systems[1]).toContain("READ-ONLY MODE");
     expect(systems[1]).toContain("\n\nNotes:");
     expect(systems[1]).toContain("Agent threads always have their cwd reset between bash calls");
     expect(systems[1]).toContain("the parent agent reads your text output");
     expect(systems[1]).not.toContain("<env>");
-    expect(systems[1]).not.toContain("You are powered by");
+    expect(systems[1]).toContain("You are powered by");
     const childMessages = childRequests[0].messages;
     const environmentMessage = childMessages.find((message: any) =>
       modelMessageContentToText(message.content).includes("# Environment\n"),
@@ -264,8 +259,8 @@ describe("subagent provider-visible prompt assembly", () => {
         modelMessageContentToText(message.content) ===
         "Find where the runtime injects tool results.",
     );
-    // 不支持 MCS 时，环境是任务前的 user reminder。
-    expect(environmentMessage.role).toBe("user");
+    // 环境与模型随 child system prompt 下发。
+    expect(environmentMessage.role).toBe("system");
     expect(childMessages.indexOf(environmentMessage)).toBeLessThan(taskIndex);
     // 只有父级解析一次 context；child 初始化不再调用。
     expect(resolveContext).toHaveBeenCalledTimes(1);
@@ -363,8 +358,8 @@ describe("subagent provider-visible prompt assembly", () => {
     expectSystemMessagesCached(childRequests[0]);
     const systems = systemContents(childRequests[0]);
     expect(systems).toHaveLength(2);
-    expect(systems[0]).toBe("You are ZCode, an interactive agent");
-    expect(systems[1]).toContain("You are an agent for ZCode CLI");
+    expect(systems[0]).toBe("You are Nekode, an interactive coding agent");
+    expect(systems[1]).toContain("You are an agent for Nekode");
     expect(systems[1]).toContain("Complete the task fully—don't gold-plate");
     expect(systems[1]).toContain("the caller will relay this to the user");
     expect(systems[1]).not.toContain("fully--don't gold-plate");
@@ -472,7 +467,7 @@ describe("subagent provider-visible prompt assembly", () => {
       expectSystemMessagesCached(childRequests[0]);
       const systems = systemContents(childRequests[0]);
       expect(systems).toHaveLength(2);
-      expect(systems[0]).toBe("You are ZCode, an interactive agent");
+      expect(systems[0]).toBe("You are Nekode, an interactive coding agent");
       expect(systems[1]).toMatch(
         /^\nYou are a focused code researcher\. Return concise findings\.\n\nMessages from the agent that launched you — .+\n\nNotes:/u,
       );
@@ -521,7 +516,7 @@ describe("subagent provider-visible prompt assembly", () => {
     expectSystemMessagesCached({ messages: result.systemMessages });
     const systems = systemContents({ messages: result.systemMessages });
     expect(systems).toHaveLength(2);
-    expect(systems[0]).toBe("You are ZCode, an interactive agent");
+    expect(systems[0]).toBe("You are Nekode, an interactive coding agent");
     expect(systems[1]).toMatch(/^\n\nMessages from the agent that launched you — .+\n\nNotes:/u);
     expect(systems[1]).not.toContain("<env>");
     expect(result.metaUserAttachments).toEqual([]);
@@ -535,145 +530,6 @@ describe("subagent provider-visible prompt assembly", () => {
         .join(""),
     );
   });
-
-  it.each(["user", "project", "local"] as const)(
-    "projects exact %s persistent memory context and supported write tools to a custom child",
-    async (scope) => {
-      const sessionId = createSessionId(`subagent-prompt-persistent-memory-${scope}`);
-      const eventStore = createTestSessionEventStore();
-      const memoryRoot = resolvePersistentAgentMemoryRoot({
-        agentName: "persistent-reviewer",
-        scope,
-        storageRoot: "/storage",
-        workspaceRoot: "/repo",
-      });
-      const fileSystemPort = new MemoryFileSystem({
-        [`${memoryRoot}/MEMORY.md`]: "- [Review style](review-style.md) — keep reviews concise",
-      });
-      const parentRequests: any[] = [];
-      const childRequests: any[] = [];
-      let parentCallCount = 0;
-
-      const runtime = createTestAgentRuntime(
-        sessionId,
-        {
-          memory: { enabled: true, storageRoot: "/storage", use: true },
-          mode: "build",
-          modelSelection: createTestModelSelection(createMainModelSelection()),
-          workingDirectory: "/repo",
-          currentDate: "2026-06-04",
-          envInfo: {
-            cwd: "/repo",
-            platform: "darwin",
-            shell: "zsh",
-            osVersion: "Darwin 24.3.0",
-            nodeVersion: "24.14.0",
-            isGitRepository: false,
-          },
-          subagents: {
-            profiles: [
-              {
-                name: "persistent-reviewer",
-                description: "Review with durable context.",
-                disallowedTools: ["Edit"],
-                memory: scope,
-                source: "user",
-                systemPrompt: "",
-                tools: ["Grep"],
-              },
-            ],
-          },
-        },
-        {
-          eventStore,
-          fileSystemPort,
-          modelFactory: createTestModelFactory({
-            properties: { supportsNativeWebSearch: true },
-            async generateText(request: any) {
-              const toolNames = (request.tools ?? []).map((tool: any) => tool.name);
-              if (toolNames.includes("Agent")) {
-                parentRequests.push(request);
-                parentCallCount += 1;
-                if (parentCallCount === 1) {
-                  return {
-                    finishReason: "tool-calls",
-                    text: "",
-                    toolCalls: [
-                      {
-                        id: "call_persistent",
-                        name: "Agent",
-                        input: {
-                          description: "Review persistent",
-                          prompt: "Review using the persistent context.",
-                          subagent_type: "persistent-reviewer",
-                        },
-                      },
-                    ],
-                    usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
-                  };
-                }
-                return {
-                  finishReason: "stop",
-                  text: "parent used persistent review",
-                  usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
-                };
-              }
-              childRequests.push(request);
-              if (childRequests.length === 1) {
-                return {
-                  finishReason: "tool-calls",
-                  text: "",
-                  toolCalls: [
-                    {
-                      id: "write_persistent_memory",
-                      name: "Write",
-                      input: {
-                        content: "Keep reviews concise.",
-                        file_path: `${memoryRoot}/review-style.md`,
-                      },
-                    },
-                  ],
-                  usage: { inputTokens: 3, outputTokens: 4, totalTokens: 7 },
-                };
-              }
-              return {
-                finishReason: "stop",
-                text: "Persistent reviewer completed.",
-                usage: { inputTokens: 3, outputTokens: 4, totalTokens: 7 },
-              };
-            },
-          } as never),
-        },
-      );
-
-      await runtime.executeTurn("review");
-
-      expect(childRequests).toHaveLength(2);
-      const expectedMemoryPrompt = buildPersistentAgentMemoryPrompt({
-        indexContent: "- [Review style](review-style.md) — keep reviews concise",
-        rootDir: memoryRoot,
-        scope,
-      });
-      // 记忆段之后先接启动方消息段，再接 Notes。
-      expect(
-        systemContents(childRequests[0])[1]?.split(
-          "\n\nMessages from the agent that launched you",
-        )[0],
-      ).toBe(`\n${expectedMemoryPrompt}`);
-      const childToolNames = childRequests[0].tools.map((tool: any) => tool.name);
-      expect(childToolNames).toContain("Grep");
-      expect(childToolNames).toContain("Write");
-      expect(childToolNames).not.toContain("Edit");
-      expect(childToolNames).not.toContain("Read");
-      expect(fileSystemPort.createdDirectories).toContain(memoryRoot);
-      expect(fileSystemPort.files[`${memoryRoot}/review-style.md`]).toBe("Keep reviews concise.");
-      expect(
-        parentRequests[0].messages
-          .map((message: any) => modelMessageContentToText(message.content))
-          .join("\n"),
-      ).toContain("Tools: Grep, Write");
-    },
-  );
 
   it("keeps subagent context builder output after runtime context refresh", async () => {
     const sessionId = createSessionId("subagent-prompt-refresh");
@@ -725,7 +581,7 @@ describe("subagent provider-visible prompt assembly", () => {
       expectSystemMessagesCached(request);
       const systems = systemContents(request);
       expect(systems).toHaveLength(2);
-      expect(systems[0]).toBe("You are ZCode, an interactive agent");
+      expect(systems[0]).toBe("You are Nekode, an interactive coding agent");
       expect(systems[1]).toMatch(
         /^\nYou are a focused child agent\. Keep the result concise\.\n\nMessages from the agent that launched you — .+\n\nNotes:/u,
       );
@@ -737,7 +593,7 @@ describe("subagent provider-visible prompt assembly", () => {
       expect(allMessageText(request)).not.toContain(
         "You help the user with software engineering work in the current workspace.",
       );
-      expect(allMessageText(request)).not.toContain("# ZCode Desktop Context");
+      expect(allMessageText(request)).not.toContain("# Nekode Desktop Context");
     }
   });
 });

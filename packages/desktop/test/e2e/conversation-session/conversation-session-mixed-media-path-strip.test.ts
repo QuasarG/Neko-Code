@@ -44,7 +44,7 @@ const IMAGE_SOURCE_PREFIX = "[Image: source: ";
 const VIDEO_SOURCE_PREFIX = "[Video: source: ";
 const VALID_PNG_BASE64 =
   "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4AWMAAQAABQABNtCI3QAAAABJRU5ErkJggg==";
-const CASE_ROOT = join(DEFAULT_WORKSPACE, ".zcode-e2e", CASE_NAME);
+const CASE_ROOT = join(DEFAULT_WORKSPACE, ".nekode-e2e", CASE_NAME);
 
 let modelProviderReplayServer: Awaited<
   ReturnType<typeof startConversationModelProviderReplayServer>

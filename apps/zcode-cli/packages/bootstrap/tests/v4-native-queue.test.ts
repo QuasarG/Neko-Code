@@ -214,8 +214,8 @@ function workspaceHookReviewRequestedEvent(input: {
         deadlineAt: Date.now() + 10 * 60_000,
         sourceFiles: [
           {
-            path: "/w/.zcode/config.json",
-            displayPath: ".zcode/config.json",
+            path: "/w/.nekode/config.json",
+            displayPath: ".nekode/config.json",
             editable: true,
           },
         ],
@@ -228,7 +228,7 @@ function workspaceHookReviewRequestedEvent(input: {
             type: "process",
             displayName: "echo hello",
             displayCommand: "echo hello",
-            sourcePath: "/w/.zcode/config.json",
+            sourcePath: "/w/.nekode/config.json",
             resolvedTimeoutMs: 1_000,
             resolvedMaxOutputBytes: 1_024,
             executionMode: "foreground",

@@ -61,7 +61,7 @@ describe("createSitesApi", () => {
       method: "PATCH",
       body: '{"name":"a"}',
       redirect: "manual",
-      headers: { ...headers, "X-ZCode-App-Version": "3.16.2", "Content-Type": "application/json" },
+      headers: { ...headers, "X-Nekode-App-Version": "3.16.2", "Content-Type": "application/json" },
     });
   });
 

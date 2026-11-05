@@ -4,8 +4,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "../src/auth/shared-credentials.js";
 import {
   loadCanonicalCredentials,
@@ -97,7 +97,7 @@ async function startFakeAuthorizationServer(
 }
 
 interface SeededCredentials {
-  credentialStore: SharedZCodeCredentialStore;
+  credentialStore: SharedNekodeCredentialStore;
   keyPrefix: string;
   mcpUrl: string;
 }
@@ -111,8 +111,8 @@ async function seedCredentials(input: {
 }): Promise<SeededCredentials> {
   const directory = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-refresh-"));
   temporaryDirectories.push(directory);
-  const credentialStore = createSharedZCodeCredentialStore({
-    env: { ZCODE_CREDENTIAL_SECRET: input.secret },
+  const credentialStore = createSharedNekodeCredentialStore({
+    env: { NEKODE_CREDENTIAL_SECRET: input.secret },
     filePath: join(directory, "credentials.json"),
   });
   const mcpUrl = `${input.authBaseUrl}/mcp`;
@@ -355,8 +355,8 @@ describe("MCP OAuth refresh single-flight", () => {
     });
     const directory = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-no-refresh-"));
     temporaryDirectories.push(directory);
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "refresh-none-secret" },
+    const credentialStore = createSharedNekodeCredentialStore({
+      env: { NEKODE_CREDENTIAL_SECRET: "refresh-none-secret" },
       filePath: join(directory, "credentials.json"),
     });
     const mcpUrl = `${authServer.baseUrl}/mcp`;

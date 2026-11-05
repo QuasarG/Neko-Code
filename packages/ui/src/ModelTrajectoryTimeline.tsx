@@ -1,6 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { useEffect, type RefObject } from "react";
-import type { ZCodeModelTrajectoryRecord } from "@zcode/services";
+import type { NekodeModelTrajectoryRecord } from "@zcode/services";
 import {
   type TrajectorySearchMatch,
   type TrajectorySearchTimelineItem,
@@ -141,69 +141,78 @@ export function ModelTrajectoryTimeline({
   );
 }
 
-export function resolveTrajectoryTimelineItems(records: ZCodeModelTrajectoryRecord[]) {
-  let previousConversationMessageCount = 0;
+export function resolveTrajectoryTimelineItems(records: NekodeModelTrajectoryRecord[]) {
+  let previousMessages: NekodeModelTrajectoryRecord["request"]["messages"] = [];
 
   return records.map((record, index) => {
-    const resolvedInput = resolveTrajectoryInputMessages({
-      index,
-      previousConversationMessageCount,
-      record,
-    });
-    previousConversationMessageCount = resolvedInput.nextConversationMessageCount;
-
+    const messages = record.request.messages;
+    const usesConversationDelta = shouldUseConversationDelta(record);
+    // 首条展示完整起始上下文；后续主会话只展示相对上一请求真正新增的尾部。
+    // 不能只按消息数取 delta：编辑/retry 的 rewind 会让消息数变小或从中间分叉，
+    // 按数量切片会把整段历史重新显示成“新增”，轨迹看起来就顺序错乱。
+    const changedTail =
+      index === 0 || !usesConversationDelta
+        ? messages
+        : messages.slice(commonMessagePrefixLength(previousMessages, messages));
+    const inputMessages =
+      index === 0 || !usesConversationDelta
+        ? changedTail
+        : changedTail.filter((message) => message.role !== "assistant");
+    if (usesConversationDelta) {
+      previousMessages = messages;
+    }
     return {
       key: `${record.requestId}:${index}`,
       record,
-      inputMessages: resolvedInput.inputMessages,
+      inputMessages,
     };
   });
 }
 
+/** 兼容旧调用：按上一请求的消息数取尾部；主路径使用 resolveTrajectoryTimelineItems。 */
 export function resolveTrajectoryInputMessages({
   record,
   index,
   previousConversationMessageCount,
 }: {
-  record: ZCodeModelTrajectoryRecord;
+  record: NekodeModelTrajectoryRecord;
   index: number;
   previousConversationMessageCount: number;
 }): {
-  inputMessages: ZCodeModelTrajectoryRecord["request"]["messages"];
+  inputMessages: NekodeModelTrajectoryRecord["request"]["messages"];
   nextConversationMessageCount: number;
 } {
   const messages = record.request.messages;
   const usesConversationDelta = shouldUseConversationDelta(record);
-  const deltaMessages = usesConversationDelta
-    ? computeDeltaMessages(messages, previousConversationMessageCount, index)
-    : messages;
-
+  const inputMessages =
+    index === 0 || !usesConversationDelta
+      ? messages
+      : messages
+          .slice(previousConversationMessageCount)
+          .filter((message) => message.role !== "assistant");
   return {
-    // 首条展示完整起始上下文；后续主会话只展示非 assistant 的新增（assistant 由上一条 Output 呈现）。
-    // sidecar/compact 等辅助请求有独立 prompt，不能套用主会话的消息数 delta，否则会隐藏标题生成 prompt。
-    inputMessages: usesConversationDelta
-      ? index === 0
-        ? deltaMessages
-        : deltaMessages.filter((message) => message.role !== "assistant")
-      : deltaMessages,
+    inputMessages,
     nextConversationMessageCount: usesConversationDelta
       ? messages.length
       : previousConversationMessageCount,
   };
 }
 
-function shouldUseConversationDelta(record: ZCodeModelTrajectoryRecord): boolean {
+function commonMessagePrefixLength(
+  left: NekodeModelTrajectoryRecord["request"]["messages"],
+  right: NekodeModelTrajectoryRecord["request"]["messages"],
+): number {
+  const max = Math.min(left.length, right.length);
+  let index = 0;
+  while (index < max && JSON.stringify(left[index]) === JSON.stringify(right[index])) {
+    index += 1;
+  }
+  return index;
+}
+
+function shouldUseConversationDelta(record: NekodeModelTrajectoryRecord): boolean {
   const kind = record.callSource?.kind;
   return kind === undefined || kind === "main" || kind === "subagent";
 }
 
-function computeDeltaMessages(
-  messages: ZCodeModelTrajectoryRecord["request"]["messages"],
-  previousMessageCount: number,
-  index: number,
-): ZCodeModelTrajectoryRecord["request"]["messages"] {
-  if (index === 0) return messages;
-  if (messages.length > previousMessageCount) return messages.slice(previousMessageCount);
-  if (messages.length < previousMessageCount) return messages;
-  return [];
-}
+

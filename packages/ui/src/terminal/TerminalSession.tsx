@@ -7,7 +7,7 @@ import { useCallback, useEffect, useRef } from "react";
 import type { ILink, ILinkHandler, ITheme, IWindowsPty } from "@xterm/xterm";
 import type { IServiceAccessor } from "@zcode/services";
 import type { IDisposable } from "@zcode/rpc";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useComposerClientNamespace, useTerminalOwnerId } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
 import {
@@ -124,7 +124,7 @@ export function TerminalSession({
    */
   workspaceKey?: string;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const clientNamespace = useComposerClientNamespace();
   const terminalOwnerId = useTerminalOwnerId();
   const containerRef = useRef<HTMLDivElement>(null);

@@ -2,21 +2,21 @@ import { randomUUID } from "node:crypto";
 import { Emitter } from "@zcode/rpc";
 import {
   zcodeStorageStartupStateSchema,
-  type ZCodeStorageStartupState,
+  type NekodeStorageStartupState,
   type DatabaseStartupErrorCode,
 } from "@zcode/shared";
 
 const FIRST_STATUS_TIMEOUT_MS = 30_000;
 
 /** 一个 protocol client 对应一个进程代次，状态只来自该连接的合法控制帧。 */
-export class ZCodeStorageStartupGate {
-  private current?: ZCodeStorageStartupState;
+export class NekodeStorageStartupGate {
+  private current?: NekodeStorageStartupState;
   private terminalError?: Error;
   private pending?: Promise<void>;
   private resolve?: () => void;
   private reject?: (error: Error) => void;
   private timer?: ReturnType<typeof setTimeout>;
-  private readonly changed = new Emitter<ZCodeStorageStartupState>();
+  private readonly changed = new Emitter<NekodeStorageStartupState>();
   readonly onDidChange = this.changed.event;
 
   constructor(required: boolean, firstStatusTimeoutMs = FIRST_STATUS_TIMEOUT_MS) {
@@ -31,7 +31,7 @@ export class ZCodeStorageStartupGate {
     return Boolean(this.terminalError || (this.pending && this.current?.phase !== "ready"));
   }
 
-  get snapshot(): ZCodeStorageStartupState | undefined {
+  get snapshot(): NekodeStorageStartupState | undefined {
     return this.current;
   }
 

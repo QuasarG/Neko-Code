@@ -95,7 +95,7 @@ export function readRawToolCallInput(raw: unknown): unknown {
     return raw.rawInput;
   }
 
-  // ZCode protocol 的 permission/request payload 按 schema 把工具参数放在 input，
+  // Nekode protocol 的 permission/request payload 按 schema 把工具参数放在 input，
   // 旧 UI 只读兼容输入字段 rawInput，Write/Edit 会退化成整段 JSON 展示而不是文件 diff。
   return "input" in raw ? raw.input : null;
 }
@@ -312,7 +312,7 @@ export interface ToolCallBlockRenderContext {
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
   onOpenBrowserUrl?: (url: string) => void;
   /** 定时任务工具卡片跳转到管理页；automationId 存在时直接打开详情。 */
-  onOpenAutomationsMain?: (automationId?: string) => void;
+  onOpenWorkflowsMain?: () => void;
   onLoadFullToolCallFields?: (toolId: string) => Promise<boolean | void> | boolean | void;
 }
 

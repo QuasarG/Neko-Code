@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildCliZCodeSourceHeaders,
+  buildCliNekodeSourceHeaders,
   createRuntimeAiSdkModelExecutionConfig,
 } from "../src/model-config.js";
 import { createModelAdapter, type CreateModelAdapterOptions } from "../src/model-factory.js";
@@ -21,7 +21,7 @@ describe("createRuntimeAiSdkModelExecutionConfig", () => {
       },
     };
     const config = createRuntimeAiSdkModelExecutionConfig(
-      { ZCODE_APP_VERSION: "3.9.0", ZCODE_ENV: "test" },
+      { NEKODE_APP_VERSION: "3.9.0", NEKODE_ENV: "test" },
       {
         endpointRoutingPort,
         network: {
@@ -34,8 +34,8 @@ describe("createRuntimeAiSdkModelExecutionConfig", () => {
     );
     expect(config).toMatchObject({
       defaultHeaders: {
-        "User-Agent": "ZCode/3.9.0",
-        "X-ZCode-App-Version": "3.9.0",
+        "User-Agent": "Nekode/3.9.0",
+        "X-Nekode-App-Version": "3.9.0",
         "X-Title": "Z Code@electron",
       },
       endpointRoutingPort,
@@ -54,17 +54,17 @@ describe("createRuntimeAiSdkModelExecutionConfig", () => {
   });
 });
 
-describe("buildCliZCodeSourceHeaders", () => {
+describe("buildCliNekodeSourceHeaders", () => {
   it("生成运行时来源 Header，不根据模型或 Provider 推断", () => {
     expect(
-      buildCliZCodeSourceHeaders(
-        { ZCODE_APP_VERSION: "3.9.0", ZCODE_ENV: "production" },
+      buildCliNekodeSourceHeaders(
+        { NEKODE_APP_VERSION: "3.9.0", NEKODE_ENV: "production" },
         { sourceTitle: "cli" },
       ),
     ).toMatchObject({
-      "User-Agent": "ZCode/3.9.0",
+      "User-Agent": "Nekode/3.9.0",
       "X-Title": "Z Code@cli",
-      "X-ZCode-App-Version": "3.9.0",
+      "X-Nekode-App-Version": "3.9.0",
     });
   });
 });

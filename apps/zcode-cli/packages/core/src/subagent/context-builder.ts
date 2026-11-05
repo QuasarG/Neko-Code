@@ -7,7 +7,6 @@ import {
   type EnvInfo,
 } from "../context/index.js";
 import { buildCliPrefixSection } from "../context/sections/cli-prefix.js";
-import { buildCurrentDateSection } from "../context/sections/current-date.js";
 import { buildEnvironmentSections } from "../context/sections/env-info.js";
 import { buildRequestUserContextSection } from "../context/sections/request-user-context.js";
 import { buildSkillsSection } from "../context/sections/skills.js";
@@ -82,7 +81,7 @@ export function createSubagentContextBuilder(
 
 function buildSubagentContextSections(config: SubagentContextBuilderConfig): ContextSection[] {
   const sections: ContextSection[] = [buildCliPrefixSection()];
-  // agent 正文首尾都 trim；左边界换行仍由下方按 ZCode 设计补上。
+  // agent 正文首尾都 trim；左边界换行仍由下方按 Nekode 设计补上。
   const agentPrompt = config.agentPrompt.trim();
   if (agentPrompt) {
     sections.push(
@@ -91,7 +90,7 @@ function buildSubagentContextSections(config: SubagentContextBuilderConfig): Con
         source: "subagent_agent_prompt",
         cacheHint: "stable",
         // 空 prompt 不是语义段，不能让左边界单独成为 system block。
-        // ZCode by design：Subagent agent prompt 自带相对 CLI prefix 的单换行左边界。
+        // Nekode by design：Subagent agent prompt 自带相对 CLI prefix 的单换行左边界。
         content: `\n${agentPrompt}`,
       }),
     );
@@ -102,7 +101,7 @@ function buildSubagentContextSections(config: SubagentContextBuilderConfig): Con
       name: "Subagent Notes",
       source: "subagent_notes",
       cacheHint: "stable",
-      // ZCode by design：后续 Subagent system block 统一自带双换行左边界。
+      // Nekode by design：后续 Subagent system block 统一自带双换行左边界。
       // 启动方消息段排在 Notes 之前。
       content: `\n\n${SUBAGENT_LAUNCHER_MESSAGES_NOTE}\n\n${buildSubagentCommonNotes()}`,
     }),
@@ -114,10 +113,6 @@ function buildSubagentContextSections(config: SubagentContextBuilderConfig): Con
   });
   if (requestUserContextSection) {
     sections.push(requestUserContextSection);
-  }
-  const currentDateSection = buildCurrentDateSection(config.currentDate);
-  if (currentDateSection) {
-    sections.push(currentDateSection);
   }
   if (config.skills) {
     const skillsSection = buildSkillsSection({

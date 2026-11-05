@@ -20,7 +20,11 @@ import type {
   TurnFileChangeSummary,
   TurnInputIntentMetadata,
 } from "@zcode/contracts";
-import { INTERRUPT_MARKER_SOURCE, joinTaskNotificationBatch } from "@zcode/core";
+import {
+  INTERRUPT_MARKER_SOURCE,
+  isNekoMemoryContextSource,
+  joinTaskNotificationBatch,
+} from "@zcode/core";
 import { isHighspeedProviderId } from "@zcode/shared";
 import type { EventId, SessionEvent, SessionId, TraceId, TurnId } from "@zcode/contracts";
 import {
@@ -55,7 +59,7 @@ import { HYDRATION_TRACE_ID } from "./projection-state.js";
 
 const SUBAGENT_TOOL_NAMES = new Set(["Agent", "Task", "subagent"]);
 const LEGACY_MODEL_REQUEST_CANCELLED_MESSAGE = "Model request was cancelled.";
-const LEGACY_PROTOCOL_SESSION_STOPPED_MESSAGE = "ZCode Protocol session stopped";
+const LEGACY_PROTOCOL_SESSION_STOPPED_MESSAGE = "Nekode Protocol session stopped";
 const PERSISTED_CANCELLATION_CODES = new Set<string>([
   CoreErrorType.TurnCancelled,
   ModelErrorCode.ModelRequestCancelled,
@@ -264,7 +268,7 @@ function isPersistedAssistantCancellation(error: AssistantErrorInfo): boolean {
   }
 
   // 旧 transcript 的 AiSdkModelAdapterError 没有持久化 model error code，
-  // 只能用 ZCode 自身生成的标准 name/message 二元组兼容恢复；不泛化匹配 provider 文案。
+  // 只能用 Nekode 自身生成的标准 name/message 二元组兼容恢复；不泛化匹配 provider 文案。
   return (
     code === undefined &&
     error.name === "AiSdkModelAdapterError" &&
@@ -453,7 +457,6 @@ function inputIntentOfMessage(message: MessageWithParts): TurnInputIntentMetadat
           : {}),
       ...(value.inputOrigin ? { inputOrigin: value.inputOrigin } : {}),
       ...(value.conversationQuotes ? { conversationQuotes: value.conversationQuotes } : {}),
-      ...(value.botGroupSource ? { botGroupSource: value.botGroupSource } : {}),
       ...(value.provenance ? { provenance: value.provenance } : {}),
       ...(value.source ? { source: value.source } : {}),
     };
@@ -1514,6 +1517,20 @@ function collectTurnOutput(options: {
       continue;
     }
     if (message.info.role !== "assistant") {
+      // 记忆注入的隐藏提醒在 live 侧由落库后补发的事件承载；冷恢复必须从 transcript
+      // 合成同一条事件，否则注入正文在重开会话后消失。
+      const contextSource = message.info.semantics?.source;
+      if (isNekoMemoryContextSource(contextSource)) {
+        const text = textOfMessage(message.parts);
+        if (text) {
+          push(
+            SessionEventType.ContextInjected,
+            { source: contextSource, text, messageId: String(message.info.id) },
+            turnId,
+            messageCreatedAtMs(message),
+          );
+        }
+      }
       // 修复原因：最终文本已完整输出后再停止时，assistant 是 finish=stop、没有 error，
       // live 记为 cancelled，冷恢复却按 success 收口。中断标记是停止的持久化事实，以它为准；
       // 已有持久化错误时 finishTurn 仍优先显示错误（宿主故障也写标记）。

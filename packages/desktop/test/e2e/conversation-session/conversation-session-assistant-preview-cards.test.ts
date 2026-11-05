@@ -845,7 +845,7 @@ async function materializeStaleSourceFiles() {
 }
 
 async function assertLocalMediaPreviewLogs(snapshot: Map<string, number>): Promise<void> {
-  const runtimeLogDir = process.env.ZCODE_E2E_RUNTIME_LOG_DIR?.trim();
+  const runtimeLogDir = process.env.NEKODE_E2E_RUNTIME_LOG_DIR?.trim();
   if (!runtimeLogDir) {
     throw new Error("当前 E2E worker 没有配置 desktop runtime log 目录");
   }
@@ -869,7 +869,7 @@ async function assertLocalMediaPreviewLogs(snapshot: Map<string, number>): Promi
 }
 
 async function snapshotDesktopRuntimeLogs(): Promise<Map<string, number>> {
-  const runtimeLogDir = process.env.ZCODE_E2E_RUNTIME_LOG_DIR?.trim();
+  const runtimeLogDir = process.env.NEKODE_E2E_RUNTIME_LOG_DIR?.trim();
   if (!runtimeLogDir) {
     throw new Error("当前 E2E worker 没有配置 desktop runtime log 目录");
   }

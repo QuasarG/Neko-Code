@@ -1,8 +1,8 @@
 /* oxlint-disable eslint(max-lines) -- re-home 产物：旧协议消息/会话承重类型集中迁移，保持单文件契约面。 */
 // re-home 迁移产物（为删除旧协议树铺路）。
-// 本文件承载旧 ZCode Protocol 中仍被存活栈（validation/background-task-notifications/
-// v4 投影等）消费的承重类型与 schema：ZCodeSessionInfo / ZCodeMessageWithParts /
-// ZCodePermissionResponse / ZCodeInteractionRequestOrigin 及其依赖闭包。
+// 本文件承载旧 Nekode Protocol 中仍被存活栈（validation/background-task-notifications/
+// v4 投影等）消费的承重类型与 schema：NekodeSessionInfo / NekodeMessageWithParts /
+// NekodePermissionResponse / NekodeInteractionRequestOrigin 及其依赖闭包。
 // 旧协议死亡（zcode-protocol/index.ts 删除）后，这是该协议面的唯一幸存面。
 
 import { z } from "zod";
@@ -72,7 +72,7 @@ export const zcodePermissionResponseSchema = z
     permissionUpdates: z.array(zcodePermissionUpdateSchema).optional(),
   })
   .strict();
-export type ZCodePermissionResponse = z.infer<typeof zcodePermissionResponseSchema>;
+export type NekodePermissionResponse = z.infer<typeof zcodePermissionResponseSchema>;
 export const zcodeSessionModeSchema = z.enum(["plan", "build", "edit", "yolo", "guarded", "auto"]);
 export const zcodeSessionStatusSchema = z.enum([
   "idle",
@@ -163,7 +163,7 @@ export const zcodeSessionInfoSchema = z
     updatedAt: timestampMsSchema,
   })
   .strict();
-export type ZCodeSessionInfo = z.infer<typeof zcodeSessionInfoSchema>;
+export type NekodeSessionInfo = z.infer<typeof zcodeSessionInfoSchema>;
 export const zcodeInteractionRequestOriginSchema = z
   .object({
     kind: z.literal("subagent"),
@@ -177,7 +177,7 @@ export const zcodeInteractionRequestOriginSchema = z
     parentTurnId: nonEmptyString.optional(),
   })
   .strict();
-export type ZCodeInteractionRequestOrigin = z.infer<typeof zcodeInteractionRequestOriginSchema>;
+export type NekodeInteractionRequestOrigin = z.infer<typeof zcodeInteractionRequestOriginSchema>;
 const messageTimeSchema = z
   .object({
     created: timestampMsSchema,
@@ -267,7 +267,7 @@ export const zcodeMessageInfoSchema = z.discriminatedUnion("role", [
   zcodeUserMessageInfoSchema,
   zcodeAssistantMessageInfoSchema,
 ]);
-export type ZCodeMessageInfo = z.infer<typeof zcodeMessageInfoSchema>;
+export type NekodeMessageInfo = z.infer<typeof zcodeMessageInfoSchema>;
 const partBaseSchema = z.object({
   partId: nonEmptyString,
   sessionId: nonEmptyString,
@@ -454,14 +454,14 @@ export const zcodeMessagePartSchema = z.discriminatedUnion("type", [
     })
     .strict(),
 ]);
-export type ZCodeMessagePart = z.infer<typeof zcodeMessagePartSchema>;
+export type NekodeMessagePart = z.infer<typeof zcodeMessagePartSchema>;
 export const zcodeMessageWithPartsSchema = z
   .object({
     info: zcodeMessageInfoSchema,
     parts: z.array(zcodeMessagePartSchema),
   })
   .strict();
-export type ZCodeMessageWithParts = z.infer<typeof zcodeMessageWithPartsSchema>;
+export type NekodeMessageWithParts = z.infer<typeof zcodeMessageWithPartsSchema>;
 export const zcodeSessionApiRetryStatusSchema = z
   .object({
     kind: z.literal("api_retry"),
@@ -500,7 +500,7 @@ export const zcodeContextUsageBreakdownItemSchema = z
     chars: z.number().int().nonnegative(),
   })
   .strict();
-export type ZCodeContextUsageBreakdownItem = z.infer<typeof zcodeContextUsageBreakdownItemSchema>;
+export type NekodeContextUsageBreakdownItem = z.infer<typeof zcodeContextUsageBreakdownItemSchema>;
 export const zcodeContextUsageBreakdownSchema = z.array(zcodeContextUsageBreakdownItemSchema);
 export const zcodeSessionContextUsageSchema = z
   .object({
@@ -532,11 +532,11 @@ export const zcodeSessionRuntimeStateSchema = z
     goalVerificationTimeline: z.array(zcodeSessionGoalVerificationTimelineSchema).optional(),
   })
   .strict();
-export type ZCodeSessionRuntimeState = z.infer<typeof zcodeSessionRuntimeStateSchema>;
-export type ZCodeSessionActiveTurnKind = NonNullable<ZCodeSessionRuntimeState["activeTurnKind"]>;
-export function textFromZCodeMessageParts(parts: readonly ZCodeMessagePart[]): string {
+export type NekodeSessionRuntimeState = z.infer<typeof zcodeSessionRuntimeStateSchema>;
+export type NekodeSessionActiveTurnKind = NonNullable<NekodeSessionRuntimeState["activeTurnKind"]>;
+export function textFromNekodeMessageParts(parts: readonly NekodeMessagePart[]): string {
   return parts
-    .filter((part): part is Extract<ZCodeMessagePart, { type: "text" }> => part.type === "text")
+    .filter((part): part is Extract<NekodeMessagePart, { type: "text" }> => part.type === "text")
     .map((part) => part.text)
     .join("");
 }

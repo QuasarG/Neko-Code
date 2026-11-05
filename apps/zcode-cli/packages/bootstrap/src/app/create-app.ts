@@ -18,6 +18,15 @@ import { createNodeWebFetchHttpClientAdapter } from "@zcode/adapters/http";
 import { createJimpImageProcessorAdapter } from "@zcode/adapters/image";
 import { createPopplerPdfDocumentAdapter } from "@zcode/adapters/pdf";
 import { createNodeSessionMailboxAdapter } from "@zcode/adapters/mailbox";
+// 记忆书架与衣橱的存储实现分散在 adapters 的 neko-memory/wardrobe 子入口，
+// 统一从包根 re-export 拿，避免 bootstrap 依赖 adapters 的内部目录划分。
+import {
+  NekoMemoryBooksAdapter,
+  NekoMemorySnapshotStore,
+  WardrobeFileStore,
+  resolveNekoMemoryRoot,
+  resolveNekoMemoryRuntimeDbPath,
+} from "@zcode/adapters";
 import { createNodeContextSourceAdapter } from "@zcode/adapters/context";
 import { createNodeSkillAdapter } from "@zcode/adapters/skills";
 import { createMcpAdapter } from "@zcode/adapters/mcp";
@@ -40,12 +49,14 @@ import {
   createSessionEvent,
   SessionEventType,
   type ExecutionShellSelection,
+  type Logger,
   type MessageId,
 } from "@zcode/contracts";
-import { isRemoteWorkspaceIdentity, resolveZCodeRuntimeEnv } from "@zcode/shared";
+import { isRemoteWorkspaceIdentity, resolveNekodeRuntimeEnv } from "@zcode/shared";
+import { guardNekodeRoot } from "@zcode/shared/node";
 import {
-  ZCODE_ATTACHMENT_FAULT_CODES,
-  ZCodeAttachmentFaultError,
+  NEKODE_ATTACHMENT_FAULT_CODES,
+  NekodeAttachmentFaultError,
 } from "@zcode/shared/zcode-protocol-v4";
 
 import { createModelAdapter } from "../model-factory.js";
@@ -54,8 +65,8 @@ import { scheduleStartupLogRetentionCleanup } from "../log-retention.js";
 import type {
   PrepareUserExecutionBoundary,
   ResumeOptions,
-  ZCodeApp,
-  ZCodeAppOptions,
+  NekodeApp,
+  NekodeAppOptions,
 } from "./types.js";
 import {
   createConfigCliOverrides,
@@ -105,14 +116,14 @@ import {
   type NodeReplBrowserBroker,
 } from "./node-repl-browser-broker.js";
 import { resolveBuiltInNodeReplMcpServers } from "./built-in-node-repl.js";
-import { resolveZCodeCustomCommandPrompt } from "../custom-command-prompt.js";
-import { resolveZCodeBuiltinPromptCommandInvocation } from "../builtin-prompt-command.js";
+import { resolveNekodeCustomCommandPrompt } from "../custom-command-prompt.js";
+import { resolveNekodeBuiltinPromptCommandInvocation } from "../builtin-prompt-command.js";
 import { BUILTIN_WORKFLOW_COMMAND_NAME } from "../builtin-workflow-command.js";
 import { collectDisabledPaths } from "../skill-command-overrides.js";
 import {
   loadPluginAgentTemplates,
   resolvePluginAgentProfiles,
-  loadZCodeAgentProfiles,
+  loadNekodeAgentProfiles,
 } from "../subagents.js";
 import { createRuntimeAiSdkModelExecutionConfig } from "../model-config.js";
 import { withOfficialCommandEnv } from "../official-command-endpoint/index.js";
@@ -166,9 +177,9 @@ function decodePromptAttachmentDataUrl(
   return { bytes, mediaType };
 }
 
-export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp> {
+export async function createNekodeApp(options: NekodeAppOptions): Promise<NekodeApp> {
   if (!options?.providerRegistry) {
-    throw new Error("createZCodeApp requires a Provider Registry");
+    throw new Error("createNekodeApp requires a Provider Registry");
   }
   const startupStartedAt = startupNow();
   const appVersion = options.version ?? "0.0.0";
@@ -180,7 +191,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       env: options.env,
       projectConfigPath: options.projectConfigPath,
       workingDirectory,
-      workspaceIdentity: options.runtimeConfig?.memory?.workspaceIdentity,
+      workspaceIdentity: options.runtimeConfig?.workspaceIdentity,
       skipUserConfig: options.skipUserConfig,
       userConfigPath: options.userConfigPath,
       cliOverrides: createConfigCliOverrides(options),
@@ -222,11 +233,15 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
   let ownedNodeReplBrowserBroker: NodeReplBrowserBroker | undefined;
   let providerModelRuntime: ApiProviderModelRuntime | undefined;
   try {
-    const storageRoot = resolvePath(configResult.config.storage.dir);
+    // 守卫原因：config/env 可把 storage.dir 指到官方 ~/.zcode；CLI 绝不写官方根。
+    const storageRoot = guardNekodeRoot(
+      resolvePath(configResult.config.storage.dir),
+      options.env ?? process.env,
+    );
     const cliStorageRoot = getCliStorageRoot(storageRoot);
     const modelIoDir = getModelIoDir(
       cliStorageRoot,
-      resolveZCodeRuntimeEnv(options.env ?? process.env) === "development",
+      resolveNekodeRuntimeEnv(options.env ?? process.env) === "development",
     );
     // 初始化与父轮必须使用同一 Host 来源，避免 CLI storage.dir 的另一份定义在首轮消失。
     const hostSubagentSnapshot = await options.readSubagentRuntimeConfig?.({
@@ -235,7 +250,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     });
     const zcodeSubagentProfileOutcome = hostSubagentSnapshot
       ? subagentProfilesFromSnapshot(hostSubagentSnapshot)
-      : await loadZCodeAgentProfiles({
+      : await loadNekodeAgentProfiles({
           logger,
           storageRoot,
           workingDirectory,
@@ -298,7 +313,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         subagentProfiles,
         storageRoot,
         workingDirectory,
-        workspaceIdentity: options.runtimeConfig?.memory?.workspaceIdentity,
+        workspaceIdentity: options.runtimeConfig?.workspaceIdentity,
       });
     const browserControlPort = options.browserControlPort;
     if (
@@ -325,7 +340,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         ),
       };
     }
-    startupTimer.mark("ZCode runtime configuration resolved", {
+    startupTimer.mark("Nekode runtime configuration resolved", {
       context: runtimeConfigLogContext(runtimeConfig, workingDirectory),
       event: "bootstrap.app.startup.runtime_config.completed",
       stage: "resolve_runtime_config",
@@ -364,7 +379,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       ...(options.workspaceHookReviewHost
         ? {
             emitReviewEvent: async (event) => {
-              if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+              if (!runtime) throw new Error("Nekode runtime is not initialized yet.");
               await runtime.appendEvent(
                 createSessionEvent(event.type, sessionId, event.payload, {
                   traceId: traceContext.traceId,
@@ -373,7 +388,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
               );
             },
             emitAdmissionEvent: async (event) => {
-              if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+              if (!runtime) throw new Error("Nekode runtime is not initialized yet.");
               await runtime.appendEvent(
                 createSessionEvent(event.type, sessionId, event.payload, {
                   traceId: traceContext.traceId,
@@ -406,7 +421,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       (messageEnabled
         ? createNodeSessionMailboxAdapter({
             rootDir: resolvePath(
-              (options.env ?? process.env).ZCODE_MAILBOX_ROOT ?? "~/.zcode/mailbox",
+              (options.env ?? process.env).NEKODE_MAILBOX_ROOT ?? "~/.nekode/mailbox",
             ),
           })
         : undefined);
@@ -437,7 +452,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     const mcpPort = rawMcpPort
       ? createWorkspaceMcpTrust({
           workingDirectory,
-          workspaceIdentity: options.runtimeConfig?.memory?.workspaceIdentity,
+          workspaceIdentity: options.runtimeConfig?.workspaceIdentity,
           userConfigPath: options.userConfigPath,
           projectConfigPath: options.projectConfigPath,
           skipUserConfig: options.skipUserConfig,
@@ -472,7 +487,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       });
     // 本 app 只服务一个 session：它的子进程统一带上这个 session 的官方命令端点 env。
     const officialCommandEnv = options.officialCommandEnv;
-    const officialCommandIdentity = options.runtimeConfig?.memory?.workspaceIdentity;
+    const officialCommandIdentity = options.runtimeConfig?.workspaceIdentity;
     const officialCommandWorkspace = {
       workspacePath: workingDirectory,
       ...(officialCommandIdentity ? { workspaceIdentity: officialCommandIdentity } : {}),
@@ -512,7 +527,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       runtimeConfig,
     });
     const getRuntime = (): AgentRuntime => {
-      if (!runtime) throw new Error("ZCode runtime is not initialized yet.");
+      if (!runtime) throw new Error("Nekode runtime is not initialized yet.");
       return runtime;
     };
     let resumePrepared = false;
@@ -854,6 +869,9 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       registry: options.providerRegistry,
       currentSelection: () => getRuntime().getSessionModelSelection(),
     });
+    // Neko 长期记忆与衣橱只接主会话：子代理与工作流子 runtime 不经过 createNekodeApp。
+    const nekoMemoryBooks = openNekoMemoryBooks(options.env, sessionId, logger);
+    const wardrobeStore = openWardrobeStore(sessionId, logger);
     runtime = new AgentRuntime(sessionId, runtimeConfig, {
       ...(options.readSubagentRuntimeConfig
         ? {
@@ -911,6 +929,8 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       artifactStore,
       contextSourcePort:
         options.contextSourcePort ?? createNodeContextSourceAdapter({ env: options.env }),
+      ...(nekoMemoryBooks ? { nekoMemoryBooks } : {}),
+      ...(wardrobeStore ? { wardrobeStore } : {}),
       skillPort:
         configResult.config.features.skill && configResult.config.skills.enabled
           ? (options.skillPort ??
@@ -938,7 +958,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       providerRuntimeHeadersPort: options.providerRuntimeHeadersPort,
       resolveEffectiveModelSelection: options.resolveEffectiveModelSelection,
       isRemoteWorkspace: () =>
-        isRemoteWorkspaceIdentity(runtimeConfig.memory?.workspaceIdentity ?? ""),
+        isRemoteWorkspaceIdentity(runtimeConfig.workspaceIdentity ?? ""),
       permissionBroker: options.permissionBroker,
       permissionService,
       workflowPort: scriptWorkflowFacade.workflowPort,
@@ -947,7 +967,6 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       modelCatalogPort,
       automationPort: options.automationPort,
       offPeakPort: options.offPeakPort,
-      topicResourcePort: options.topicResourcePort,
       appVersion,
       traceContext,
     });
@@ -966,7 +985,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
       cliDefaultSelection,
       artifactStore,
       customCommandPromptResolver: async (text, resolverOptions) => {
-        const builtin = resolveZCodeBuiltinPromptCommandInvocation(text, {
+        const builtin = resolveNekodeBuiltinPromptCommandInvocation(text, {
           // 动态工作流灰度关闭时内置 `/workflow` 不得展开（DWG-03）。目录侧已经把它从 `/` 面板
           // 剔除，但用户仍可手打命令名，两条路径必须给出同一个结论。独立 CLI 的 TUI 与 headless
           // 按 --workflow-mode 显式取值；缺席（进程内嵌入方）不设门禁，见 runtimeConfig 字段注释。
@@ -991,7 +1010,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
           }
           return builtin.prompt;
         }
-        return await resolveZCodeCustomCommandPrompt(text, {
+        return await resolveNekodeCustomCommandPrompt(text, {
           additionalDirectories: options.additionalDirectories,
           env: options.env,
           executionPort,
@@ -1277,7 +1296,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         const { ref, mediaType, artifactUri } = await resolvePromptAttachment(input);
         if (artifactUri) {
           if (!artifactStore.statToolResultArtifact) {
-            throw new ZCodeAttachmentFaultError(ZCODE_ATTACHMENT_FAULT_CODES.statUnsupported);
+            throw new NekodeAttachmentFaultError(NEKODE_ATTACHMENT_FAULT_CODES.statUnsupported);
           }
           const result = await artifactStore.statToolResultArtifact({
             uri: artifactUri,
@@ -1293,7 +1312,7 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
         if (result.kind !== "file") {
           // 目录/符号链接/已消失都意味着「这个附件不再是可分享的文件」，用稳定码上抛，
           // 让 share 预检按确定分类处理，而不是靠错误文本猜。
-          throw new ZCodeAttachmentFaultError(ZCODE_ATTACHMENT_FAULT_CODES.statNotFile);
+          throw new NekodeAttachmentFaultError(NEKODE_ATTACHMENT_FAULT_CODES.statNotFile);
         }
         return {
           totalBytes: result.sizeBytes,
@@ -1522,11 +1541,56 @@ export async function createZCodeApp(options: ZCodeAppOptions): Promise<ZCodeApp
     providerModelRuntime?.dispose();
     void modelTelemetry.shutdown().catch(() => undefined);
     void ownedNodeReplBrowserBroker?.close();
-    startupTimer.fail("ZCode app startup failed", error, {
+    startupTimer.fail("Nekode app startup failed", error, {
       context: { sessionId, workingDirectory },
       event: "bootstrap.app.startup.failed",
       stage: "total",
     });
     throw error;
+  }
+}
+
+/**
+ * 主会话的 Neko 记忆书架端口：六本书 + 每会话投递快照。books() 惰性
+ * ensure 空书，启动期无需再登记项目身份；不可用时记忆面整体缺席，
+ * 不影响主流程启动。
+ */
+function openNekoMemoryBooks(
+  env: NodeJS.ProcessEnv | undefined,
+  sessionId: string,
+  logger: Logger,
+) {
+  try {
+    const memoryRoot = resolveNekoMemoryRoot(env ?? process.env);
+    return new NekoMemoryBooksAdapter(
+      memoryRoot,
+      new NekoMemorySnapshotStore(resolveNekoMemoryRuntimeDbPath(memoryRoot)),
+    );
+  } catch (error) {
+    logger.warn("Neko memory books unavailable", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      event: "neko.memory.books.unavailable",
+      module: "bootstrap",
+      sessionId,
+    });
+    return undefined;
+  }
+}
+
+/**
+ * 主会话的衣橱存储：定义与状态库路径由 store 内部按统一根解析。
+ * 构造即建 SQLite 状态库；失败时衣橱面缺席，不阻塞消息主流程。
+ */
+function openWardrobeStore(sessionId: string, logger: Logger) {
+  try {
+    return new WardrobeFileStore();
+  } catch (error) {
+    logger.warn("Neko wardrobe unavailable", {
+      errorMessage: error instanceof Error ? error.message : String(error),
+      event: "neko.wardrobe.unavailable",
+      module: "bootstrap",
+      sessionId,
+    });
+    return undefined;
   }
 }

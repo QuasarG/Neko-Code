@@ -31,7 +31,7 @@ describe("Workflow 内显式 Subagent 的有效选择", () => {
       let requestedChild = false;
       const execution = vi.spyOn(executionAdapters, "createNodeExecutionAdapter");
       const app = await createRegistryBackedTestApp({
-        env: { ZCODE_HOME: root },
+        env: { NEKODE_HOME: root },
         skipUserConfig: true,
         sessionStore: store,
         providerRegistry: createTestProviderRegistry([parent, effective]),

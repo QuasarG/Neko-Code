@@ -9,7 +9,7 @@ import {
 } from "@zcode/shared/test-ids";
 import { probeWorkspaceAppState } from "./e2e/helpers/desktop-app.js";
 
-const PROJECT_PATH = "/Users/dev/Code/z-code/.e2e-home/ZCodeProject";
+const PROJECT_PATH = "/Users/dev/Code/z-code/.e2e-home/NekodeProject";
 
 function probe(expectedPath = PROJECT_PATH) {
   return probeWorkspaceAppState({
@@ -65,7 +65,7 @@ describe("desktop e2e workspace readiness probe", () => {
   });
 
   it("matches a Windows active workspace path", () => {
-    const windowsPath = String.raw`C:\gitlab-runner\builds\project\packages\desktop\.e2e-home\ZCodeProject`;
+    const windowsPath = String.raw`C:\gitlab-runner\builds\project\packages\desktop\.e2e-home\NekodeProject`;
     appendTestId(testId(TID_WORKSPACE_ITEM, windowsPath));
     appendTestId(`${TID_V4_SESSION_PANE}-pane-1`);
 
@@ -77,7 +77,7 @@ describe("desktop e2e workspace readiness probe", () => {
     appendTestId(TID_COMPOSER_WORKSPACE_TRIGGER);
     appendTestId(`${TID_V4_SESSION_PANE}-pane-1`);
 
-    expect(probe("/Users/dev/.zcode/workspace/default")).toBe("ready");
+    expect(probe("/Users/dev/.nekode/workspace/default")).toBe("ready");
   });
 
   it("keeps waiting while neither the workspace nor onboarding is rendered", () => {

@@ -1,5 +1,5 @@
 import { SessionEventType, type SessionEvent } from "@zcode/contracts";
-import type { ZCodeComputerUseOperationEvent } from "@zcode/shared";
+import type { NekodeComputerUseOperationEvent } from "@zcode/shared";
 
 function asRecord(value: unknown): Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value)
@@ -19,7 +19,7 @@ function nonEmptyString(value: unknown): string | undefined {
  * 产出的扁平形态，让 CI 假绿。
  *
  * 锚点选 `setupComputerUseRuntime`，因为它是模型**必须原样照抄**的引导语句，且这是架构强制
- * 而非文档软要求：ZCode 的 node_repl 每个 cell 都是全新 Worker、SDK 绑定不跨 cell，所以
+ * 而非文档软要求：Nekode 的 node_repl 每个 cell 都是全新 Worker、SDK 绑定不跨 cell，所以
  * 参考文档写明「The first executable statement of every CUA cell must be this bootstrap,
  * and the bootstrap and the actions must be in the same cell」。凡用 CUA 的 cell 必然含它。
  *
@@ -42,7 +42,7 @@ function baseEvent(event: SessionEvent) {
 
 export function mapComputerUseOperationEvent(
   event: SessionEvent,
-): ZCodeComputerUseOperationEvent | undefined {
+): NekodeComputerUseOperationEvent | undefined {
   const turnId = event.turnId ? String(event.turnId) : undefined;
   const payload = asRecord(event.payload);
   switch (event.type) {

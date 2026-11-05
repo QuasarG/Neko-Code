@@ -41,7 +41,7 @@ describe(`${CASE_MARKER}: SSH 远端开发基础能力 P0`, () => {
     this.timeout(20 * 60_000);
     config = readSSHRuntimeConfig(CASE_MARKER);
     // Bugfix：远端 E2E fixture 也必须落在专用隔离根目录，不能写入系统临时目录。
-    fixturePath = posix.join(config.workspacePaths[0], ".zcode-e2e", `ssh-p0-dev-${Date.now()}`);
+    fixturePath = posix.join(config.workspacePaths[0], ".nekode-e2e", `ssh-p0-dev-${Date.now()}`);
     if (!isCaseFixturePath(fixturePath, config.workspacePaths[0])) {
       throw new Error(`${CASE_MARKER}: 非法远端 fixture path`);
     }
@@ -55,7 +55,7 @@ describe(`${CASE_MARKER}: SSH 远端开发基础能力 P0`, () => {
         `printf '%s\\n' '${FILE_MARKER}' > README.txt`,
         "git init -q",
         "git config user.email 'zcode-e2e@example.invalid'",
-        "git config user.name 'ZCode E2E'",
+        "git config user.name 'Nekode E2E'",
         "git add README.txt",
         "git commit -qm 'test fixture baseline'",
       ].join(" && "),
@@ -277,7 +277,7 @@ async function waitForWorkspaceFileTreeRow(path: string): Promise<void> {
 
 function isCaseFixturePath(value: string, workspaceRoot: string): boolean {
   return (
-    posix.dirname(value) === posix.join(workspaceRoot, ".zcode-e2e") &&
+    posix.dirname(value) === posix.join(workspaceRoot, ".nekode-e2e") &&
     /^ssh-p0-dev-\d+$/u.test(posix.basename(value))
   );
 }

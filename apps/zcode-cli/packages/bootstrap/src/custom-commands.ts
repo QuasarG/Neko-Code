@@ -7,10 +7,10 @@ import type {
   CustomCommandLoadOutcome,
   Logger,
 } from "@zcode/contracts";
-import { resolveZCodePlugins } from "./plugins.js";
+import { resolveNekodePlugins } from "./plugins.js";
 import { collectDisabledPaths } from "./skill-command-overrides.js";
 
-export interface ListZCodeCustomCommandsOptions {
+export interface ListNekodeCustomCommandsOptions {
   env?: NodeJS.ProcessEnv;
   homeDirectory?: string;
   logger?: Logger;
@@ -21,17 +21,17 @@ export interface ListZCodeCustomCommandsOptions {
   additionalDirectories?: readonly string[];
 }
 
-export interface InspectZCodeCustomCommandOptions extends ListZCodeCustomCommandsOptions {
+export interface InspectNekodeCustomCommandOptions extends ListNekodeCustomCommandsOptions {
   name: string;
 }
 
-export interface ZCodeCustomCommandInspection {
+export interface NekodeCustomCommandInspection {
   command: CustomCommandContent;
   diagnostics: CustomCommandDiagnostic[];
 }
 
-export async function listZCodeCustomCommands(
-  options: ListZCodeCustomCommandsOptions = {},
+export async function listNekodeCustomCommands(
+  options: ListNekodeCustomCommandsOptions = {},
 ): Promise<CustomCommandLoadOutcome> {
   const discovery = createCustomCommandDiscovery(options);
   return await discovery.adapter.discoverCommands({
@@ -39,9 +39,9 @@ export async function listZCodeCustomCommands(
   });
 }
 
-export async function inspectZCodeCustomCommand(
-  options: InspectZCodeCustomCommandOptions,
-): Promise<ZCodeCustomCommandInspection> {
+export async function inspectNekodeCustomCommand(
+  options: InspectNekodeCustomCommandOptions,
+): Promise<NekodeCustomCommandInspection> {
   const discovery = createCustomCommandDiscovery(options);
   const workingDirectory = discovery.workingDirectory;
   const adapter = discovery.adapter;
@@ -60,8 +60,8 @@ export async function inspectZCodeCustomCommand(
   };
 }
 
-export async function loadZCodeCustomCommand(
-  options: InspectZCodeCustomCommandOptions,
+export async function loadNekodeCustomCommand(
+  options: InspectNekodeCustomCommandOptions,
 ): Promise<CustomCommandContent> {
   const discovery = createCustomCommandDiscovery(options);
   return await discovery.adapter.loadCommand({
@@ -70,7 +70,7 @@ export async function loadZCodeCustomCommand(
   });
 }
 
-function createCustomCommandDiscovery(options: ListZCodeCustomCommandsOptions) {
+function createCustomCommandDiscovery(options: ListNekodeCustomCommandsOptions) {
   const workingDirectory = resolve(options.workingDirectory ?? process.cwd());
   const configResult = createConfig({
     env: options.env,
@@ -79,7 +79,7 @@ function createCustomCommandDiscovery(options: ListZCodeCustomCommandsOptions) {
     skipUserConfig: options.skipUserConfig,
     userConfigPath: options.userConfigPath,
   });
-  const pluginOutcome = resolveZCodePlugins({
+  const pluginOutcome = resolveNekodePlugins({
     configResult,
     env: options.env,
     logger: options.logger,

@@ -1,5 +1,3 @@
-import { join } from "node:path";
-
 import {
   traceContextToLogContext,
   createContextBuilder,
@@ -14,24 +12,12 @@ import type {
   ContextBuilder,
   ContextBuilderConfig,
 } from "../deps.js";
+import type { NekoMemoryBook } from "@zcode/contracts/neko-memory";
 import type { AgentRuntimeInternal } from "../internal.js";
-import { ensureMemoryDirectoryExists } from "../../memory/directory.js";
-import {
-  formatProjectMemoryIndexContent,
-  MEMORY_INDEX_FILE_NAME,
-} from "../../memory/index-content.js";
-import {
-  ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH,
-  type ProjectMemoryRetrievalBranch,
-} from "../../memory/project-memory-retrieval-branch.js";
-import {
-  normalizeReadFileStateMtimeMs,
-  setReadFileStateEntry,
-} from "../../tool/read-file-state.js";
-import { resolveEnabledProjectMemoryRoot } from "../helpers/project-memory.js";
 import { shouldUseMidConversationSystem } from "../helpers/runtime-provider-request-messages.js";
 import { buildContextHistoryEntries } from "./context-history-entries.js";
 import { resolveRuntimeEmbeddedSearchEnabled } from "./embedded-search-branch.js";
+import { formatAgentProfileForPrompt } from "../../subagent/profile.js";
 import { getContextSourceShellDisplayName } from "./session-shell-environment.js";
 import {
   ensureGenUiOutputDirectory,
@@ -39,6 +25,20 @@ import {
 } from "../helpers/gen-ui-output.js";
 
 export { buildContextHistoryEntries };
+
+/**
+ * 本会话可见的记忆书：无书架端口（子代理、工作流子会话）返回 undefined，
+ * Memory 段随之缺席。books() 按 workspace key 解析项目身份并确保文件存在，
+ * 与每轮投递（neko-memory-turn.ts）用同一口径，两个入口看到同一组书。
+ */
+export function resolveNekoMemoryBooks(
+  runtime: AgentRuntimeInternal,
+): readonly NekoMemoryBook[] | undefined {
+  return runtime.nekoMemoryBooks?.books({
+    workspacePath: runtime.config.workspacePath ?? runtime.workingDirectory,
+    workspaceIdentity: runtime.config.workspaceIdentity?.toString(),
+  });
+}
 
 export async function ensureContextInitialized(
   this: AgentRuntimeInternal,
@@ -80,17 +80,14 @@ export async function ensureContextInitialized(
   this.sessionStartGitPrefetch = true;
   this.startMcpStartup(traceContext);
   this.skillLoadOutcome = await this.discoverSkillsForContext(traceContext);
-  this.memoryRoot = await this.loadProjectMemoryRoot(traceContext);
-  this.memoryIndexContent = await loadProjectMemoryIndexContent(
-    this,
-    this.memoryRoot,
-    ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH,
-  );
   await ensureGenUiOutputDirectory(this);
-  this.contextBuilder = this.createContextBuilderFromSnapshot(snapshot, this.memoryRoot, {
-    memoryIndexContent: this.memoryIndexContent,
-    model,
-  });
+  this.contextBuilder = this.createContextBuilderFromSnapshot(
+    snapshot,
+    resolveNekoMemoryBooks(this),
+    {
+      model,
+    },
+  );
   // Bug 根因：模型创建失败轮会在 Context 首次可初始化前接纳并持久化用户输入。
   // init 会替换全部内存历史，因此先保留这些权威运行条目，再接到新建的 Context 前缀之后。
   const preContextEntries = [...this.messageHistory.borrowReadOnlyRuntimeEntries()];
@@ -122,10 +119,18 @@ export async function getSkillCatalog(
 export function createContextBuilderFromSnapshot(
   this: AgentRuntimeInternal,
   snapshot: ContextSourceSnapshot,
-  memoryRoot?: string,
-  options: { memoryIndexContent?: string; model?: Model; persistEnvInfo?: boolean } = {},
+  memoryBooks?: readonly NekoMemoryBook[],
+  options: { model?: Model; persistEnvInfo?: boolean } = {},
 ): ContextBuilder {
-  const envInfo = snapshot.envInfo;
+  // cwd 与 shell 用 runtime 当前值：环境块已进 system prompt，工作区或 Bash 运行时切换后
+  // 不能继续展示会话起点的旧路径/旧 shell。
+  const envInfo = {
+    ...snapshot.envInfo,
+    cwd: this.workingDirectory,
+    ...(this.config.bashShellSelection?.display.name
+      ? { shell: this.config.bashShellSelection.display.name }
+      : {}),
+  };
   // 同步 preview / config-only fallback 会构造 unknown envInfo。
   // 这类临时值不能写回 config，否则首轮真实 context source 会把它当作显式 envInfo，
   // 从而跳过 Node env/git 探测。
@@ -145,6 +150,18 @@ export function createContextBuilderFromSnapshot(
     });
   }
 
+  const turnTools = this.getTools(options.model);
+  const agentListing = turnTools.some((tool) => tool.name === "Agent")
+    ? [
+        "Available agent types for the Agent tool:",
+        ...this.getAgentDefinitions().activeAgents.map((profile) =>
+          formatAgentProfileForPrompt(profile, {
+            embeddedSearchEnabled: resolveRuntimeEmbeddedSearchEnabled(this),
+          }),
+        ),
+      ].join("\n")
+    : undefined;
+
   const contextConfig: ContextBuilderConfig = {
     workingDirectory: snapshot.workingDirectory,
     additionalDirectories: this.config.additionalDirectories,
@@ -158,10 +175,10 @@ export function createContextBuilderFromSnapshot(
     currentDate: snapshot.currentDate,
     userInstructions: snapshot.userInstructions,
     projectContext: snapshot.projectContext,
-    memoryIndexContent: options.memoryIndexContent,
-    memoryRoot,
+    memoryBooks,
     skills: this.skillLoadOutcome,
     agentProfiles: this.config.subagents?.profiles,
+    agentListing,
     embeddedSearchEnabled: resolveRuntimeEmbeddedSearchEnabled(this),
     skillMetadataBudget: this.config.skillMetadataBudget,
     customSystemPrompt: this.config.systemPrompt,
@@ -169,79 +186,10 @@ export function createContextBuilderFromSnapshot(
     language: this.config.language,
     outputStyle: this.config.outputStyle,
     compact: this.config.compact,
-    guidanceToolNames: this.getTools(options.model).map((tool) => tool.name),
+    guidanceToolNames: turnTools.map((tool) => tool.name),
   };
 
   return createContextBuilder(contextConfig).setToolRegistry(this.registry);
-}
-
-export async function loadProjectMemoryRoot(
-  this: AgentRuntimeInternal,
-  traceContext: TraceContext,
-): Promise<string | undefined> {
-  const memoryRoot = resolveEnabledProjectMemoryRoot(this.config, this.workspaceRoot);
-  if (!memoryRoot) {
-    this.logMemorySkipped(traceContext, "disabled_or_excluded", {
-      taskType: this.config.taskType,
-    });
-    return undefined;
-  }
-  if (!this.fileSystemPort) {
-    this.logMemorySkipped(traceContext, "missing_file_system_port", {
-      memoryRoot,
-    });
-    return undefined;
-  }
-  await ensureMemoryDirectoryExists(this.fileSystemPort, memoryRoot, traceContext, this.logger);
-  return memoryRoot;
-}
-
-export async function loadProjectMemoryIndexContent(
-  runtime: AgentRuntimeInternal,
-  memoryRoot: string | undefined,
-  retrievalBranch: ProjectMemoryRetrievalBranch,
-): Promise<string | undefined> {
-  if (retrievalBranch !== "default-index") return undefined;
-  const fileSystemPort = runtime.fileSystemPort;
-  if (!fileSystemPort || !memoryRoot) return undefined;
-  const indexPath = join(memoryRoot, MEMORY_INDEX_FILE_NAME);
-  try {
-    const read = await fileSystemPort.readTextFile({ path: indexPath });
-    const formattedContent = formatProjectMemoryIndexContent(read.content);
-    if (!formattedContent) return undefined;
-    setReadFileStateEntry(runtime.readFileState, {
-      content: read.content,
-      isPartialView: formattedContent !== read.content,
-      limit: undefined,
-      mtimeMs: normalizeReadFileStateMtimeMs(read.revision?.mtimeMs),
-      offset: undefined,
-      path: indexPath,
-      readAt: runtime.now(),
-      revisionId: read.revision?.id,
-      seededFromContext: true,
-      sizeBytes: read.sizeBytes,
-    });
-    return read.content;
-  } catch {
-    // 默认 Memory 分支将缺失或不可读的 index 视为没有该 context source。
-    return undefined;
-  }
-}
-
-export function logMemorySkipped(
-  this: AgentRuntimeInternal,
-  traceContext: TraceContext,
-  reason: string,
-  context: Record<string, unknown> = {},
-): void {
-  this.logger?.debug("Memory read skipped", {
-    ...traceContextToLogContext(traceContext),
-    event: "memory.read.skipped",
-    module: "core.runtime",
-    reason,
-    status: "completed",
-    ...context,
-  });
 }
 
 export async function discoverSkillsForContext(

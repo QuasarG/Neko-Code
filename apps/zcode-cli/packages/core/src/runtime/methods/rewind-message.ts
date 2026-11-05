@@ -697,6 +697,18 @@ async function rebuildConversationDerivedState(
     messages: options.persistedMessages,
     ...branchOptions,
   });
+  // 只有保留历史里完全没有 runtime_memory 时才清快照。最常见的是编辑第一条消息：
+  // 旧基线随首轮一起被截掉，不清快照下一轮会误以为「已投递」，编辑后的分支就丢了记忆。
+  // 编辑后续消息时保留历史仍带基线，清快照反而会重复投递整份内容。
+  const keptHasMemoryDelivery = this.messageHistory
+    .borrowReadOnlyRuntimeEntries()
+    .some((entry) => entry.kind === "attachment" && entry.metadata.source === "runtime_memory");
+  if (!keptHasMemoryDelivery) {
+    // clearSessionBookSnapshots 是全清：除记忆书外也一并清掉 "wardrobe" 快照键。
+    // 回退到连记忆投递都不存在的早期历史时，衣橱随下一轮按当前状态重新基线，
+    // 只重投一次状态、不会产生换装叙述——可接受。
+    this.nekoMemoryBooks?.state.clearSessionBookSnapshots(this.sessionId);
+  }
   await hydrateReadFileStateFromSession({
     messages: options.persistedMessages,
     readFileState: this.readFileState,

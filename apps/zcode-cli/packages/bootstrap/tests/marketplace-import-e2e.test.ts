@@ -5,20 +5,20 @@
 //   -> pluginManagementStore.addMarketplace(source) -> agentService.addPluginMarketplace
 //   -> 协议 plugins/marketplace/add -> server.ts dispatch -> 本文件验证的 facade。
 //
-// 本测试直接驱动 agent 侧 facade addZCodePluginMarketplace，喂入 popover 会原样下发的「自由文本字符串」，
+// 本测试直接驱动 agent 侧 facade addNekodePluginMarketplace，喂入 popover 会原样下发的「自由文本字符串」，
 // 覆盖 parseMarketplaceSourceInput -> loadMarketplaceFromSource(读 manifest / 真实 git clone) -> 落盘，
-// 再用 getZCodePluginsOverview 复核（等价 popover 关闭后 UI refresh 能看到新市场）。
+// 再用 getNekodePluginsOverview 复核（等价 popover 关闭后 UI refresh 能看到新市场）。
 // 每个用例独立临时 storageRoot 隔离。真实外网导入用例见 marketplace-import-network.test.ts。
 import { existsSync } from "node:fs";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { addZCodePluginMarketplace, getZCodePluginsOverview } from "../src/plugins.js";
+import { addNekodePluginMarketplace, getNekodePluginsOverview } from "../src/plugins.js";
 // popover 调用约定：source 为自由文本；pluginStorageRoot 真实运行时由 config 推导，
 // 这里显式覆盖到临时目录做隔离，等价「换一个干净工作区做导入」。
 function addViaFacade(source: string, storageRoot: string, workingDirectory: string) {
-  return addZCodePluginMarketplace({
+  return addNekodePluginMarketplace({
     source,
     pluginStorageRoot: storageRoot,
     workingDirectory,
@@ -27,7 +27,7 @@ function addViaFacade(source: string, storageRoot: string, workingDirectory: str
 }
 
 function overview(storageRoot: string, workingDirectory: string) {
-  return getZCodePluginsOverview({
+  return getNekodePluginsOverview({
     pluginStorageRoot: storageRoot,
     workingDirectory,
     skipUserConfig: true,

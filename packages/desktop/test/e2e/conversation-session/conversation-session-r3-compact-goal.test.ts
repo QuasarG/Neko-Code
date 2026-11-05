@@ -25,7 +25,7 @@ import {
 } from "../helpers/v4-conversation.js";
 
 const CASE_MARKER = "E2E_R3_COMPACT_GOAL";
-const artifactDir = resolve(process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-compact-goal");
+const artifactDir = resolve(process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-compact-goal");
 
 async function clickGoalAction(action: "pause" | "resume"): Promise<boolean> {
   await browser.waitUntil(
@@ -140,7 +140,7 @@ describe(`${CASE_MARKER}: 远端 session 的手动 compact 与 goal 暂停/继�
     facts.afterCompactTurnUsesSummary = true;
     const remoteCompact = await runSSHCommand(
       prepared.config,
-      'F=$(ls -t ~/.zcode/cli/log/*.jsonl | head -n1); grep -c "compact" "$F" || true',
+      'F=$(ls -t ~/.nekode/cli/log/*.jsonl | head -n1); grep -c "compact" "$F" || true',
     );
     facts.remoteLogCompactMentions = Number.parseInt(remoteCompact.stdout.trim() || "0", 10);
 

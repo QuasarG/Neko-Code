@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { ExecutionRequest, ExecutionShellSelection } from "@zcode/contracts";
-import type { ZCodeToolExecResource } from "@zcode/shared";
+import type { NekodeToolExecResource } from "@zcode/shared";
 import { describe, expect, it, vi } from "vitest";
 import { NodeExecutionAdapter } from "../src/exec/node-execution-adapter.js";
 
@@ -163,7 +163,7 @@ it.each(["explicit", "auto_on_timeout"] as const)(
 );
 
 it("运行时烟测：真实慢命令经平台探针产生非零 RSS，通知失败不影响输出", async () => {
-  const onToolExecResource = vi.fn((_sample: ZCodeToolExecResource) => {
+  const onToolExecResource = vi.fn((_sample: NekodeToolExecResource) => {
     throw new Error("telemetry sink closed");
   });
   const fixture = await gatedCommand(onToolExecResource);

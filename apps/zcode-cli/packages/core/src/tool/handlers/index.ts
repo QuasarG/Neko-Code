@@ -1,4 +1,3 @@
-// import { replyToChannelToolEntry } from "./reply-to-channel.js";
 // ============================================================
 // Built-in Tool Handlers
 // ============================================================
@@ -40,6 +39,7 @@ import {
 import { isSubagentDispatchToolName } from "../compat.js";
 import { skillToolEntry } from "./skill.js";
 import { todoReadToolEntry, todoWriteToolEntry } from "./todo.js";
+import { wardrobeToolEntry } from "./wardrobe.js";
 import {
   cronCreateToolEntry,
   cronDeleteToolEntry,
@@ -92,6 +92,9 @@ export const builtInTools: ToolEntry[] = [
   webSearchToolEntry,
   todoReadToolEntry,
   todoWriteToolEntry,
+  // Neko Memory v2：记忆读写改走通用 Read/Edit/Write，memory_* 工具已删除。
+  // 衣橱工具以 wardrobeStore 存在为注册门（includeWardrobe），主会话专属。
+  wardrobeToolEntry,
   cronCreateToolEntry,
   cronListToolEntry,
   cronUpdateToolEntry,
@@ -113,8 +116,6 @@ export const builtInTools: ToolEntry[] = [
   taskOutputToolEntry,
   taskStopToolEntry,
   readSessionContextToolEntry,
-  // 渠道回复等待插件入口接入；仅注释默认注册，保留完整实现。
-  // replyToChannelToolEntry,
   agentToolEntry,
   taskToolEntry,
   skillToolEntry,
@@ -206,6 +207,11 @@ interface RegisterBuiltInToolsOptions {
   includeDynamicWorkflow?: boolean;
   /** node_repl（js）默认关闭，由官方 browser-use 插件启用。 */
   includeNodeRepl?: boolean;
+  /**
+   * wardrobe 工具：只有主会话注入了 wardrobeStore 时开启。
+   * 记忆面（memory_*）已随 v2 删除，这道注册门移交给衣橱工具。
+   */
+  includeWardrobe?: boolean;
   /** browser-use 说明和 agent.browsers 注入由官方 browser-use 插件 + 宿主 browser bridge 共同启用。 */
   includeBrowserUse?: boolean;
   embeddedSearchEnabled?: boolean;
@@ -283,6 +289,11 @@ export function registerBuiltInTools(
       continue;
     }
     if (entry.metadata.name === "js" && options.includeNodeRepl !== true) {
+      continue;
+    }
+    // wardrobe 工具名固定为 "wardrobe"（spec 8.3）；entry 尚未入列时这道门空转，
+    // 工具注册进来后按 includeWardrobe 生效，无需再改这里的判定。
+    if (entry.metadata.name === "wardrobe" && options.includeWardrobe !== true) {
       continue;
     }
     registry.register(resolveBuiltInToolEntryForBranch(entry, options), {

@@ -7,6 +7,7 @@ import {
   PuzzleIcon,
   BotIcon,
   BotMessageSquareIcon,
+  BracesIcon,
   BugIcon,
   FileIcon,
   FileCode2Icon,
@@ -276,6 +277,9 @@ export function SidePaneTabIcon({ tab }: { tab: WorkspaceSidePaneTab }) {
   if (tab.type === "plan-detail") {
     return <NotepadTextIcon className="size-3.5" />;
   }
+  if (tab.type === "injection") {
+    return <BracesIcon className="size-3.5" />;
+  }
   if (tab.type === "plugin-ui") {
     return <PlugIcon className="size-3.5" />;
   }
@@ -493,6 +497,7 @@ export function getSidePaneTabTitle(
   if (tab.type === "plan-detail") {
     return formatMessage({ id: "planTool.panel.planTab" });
   }
+  if (tab.type === "injection") return tab.title;
   // 展示名是卡片打开时冻结的兜底；run 身份始终是 runId（tab id 里那一段）。
   if (tab.type === "workflow-run") {
     return tab.workflowName?.trim() || formatMessage({ id: "sidePane.workflowRun" });

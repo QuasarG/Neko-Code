@@ -4,7 +4,7 @@
 import type { CodePreviewSettings } from "@/lib/codePreviewSettings.js";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { AssistantPreviewCardsAutoOpenRequest } from "@/lib/assistantPreviewCards.js";
-import type { OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
+import type { OpenWorkflowsMain } from "@/lib/taskNavigationHistory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import type { WorkflowCausalityGraphData } from "@/components/workflow-graph/types.js";
 import type { WorkflowRunSettingsChange } from "@/components/workflow-timeline/workflowRunSettings.js";
@@ -12,7 +12,7 @@ import type { WorkflowDraftPosition, WorkflowRunCardSummary } from "@/ToolCallBl
 import type { WorkflowFillGraph } from "@/v4/workflowRunCardJoin.js";
 import type { Theme } from "@/useTheme.js";
 import type { ModelSelectionView } from "@zcode/services";
-import type { ZCodeWorkflowsForRunCandidate } from "@zcode/shared";
+import type { NekodeWorkflowsForRunCandidate } from "@zcode/shared";
 import type { ConversationAttachmentReadParams, ConversationTransport } from "@/v4/transport.js";
 import type {
   OpenPlanDetailSideTabRequest,
@@ -79,7 +79,7 @@ export interface ConversationRowRenderContext {
   onNavigateToRow?: (sessionId: string, rowId: number) => void;
   /** Assistant Preview Cards：Website 卡片预览入口，由 app shell 注入 side pane 行为。 */
   onOpenBrowserUrl?: (url: string) => void;
-  onOpenAutomationsMain?: OpenAutomationsMain;
+  onOpenWorkflowsMain?: OpenWorkflowsMain;
   /** Assistant Preview Cards：Markdown/文件卡片预览入口，由 app shell 注入 code viewer 行为。 */
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   /** Desktop 完成态 PPTX：由 shell 原子创建多个右侧 Preview Tab。 */
@@ -127,7 +127,7 @@ export interface ConversationRowRenderContext {
   ) => Promise<CommandAck>;
   /**
    * 完成卡的「保存」/「再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
-   * 「Saving the run, and running it again」）：把 GUI 写好的那条用户消息发进本会话，交给 ZCode
+   * 「Saving the run, and running it again」）：把 GUI 写好的那条用户消息发进本会话，交给 Nekode
    * 去提炼保存。与 Resume 同两道门（只读、灰度）且**同一个供给点**——写文件与起引擎都属于
    * 「Resume 被收走的地方一并收走」。缺席即卡上只剩「已保存」芯片那条事实。
    */
@@ -137,7 +137,7 @@ export interface ConversationRowRenderContext {
    * 由宿主从行窗口一遍建立。它是「模型另起名字存下的那份定义」与这次 run 之间仅有的联系
    * （模型不会用 run 名当工作流名），所以必须从转写里读。
    */
-  workflowSaveCandidatesByRunId?: ReadonlyMap<string, readonly ZCodeWorkflowsForRunCandidate[]>;
+  workflowSaveCandidatesByRunId?: ReadonlyMap<string, readonly NekodeWorkflowsForRunCandidate[]>;
   /** 会话当前模型（「配置」弹层首项「会话模型」的名字）；读不到即缺席，首项只写「会话模型」。 */
   workflowSessionModel?: { providerId: string; modelId: string };
   /**

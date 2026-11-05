@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import type { ZCodeProvider } from "@zcode/shared";
+import type { NekodeProvider } from "@zcode/shared";
 import { logger } from "@/logger.js";
-import { useZCodeTaskService } from "@/hooks/useZCodeTaskService.js";
+import { useNekodeTaskService } from "@/hooks/useNekodeTaskService.js";
 
 /**
  * useWorkspaceActiveTaskState 的导出返回类型间接引用此接口，声明生成要求它可导出。
  * @lintignore
  */
 export interface TaskNativeSessionLogFileState {
-  provider: ZCodeProvider | null;
+  provider: NekodeProvider | null;
   path: string | null;
   exists: boolean;
   loading: boolean;
@@ -39,7 +39,7 @@ const INITIAL_STATE: TaskNativeSessionLogFileState = {
 };
 
 export function supportsTaskNativeSessionLogFile(
-  _provider: ZCodeProvider | null | undefined,
+  _provider: NekodeProvider | null | undefined,
 ): boolean {
   // 仅剩 glm provider，始终支持读取原生会话日志。
   return true;
@@ -53,11 +53,11 @@ export function supportsTaskNativeSessionLogFile(
 export function useTaskNativeSessionLogFile(
   workspacePath: string,
   taskId: string | null,
-  providerHint?: ZCodeProvider | null,
+  providerHint?: NekodeProvider | null,
   workspaceIdentity?: string,
   options: { enabled?: boolean } = {},
 ) {
-  const zcodeTaskService = useZCodeTaskService(workspacePath, undefined, workspaceIdentity);
+  const zcodeTaskService = useNekodeTaskService(workspacePath, undefined, workspaceIdentity);
   const [state, setState] = useState<TaskNativeSessionLogFileState>(INITIAL_STATE);
   const requestVersionRef = useRef(0);
   const enabled = options.enabled ?? true;

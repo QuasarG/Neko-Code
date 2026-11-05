@@ -11,12 +11,11 @@ import {
   IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
-  IZCodeTaskService,
-  IZCodeAgentService,
-  IZCodeSessionService,
+  INekodeTaskService,
+  INekodeAgentService,
+  INekodeSessionService,
   IConversationShareService,
   createUnsupportedConversationShareService,
-  IBotsService,
   IFileWatcherService,
   IOAuthService,
   IModelSelectionService,
@@ -36,7 +35,6 @@ import {
   ISubagentsService,
   ICommandsService,
   IHooksService,
-  IMemoryService,
   IOutputStyleService,
   ISettingsSyncService,
   IProjectService,
@@ -77,11 +75,10 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["onboardingRecordService", IOnboardingRecordService],
   ["credentialService", ICredentialService],
   ["broadcastService", IBroadcastService],
-  ["zcodeTaskService", IZCodeTaskService],
-  ["zcodeAgentService", IZCodeAgentService],
-  ["zcodeSessionService", IZCodeSessionService],
+  ["zcodeTaskService", INekodeTaskService],
+  ["zcodeAgentService", INekodeAgentService],
+  ["zcodeSessionService", INekodeSessionService],
   ["conversationShareService", IConversationShareService],
-  ["botsService", IBotsService],
   ["fileWatcherService", IFileWatcherService],
   ["oauthService", IOAuthService],
   ["providerSettingsService", IProviderSettingsService],
@@ -100,7 +97,6 @@ export const REMOTE_WORKSPACE_RPC_REGISTRATIONS = [
   ["subagentsService", ISubagentsService],
   ["commandsService", ICommandsService],
   ["hooksService", IHooksService],
-  ["memoryService", IMemoryService],
   ["outputStyleService", IOutputStyleService],
   ["settingsSyncService", ISettingsSyncService],
   ["promptAttachmentTransferService", IPromptAttachmentTransferService],
@@ -185,7 +181,7 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
   sourceServices?: ServiceCollection;
 }): ServiceCollection {
   assertRemoteWorkspaceRpcContract(params.connectionServices);
-  // Server remote 连接的是一个已经运行的完整 ZCode server。
+  // Server remote 连接的是一个已经运行的完整 Nekode server。
   // Host 只做 RPC 转接，不替 server 决定 workspace/runtime/provider 归属；
   // Provider 配置只经 Host 私有的 Provisioning executor 从本机单向下发到远端。
   const remoteProviderProvisioningExecutor =
@@ -206,9 +202,9 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
     .register(IOnboardingRecordService, params.connectionServices.onboardingRecordService)
     .register(ICredentialService, params.connectionServices.credentialService)
     .register(IBroadcastService, params.connectionServices.broadcastService)
-    .register(IZCodeTaskService, params.connectionServices.zcodeTaskService)
-    .register(IZCodeAgentService, params.connectionServices.zcodeAgentService)
-    .register(IZCodeSessionService, params.connectionServices.zcodeSessionService)
+    .register(INekodeTaskService, params.connectionServices.zcodeTaskService)
+    .register(INekodeAgentService, params.connectionServices.zcodeAgentService)
+    .register(INekodeSessionService, params.connectionServices.zcodeSessionService)
     // R3 的分享属于目标 Environment；不能恢复旧 SSH 的本机 JWT 混装。
     .register(
       IConversationShareService,
@@ -216,7 +212,6 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
         ? createUnsupportedRemoteConversationShareService()
         : params.connectionServices.conversationShareService,
     )
-    .register(IBotsService, params.connectionServices.botsService)
     .register(IFileWatcherService, params.connectionServices.fileWatcherService)
     .register(IOAuthService, params.connectionServices.oauthService)
     .register(IProviderSettingsService, params.connectionServices.providerSettingsService)
@@ -241,7 +236,6 @@ export function createServerRemoteWorkspaceServiceCollection(params: {
     .register(ISubagentsService, params.connectionServices.subagentsService)
     .register(ICommandsService, params.connectionServices.commandsService)
     .register(IHooksService, params.connectionServices.hooksService)
-    .register(IMemoryService, params.connectionServices.memoryService)
     .register(IOutputStyleService, params.connectionServices.outputStyleService)
     .register(ISettingsSyncService, params.connectionServices.settingsSyncService)
     .register(

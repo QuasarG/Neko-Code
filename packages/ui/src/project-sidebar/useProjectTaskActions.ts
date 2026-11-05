@@ -4,8 +4,8 @@ import type { ProjectTask } from "@/project-sidebar/contract.js";
 import { ProjectTaskListContext } from "@/project-sidebar/ProjectTaskListContext.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useResolvedRemoteWorkspaceSessionId } from "@/hooks/useResolvedRemoteWorkspaceSessionId.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { toast } from "@/components/ui/toast.js";
 import { logger } from "@/logger.js";
 
@@ -14,8 +14,8 @@ export function useProjectTaskActions(task: ProjectTask, refresh: () => Promise<
   const { zcodeTaskService: service, windowControllerService: controller } =
     useBaseWorkspaceServices();
   const { onPin } = useContext(ProjectTaskListContext);
-  const removeTaskState = useZCodeSessionStore((state) => state.removeTaskState);
-  const { intl } = useZCodeIntl();
+  const removeTaskState = useNekodeSessionStore((state) => state.removeTaskState);
+  const { intl } = useNekodeIntl();
   const remoteSessionId = useResolvedRemoteWorkspaceSessionId(
     task.workspacePath,
     undefined,

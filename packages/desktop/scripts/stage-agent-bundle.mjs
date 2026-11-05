@@ -4,7 +4,7 @@
 // dev 与打包**必须**用同一份暂存实现。
 // 只有打包链（prepare-agent-node-bundle.mjs）会暂存是不够的，dev 链
 // （scripts/build-desktop-agent-cli.mjs）不会；而 dev 未打包时的 agent 二进制由
-// desktopRuntimeEnv.ts 的 resolveBundledZCodeAgentBinaryPath() 解析，候选**只有**
+// desktopRuntimeEnv.ts 的 resolveBundledNekodeAgentBinaryPath() 解析，候选**只有**
 // bundled-agents/，没有 cli/dist/。于是 dev 一直跑着上一次打包时留下的那份 ——
 // 实测陈旧 3 天，任何 agent CLI 侧改动在 dev 里静默不生效，排查时会把「改动没生效」
 // 误判成「代码没起作用」。两边共用这一份，dev 与打包不可能再各自漂移。
@@ -15,7 +15,7 @@ export const AGENT_BUNDLE_SOURCE_RELATIVE = "apps/zcode-cli/packages/cli/dist/zc
 
 /**
  * 修复原因（2026-10-24 真机）：node_repl MCP server（含内联的 CUA agent runtime）
- * 不在 zcode.cjs 里 —— agent 从 ~/.zcode plugin cache 启动它。dev 的 zcode.cjs 是
+ * 不在 zcode.cjs 里 —— agent 从 ~/.nekode plugin cache 启动它。dev 的 zcode.cjs 是
  * 纯 esbuild bundle（无 SEA 资产），bootstrap 的 filesystem seed rootCandidates 又
  * 解析不到 apps/zcode-cli/packages/node-repl-host（cwd 是工作区不是仓库布局），
  * 于是 dev agent 只能消费 cache 现有内容；cache 的唯一写入者是生产版 agent 的

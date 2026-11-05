@@ -520,7 +520,7 @@ describe("stageRelease", () => {
   );
   macIt("omits macOS extended attributes from POSIX release archives", async () => {
     const fixture = await makeStageFixture();
-    await execFileAsync("xattr", ["-w", "com.example.zcode", "value", fixture.nodeBinaryPath]);
+    await execFileAsync("xattr", ["-w", "com.example.nekode", "value", fixture.nodeBinaryPath]);
 
     const staged = await stageRelease({
       target: "linux-x64",
@@ -616,7 +616,7 @@ describe("stageRelease", () => {
     };
     if (options.mcpEntry) {
       manifest.mcpServers = {
-        [name]: { command: "node", args: [`\${ZCODE_PLUGIN_ROOT}/${options.mcpEntry}`] },
+        [name]: { command: "node", args: [`\${NEKODE_PLUGIN_ROOT}/${options.mcpEntry}`] },
       };
       if (options.withMcpEntryFile !== false) {
         const entryPath = join(pluginDir, ...options.mcpEntry.split("/"));
@@ -725,7 +725,6 @@ describe("stageRelease", () => {
       "document-skills-plugin",
       "ios-simulator-plugin",
       "restore-legacy-sessions-plugin",
-      "skill-creator-plugin",
       "zcode-guide-plugin",
       "superpowers-plugin",
     ];
@@ -775,7 +774,6 @@ describe("stageRelease", () => {
       "document-skills",
       "ios-simulator",
       "restore-legacy-sessions",
-      "skill-creator",
       "zcode-guide",
     ]);
     expect(manifest.components?.some((component) => component.id === "official-plugins")).toBe(

@@ -953,7 +953,7 @@ describe("AgentRuntime manual compact", () => {
       trigger: CompactTrigger.Manual,
       phase: CompactPhase.StandaloneTurn,
       compactReason: CompactReason.UserRequested,
-      summarizedMessageCount: 9,
+      summarizedMessageCount: 8,
       summarySource: "model",
       customInstructions: true,
       lastSummarizedMessageId: expect.stringMatching(/^msg_/),
@@ -962,7 +962,7 @@ describe("AgentRuntime manual compact", () => {
       trigger: CompactTrigger.Manual,
       phase: CompactPhase.StandaloneTurn,
       compactReason: CompactReason.UserRequested,
-      summarizedMessageCount: 9,
+      summarizedMessageCount: 8,
     });
 
     const compactRequest = requests[2];
@@ -1246,7 +1246,7 @@ describe("AgentRuntime manual compact", () => {
     const boundary = events.find((event) => event.type === SessionEventType.CompactBoundary)
       ?.payload as CompactBoundaryPayload | undefined;
     const postCompactContext = requests[3]?.messages.map((message) => message.content).join("\n");
-    expect(boundary?.summarizedMessageCount).toBe(8);
+    expect(boundary?.summarizedMessageCount).toBe(7);
     expect(postCompactContext).toContain("Compact summary keeps only the useful second turn.");
     expect(postCompactContext).toContain("continue after literal reminder compact");
     expect(postCompactContext).not.toContain(literalUserPrompt);
@@ -1586,7 +1586,7 @@ describe("AgentRuntime manual compact", () => {
     ).toContain("Resume summary keeps packages/core/src/runtime.ts");
     expect(boundary).toMatchObject({
       trigger: CompactTrigger.Manual,
-      summarizedMessageCount: 8,
+      summarizedMessageCount: 7,
     });
     expect(boundary?.lastSummarizedMessageId).toMatch(/^msg_/);
     expect(compactionPart?.type === "compaction" ? compactionPart.tail_start_id : undefined).toBe(
@@ -2195,7 +2195,7 @@ describe("AgentRuntime manual compact", () => {
     const requests: Array<{ messages: Array<{ content: unknown; role: string }> }> = [];
     const planMarker = "E2E_PLAN_FILE_COMPACT_CONTINUITY_MARKER";
     const fileSystemPort = new MemoryFileSystem({
-      "/workspace/project/.zcode/plans/plan-sess_runtime-compact-plan-file-reference.md": `1. Preserve ${planMarker}\n2. Continue after compact`,
+      "/workspace/project/.nekode/plans/plan-sess_runtime-compact-plan-file-reference.md": `1. Preserve ${planMarker}\n2. Continue after compact`,
     });
     const modelImplementation = {
       async generateText(request: {
@@ -2972,12 +2972,12 @@ describe("AgentRuntime manual compact", () => {
     expect(compactModelRetries).toEqual([0, 1]);
     expect(boundary).toMatchObject({
       trigger: CompactTrigger.Manual,
-      summarizedMessageCount: 4,
+      summarizedMessageCount: 5,
     });
     expect(firstCompactContext).toContain("first compact ptl setup");
-    // 最早一组含环境与模型公告（自定义 prompt 也发送），丢掉这一组已足够补上缺口。
+    // 最早一组含环境与模型（system prompt 恒在），丢掉这一组已足够补上缺口。
     expect(retryCompactContext).not.toContain("first compact ptl setup");
-    expect(retryCompactContext).not.toContain("# Environment");
+    expect(retryCompactContext).toContain("# Environment");
     expect(retryCompactContext).toContain("second compact ptl setup");
     expect(retryCompactContext).toContain(COMPACT_PROMPT_TOO_LONG_RETRY_MARKER);
     expect(retryCompactContext).toContain("normal response 2");
@@ -3443,7 +3443,7 @@ describe("AgentRuntime manual compact", () => {
       phase: CompactPhase.PreRequest,
       compactReason: CompactReason.ContextLimit,
       summarySource: "model",
-      summarizedMessageCount: 7,
+      summarizedMessageCount: 6,
     });
     expect(postCompactRequest).toContain("Auto summary preserves the latest user request");
     expect(postCompactRequest).toContain("continue with enough context to trigger auto compact");
@@ -3743,8 +3743,8 @@ describe("AgentRuntime manual compact", () => {
     expect(postCompactContext).toContain("pending request after auto ptl retry");
     expect(postCompactContext).not.toContain("oldest auto ptl setup");
     expect(boundary).toMatchObject({
-      keptMessageCount: 4,
-      summarizedMessageCount: 7,
+      keptMessageCount: 6,
+      summarizedMessageCount: 6,
       trigger: CompactTrigger.Auto,
     });
   });
@@ -4151,7 +4151,7 @@ describe("AgentRuntime manual compact", () => {
       phase: CompactPhase.MidTurn,
       compactReason: CompactReason.ContextLimit,
       summarySource: "model",
-      summarizedMessageCount: 7,
+      summarizedMessageCount: 6,
     });
     expect(timelinePayloads).toEqual([
       expect.objectContaining({
@@ -4517,8 +4517,8 @@ describe("AgentRuntime manual compact", () => {
       phase: CompactPhase.Reactive,
       compactReason: CompactReason.ProviderOverflow,
       summarySource: "model",
-      summarizedMessageCount: 7,
-      keptMessageCount: 2,
+      summarizedMessageCount: 6,
+      keptMessageCount: 3,
     });
     expect(compactRequest).not.toContain("RECENT portion of the conversation");
     expect(compactRequest).not.toContain("trigger provider overflow");

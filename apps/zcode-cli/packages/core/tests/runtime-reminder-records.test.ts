@@ -174,19 +174,4 @@ describe("hidden runtime reminder records", () => {
     expect(cold.latestConversationMessageId).toBe(runtime.latestConversationMessageId);
   });
 
-  it("keeps the conversation pointer off agent listing announcements", async () => {
-    const sessionId = createSessionId();
-    const store = createStore();
-    const runtime = createRuntime(sessionId, store, [], { agentListing: true });
-    const pointersAtCompaction = recordPointerAtCompaction(runtime);
-    await runtime.executeTurn("first");
-
-    expect(store.savedMessages.some((message) => message.source === "agent_listing_delta")).toBe(
-      true,
-    );
-    expect(pointersAtCompaction).toEqual([userMessageId(store, "first")]);
-    const cold = createRuntime(sessionId, store, [], { agentListing: true });
-    await cold.resumeFromStore();
-    expect(cold.latestConversationMessageId).toBe(runtime.latestConversationMessageId);
-  });
 });

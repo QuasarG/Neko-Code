@@ -11,8 +11,8 @@ import {
   ProviderRegistry,
   type Provider,
 } from "@zcode/provider";
-import { createZCodeApp } from "../../src/app/create-app.js";
-import type { ZCodeApp, ZCodeAppOptions } from "../../src/app/types.js";
+import { createNekodeApp } from "../../src/app/create-app.js";
+import type { NekodeApp, NekodeAppOptions } from "../../src/app/types.js";
 import { createApiKeyProviderConfig } from "../provider-config-fixtures.js";
 
 const DEFAULT_TEST_MODEL = {
@@ -36,19 +36,19 @@ export interface RegistryBackedTestModelExecutor {
   ): AsyncIterable<ModelEvent>;
 }
 
-type RegistryBackedTestAppOptions = Omit<ZCodeAppOptions, "providerRegistry"> & {
+type RegistryBackedTestAppOptions = Omit<NekodeAppOptions, "providerRegistry"> & {
   modelExecutor?: RegistryBackedTestModelExecutor;
-  providerRegistry?: ZCodeAppOptions["providerRegistry"];
+  providerRegistry?: NekodeAppOptions["providerRegistry"];
 };
 
 export function createRegistryBackedTestApp(
   options: RegistryBackedTestAppOptions = {},
-): Promise<ZCodeApp> {
+): Promise<NekodeApp> {
   const modelSelections = collectModelSelections(options);
   const providerRegistry = options.providerRegistry ?? createTestProviderRegistry(modelSelections);
   const { modelExecutor, ...appOptions } = options;
 
-  return createZCodeApp({
+  return createNekodeApp({
     ...appOptions,
     runtimeConfig: {
       ...appOptions.runtimeConfig,

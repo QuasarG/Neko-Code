@@ -9,7 +9,7 @@ import { resolveGitSnapshot } from "../src/context/git-snapshot.js";
 
 const execFile = promisify(execFileCallback);
 
-// 用真实 git 验证加固确实生效：仓库配置里的 fsmonitor 不再被 ZCode 自己执行，
+// 用真实 git 验证加固确实生效：仓库配置里的 fsmonitor 不再被 Nekode 自己执行，
 // 继承来的 GIT_DIR 不再把快照指向另一个仓库。
 async function gitAvailable(): Promise<boolean> {
   try {

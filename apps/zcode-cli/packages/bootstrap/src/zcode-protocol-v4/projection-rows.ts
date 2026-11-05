@@ -96,9 +96,8 @@ export function buildUserInputRow(base: RowBaseInput, payload: TurnStartedPayloa
     ...(payload.intent?.conversationQuotes
       ? { conversationQuotes: payload.intent.conversationQuotes }
       : {}),
-    ...(payload.intent?.botGroupSource ? { botGroupSource: payload.intent.botGroupSource } : {}),
     text:
-      payload.intent?.conversationQuotes || payload.intent?.botGroupSource
+      payload.intent?.conversationQuotes
         ? (payload.intent.text ?? payload.input)
         : payload.input,
     origin: mapUserInputOrigin(payload.inputSource),

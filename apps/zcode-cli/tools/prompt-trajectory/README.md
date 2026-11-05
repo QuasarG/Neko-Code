@@ -18,8 +18,8 @@ message representation merely to make conversion succeed.
 
 Recording rules:
 
-- Each case runs with a temporary home and `ZCODE_STORAGE_DIR`. User skills,
-  plugins, `~/.zcode/AGENTS.md` and the user's session database never enter a
+- Each case runs with a temporary home and `NEKODE_STORAGE_DIR`. User skills,
+  plugins, `~/.nekode/AGENTS.md` and the user's session database never enter a
   recording, and the recording leaves no session in the user's database.
 - The recorder registers one Registry provider for the fixture model. Its
   capabilities come only from the Registry model declaration; use the fixture
@@ -49,7 +49,7 @@ pnpm --filter @zcode/prompt-trajectory derive -- \
   --out /tmp/zcode-prompt-trajectory/basic-live
 
 pnpm --filter @zcode/prompt-trajectory model-io -- \
-  --input ~/.zcode/cli/rollout/model-io-<session>.jsonl \
+  --input ~/.nekode/cli/rollout/model-io-<session>.jsonl \
   --out /tmp/zcode-prompt-trajectory/model-io-session
 ```
 
@@ -104,7 +104,7 @@ shape.
 
 ## Model-IO Converter
 
-`model-io` reads a real ZCode `model-io-*.jsonl` file and turns the main
+`model-io` reads a real Nekode `model-io-*.jsonl` file and turns the main
 conversation into a reusable Anthropic trajectory:
 
 ```text

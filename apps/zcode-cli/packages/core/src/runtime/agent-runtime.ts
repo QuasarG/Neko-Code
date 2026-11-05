@@ -4,7 +4,7 @@ import {
   createAgentDefinitionsReader,
   type GetAgentDefinitions,
 } from "../subagent/definitions.js";
-import { DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY, resolveExecutionState } from "@zcode/shared";
+import { DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY, resolveExecutionState } from "@zcode/shared";
 import type { BackgroundBashOutputResult } from "@zcode/shared";
 import type { ModelRequestSessionFeature } from "@zcode/contracts";
 import {
@@ -133,13 +133,7 @@ import type { AgentRuntimeInternal } from "./internal.js";
 import { InMemoryRuntimeTaskRegistry, type RuntimeTaskRegistry } from "../runtime-task/registry.js";
 import type { WorkflowBlockedReminderClock } from "../runtime-task/workflow-blocked-reminder.js";
 import { createWorkflowBlockedReminder } from "./methods/dynamic-workflow-blocked-reminder.js";
-import { createMemoryRecallState } from "../memory/recall/index.js";
-import type { MemoryRecallState } from "../memory/recall/index.js";
 import type { ChildClientPortsContext, ClientFacingPorts } from "./helpers/child-client-ports.js";
-import type { ProjectMemoryRecallPrefetch } from "./helpers/project-memory-recall.js";
-import type { ProjectMemoryExtractionScheduler } from "./helpers/project-memory-extraction.js";
-import type { ProjectMemoryUpdate } from "./helpers/project-memory-dream.js";
-import { projectPersistentAgentMemoryTools } from "../subagent/persistent-memory.js";
 import { RuntimeTelemetryFacade } from "../telemetry/runtime-telemetry.js";
 import type { WorkspaceHookRuntimeAdmissionPort } from "../hooks/workspace-hook-runtime-admission.js";
 import { disposeNodeReplSession } from "../tool/handlers/node-repl.js";
@@ -193,13 +187,8 @@ export class AgentRuntime {
   private contextInitialized = false;
   private contextSourceSnapshot?: ContextSourceSnapshot;
   private latestContextBuildResult?: ContextBuildResult;
-  private memoryRoot?: string;
-  private memoryIndexContent?: string;
-  private memoryRecallState: MemoryRecallState;
-  private memoryRecallPrefetch?: ProjectMemoryRecallPrefetch;
-  private memoryExtractionScheduler?: ProjectMemoryExtractionScheduler;
-  private memoryDreamLastScanAtMs = 0;
-  private pendingMemoryUpdate?: ProjectMemoryUpdate;
+  private nekoMemoryBooks?: AgentRuntimeDeps["nekoMemoryBooks"];
+  private wardrobeStore?: AgentRuntimeDeps["wardrobeStore"];
   private contextSourcePort?: ContextSourcePort;
   private skillPort?: SkillPort;
   private mcpPort?: McpPort;
@@ -281,7 +270,7 @@ export class AgentRuntime {
     // 3.12.2：兼容旧 Host/内部调用传入 legacy，但本版本 Runtime、日志和子 Agent 只使用 preflight。
     this.config = {
       ...config,
-      modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      modelContextBudgetStrategy: DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     };
     Object.assign(this.config, resolveExecutionState(config));
     const definitions = createTurnAgentDefinitions(
@@ -291,10 +280,7 @@ export class AgentRuntime {
         }),
       deps.loadAgentDefinitions,
     );
-    // Host 每轮加载的快照会替代启动配置；在统一读取出口补齐 Memory 工具，
-    // 避免子 Agent 有持久记忆提示却没有 Write/Edit，也不回写原始配置。
-    this.getAgentDefinitions = () =>
-      projectPersistentAgentMemoryTools(definitions.get(), this.config.memory);
+    this.getAgentDefinitions = () => definitions.get();
     this.prepareAgentDefinitions = definitions.prepare;
     this.agentTelemetry = new RuntimeTelemetryFacade({
       agentName: config.agentName,
@@ -341,7 +327,6 @@ export class AgentRuntime {
       config.modelSelection && cloneModelSelection(config.modelSelection);
     this.messageHistory = new MessageHistoryImpl();
     this.readFileState = new Map();
-    this.memoryRecallState = createMemoryRecallState();
     this.runtimeCommandQueue = createRuntimeCommandQueue();
     this.workingDirectory = config.workingDirectory ?? ".";
     this.contextSourcePort = deps.contextSourcePort;
@@ -361,6 +346,10 @@ export class AgentRuntime {
     this.modelCatalogPort = deps.modelCatalogPort;
     this.registry = deps.toolRegistry ?? createToolRegistry();
     this.workspaceRoot = this.workingDirectory;
+    // 必须先于工具装配：wardrobe 工具以 wardrobeStore 存在为注册门，
+    // 记忆书端口只驱动系统提示段与每轮投递，不再注册独立工具。
+    this.nekoMemoryBooks = deps.nekoMemoryBooks;
+    this.wardrobeStore = deps.wardrobeStore;
     // 必须先于工具装配：registerRuntimeBuiltInTools 的灰度门读的就是这个状态。
     this.dynamicWorkflowToolsActivated = resolveInitialDynamicWorkflowToolsActivated(this.config);
     const tooling = initializeRuntimeTooling(runtime, deps, sessionId);
@@ -384,7 +373,6 @@ export class AgentRuntime {
   retire(): Promise<void> {
     this.beginShutdown();
     this.retirement ??= (async () => {
-      await this.drainMemoryExtractions(null);
       while (this.residencyBlockingWork.size > 0 || this.hasRunningBackgroundTasks()) {
         // 先订阅再检查/等待，避免 ledger 或 task 恰好归零时丢掉唯一一次通知。
         const changed = Promise.withResolvers<void>();
@@ -430,7 +418,6 @@ export class AgentRuntime {
       const results = await Promise.allSettled([
         this.subagentPort?.close?.(),
         this.cancelRunningRuntimeBackgroundTasks({ reason: "session_closed" }),
-        this.drainMemoryExtractions(null),
       ]);
       // 既有 ledger 还包含 title、MCP startup、工具 part 和 turn 收尾；关闭不能只观察计数。
       while (this.residencyBlockingWork.size > 0) {
@@ -474,10 +461,6 @@ export class AgentRuntime {
     this.shutdownController.abort(new Error("Session runtime closed"));
     // 同一条理由：会话在关，提醒钟不能再到点唤起一轮。
     this.workflowBlockedReminder.stop();
-    // 关闭单个 session 后进程仍存活，
-    // 因此必须先终止该 runtime 的 Extraction，不能只在超时后放弃等待。
-    this.memoryExtractionScheduler?.shutdown();
-    this.memoryRecallPrefetch?.abortController.abort();
   }
 }
 
@@ -831,9 +814,6 @@ export interface AgentRuntime {
     input: ModelConnectivityTestInput,
     options?: { abortSignal?: AbortSignal; traceContext?: TraceContext },
   ): Promise<void>;
-  isProjectMemoryEnabled(): boolean;
-  /** 缺省等待最多 60 秒；null 等待全部已调度提取结束，不设置 drain deadline。 */
-  drainMemoryExtractions(timeoutMs?: number | null): Promise<void>;
 }
 
 installAgentRuntimeMethods(AgentRuntime);

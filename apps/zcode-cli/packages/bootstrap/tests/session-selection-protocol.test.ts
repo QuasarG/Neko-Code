@@ -1,10 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { zcodeProtocolMethods, type ZCodeProtocolMessage } from "@zcode/shared";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { zcodeProtocolMethods, type NekodeProtocolMessage } from "@zcode/shared";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 
-async function request(server: ZCodeProtocolAgentServer, method: string, params: unknown) {
-  const response = await server.handleMessage({ id: 1, method, params } as ZCodeProtocolMessage);
+async function request(server: NekodeProtocolAgentServer, method: string, params: unknown) {
+  const response = await server.handleMessage({ id: 1, method, params } as NekodeProtocolMessage);
   if (!response || !("result" in response)) throw new Error(JSON.stringify(response));
   return response.result;
 }
@@ -12,8 +12,8 @@ async function request(server: ZCodeProtocolAgentServer, method: string, params:
 describe("Session 原选择与输入协议", () => {
   it("完整配置命令保留档位，Session read 不用候选名单过滤原选择", async () => {
     let app!: ReturnType<typeof createFakeApp>;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => (app = createFakeApp(options)),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => (app = createFakeApp(options)),
     });
     await request(server, zcodeProtocolMethods.sessionCreate, {
       workspace: { workspacePath: "/fixture", workspaceKey: "/fixture" },
@@ -55,8 +55,8 @@ describe("Session 原选择与输入协议", () => {
       turnId: "turn" as never,
       completion,
     }));
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => (app = createFakeApp(options, { sendInput })),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => (app = createFakeApp(options, { sendInput })),
     });
     await request(server, zcodeProtocolMethods.sessionCreate, {
       workspace: { workspacePath: "/fixture", workspaceKey: "/fixture" },

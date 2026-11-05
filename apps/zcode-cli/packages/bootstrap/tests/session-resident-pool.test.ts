@@ -7,7 +7,7 @@
 //   fresh facts 二次校验、waitForDeactivation 闸门和失败隔离。
 // - 执行面单元（stub context）：内存摘除在同一同步片完成（unsubscribe → gateway 去激活 →
 //   sessions.delete），app.close 后置异步；重复调用幂等。
-// - 集成（真 sqlite + ZCodeProtocolAgentServer + binder）：subscribe → unsubscribe →
+// - 集成（真 sqlite + NekodeProtocolAgentServer + binder）：subscribe → unsubscribe →
 //   容量 rebalance 去激活 → sessions-index 订阅者收不到 session.removed → 再订阅冷恢复出完整
 //   snapshot；再激活闸门在 app.close 收尾完成前挂住并发 subscribe。
 import { mkdtemp, rm } from "node:fs/promises";
@@ -24,7 +24,7 @@ import type {
   ProjectId,
   SessionId,
 } from "@zcode/contracts";
-import { zcodeProtocolMethods, type ZCodeProtocolMessage } from "@zcode/shared";
+import { zcodeProtocolMethods, type NekodeProtocolMessage } from "@zcode/shared";
 import {
   V4_METHODS,
   conversationTopic,
@@ -50,13 +50,13 @@ import {
   runWithSessionResidencyFinalization,
 } from "../src/zcode-protocol/session-residency.js";
 import type {
-  ZCodeProtocolAgentDependencies,
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentDependencies,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
-import type { ZCodeApp } from "../src/app/types.js";
+import type { NekodeApp } from "../src/app/types.js";
 
 // ── 常驻池单元（fake host）──────────────────────────────────────────────────
 
@@ -340,7 +340,7 @@ describe("SessionResidentPool", () => {
   });
 
   it("protocol finalization lease 支持嵌套且 release 幂等", () => {
-    const record: Pick<ZCodeProtocolSessionRecord, "residencyFinalizationCount"> = {};
+    const record: Pick<NekodeProtocolSessionRecord, "residencyFinalizationCount"> = {};
     const releaseFirst = acquireSessionResidencyFinalization(record);
     const releaseSecond = acquireSessionResidencyFinalization(record);
 
@@ -353,7 +353,7 @@ describe("SessionResidentPool", () => {
   });
 
   it("protocol finalization runner 在同步抛错与异步 reject 后都释放 lease", async () => {
-    const record: Pick<ZCodeProtocolSessionRecord, "residencyFinalizationCount"> = {};
+    const record: Pick<NekodeProtocolSessionRecord, "residencyFinalizationCount"> = {};
 
     await expect(
       runWithSessionResidencyFinalization(record, () => {
@@ -516,8 +516,8 @@ describe("SessionResidentPool", () => {
 // ── 执行面单元（stub context）───────────────────────────────────────────────
 
 interface ExecutorHarness {
-  context: ZCodeProtocolAgentServerContext;
-  record: ZCodeProtocolSessionRecord;
+  context: NekodeProtocolAgentServerContext;
+  record: NekodeProtocolSessionRecord;
   calls: string[];
   releaseClose(): void;
 }
@@ -547,7 +547,7 @@ function makeExecutorHarness(sessionId: string): ExecutorHarness {
       calls.push("unsubscribe");
     },
     updatedAt: 0,
-  } as unknown as ZCodeProtocolSessionRecord;
+  } as unknown as NekodeProtocolSessionRecord;
   const context = {
     notify: () => {},
     sessions: new Map([[sessionId, record]]),
@@ -557,7 +557,7 @@ function makeExecutorHarness(sessionId: string): ExecutorHarness {
         calls.push(`gateway.deactivateSession:${id}`);
       },
     },
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
   return { context, record, calls, releaseClose: () => releaseClose() };
 }
 
@@ -686,7 +686,7 @@ const WORKSPACE_PATH = "/workspace/idle-deactivation";
 const SESSION_ID = "sess_idle_deactivate" as SessionId;
 type TestSessionStore = Awaited<ReturnType<typeof createSqliteSessionStore>>;
 
-async function requestResult(server: ZCodeProtocolAgentServer, message: ZCodeProtocolMessage) {
+async function requestResult(server: NekodeProtocolAgentServer, message: NekodeProtocolMessage) {
   const response = await server.handleMessage(message);
   if (!response || !("result" in response)) {
     throw new Error(`Expected protocol success response: ${JSON.stringify(response)}`);
@@ -766,24 +766,24 @@ async function seedPersistedSession(dbPath: string): Promise<void> {
 }
 
 interface IntegrationHarness {
-  server: ZCodeProtocolAgentServer;
+  server: NekodeProtocolAgentServer;
   store: TestSessionStore;
-  createdApps: ZCodeApp[];
-  sessions: Map<string, ZCodeProtocolSessionRecord>;
+  createdApps: NekodeApp[];
+  sessions: Map<string, NekodeProtocolSessionRecord>;
 }
 
 async function bootServer(
   dbPath: string,
   options: {
-    appOverrides?: Partial<ZCodeApp>;
-    onApp?: (app: ZCodeApp) => void;
+    appOverrides?: Partial<NekodeApp>;
+    onApp?: (app: NekodeApp) => void;
     poolOptions?: SessionResidentPoolOptions;
   } = {},
 ): Promise<IntegrationHarness> {
   const store = await createSqliteSessionStore({ dbPath });
-  const createdApps: ZCodeApp[] = [];
-  const server = new ZCodeProtocolAgentServer({
-    createZCodeApp: (appOptions) => {
+  const createdApps: NekodeApp[] = [];
+  const server = new NekodeProtocolAgentServer({
+    createNekodeApp: (appOptions) => {
       const app = createFakeApp(appOptions, options.appOverrides ?? {});
       createdApps.push(app);
       options.onApp?.(app);
@@ -797,7 +797,7 @@ async function bootServer(
     },
     sessionStore: store,
   });
-  const sessions = (server as unknown as { context: ZCodeProtocolAgentServerContext }).context
+  const sessions = (server as unknown as { context: NekodeProtocolAgentServerContext }).context
     .sessions;
   return { server, store, createdApps, sessions };
 }
@@ -805,7 +805,7 @@ async function bootServer(
 // subscribe response 严格 ACK-only；initial snapshot 走 request-scoped post-response
 // outbox（response line 之后的 owned notification），此处解析出来一并返回。
 async function subscribeConversation(
-  server: ZCodeProtocolAgentServer,
+  server: NekodeProtocolAgentServer,
   requestId: string,
   connectionId: string,
 ) {
@@ -1005,19 +1005,19 @@ describe("session resident pool（集成：真 sqlite + server + binder）", () 
 // ── server 装配层配置回退 ──────────────────────────────────────────────────
 
 describe("SessionResidentPool 配置回退", () => {
-  function makeServer(deps: Partial<ZCodeProtocolAgentDependencies>) {
-    return new ZCodeProtocolAgentServer({
-      createZCodeApp: (appOptions) => createFakeApp(appOptions, {}),
+  function makeServer(deps: Partial<NekodeProtocolAgentDependencies>) {
+    return new NekodeProtocolAgentServer({
+      createNekodeApp: (appOptions) => createFakeApp(appOptions, {}),
       cwd: WORKSPACE_PATH,
       ...deps,
     });
   }
 
-  function contextOf(server: ZCodeProtocolAgentServer) {
-    return (server as unknown as { context: ZCodeProtocolAgentServerContext }).context;
+  function contextOf(server: NekodeProtocolAgentServer) {
+    return (server as unknown as { context: NekodeProtocolAgentServerContext }).context;
   }
 
-  function addIdleResident(context: ZCodeProtocolAgentServerContext, sessionId: string) {
+  function addIdleResident(context: NekodeProtocolAgentServerContext, sessionId: string) {
     context.sessions.set(sessionId, {
       app: {
         close: async () => {},
@@ -1026,7 +1026,7 @@ describe("SessionResidentPool 配置回退", () => {
       legacyStreamSubscribed: false,
       persistence: "immediate",
       updatedAt: 0,
-    } as unknown as ZCodeProtocolSessionRecord);
+    } as unknown as NekodeProtocolSessionRecord);
   }
 
   it("legacy sessionResidentTargetCount 只表达 low-water，不塌掉迟滞窗口", () => {

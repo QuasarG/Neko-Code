@@ -31,9 +31,9 @@ const TID_GIT_COMMIT_DIALOG = "git-commit-dialog";
 const TID_GIT_COMMIT_GENERATE_BUTTON = "git-commit-generate-button";
 const TID_GIT_COMMIT_INCLUDE_UNSTAGED = "git-commit-include-unstaged";
 const TID_GIT_COMMIT_MESSAGE_INPUT = "git-commit-message-input";
-const GIT_FIXTURE_FILE = join(".zcode-e2e", "git-commit-dialog", "tracked-file.md");
+const GIT_FIXTURE_FILE = join(".nekode-e2e", "git-commit-dialog", "tracked-file.md");
 const GIT_FIXTURE_STAGED_FILE = join(
-  ".zcode-e2e",
+  ".nekode-e2e",
   "git-commit-dialog",
   "staged-file.md",
 );
@@ -104,7 +104,7 @@ async function prepareGitRepositoryFixture(): Promise<void> {
   await execGit("git", ["config", "user.email", "zcode-e2e@example.invalid"], {
     cwd: DEFAULT_WORKSPACE,
   });
-  await execGit("git", ["config", "user.name", "ZCode E2E"], {
+  await execGit("git", ["config", "user.name", "Nekode E2E"], {
     cwd: DEFAULT_WORKSPACE,
   });
   await writeFile(fixturePath, "baseline\n", "utf8");

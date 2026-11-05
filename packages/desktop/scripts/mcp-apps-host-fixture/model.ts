@@ -153,8 +153,8 @@ export async function startModel(root: string, cli: string) {
     aborted,
     release: (key: string) => releases.get(key)?.(),
     env: {
-      ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
-      ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personal,
+      NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: builtin,
+      NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personal,
     },
     selection: {
       providerId: "fixture-local",

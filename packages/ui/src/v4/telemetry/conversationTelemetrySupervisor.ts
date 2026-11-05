@@ -27,7 +27,7 @@ import {
   reportUiToolCallDetail,
   reportUiTurnBreakdown,
 } from "@/lib/uiPerfArmsTelemetry.js";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { NekodeUiError } from "@/lib/zcodeUiError.js";
 
 const observers = {
   reportSendFunnelInputFocus: (args: readonly unknown[]) =>
@@ -81,7 +81,7 @@ export class ConversationTelemetrySupervisor extends ConversationTelemetryEngine
     surface?: ChatErrorBannerSurface;
     errorKey?: string | null;
     displayMessage: string;
-    error: ZCodeUiError;
+    error: NekodeUiError;
   }): void {
     if (this.uiDisposed) return;
     void reportChatErrorBannerTelemetry(this.uiPlatform, {

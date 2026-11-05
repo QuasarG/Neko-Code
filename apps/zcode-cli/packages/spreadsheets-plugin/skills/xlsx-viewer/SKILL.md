@@ -41,4 +41,4 @@ When the user selects cells and chooses **Add to chat**, the next message carrie
 
 - Paths are relative to the workspace; files outside it cannot be opened. Only .xlsx opens, not .xlsm, .xls, .csv or .tsv; read those with the `xlsx` skill.
 - Do not paste whole sheets into the chat; quote the few cells that matter and point with `show_in_viewer`.
-- The panel only works in ZCode Desktop local workspaces. Elsewhere, still open the document with `open_document`: the read and search tools work without the visual panel. Tell the user the visual viewer is unavailable.
+- The panel only works in Nekode Desktop local workspaces. Elsewhere, still open the document with `open_document`: the read and search tools work without the visual panel. Tell the user the visual viewer is unavailable.

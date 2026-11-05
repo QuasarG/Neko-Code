@@ -18,11 +18,11 @@ import type {
 } from "@zcode/shared/zcode-protocol-v4";
 import {
   PROTOCOL_V4_LIMITS,
-  ZCODE_ATTACHMENT_FAULT_CODES,
-  readZCodeAttachmentFaultCode,
+  NEKODE_ATTACHMENT_FAULT_CODES,
+  readNekodeAttachmentFaultCode,
 } from "@zcode/shared/zcode-protocol-v4";
 
-import type { IZCodeAgentService } from "../zcode-agent/zcodeAgent.js";
+import type { INekodeAgentService } from "../zcode-agent/zcodeAgent.js";
 import type {
   ConversationShareFailureIssue,
   PublishTextConversationInput,
@@ -145,7 +145,7 @@ async function materializeRegisteredArtifacts(options: {
 
 async function discoverPreviewArtifacts(options: {
   zcodeAgentService: Pick<
-    IZCodeAgentService,
+    INekodeAgentService,
     "conversationFileChangesV4" | "conversationAttachmentReadV4"
   >;
   artifactSource: ConversationShareArtifactSource;
@@ -212,7 +212,7 @@ async function discoverPreviewArtifacts(options: {
       if (!header.entityId || !header.productTurnId) {
         throwDiscoveryError("Conversation file changes are missing a stable turn identity");
       }
-      let result: Awaited<ReturnType<IZCodeAgentService["conversationFileChangesV4"]>>;
+      let result: Awaited<ReturnType<INekodeAgentService["conversationFileChangesV4"]>>;
       try {
         result = await options.zcodeAgentService.conversationFileChangesV4({
           workspacePath: options.input.workspacePath,
@@ -404,7 +404,7 @@ async function discoverPreviewArtifacts(options: {
 }
 
 async function readInputAttachment(options: {
-  zcodeAgentService: Pick<IZCodeAgentService, "conversationAttachmentReadV4">;
+  zcodeAgentService: Pick<INekodeAgentService, "conversationAttachmentReadV4">;
   input: PublishTextConversationInput;
   row: Extract<ConversationRow, { kind: "userInput" }>;
   attachmentIndex: number;
@@ -479,7 +479,7 @@ async function readInputAttachment(options: {
 }
 
 async function discoverInputAttachments(options: {
-  zcodeAgentService: Pick<IZCodeAgentService, "conversationAttachmentReadV4">;
+  zcodeAgentService: Pick<INekodeAgentService, "conversationAttachmentReadV4">;
   input: PublishTextConversationInput;
   selectedRows: ConversationRow[];
   capabilities: ConversationShareCapabilities;
@@ -568,10 +568,10 @@ async function discoverInputAttachments(options: {
           bytes: materialized.bytes.byteLength,
         });
       } catch (error) {
-        const faultCode = readZCodeAttachmentFaultCode(error);
+        const faultCode = readNekodeAttachmentFaultCode(error);
         if (
-          faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareReadNotAuthorized ||
-          faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted
+          faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareReadNotAuthorized ||
+          faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted
         ) {
           throw new ConversationShareServiceError(
             "artifact_protocol_not_ready",
@@ -580,8 +580,8 @@ async function discoverInputAttachments(options: {
           );
         }
         if (
-          faultCode === ZCODE_ATTACHMENT_FAULT_CODES.previewTooLarge ||
-          faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatTooLarge
+          faultCode === NEKODE_ATTACHMENT_FAULT_CODES.previewTooLarge ||
+          faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatTooLarge
         ) {
           // 容量超限是确定阻断，不能降级成「附件不可用」warning 后静默发布——
           // 那样接收者拿不到附件，分享者也看不出错误类别（见预检同名分类）。
@@ -618,8 +618,8 @@ async function discoverInputAttachments(options: {
           extension,
           mimeType,
           availability:
-            faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatNotFound ||
-            faultCode === ZCODE_ATTACHMENT_FAULT_CODES.statNotFile ||
+            faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatNotFound ||
+            faultCode === NEKODE_ATTACHMENT_FAULT_CODES.statNotFile ||
             (error instanceof ConversationShareServiceError &&
               error.diagnostics?.errno === "ENOENT")
               ? "not_found"
@@ -662,7 +662,7 @@ function insertDiscoveredArtifacts(
 
 export async function buildConversationShareArtifactSnapshot(options: {
   zcodeAgentService: Pick<
-    IZCodeAgentService,
+    INekodeAgentService,
     "conversationFileChangesV4" | "conversationAttachmentReadV4"
   >;
   artifactSource: ConversationShareArtifactSource;

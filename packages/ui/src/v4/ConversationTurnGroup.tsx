@@ -1,7 +1,4 @@
 import { useShallow } from "zustand/react/shallow";
-import { BotTopicPreparation } from "@/v4/BotTopicPreparation.js";
-import { useBotTopicInterruption } from "@/v4/botGroupDeliveryContext.js";
-import { ConnectedBotGroupDeliveryAction } from "@/v4/BotGroupDeliveryAction.js";
 /* eslint-disable max-lines -- turn group 需要在同一处维护普通 assistant 与后台结果的严格行序，拆分会重复 actions/preview/tail 协议。 */
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import {
@@ -17,7 +14,7 @@ import { ChevronRightIcon, EyeIcon } from "lucide-react";
 import {
   zcodeProviderRuntimeHeadersErrorCode,
   type HighspeedMessageMeta,
-  type ZCodeApiRetryStatus,
+  type NekodeApiRetryStatus,
 } from "@zcode/shared";
 import {
   TID_CHAT_ASSISTANT_HISTORY_CONTENT,
@@ -44,19 +41,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible.js";
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
-import {
-  CronCreateAutomationCard,
-  isCronAutomationCardToolCall,
-  readCronCreateAutomationSummary,
-  type CronCreateAutomationSummary,
-} from "@/ToolCallBlocks/renderers/cron-create.js";
-import {
-  isOffPeakCreateToolCall,
-  OffPeakCreateTaskCard,
-  readOffPeakCreateTaskSummary,
-  type OffPeakCreateTaskSummary,
-} from "@/ToolCallBlocks/renderers/offpeak-create.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { HighspeedShareDialog } from "@/highspeed/HighspeedShareNoticeCard.js";
 import { isHighspeedShareEligible } from "@/highspeed/highspeedShare.js";
 import {
@@ -114,7 +99,6 @@ import type {
 import { formatConversationWorkDuration } from "@/v4/conversationWorkDuration.js";
 import { ConversationTurnRow, resolveAssistantCopyText } from "@/v4/ConversationTurnRow.js";
 import { ConversationHookDetailsAction } from "@/v4/ConversationHookDetailsAction.js";
-import { toolCallRowToLegacyNode } from "@/v4/toolCallRowAdapter.js";
 
 interface ConversationTurnGroupProps {
   unit: ConversationTurnRenderUnit;
@@ -134,18 +118,6 @@ interface ConversationTurnGroupProps {
   ) => Promise<CommandAck | boolean | void> | CommandAck | boolean | void;
   /** 会话首轮：顶部留白由 Timeline 的状态胶囊 inset 提供，本轮不再留顶部 padding。 */
   topClearedByTimeline?: boolean;
-}
-
-interface CronAutomationTurnCard {
-  rowId: number;
-  toolCallId: string;
-  automation: CronCreateAutomationSummary;
-}
-
-interface OffPeakTurnCard {
-  rowId: number;
-  toolCallId: string;
-  task: OffPeakCreateTaskSummary;
 }
 
 const MIN_VISIBLE_API_RETRY_ATTEMPT = 3;
@@ -200,7 +172,7 @@ function HighspeedOutputFooter({
   );
 }
 
-function toRetryStatus(apiRetry: ApiRetryState): ZCodeApiRetryStatus {
+function toRetryStatus(apiRetry: ApiRetryState): NekodeApiRetryStatus {
   const attempt = Math.max(1, Math.floor(apiRetry.attempt));
   // v4 maxAttempts 包含首次请求，而展示口径是重试次数；直接展示会把
   // 默认 10 次重试写成 1/11。
@@ -224,7 +196,7 @@ function TurnChatLoadingSlot({
   eligible: boolean;
   initialElapsedMs: number;
 }) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const retryStatus = useMemo(() => (apiRetry ? toRetryStatus(apiRetry) : null), [apiRetry]);
   // 配置读取尚未发出模型请求，首次恢复就显示进度，避免用户误以为消息已发送。
   // 其余前两次短暂恢复对用户等价于普通加载；保留 apiRetry 运行态，但只在
@@ -274,7 +246,7 @@ function ConversationExploreGroupRow({
         onOpenCodeViewer={context.onOpenCodeViewer}
         onOpenFileLink={context.onOpenFileLink}
         onOpenBrowserUrl={context.onOpenBrowserUrl}
-        onOpenAutomationsMain={context.onOpenAutomationsMain}
+        onOpenWorkflowsMain={context.onOpenWorkflowsMain}
       />
     </div>
   );
@@ -333,7 +305,7 @@ function ConversationToolGroupRow({
         onOpenCodeViewer={context.onOpenCodeViewer}
         onOpenFileLink={context.onOpenFileLink}
         onOpenBrowserUrl={context.onOpenBrowserUrl}
-        onOpenAutomationsMain={context.onOpenAutomationsMain}
+        onOpenWorkflowsMain={context.onOpenWorkflowsMain}
         // history/background 兼容路径只传虚拟父节点时，已被分组投影消费的
         // Assistant message / reasoning 没有交给 renderer，展开后会永久丢失。
         cuaGroupEvents={visibleCuaEvents}
@@ -391,7 +363,7 @@ function ConversationCuaGroupRow({
         onOpenCodeViewer={context.onOpenCodeViewer}
         onOpenFileLink={context.onOpenFileLink}
         onOpenBrowserUrl={context.onOpenBrowserUrl}
-        onOpenAutomationsMain={context.onOpenAutomationsMain}
+        onOpenWorkflowsMain={context.onOpenWorkflowsMain}
         cuaGroupEvents={visibleCuaEvents}
         renderCuaAssistantMessage={renderAssistantMessage}
         renderCuaReasoning={renderReasoning}
@@ -496,170 +468,18 @@ function ConversationAssistantWorkItems({
   );
 }
 
-function resolveCronAutomationTurnCards(
-  rows: readonly AssistantWorkRow[],
-): CronAutomationTurnCard[] {
-  let cards: CronAutomationTurnCard[] = [];
-
-  for (const row of rows) {
-    if (row.kind !== "toolCall" || row.status !== "success") {
-      continue;
-    }
-
-    const normalizedToolName = row.toolName.toLowerCase().replace(/[^a-z0-9]/gu, "");
-    if (normalizedToolName === "crondelete") {
-      const deletedAutomationId = readCronDeleteAutomationId(row);
-      if (deletedAutomationId) {
-        // 只累计本轮成功的 Create/Update 会忽略后续 CronDelete，导致已经
-        // 撤销的中间结果仍被提升成轮尾成功卡片。
-        cards = cards.filter((card) => card.automation.automationId !== deletedAutomationId);
-      }
-      continue;
-    }
-
-    const node = toolCallRowToLegacyNode(row);
-    if (!isCronAutomationCardToolCall(node.toolCall)) {
-      continue;
-    }
-
-    const automation = readCronCreateAutomationSummary(node.toolCall);
-    if (!automation) {
-      continue;
-    }
-
-    if (automation.automationId) {
-      cards = cards.filter((card) => card.automation.automationId !== automation.automationId);
-    }
-    cards.push({
-      rowId: row.rowId,
-      toolCallId: row.toolCallId,
-      automation,
-    });
-  }
-
-  return cards;
-}
-
-// 只收本轮 status==="success" 的 OffPeakCreate；同 id 重复输出保留最新一次。
-// 刻意不复用 resolveCronAutomationTurnCards——那套带 CronDelete 撤销过滤语义，闲时无对应工具。
-function resolveOffPeakTurnCards(rows: readonly AssistantWorkRow[]): OffPeakTurnCard[] {
-  let cards: OffPeakTurnCard[] = [];
-
-  for (const row of rows) {
-    if (row.kind !== "toolCall" || row.status !== "success") {
-      continue;
-    }
-    const node = toolCallRowToLegacyNode(row);
-    if (!isOffPeakCreateToolCall(node.toolCall)) {
-      continue;
-    }
-    const task = readOffPeakCreateTaskSummary(node.toolCall);
-    if (!task) {
-      continue;
-    }
-    if (task.offPeakTaskId) {
-      cards = cards.filter((card) => card.task.offPeakTaskId !== task.offPeakTaskId);
-    }
-    cards.push({
-      rowId: row.rowId,
-      toolCallId: row.toolCallId,
-      task,
-    });
-  }
-
-  return cards;
-}
-
-function parseJsonRecord(value: unknown): Record<string, unknown> | null {
-  let candidate = value;
-  if (typeof candidate === "string") {
-    try {
-      candidate = JSON.parse(candidate) as unknown;
-    } catch {
-      return null;
-    }
-  }
-  return typeof candidate === "object" && candidate !== null && !Array.isArray(candidate)
-    ? (candidate as Record<string, unknown>)
-    : null;
-}
-
-function readCronDeleteAutomationId(
-  row: Extract<AssistantWorkRow, { kind: "toolCall" }>,
-): string | undefined {
-  for (const candidate of [row.output?.text, row.input, row.inputText]) {
-    const record = parseJsonRecord(candidate);
-    const id = record?.id;
-    if (typeof id === "string" && id.trim()) {
-      return id.trim();
-    }
-  }
-  return undefined;
-}
-
-function CronAutomationTurnCards({
-  cards,
-  context,
-}: {
-  cards: readonly CronAutomationTurnCard[];
-  context: ConversationRowRenderContext;
-}) {
-  if (cards.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      {cards.map((card) => (
-        <CronCreateAutomationCard
-          key={`${card.rowId}:${card.toolCallId}`}
-          automation={card.automation}
-          onOpenAutomationsMain={context.onOpenAutomationsMain}
-        />
-      ))}
-    </div>
-  );
-}
-
-function OffPeakTurnCards({
-  cards,
-  context,
-}: {
-  cards: readonly OffPeakTurnCard[];
-  context: ConversationRowRenderContext;
-}) {
-  if (cards.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="flex flex-col gap-3">
-      {cards.map((card) => (
-        <OffPeakCreateTaskCard
-          key={`${card.rowId}:${card.toolCallId}`}
-          task={card.task}
-          onOpenAutomationsMain={context.onOpenAutomationsMain}
-        />
-      ))}
-    </div>
-  );
-}
-
 function AssistantHistoryStatus({
   segment,
   open,
   highspeed,
   highspeedMeta,
-  sourceCommandIds,
 }: {
   segment: ConversationTurnWorkSegment;
   open: boolean;
   highspeed: boolean;
   highspeedMeta?: HighspeedMessageMeta;
-  sourceCommandIds: readonly string[];
 }) {
-  const { intl, locale } = useZCodeIntl();
-  const topicInterrupted = useBotTopicInterruption(sourceCommandIds);
+  const { intl, locale } = useNekodeIntl();
   const durationLabel = formatConversationWorkDuration(
     segment.workStatus?.durationMs,
     intl,
@@ -674,7 +494,7 @@ function AssistantHistoryStatus({
   const label =
     segment.workStatus?.state === "interrupted"
       ? intl.formatMessage({
-          id: topicInterrupted ? "chat.history.topicInterrupted" : "chat.history.stopped",
+          id: "chat.history.stopped",
         })
       : segment.workStatus?.state === "running"
         ? intl.formatMessage({ id: "chat.history.workingFor" }, { duration: durationLabel ?? "" })
@@ -738,7 +558,6 @@ function AssistantHistoryStatus({
 function ConversationWorkSegmentFlow({
   segment,
   turnRunning,
-  sourceCommandIds,
   context,
   onFork,
   onRetry,
@@ -756,7 +575,6 @@ function ConversationWorkSegmentFlow({
 }: {
   segment: ConversationTurnWorkSegment;
   turnRunning: boolean;
-  sourceCommandIds: readonly string[];
   context: ConversationRowRenderContext;
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
@@ -883,7 +701,6 @@ function ConversationWorkSegmentFlow({
                 open={open}
                 highspeed={highspeed}
                 highspeedMeta={highspeedMeta}
-                sourceCommandIds={sourceCommandIds}
               />
             ) : null}
             {content}
@@ -893,7 +710,6 @@ function ConversationWorkSegmentFlow({
       {shouldShowHistoryStatus && firstAssistantFlowItemIndex < 0 ? (
         <AssistantHistoryStatus
           segment={segment}
-          sourceCommandIds={sourceCommandIds}
           open={open}
           highspeed={highspeed}
           highspeedMeta={highspeedMeta}
@@ -1018,16 +834,6 @@ function ConversationTurnFlow({
           key={segment.key}
           segment={segment}
           turnRunning={unit.isRunning}
-          sourceCommandIds={[
-            ...segment.flowItems.flatMap((item) =>
-              item.kind === "userInput" && item.row.sourceCommandId
-                ? [item.row.sourceCommandId]
-                : [],
-            ),
-            ...(segment === workSegments[0] && unit.header?.sourceCommandId
-              ? [unit.header.sourceCommandId]
-              : []),
-          ]}
           context={context}
           onFork={onFork}
           onRetry={onRetry}
@@ -1218,12 +1024,7 @@ function ConversationBackgroundResultWork({
       className="flex flex-col gap-5 [&>[data-zcode-chat-loading-slot]:not(:first-child)]:-mt-2"
     >
       {!unit.isRunning && unit.workStatus ? (
-        <AssistantHistoryStatus
-          segment={historySegment}
-          open={open}
-          highspeed={false}
-          sourceCommandIds={unit.header?.sourceCommandId ? [unit.header.sourceCommandId] : []}
-        />
+        <AssistantHistoryStatus segment={historySegment} open={open} highspeed={false} />
       ) : null}
       {workflowNotification ? (
         <WorkflowNotificationToolRow
@@ -1306,7 +1107,7 @@ function ConversationTurnGroupImpl({
   topClearedByTimeline = false,
 }: ConversationTurnGroupProps) {
   const isOfficeMode = useIsOfficeMode();
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const visibleUserRows = useMemo(() => unit.visibleUserInputs, [unit.visibleUserInputs]);
   const sourceCommandId = unit.header?.sourceCommandId ?? visibleUserRows[0]?.sourceCommandId;
   const selectHighspeed = useShallow(getHighspeedTurnDependencies);
@@ -1431,10 +1232,6 @@ function ConversationTurnGroupImpl({
       latestAssistantTextRow?.state,
     ],
   );
-  const cronAutomationTurnCards = useMemo(
-    () => (unit.isRunning ? [] : resolveCronAutomationTurnCards(unit.assistantWorkRows)),
-    [unit.assistantWorkRows, unit.isRunning],
-  );
   // 上方已是工具摘要；下方运行卡在联接到 run 后立即显示，不能再等主代理回复结束。
   // 依赖联接表保持实时更新，并由解析器按 runId 去重。直接启动轮
   // 的 run 卡也从这里出：那一轮没有用户气泡、没有助手内容，run 卡就是它的全部呈现。
@@ -1467,19 +1264,10 @@ function ConversationTurnGroupImpl({
         : resolveWorkflowTurnCompletion(unit.header, { byRunId: workflowRunByRunId }),
     [unit.header, unit.isRunning, workflowRunByRunId],
   );
-  const offPeakTurnCards = useMemo(
-    () => (unit.isRunning ? [] : resolveOffPeakTurnCards(unit.assistantWorkRows)),
-    [unit.assistantWorkRows, unit.isRunning],
-  );
   const canRenderAssistantActions =
     !unit.timelineOnly &&
     latestAssistantTextRow?.state === "complete" &&
     assistantCopyText !== undefined;
-  // runtime turnId 与产品轮次 ID 不同；用 CLI 行上的命令归因关联投递，包含被裁剪输入的 header。
-  const deliverySourceCommandIds = [
-    ...(unit.header?.sourceCommandId ? [unit.header.sourceCommandId] : []),
-    ...unit.visibleUserInputs.flatMap((row) => (row.sourceCommandId ? [row.sourceCommandId] : [])),
-  ];
   const hasHookActions =
     // Hook action 与 copy/feedback/fork 共用 turn eligibility；
     // timelineOnly 维护 turn（compact/modelChange marker 轮）即使带历史遗留的
@@ -1616,8 +1404,6 @@ function ConversationTurnGroupImpl({
           />
           {/* 修复原因：CronCreate/CronUpdate 工具本身仍按普通工具行展示；成功卡片属于整轮
               完成后的结果摘要，必须等回复结束再跟随最终 assistant 正文收尾。 */}
-          <CronAutomationTurnCards cards={cronAutomationTurnCards} context={context} />
-          <OffPeakTurnCards cards={offPeakTurnCards} context={context} />
           {!isOfficeMode && unit.header?.fileChanges ? (
             <ConversationFileSummaryPanel
               header={unit.header}
@@ -1650,7 +1436,6 @@ function ConversationTurnGroupImpl({
               onFeedbackChange={onFeedbackChange}
               hookInvocations={unit.hookInvocations}
               turnId={unit.turnId}
-              sourceCommandIds={deliverySourceCommandIds}
               className={cn(
                 "flex items-center gap-1",
                 context.compactForRemoteControl
@@ -1665,16 +1450,12 @@ function ConversationTurnGroupImpl({
               className={cn(
                 context.compactForRemoteControl
                   ? "opacity-100"
-                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100 has-[[data-bot-group-delivery]]:opacity-100",
+                  : "opacity-0 transition-opacity group-hover/assistant-turn:opacity-100 focus-within:opacity-100",
               )}
             >
               {hasHookActions ? (
                 <ConversationHookDetailsAction rows={unit.hookInvocations} turnId={unit.turnId} />
               ) : null}
-              <ConnectedBotGroupDeliveryAction
-                turnId={unit.turnId}
-                sourceCommandIds={deliverySourceCommandIds}
-              />
             </MessageActions>
           ) : null}
           {showHighspeedOutputFooter ? (
@@ -1719,9 +1500,6 @@ function ConversationTurnGroupImpl({
           highspeedMeta={highspeedMeta}
         />
       )}
-      {unit.topicPreparations?.length ? (
-        <BotTopicPreparation items={unit.topicPreparations} />
-      ) : null}
     </section>
   );
 }

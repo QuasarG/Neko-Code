@@ -24,7 +24,7 @@ const visibleDescriptor: HookExecutionDescriptor = {
   executionMode: "foreground",
   executionType: "process",
   sourceKind: "user",
-  sourcePath: "/Users/example/.zcode/cli/config.json",
+  sourcePath: "/Users/example/.nekode/cli/config.json",
   timeoutMs: 60_000,
 };
 
@@ -239,7 +239,7 @@ describe("Hook runner lifecycle", () => {
               hooks: [
                 {
                   type: "process",
-                  command: "${ZCODE_PLUGIN_ROOT}/hooks/check.mjs",
+                  command: "${NEKODE_PLUGIN_ROOT}/hooks/check.mjs",
                   args: ["--token", "secret-value"],
                   timeoutMs: 5_000,
                   statusMessage: "Checking policy",

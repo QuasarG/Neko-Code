@@ -23,7 +23,7 @@ export const LIMITS = {
 };
 
 // 打包时总是跳过的文件；其余 stage 里的内容原样进包。
-const SKIPPED_NAMES = new Set([".git", ".DS_Store", "__pycache__", ".zcode-site.json"]);
+const SKIPPED_NAMES = new Set([".git", ".DS_Store", "__pycache__", ".nekode-site.json"]);
 const MAX_LISTED = 10;
 // 与云端健康检查一致：启动后 90 秒内 GET / 回 500 以下。
 const CHECK_TIMEOUT_MS = 90_000;

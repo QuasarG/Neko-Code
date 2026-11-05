@@ -25,7 +25,7 @@ zcode --prompt "继续检查上一步的文件" --resume sess_example --cwd /abs
 
 ## 持久化与用量
 
-默认 CLI 会话数据库位于 `~/.zcode/cli/db/db.sqlite`，可通过配置或环境变量重定向。数据库结构属于实现细节；不要把旧手册中的 SQL 表结构当成稳定 API，更不要直接删除或修改行来“重置任务”。
+默认 CLI 会话数据库位于 `~/.nekode/cli/db/db.sqlite`，可通过配置或环境变量重定向。数据库结构属于实现细节；不要把旧手册中的 SQL 表结构当成稳定 API，更不要直接删除或修改行来“重置任务”。
 
 需要分析数据库时使用只读连接；备份活跃 SQLite 数据库使用 SQLite backup API，或先停止相关进程并处理 WAL 文件。只复制主文件可能漏掉尚未 checkpoint 的记录。
 

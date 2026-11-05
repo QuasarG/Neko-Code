@@ -13,9 +13,9 @@ import {
   ZAI_PROVIDER_ID,
 } from "@zcode/shared";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import type { LoginEntryPurpose } from "@/store/index.js";
-import { useZCodeStore } from "@/store/StoreProvider.js";
+import { useNekodeStore } from "@/store/StoreProvider.js";
 import { logger } from "../logger.js";
 import { usePlatform } from "./usePlatform.js";
 import { useServices } from "./useServices.js";
@@ -25,7 +25,7 @@ type OAuthStatus = "idle" | "waiting" | "error";
 export function useOAuth() {
   const { oauthService } = useServices();
   const platform = usePlatform();
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const [status, setStatus] = useState<OAuthStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [providers, setProviders] = useState<OAuthProviderMeta[]>([]);
@@ -34,7 +34,7 @@ export function useOAuth() {
   const [pendingProvider, setPendingProvider] = useState<OAuthProviderId | null>(null);
   const [authorizeUrl, setAuthorizeUrl] = useState<string | null>(null);
   const loginAttemptRef = useRef(0);
-  const setOAuthPollingActive = useZCodeStore((state) => state.setOAuthPollingActive);
+  const setOAuthPollingActive = useNekodeStore((state) => state.setOAuthPollingActive);
 
   const refreshProviders = useCallback(async () => {
     try {

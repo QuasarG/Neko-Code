@@ -1,12 +1,12 @@
 /**
- * ZCode Session Store 选择器与内部辅助函数
+ * Nekode Session Store 选择器与内部辅助函数
  *
  * 从 zcodeSessionStore.ts 拆分出来，包含 workspace 状态读取/更新辅助函数，
  * 以及所有按 task 粒度的只读访问器和独立选择器。
  */
 import type {
-  ZCodeTaskRuntimeStatus,
-  ZCodeTaskMeta,
+  NekodeTaskRuntimeStatus,
+  NekodeTaskMeta,
 } from "@zcode/shared";
 import { mergeTaskWithOptimisticMeta } from "@/lib/zcodeTaskMetaMerge.js";
 import {
@@ -15,10 +15,10 @@ import {
   DEFAULT_TASK_RUNTIME_STATE,
   createDefaultWorkspaceState,
   getDefaultWorkspaceState,
-  type ZCodeSessionStoreState,
+  type NekodeSessionStoreState,
   type WorkspaceInitState,
   type TaskRuntimeState,
-  type WorkspaceZCodeUIState,
+  type WorkspaceNekodeUIState,
 } from "./zcodeSessionStoreTypes.js";
 
 // ────────────────────────────────────────────
@@ -41,7 +41,7 @@ function copyTaskRecordEntries<T>(
 }
 
 function collectIdentityTaskIds(
-  baseState: WorkspaceZCodeUIState,
+  baseState: WorkspaceNekodeUIState,
   workspaceIdentity: string,
 ): Set<string> {
   const normalizedIdentity = workspaceIdentity.trim();
@@ -60,9 +60,9 @@ function collectIdentityTaskIds(
 }
 
 function createIdentityWorkspaceStateSeed(
-  baseState: WorkspaceZCodeUIState | undefined,
+  baseState: WorkspaceNekodeUIState | undefined,
   workspaceIdentity?: string,
-): WorkspaceZCodeUIState {
+): WorkspaceNekodeUIState {
   if (!baseState) {
     return createDefaultWorkspaceState(getDefaultWorkspaceState().selectedProvider);
   }
@@ -118,10 +118,10 @@ function createIdentityWorkspaceStateSeed(
 }
 
 export function getWorkspaceState(
-  state: ZCodeSessionStoreState,
+  state: NekodeSessionStoreState,
   workspacePath: string,
   workspaceIdentity?: string,
-): WorkspaceZCodeUIState {
+): WorkspaceNekodeUIState {
   const baseState = state.workspaces[workspacePath] ?? getDefaultWorkspaceState();
   const workspaceKey = resolveWorkspaceStateKey(workspacePath, workspaceIdentity);
   if (workspaceKey === workspacePath) {
@@ -140,11 +140,11 @@ export function getWorkspaceState(
 }
 
 export function updateWorkspaceState(
-  state: ZCodeSessionStoreState,
+  state: NekodeSessionStoreState,
   workspacePath: string,
-  updater: (current: WorkspaceZCodeUIState) => WorkspaceZCodeUIState,
+  updater: (current: WorkspaceNekodeUIState) => WorkspaceNekodeUIState,
   workspaceIdentity?: string,
-): Pick<ZCodeSessionStoreState, "workspaces"> {
+): Pick<NekodeSessionStoreState, "workspaces"> {
   const workspaceKey = resolveWorkspaceStateKey(workspacePath, workspaceIdentity);
   const current =
     workspaceKey === workspacePath
@@ -154,7 +154,7 @@ export function updateWorkspaceState(
   const nextWorkspaceState = updater(current);
 
   if (nextWorkspaceState === current) {
-    // 单 ZCode Agent 迁移后旧 provider 选择都会归一为 glm，很多调用实际不会改变状态。
+    // 单 Nekode Agent 迁移后旧 provider 选择都会归一为 glm，很多调用实际不会改变状态。
     // 如果仍把 merged overlay 快照写回 identity bucket，会打破 selector 的引用缓存并触发无意义重渲染。
     return { workspaces: state.workspaces };
   }
@@ -185,19 +185,19 @@ export function updateWorkspaceState(
 // ────────────────────────────────────────────
 
 export function getTaskRuntimeState(
-  workspaceState: WorkspaceZCodeUIState,
+  workspaceState: WorkspaceNekodeUIState,
   taskId: string,
 ): TaskRuntimeState {
   return workspaceState.taskRuntimeByTaskId[taskId] ?? DEFAULT_TASK_RUNTIME_STATE;
 }
 
 interface WorkspaceDisplayedTaskState {
-  taskStatus: ZCodeTaskRuntimeStatus;
+  taskStatus: NekodeTaskRuntimeStatus;
   taskError: string | null;
 }
 
 export function getWorkspaceDisplayedTaskState(
-  workspaceState: WorkspaceZCodeUIState,
+  workspaceState: WorkspaceNekodeUIState,
 ): WorkspaceDisplayedTaskState {
   if (!workspaceState.activeTaskId) {
     return {
@@ -213,12 +213,12 @@ export function getWorkspaceDisplayedTaskState(
   };
 }
 
-export function getTaskUiState(workspaceState: WorkspaceZCodeUIState, taskId: string) {
+export function getTaskUiState(workspaceState: WorkspaceNekodeUIState, taskId: string) {
   return workspaceState.taskUiByTaskId[taskId] ?? DEFAULT_TASK_UI_STATE;
 }
 
 export function hasTaskPendingPermissionRequest(
-  workspaceState: WorkspaceZCodeUIState,
+  workspaceState: WorkspaceNekodeUIState,
   taskId: string,
 ): boolean {
   const taskUiState = getTaskUiState(workspaceState, taskId);
@@ -227,7 +227,7 @@ export function hasTaskPendingPermissionRequest(
 }
 
 export function hasTaskPendingHumanInterventionRequest(
-  workspaceState: WorkspaceZCodeUIState,
+  workspaceState: WorkspaceNekodeUIState,
   taskId: string,
 ): boolean {
   const taskUiState = getTaskUiState(workspaceState, taskId);
@@ -240,10 +240,10 @@ export function hasTaskPendingHumanInterventionRequest(
 
 export function getTaskMeta(
   workspaceState:
-    | WorkspaceZCodeUIState
-    | Partial<Pick<WorkspaceZCodeUIState, "optimisticTaskListByTaskId" | "taskListCache">>,
+    | WorkspaceNekodeUIState
+    | Partial<Pick<WorkspaceNekodeUIState, "optimisticTaskListByTaskId" | "taskListCache">>,
   taskId: string,
-): ZCodeTaskMeta | null {
+): NekodeTaskMeta | null {
   const optimisticTask = workspaceState.optimisticTaskListByTaskId?.[taskId];
   const cachedTask = workspaceState.taskListCache?.find((task) => task.taskId === taskId) ?? null;
 
@@ -260,10 +260,10 @@ export function getTaskMeta(
 
 export function getVisibleTaskMetas(
   workspaceState:
-    | WorkspaceZCodeUIState
-    | Partial<Pick<WorkspaceZCodeUIState, "optimisticTaskListByTaskId" | "taskListCache">>,
-): ZCodeTaskMeta[] {
-  const taskById = new Map<string, ZCodeTaskMeta>();
+    | WorkspaceNekodeUIState
+    | Partial<Pick<WorkspaceNekodeUIState, "optimisticTaskListByTaskId" | "taskListCache">>,
+): NekodeTaskMeta[] {
+  const taskById = new Map<string, NekodeTaskMeta>();
 
   for (const task of workspaceState.taskListCache ?? []) {
     taskById.set(task.taskId, task);
@@ -278,15 +278,15 @@ export function getVisibleTaskMetas(
 
 export function getTaskUnreadIndicator(
   workspaceState:
-    | WorkspaceZCodeUIState
+    | WorkspaceNekodeUIState
     | Partial<
         Pick<
-          WorkspaceZCodeUIState,
+          WorkspaceNekodeUIState,
           "optimisticTaskListByTaskId" | "taskListCache" | "taskUnreadByTaskId"
         >
       >,
   taskId: string,
-  fallbackTask?: Pick<ZCodeTaskMeta, "unreadAt">,
+  fallbackTask?: Pick<NekodeTaskMeta, "unreadAt">,
 ): boolean {
   const storedTask = getTaskMeta(workspaceState, taskId);
   // IDE 升级或重启后，任务列表会先从 query cache 恢复，而 session store 尚未水合；
@@ -301,8 +301,8 @@ export function getTaskUnreadIndicator(
 // Standalone selector functions
 // ────────────────────────────────────────────
 
-export function selectWorkspaceZCodeState(
-  state: ZCodeSessionStoreState,
+export function selectWorkspaceNekodeState(
+  state: NekodeSessionStoreState,
   workspacePath: string,
   workspaceIdentity?: string,
 ) {
@@ -310,7 +310,7 @@ export function selectWorkspaceZCodeState(
 }
 
 export function getWorkspaceInitState(
-  workspaceState: Pick<WorkspaceZCodeUIState, "workspaceInit">,
+  workspaceState: Pick<WorkspaceNekodeUIState, "workspaceInit">,
 ): WorkspaceInitState {
   return workspaceState.workspaceInit ?? DEFAULT_WORKSPACE_INIT_STATE;
 }

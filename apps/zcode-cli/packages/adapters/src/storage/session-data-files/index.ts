@@ -1,21 +1,17 @@
 import { lstat, readdir, rm } from "node:fs/promises";
-import { dirname, join, relative, isAbsolute } from "node:path";
+import { join } from "node:path";
 
 import type { SessionDataDirectory, SessionDataFilesPort } from "./contract.js";
 
 export type { SessionDataDirectory, SessionDataFilesPort } from "./contract.js";
 
-
 export interface NodeSessionDataFilesOptions {
   cliStorageRoot: string;
-  /** 返回 `<cli>/memories/projects/<slug>-<hash>/memory`；删除其父目录。 */
-  memoryRoot(directory: SessionDataDirectory): string;
 }
 
 /** 会话目录（每个会话一个子目录）与模型调用轨迹（每个会话一个文件）所在的位置。 */
 const SESSION_DIRECTORY_ROOTS = ["artifacts", "exec", "agents", "sessions"] as const;
 const MODEL_IO_DIRECTORIES = ["debug", "rollout"] as const;
-const MEMORY_PROJECTS_PATH = ["memories", "projects"] as const;
 // 会话 ID 直接拼进路径，必须是单个安全文件名段。
 const SAFE_SESSION_ID = /^[A-Za-z0-9_-]+$/;
 
@@ -30,15 +26,6 @@ export function createNodeSessionDataFiles(
       ...MODEL_IO_DIRECTORIES.map((name) => join(root, name, `model-io-${sessionId}.jsonl`)),
     ];
   };
-  const memoryPath = (directory: SessionDataDirectory) => {
-    const projectFolder = dirname(options.memoryRoot(directory));
-    const projects = join(root, ...MEMORY_PROJECTS_PATH);
-    const inside = relative(projects, projectFolder);
-    // 只允许 memories/projects 的直接子目录，防止解析结果越界删到别处。
-    if (!inside || inside.startsWith("..") || isAbsolute(inside) || inside.includes("/") || inside.includes("\\"))
-      throw new Error("session-data.memory-outside-storage");
-    return projectFolder;
-  };
   const measureAll = async (paths: string[]) =>
     (await Promise.all(paths.map(measurePath))).reduce((sum, bytes) => sum + bytes, 0);
   const removeAll = async (paths: string[]) => {
@@ -50,8 +37,9 @@ export function createNodeSessionDataFiles(
   return {
     measureSession: async (sessionId) => measureAll(sessionPaths(sessionId)),
     removeSession: async (sessionId) => removeAll(sessionPaths(sessionId)),
-    measureMemory: async (directory) => measureAll([memoryPath(directory)]),
-    removeMemory: async (directory) => removeAll([memoryPath(directory)]),
+    // 旧版 Project Memory 已删除；保留协议方法作为兼容空实现。
+    measureMemory: async (_directory: SessionDataDirectory) => 0,
+    removeMemory: async (_directory: SessionDataDirectory) => 0,
   };
 }
 

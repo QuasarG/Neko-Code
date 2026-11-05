@@ -19,17 +19,16 @@ import {
   useState,
   useSyncExternalStore,
 } from "react";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { cn } from "@/components/lib/utils.js";
 import { toast } from "@/components/ui/toast.js";
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
-import type { AutomationsNavigationTab } from "@/lib/taskNavigationHistory.js";
 import { reportPromptTemplateClick } from "@/lib/promptTemplateTelemetry.js";
 import { invalidateDeferredDraftSessionForSkillChange } from "@/lib/zcodeDraftSkillInvalidation.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import {
   ConversationDraftSuggestedPrompts,
   type DraftSuggestedPromptItem,
@@ -59,7 +58,7 @@ const INSTALL_OPERATION_TIMEOUT_MS = 10_000;
 
 type Props = ConversationDraftSuggestedPromptsContainerProps & {
   proactive?: boolean;
-  onOpenAutomations?: (automationTab?: AutomationsNavigationTab) => void;
+  onOpenWorkflows?: () => void;
 };
 
 let draftSuggestedPluginOperationSequence = 0;
@@ -85,11 +84,11 @@ export function ConversationDraftSuggestedPromptsContainer({
   workspacePath,
   workspaceIdentity,
   remoteSessionId,
-  onOpenAutomations,
+  onOpenWorkflows,
   isDesktop = false,
   isWebRemoteControl = false,
 }: Props) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const platform = usePlatform();
   const isOfficeMode = useIsOfficeMode();
   const { update } = useSettings();
@@ -151,9 +150,9 @@ export function ConversationDraftSuggestedPromptsContainer({
             (action) =>
               action === DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS ||
               action === DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS_OFFPEAK,
-          ) || Boolean(onOpenAutomations),
+          ) || Boolean(onOpenWorkflows),
       ),
-    [allItems, onOpenAutomations, proactive, recommendedItems],
+    [allItems, onOpenWorkflows, proactive, recommendedItems],
   );
   const {
     clearPluginActionPopover,
@@ -224,7 +223,7 @@ export function ConversationDraftSuggestedPromptsContainer({
       // 推荐流程的状态与展示图标都由目标 Host 的同一次可信解析返回；当前不存在
       // workspace 级 Plugin，再读取 referenceCatalog 会重复校验并引入额外 RPC。
       const mention = buildDraftSuggestedPluginMention(plugin, icon);
-      return useZCodeSessionStore
+      return useNekodeSessionStore
         .getState()
         .requestComposerTextInsert(
           workspacePath,
@@ -246,7 +245,7 @@ export function ConversationDraftSuggestedPromptsContainer({
       ) {
         return null;
       }
-      return useZCodeSessionStore
+      return useNekodeSessionStore
         .getState()
         .requestComposerTextInsert(workspacePath, prompt, workspaceIdentity);
     },
@@ -274,13 +273,13 @@ export function ConversationDraftSuggestedPromptsContainer({
         const text = hasTarget
           ? prompt
           : `${buildDraftSuggestedPluginMention(plugin, icon).markdown} ${prompt}`;
-        return useZCodeSessionStore
+        return useNekodeSessionStore
           .getState()
           .requestComposerTextInsert(workspacePath, text, workspaceIdentity);
       }
       const mention = buildDraftSuggestedPluginMention(plugin, icon);
       const text = prompt.trim() ? `${mention.markdown} ${prompt.trim()}` : mention.markdown;
-      return useZCodeSessionStore
+      return useNekodeSessionStore
         .getState()
         .requestComposerTextInsert(workspacePath, text, workspaceIdentity, mention);
     },
@@ -377,7 +376,7 @@ export function ConversationDraftSuggestedPromptsContainer({
         requestVersion !== requestVersionRef.current ||
         (kind === "install" &&
           (!flow.result?.pluginName ||
-            flow.result.marketplace !== ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
+            flow.result.marketplace !== NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID ||
             flow.result.sourceTrust !== "official"))
       ) {
         return;
@@ -549,17 +548,17 @@ export function ConversationDraftSuggestedPromptsContainer({
         });
       }
       if (
-        onOpenAutomations &&
+        onOpenWorkflows &&
         item.actions?.includes(DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS_OFFPEAK)
       ) {
-        onOpenAutomations("idle");
+        onOpenWorkflows();
         return;
       }
       if (
-        onOpenAutomations &&
+        onOpenWorkflows &&
         item.actions?.includes(DRAFT_SUGGESTED_PROMPT_NAVIGATE_AUTOMATIONS)
       ) {
-        onOpenAutomations();
+        onOpenWorkflows();
         return;
       }
       const plugin = item.plugin
@@ -716,7 +715,7 @@ export function ConversationDraftSuggestedPromptsContainer({
       isDesktop,
       isWebRemoteControl,
       locale,
-      onOpenAutomations,
+      onOpenWorkflows,
       platform,
       replacePlainPrompt,
       replaceWithResolvedPluginAndPrompt,

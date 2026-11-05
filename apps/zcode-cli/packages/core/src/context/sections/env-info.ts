@@ -146,7 +146,7 @@ export function buildEnvInfoSection(
   return {
     name: "Environment Info",
     source: "env_info",
-    injectionTarget: "meta_user",
+    injectionTarget: "system",
     cacheHint: "dynamic",
     chars: content.length,
     tokens: estimateTokens(content),
@@ -164,13 +164,13 @@ export function buildGitSystemContextSection(envInfo: EnvInfo): ContextSection |
     "As you answer the user's questions, you can use the following context:",
     buildGitSystemContextContent(envInfo),
     "",
-    "ZCode attached this context automatically; it isn't part of the user's message. It describes the user's own account and workspace, so they don't need it reported back.",
+    "Nekode attached this context automatically; it isn't part of the user's message. It describes the user's own account and workspace, so they don't need it reported back.",
   ].join("\n");
 
   return {
     name: "Session Context",
     source: "session_context",
-    injectionTarget: "meta_user",
+    injectionTarget: "system",
     cacheHint: "dynamic",
     chars: content.length,
     tokens: estimateTokens(content),
@@ -258,7 +258,7 @@ export function buildModelSection(model: Model | undefined): ContextSection | nu
   return {
     name: "Model Identity",
     source: "model",
-    injectionTarget: "meta_user",
+    injectionTarget: "system",
     cacheHint: "dynamic",
     content,
     chars: content.length,

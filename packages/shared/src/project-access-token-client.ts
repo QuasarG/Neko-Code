@@ -8,7 +8,7 @@ import {
   projectAccessTokenRequestFailureCode,
   ProjectAccessTokenTransientError,
 } from "./project-access-token.js";
-import { ZCODE_VERSION } from "./version.js";
+import { NEKODE_VERSION } from "./version.js";
 import { isCredentialDecryptError } from "./oauth.js";
 
 const DEFAULT_ORGANIZATION_NAME = "默认机构";
@@ -218,7 +218,7 @@ export class ProjectAccessTokenClient {
               headers,
               body: JSON.stringify({
                 clientType: "zcode",
-                clientVersion: ZCODE_VERSION,
+                clientVersion: NEKODE_VERSION,
               }),
             },
           );

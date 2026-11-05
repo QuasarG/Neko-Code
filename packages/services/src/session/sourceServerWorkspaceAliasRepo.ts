@@ -16,6 +16,7 @@ import {
   type SourceServerMigrationReport,
   type SourceServerMigrationReportRow,
 } from "@zcode/shared";
+import { resolveNekodeDataBaseRoot } from "@zcode/shared/node";
 import { getDataBaseDir, getTasksIndexDatabasePath, getWorkspaceHash } from "#src/paths.js";
 
 type Database = InstanceType<typeof DatabaseSync>;
@@ -299,9 +300,11 @@ export class SourceServerWorkspaceAliasRepo {
   public constructor(options: SourceServerWorkspaceAliasRepoOptions = {}) {
     this.taskDbPath = options.taskDbPath ?? getTasksIndexDatabasePath();
     this.sessionDbPath =
-      options.sessionDbPath ?? join(getDataBaseDir(), ".zcode", "cli", "db", "db.sqlite");
+      options.sessionDbPath ??
+      join(resolveNekodeDataBaseRoot(getDataBaseDir()), "cli", "db", "db.sqlite");
     this.backupRoot =
-      options.backupRoot ?? join(getDataBaseDir(), ".zcode", "server", "migration-backups");
+      options.backupRoot ??
+      join(resolveNekodeDataBaseRoot(getDataBaseDir()), "server", "migration-backups");
     this.now = options.now ?? Date.now;
     this.createMigrationId = options.migrationId ?? randomUUID;
     this.afterPhaseCommitted = options.afterPhaseCommitted;

@@ -1,10 +1,10 @@
 import type {
   DataSyncBlockedReason,
   DataSyncListItem,
-  ZCodeInstalledPluginSummary,
-  ZCodePluginInfo,
-  ZCodePluginMarketplaceSummary,
-  ZCodePluginsOverviewResult,
+  NekodeInstalledPluginSummary,
+  NekodePluginInfo,
+  NekodePluginMarketplaceSummary,
+  NekodePluginsOverviewResult,
 } from "@zcode/shared";
 
 /**
@@ -30,7 +30,7 @@ function readTrimmed(value: unknown): string | undefined {
 
 /** 与旧插件同步弹窗相同的来源序列化：github 取 `repo[#ref]`，git 取 `url[#ref]`，url 取 `url`。 */
 export function resolveMarketplaceSourcePlan(
-  marketplace: ZCodePluginMarketplaceSummary,
+  marketplace: NekodePluginMarketplaceSummary,
 ): MarketplaceSourcePlan {
   if (marketplace.isOfficial) return { kind: "official" };
   const source = marketplace.source;
@@ -51,10 +51,10 @@ export function marketplacePluginKey(pluginId: string): string {
 }
 
 export interface UserMarketplacePlugin {
-  installed: ZCodeInstalledPluginSummary;
-  info?: ZCodePluginInfo;
+  installed: NekodeInstalledPluginSummary;
+  info?: NekodePluginInfo;
   /** undefined 表示该端没有这个 marketplace（Orphaned Installed Plugin）。 */
-  marketplace?: ZCodePluginMarketplaceSummary;
+  marketplace?: NekodePluginMarketplaceSummary;
 }
 
 /**
@@ -62,8 +62,8 @@ export interface UserMarketplacePlugin {
  * listPlugins 中 source 为 official 的（Builtin Plugin、官方资源包自带的插件）不列出。
  */
 export function selectUserMarketplacePlugins(
-  overview: ZCodePluginsOverviewResult,
-  plugins: readonly ZCodePluginInfo[],
+  overview: NekodePluginsOverviewResult,
+  plugins: readonly NekodePluginInfo[],
 ): UserMarketplacePlugin[] {
   const infoById = new Map(plugins.map((plugin) => [plugin.id, plugin]));
   const marketplaceById = new Map(overview.marketplaces.map((item) => [item.id, item]));
@@ -92,7 +92,7 @@ function resolveExportBlockedReason(
  * 作为目标端时决定能否「更新」（不能指定版本，只能装上来源当前的最新版本）。
  */
 export function buildMarketplacePluginSyncItems(params: {
-  overview: ZCodePluginsOverviewResult;
+  overview: NekodePluginsOverviewResult;
   plugins: readonly UserMarketplacePlugin[];
   /** 镜像预检判定不能镜像的插件 id。 */
   mirrorBlocked: ReadonlySet<string>;

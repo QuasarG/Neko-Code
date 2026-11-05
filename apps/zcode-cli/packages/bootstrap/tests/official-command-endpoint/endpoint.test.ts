@@ -6,8 +6,8 @@ import { createServer, request, type IncomingHttpHeaders, type Server } from "no
 import { dirname } from "node:path";
 import { afterEach, assert, describe, expect, it, vi } from "vitest";
 import {
-  ZCODE_OFFICIAL_ENDPOINT_ENV_KEY,
-  ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
+  NEKODE_OFFICIAL_ENDPOINT_ENV_KEY,
+  NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
 } from "@zcode/shared";
 import type { ExecutionPort, ExecutionRequest } from "@zcode/contracts";
 import {
@@ -70,11 +70,11 @@ function call(
     const body = init.body;
     const req = request(
       {
-        socketPath: env[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY],
+        socketPath: env[NEKODE_OFFICIAL_ENDPOINT_ENV_KEY],
         path,
         method: init.method ?? "GET",
         headers: {
-          Authorization: `Bearer ${init.token ?? env[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]}`,
+          Authorization: `Bearer ${init.token ?? env[NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]}`,
           ...(body !== undefined ? { "Content-Length": String(Buffer.byteLength(body)) } : {}),
           ...init.headers,
         },
@@ -117,7 +117,7 @@ describe("official command endpoint", () => {
       appVersion: "3.16.0",
       fetch: globalThis.fetch,
       resolveHeaders,
-      resolveZCodeApiOrigin: () => options.origin ?? upstream.origin,
+      resolveNekodeApiOrigin: () => options.origin ?? upstream.origin,
     });
     cleanups.push(() => endpoint.close());
     return { endpoint, resolveHeaders, upstream };
@@ -130,12 +130,12 @@ describe("official command endpoint", () => {
     const b = await endpoint.envForSession("session-b", WORKSPACE_B);
 
     expect(again).toEqual(a);
-    expect(b[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]).toBe(a[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]);
-    expect(b[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]).not.toBe(
-      a[ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY],
+    expect(b[NEKODE_OFFICIAL_ENDPOINT_ENV_KEY]).toBe(a[NEKODE_OFFICIAL_ENDPOINT_ENV_KEY]);
+    expect(b[NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]).not.toBe(
+      a[NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY],
     );
     if (process.platform !== "win32") {
-      const dir = await stat(dirname(a[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]!));
+      const dir = await stat(dirname(a[NEKODE_OFFICIAL_ENDPOINT_ENV_KEY]!));
       expect(dir.mode & 0o077).toBe(0);
     }
   });
@@ -182,7 +182,7 @@ describe("official command endpoint", () => {
         "Content-Type": "application/gzip",
         Cookie: "c=d",
         "X-Bigmodel-Authorization": "Bearer forged",
-        "X-ZCode-App-Version": "0.0.1",
+        "X-Nekode-App-Version": "0.0.1",
         "X-Zcode-Plan": "max",
       },
       method: "PUT",
@@ -244,7 +244,7 @@ describe("official command endpoint", () => {
     await expect(call(env, "/api/v1/sites/usage")).rejects.toThrow();
     expect(await endpoint.envForSession("session-a", WORKSPACE_A)).toEqual({});
     if (process.platform !== "win32") {
-      await expect(stat(dirname(env[ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]!))).rejects.toThrow();
+      await expect(stat(dirname(env[NEKODE_OFFICIAL_ENDPOINT_ENV_KEY]!))).rejects.toThrow();
     }
   });
 });
@@ -261,16 +261,16 @@ describe("withOfficialCommandEnv", () => {
 
   it("adds the session endpoint env to foreground and background runs", async () => {
     const port = fakePort();
-    const wrapped = withOfficialCommandEnv(port, async () => ({ ZCODE_OFFICIAL_ENDPOINT: "/s" }));
+    const wrapped = withOfficialCommandEnv(port, async () => ({ NEKODE_OFFICIAL_ENDPOINT: "/s" }));
 
-    await wrapped.run(request({ set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/forged" } }));
+    await wrapped.run(request({ set: { A: "1", NEKODE_OFFICIAL_ENDPOINT: "/forged" } }));
     await wrapped.start!(request());
     await wrapped.run(request({ base: "empty" }));
 
     expect(port.run.mock.calls[0]![0].env).toEqual({
-      set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/s" },
+      set: { A: "1", NEKODE_OFFICIAL_ENDPOINT: "/s" },
     });
-    expect(port.start.mock.calls[0]![0].env).toEqual({ set: { ZCODE_OFFICIAL_ENDPOINT: "/s" } });
+    expect(port.start.mock.calls[0]![0].env).toEqual({ set: { NEKODE_OFFICIAL_ENDPOINT: "/s" } });
     expect(port.run.mock.calls[1]![0].env).toEqual({ base: "empty" });
     expect(wrapped.getBackgroundTask).toBeDefined();
     expect(wrapped.cancelBackgroundTask).toBeUndefined();
@@ -292,12 +292,12 @@ describe("withOfficialCommandEnv", () => {
         .mockResolvedValue(backgroundOutcome);
       const port = Object.freeze({ ...fakePort(), runBashWithBackgroundLifecycle: runBash });
       const endpointEnv = {
-        ZCODE_OFFICIAL_ENDPOINT: "/session",
-        ZCODE_OFFICIAL_ENDPOINT_TOKEN: "token",
+        NEKODE_OFFICIAL_ENDPOINT: "/session",
+        NEKODE_OFFICIAL_ENDPOINT_TOKEN: "token",
       };
       const resolveEnv = vi.fn(async () => endpointEnv);
       const wrapped = withOfficialCommandEnv(port, resolveEnv);
-      const originalRequest = request({ set: { A: "1", ZCODE_OFFICIAL_ENDPOINT: "/forged" } });
+      const originalRequest = request({ set: { A: "1", NEKODE_OFFICIAL_ENDPOINT: "/forged" } });
       const lifecycle = { mode };
       const options = { signal: new AbortController().signal, onEvent: vi.fn() };
 
@@ -321,7 +321,7 @@ describe("withOfficialCommandEnv", () => {
       });
       expect(forwardedLifecycle).toBe(lifecycle);
       expect(forwardedOptions).toBe(options);
-      expect(originalRequest.env?.set?.ZCODE_OFFICIAL_ENDPOINT).toBe("/forged");
+      expect(originalRequest.env?.set?.NEKODE_OFFICIAL_ENDPOINT).toBe("/forged");
       expect(resolveEnv).toHaveBeenCalledTimes(1);
       expect(port.run).not.toHaveBeenCalled();
       expect(port.start).not.toHaveBeenCalled();
@@ -334,7 +334,7 @@ describe("withOfficialCommandEnv", () => {
       const runBash = vi
         .fn<BashBackgroundLifecycleExecutionPort["runBashWithBackgroundLifecycle"]>()
         .mockResolvedValue(backgroundOutcome);
-      const resolveEnv = vi.fn(async () => ({ ZCODE_OFFICIAL_ENDPOINT: "/session" }));
+      const resolveEnv = vi.fn(async () => ({ NEKODE_OFFICIAL_ENDPOINT: "/session" }));
       const port = { ...fakePort(), runBashWithBackgroundLifecycle: runBash };
       const wrapped = withOfficialCommandEnv(port, resolveEnv);
       const originalRequest = request({ base: "empty" });
@@ -378,7 +378,7 @@ describe("withOfficialCommandEnv", () => {
       .mockResolvedValue(snapshot);
     const port = Object.freeze({ ...fakePort(), waitForBackgroundTask });
     const wrapped = withOfficialCommandEnv(port, async () => ({
-      ZCODE_OFFICIAL_ENDPOINT: "/session",
+      NEKODE_OFFICIAL_ENDPOINT: "/session",
     }));
     const options = { signal: new AbortController().signal };
 

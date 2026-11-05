@@ -36,7 +36,7 @@ interface RootWorkspaceContentProps {
   handleBackFromSettings: () => void;
   handleLogout?: () => void;
   onLogin?: () => void;
-  user: AppProps["user"];
+  user?: AppProps["user"];
   reconnectingRemoteWorkspaceKeys: AppProps["reconnectingRemoteWorkspaceKeys"];
   remoteWorkspaceRecoveryByWorkspaceKey: AppProps["remoteWorkspaceRecoveryByWorkspaceKey"];
   remoteWorkspaceErrorByWorkspaceKey: AppProps["remoteWorkspaceErrorByWorkspaceKey"];

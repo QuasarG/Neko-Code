@@ -5,23 +5,20 @@ import {
   zcodeTopicResourceRelayKeySchema,
   zcodeTopicResourceRelayChunkRequestSchema,
   zcodeTopicResourceRelayMetadataSchema,
-  type ZCodeTopicResourceRelayRequest,
-  type ZCodePromptAttachment,
+  type NekodeTopicResourceRelayRequest,
+  type NekodePromptAttachment,
 } from "@zcode/shared";
 import { PROTOCOL_V4_LIMITS } from "@zcode/shared/zcode-protocol-v4";
 
 export interface TopicResourceRelayDependencies {
-  reply?(
-    request: import("@zcode/shared").ChannelReplyHostRequest,
-  ): Promise<import("@zcode/shared").ChannelReplyResult>;
-  validate(request: ZCodeTopicResourceRelayRequest, signal: AbortSignal): Promise<void>;
+  validate(request: NekodeTopicResourceRelayRequest, signal: AbortSignal): Promise<void>;
   read(
-    request: ZCodeTopicResourceRelayRequest,
+    request: NekodeTopicResourceRelayRequest,
     signal: AbortSignal,
-  ): Promise<ZCodePromptAttachment>;
+  ): Promise<NekodePromptAttachment>;
 }
 interface Transfer {
-  request: ZCodeTopicResourceRelayRequest;
+  request: NekodeTopicResourceRelayRequest;
   controller: AbortController;
   timer: ReturnType<typeof setTimeout>;
   data?: Buffer;

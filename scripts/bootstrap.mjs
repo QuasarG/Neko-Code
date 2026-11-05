@@ -68,15 +68,15 @@ function resolveBootstrapWithRemoteEnv(baseEnv = process.env) {
 
   // 修复原因：默认 dev:desktop 使用生产账号；远程构建若沿用通用 test 默认值，
   // 会把生产凭据发往测试模型地址并返回 401。入口统一选择环境并传给所有构建子进程。
-  const zcodeEnv = baseEnv.ZCODE_ENV?.trim().toLowerCase() || "production";
+  const zcodeEnv = baseEnv.NEKODE_ENV?.trim().toLowerCase() || "production";
   if (zcodeEnv !== "test" && zcodeEnv !== "production") {
-    throw new Error(`Invalid ZCODE_ENV for bootstrap:with-remote: ${zcodeEnv}`);
+    throw new Error(`Invalid NEKODE_ENV for bootstrap:with-remote: ${zcodeEnv}`);
   }
 
   const pathEntries = [resolvePinnedNodeBin(), resolveUserPnpmBin()].filter(Boolean);
 
   return {
-    ZCODE_ENV: zcodeEnv,
+    NEKODE_ENV: zcodeEnv,
     // bootstrap:with-remote 是手动远程资源初始化入口，自动化等非 TTY 环境里
     // pnpm install 可能要求确认清理 node_modules。只在该入口禁用确认，不改变 CI/生产构建命令。
     HUSKY: "0",
@@ -85,7 +85,7 @@ function resolveBootstrapWithRemoteEnv(baseEnv = process.env) {
     // remote assets 和 bootstrap build 同一轮里会触发大量 workspace 构建。
     // 这里把降峰值限制在 bootstrap:with-remote 子进程，不修改 build/build:bootstrap 的全局语义。
     PNPM_CONFIG_WORKSPACE_CONCURRENCY: "1",
-    ZCODE_BOOTSTRAP_WITH_REMOTE: "1",
+    NEKODE_BOOTSTRAP_WITH_REMOTE: "1",
     ...(pathEntries.length > 0
       ? {
           PATH: prependPathEntries(baseEnv.PATH, pathEntries),

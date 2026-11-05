@@ -11,7 +11,7 @@ import { stabilizeProjectTree, applyProjectTaskActivities } from "@/project-side
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { useWorkspaceSessionsIndexItems } from "@/v4/useWorkspaceSessionsIndexItems.js";
 import { getTaskListRowActivity } from "@/v4/taskListRowActivity.js";
 import { getWindowControllerTaskListRegistry } from "@/v4/windowControllerTaskListRegistry.js";
@@ -51,7 +51,7 @@ export function useProjectTree(isDesktop = false) {
   const directoryRevision = registry?.getDirectoryRevision() ?? 0;
   const sourceRevision = registry?.getSourceRevision() ?? 0;
   const tabs = useTabStore((state) => state.tabs);
-  const version = useZCodeSessionStore((state) =>
+  const version = useNekodeSessionStore((state) =>
     Object.values(state.workspaces).reduce((n, workspace) => n + workspace.taskListVersion, 0),
   );
   const [tree, setTree] = useState<ProjectTree>(EMPTY);
@@ -76,7 +76,7 @@ export function useProjectTree(isDesktop = false) {
       finish(error?: unknown): void;
     }>(),
   );
-  const removeTaskState = useZCodeSessionStore((state) => state.removeTaskState);
+  const removeTaskState = useNekodeSessionStore((state) => state.removeTaskState);
   const accepted = useRef<{
     service: typeof service;
     remote: typeof remoteService;

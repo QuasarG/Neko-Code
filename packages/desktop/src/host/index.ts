@@ -20,7 +20,6 @@ import { isOffPeakTerminalStatus } from "@zcode/shared";
 import { createHostNetworkCapture } from "./hostNetworkCapture.js";
 import { randomUUID } from "node:crypto";
 import { createPluginSandboxRegistrationBridge } from "./pluginSandbox/index.js";
-import { createWindowTopicResourceRelay } from "./windowTopicResourceRelay.js";
 import {
   MessagePortProtocol,
   ChannelServer,
@@ -37,7 +36,6 @@ import { createBrowserControlMainBridge } from "./browserControlMainBridge.js";
 import { materializeBrowserRecordingArtifact } from "./browserRecordingArtifactMaterializer.js";
 import {
   ServiceCollection,
-  IBotsService,
   ICredentialService,
   IFileService,
   IClientConfigService,
@@ -57,12 +55,12 @@ import {
   IWindowControllerService,
   IConversationShareService,
   IPromptAttachmentTransferService,
-  IZCodeAgentService,
-  IZCodeTaskService,
-  IZCodeSessionService,
+  INekodeAgentService,
+  INekodeTaskService,
+  INekodeSessionService,
   ICuaPipSessionService,
-  createZCodeAgentConnectionScope,
-  type ZCodeAgentV4ClientMode,
+  createNekodeAgentConnectionScope,
+  type NekodeAgentV4ClientMode,
   collectServiceMemoryDiagnostics,
   createWebRemoteProjectTreeActivityBridge,
 } from "@zcode/services";
@@ -90,7 +88,6 @@ import {
   getAppConfigDir,
   OffPeakModelUnavailableError,
   OffPeakPermanentDispatchError,
-  type BotProjectConnection,
   type HostApiNetworkTransport,
   type OffPeakRequestAuthBuilder,
 } from "@zcode/services/node";
@@ -103,7 +100,7 @@ import {
   HostMessageTypes,
   HostResponseTypes,
   formatLogPrefix,
-  formatZCodeHostProcessName,
+  formatNekodeHostProcessName,
   formatZodError,
   buildRemoteWorkspaceIdentity,
   buildServerRemoteWorkspaceIdentity,
@@ -116,17 +113,17 @@ import {
   REMOTE_BIND_CANCELED_ERROR_CODE,
   REMOTE_WORKSPACE_BIND_SESSION_MISSING_ERROR_CODE,
   formatModelPickerValue,
-  type ZCodePromptAttachment,
-  type ZCodeStreamEvent,
-  type ZCodeTaskMeta,
+  type NekodePromptAttachment,
+  type NekodeStreamEvent,
+  type NekodeTaskMeta,
   type TaskStreamMirrorableEvent,
   type TraceId,
-  type ZCodeTaskMode,
+  type NekodeTaskMode,
   type WindowHostAttachmentScope,
   type SourceServerArtifactPolicy,
-  type ZCodeAutomation,
-  type ZCodeAutomationRun,
-  type ZCodeAutomationRunOutcome,
+  type NekodeAutomation,
+  type NekodeAutomationRun,
+  type NekodeAutomationRunOutcome,
   type ModelSelection,
 } from "@zcode/shared";
 import {
@@ -146,7 +143,6 @@ import {
   createRemoteMediaPreviewProxy,
   type RemoteMediaPreviewProxy,
 } from "./remoteMediaPreviewProxy.js";
-import { watchCronRunBotDelivery } from "./cronBotDelivery.js";
 import { createHostRemoteWorkspaceProxyState } from "./hostRemoteWorkspaceProxyState.js";
 import {
   createServerRemoteWorkspaceServiceCollection,
@@ -169,7 +165,6 @@ import {
   settleManualDispatchFailureBestEffort,
 } from "./cronRunLifecycle.js";
 import { connectServerRemote, type ServerRemoteConnection } from "./serverRemoteConnection.js";
-import { bindBotGroupTaskScope } from "./botGroupTaskScope.js";
 import { createWindowHostAttachmentRegistry } from "./windowHostAttachmentRegistry.js";
 import {
   exposeWindowHostAttachmentServices,
@@ -186,7 +181,6 @@ import { pushDynamicWorkflowUserModeToRemoteHosts } from "./remoteDynamicWorkflo
 import { connectDesktopSourceServer } from "./connectDesktopSourceServer.js";
 import { prepareRemoteWorkspaceIdentity } from "./remoteWorkspacePreparation.js";
 import { createWindowHostControllerRuntime } from "./windowHostControllerService.js";
-import { resolveBotRemoteWorkspace } from "./botRemoteWorkspaceResolver.js";
 import { SourceServerDirectory } from "./sourceServerDirectory.js";
 import { connectSourceServerTarget } from "./connectSourceServerTarget.js";
 import {
@@ -250,7 +244,7 @@ const hostRemoteMediaRequestLimiter = {
   getState: () => ({ active: activeRemoteMediaRequests, limit: 4 }),
 };
 const remoteMediaRangePreviewEnabled =
-  process.env["ZCODE_REMOTE_MEDIA_RANGE_PREVIEW_ENABLED"] !== "0";
+  process.env["NEKODE_REMOTE_MEDIA_RANGE_PREVIEW_ENABLED"] !== "0";
 
 type RemoteAssetDirs = import("./windowRemoteConnectionRegistry.js").WindowRemoteAssetDirs;
 
@@ -259,7 +253,7 @@ const hostNetworkCapture = createHostNetworkCapture(parentPort);
 
 // 进程检索体验优化：host 由 utilityProcess 拉起时外壳仍是 Electron Helper，
 // 这里根据 main 传入的窗口 label 补一层稳定的 zcode-* title，方便系统进程列表过滤。
-process.title = formatZCodeHostProcessName(process.env["ZCODE_PROCESS_LABEL"]);
+process.title = formatNekodeHostProcessName(process.env["NEKODE_PROCESS_LABEL"]);
 
 type HostLogLevel = "info" | "warn" | "error";
 
@@ -522,7 +516,7 @@ function disposeOffPeakRunSubscription(key: string): void {
 
 /** 终态回填 files_changed：复用现有 task diff 汇总（工具写盘型统计，Bash 改动不计入，接受）。 */
 async function resolveOffPeakFilesChanged(params: {
-  zcodeTaskService: IZCodeTaskService;
+  zcodeTaskService: INekodeTaskService;
   taskId: string;
   workspacePath: string;
   workspaceIdentity?: string;
@@ -545,12 +539,12 @@ async function resolveOffPeakFilesChanged(params: {
 
 /** loop 终态 → off_peak_tasks 终态：succeeded→completed、stopped→cancelled（用户手动停止）、其余→failed。 */
 async function finalizeOffPeakRun(params: {
-  zcodeTaskService: IZCodeTaskService;
+  zcodeTaskService: INekodeTaskService;
   offPeakTaskId: string;
   taskId: string;
   workspacePath: string;
   workspaceIdentity?: string;
-  outcome: ZCodeAutomationRunOutcome;
+  outcome: NekodeAutomationRunOutcome;
   error?: string;
 }): Promise<void> {
   const status =
@@ -586,8 +580,8 @@ async function finalizeOffPeakRun(params: {
 }
 
 function trackOffPeakRunOutcome(params: {
-  zcodeTaskService: IZCodeTaskService;
-  zcodeAgentService: IZCodeAgentService;
+  zcodeTaskService: INekodeTaskService;
+  zcodeAgentService: INekodeAgentService;
   service: OffPeakTaskService;
   ticketId: string;
   offPeakTaskId: string;
@@ -637,10 +631,10 @@ async function dispatchOffPeakRun(request: OffPeakRunDispatchRequest): Promise<{
   sessionId?: string;
   lifecycleManaged: true;
 }> {
-  const zcodeTaskService = activeServices?.getOptional(IZCodeTaskService);
-  const zcodeAgentService = activeServices?.getOptional(IZCodeAgentService);
+  const zcodeTaskService = activeServices?.getOptional(INekodeTaskService);
+  const zcodeAgentService = activeServices?.getOptional(INekodeAgentService);
   if (!zcodeTaskService || !zcodeAgentService) {
-    throw new Error("ZCode task service is not initialized.");
+    throw new Error("Nekode task service is not initialized.");
   }
   const runtime = await ensureOffPeakRuntime();
   if (!runtime) {
@@ -767,7 +761,7 @@ async function dispatchOffPeakRun(request: OffPeakRunDispatchRequest): Promise<{
         additionalDirectories: request.additionalDirectories,
         // 空 Session 沿用普通初始化；idle Selection 只在下方执行中注入。
         // 在此写入会让闲时轮结束后的普通消息继续使用无票的隐藏 Provider。
-        mode: request.permissionMode as ZCodeTaskMode,
+        mode: request.permissionMode as NekodeTaskMode,
         // 闲时任务是无界面的 createTask + sendPrompt 连续派发；空 session 必须在首条
         // V4 admission 内先持久化，否则 session_input 外键会先于 session 主记录写入。
         deferPersistenceUntilFirstPrompt: true,
@@ -851,7 +845,7 @@ interface CronRunDispatchRequest {
   prompt: string;
   targetTaskId?: string;
   modelSelection?: ModelSelection;
-  mode?: ZCodeTaskMode;
+  mode?: NekodeTaskMode;
   workspacePath: string;
   workspaceIdentity?: string;
   projectId?: string | null;
@@ -903,7 +897,7 @@ function markCronRunOutcome(params: {
   workspaceKey: string;
   scheduledAt: number | null;
   trigger: "schedule" | "manual";
-  outcome: ZCodeAutomationRunOutcome;
+  outcome: NekodeAutomationRunOutcome;
   error?: string;
 }): void {
   void recordCronRunOutcomeBestEffort({
@@ -921,7 +915,7 @@ function disposeCronRunSubscription(key: string): void {
 }
 
 async function applyCronRunConfigToExistingTask(params: {
-  zcodeTaskService: IZCodeTaskService;
+  zcodeTaskService: INekodeTaskService;
   taskId: string;
   traceId: TraceId;
   modelSelection?: ModelSelection;
@@ -935,7 +929,7 @@ async function applyCronRunConfigToExistingTask(params: {
       traceId: params.traceId,
       modelSelection: params.modelSelection,
       thoughtLevel: params.modelSelection.options?.reasoningLevel,
-      mode: params.mode?.trim() as ZCodeTaskMode | undefined,
+      mode: params.mode?.trim() as NekodeTaskMode | undefined,
     });
     thoughtAppliedWithModel = true;
     modeAppliedWithModel = true;
@@ -959,7 +953,7 @@ async function applyCronRunConfigToExistingTask(params: {
 }
 
 function trackCronRunOutcome(params: {
-  zcodeTaskService: IZCodeTaskService;
+  zcodeTaskService: INekodeTaskService;
   taskId: string;
   traceId: TraceId;
   workspacePath: string;
@@ -1018,9 +1012,9 @@ async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
   sessionId: string;
 }> {
   const targetServices = resolveAutomationTargetServices(request);
-  const zcodeTaskService = targetServices.getOptional(IZCodeTaskService);
+  const zcodeTaskService = targetServices.getOptional(INekodeTaskService);
   if (!zcodeTaskService) {
-    throw new Error("ZCode task service is not initialized.");
+    throw new Error("Nekode task service is not initialized.");
   }
   const modelSelectionService = targetServices.getOptional(IModelSelectionService);
   if (!modelSelectionService) {
@@ -1086,27 +1080,6 @@ async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
         mode: request.mode,
       });
     }
-    const botsService = targetServices.getOptional(IBotsService);
-    if (botsService) {
-      try {
-        await watchCronRunBotDelivery({
-          automationId: request.automationId,
-          runId: promptTraceId,
-          workspaceKey,
-          workspacePath: request.workspacePath,
-          ...(request.workspaceIdentity ? { workspaceIdentity: request.workspaceIdentity } : {}),
-          taskId: task.taskId,
-          repo: cronAutomationRepo,
-          botsService,
-        });
-      } catch (error) {
-        // Bot 回推是 best-effort 辅助通道；配置/凭据/订阅失败不能阻断 automation 派发与结算。
-        logger.warn(
-          `automation Bot delivery subscription failed automation=${request.automationId} provider=unknown`,
-          error,
-        );
-      }
-    }
     trackedKey = cronRunSubscriptionKey(task.taskId, promptTraceId);
     trackCronRunOutcome({
       zcodeTaskService,
@@ -1153,8 +1126,8 @@ async function dispatchCronRun(request: CronRunDispatchRequest): Promise<{
 }
 
 async function dispatchManualAutomationRun(params: {
-  automation: ZCodeAutomation;
-  run: ZCodeAutomationRun;
+  automation: NekodeAutomation;
+  run: NekodeAutomationRun;
 }): Promise<void> {
   logger.info(
     `direct manual automation dispatch started automation=${params.automation.automationId} runId=${params.run.runId}`,
@@ -1313,7 +1286,7 @@ const workspaceTaskTracker = createHostWorkspaceTaskTracker((event) => {
   reportHostRunningTaskCount();
 });
 
-function isZCodeTaskMeta(value: unknown): value is ZCodeTaskMeta {
+function isNekodeTaskMeta(value: unknown): value is NekodeTaskMeta {
   return (
     typeof value === "object" &&
     value !== null &&
@@ -1327,12 +1300,12 @@ function isZCodeTaskMeta(value: unknown): value is ZCodeTaskMeta {
 }
 
 function isRemoteMirrorableStreamEvent(
-  event: ZCodeStreamEvent,
+  event: NekodeStreamEvent,
 ): event is TaskStreamMirrorableEvent {
   return event.type !== "task_stream_mirror_batch" && event.type !== "task_snapshot_updated";
 }
 
-function createReportingRemoteZCodeTaskService<T extends object>(
+function createReportingRemoteNekodeTaskService<T extends object>(
   service: T,
   options?: {
     reportRunningPromptCount?: boolean;
@@ -1341,8 +1314,8 @@ function createReportingRemoteZCodeTaskService<T extends object>(
       taskId: string;
       traceId: TraceId;
       content: string;
-      attachments?: ZCodePromptAttachment[];
-    }) => Promise<{ content: string; attachments?: ZCodePromptAttachment[] }>;
+      attachments?: NekodePromptAttachment[];
+    }) => Promise<{ content: string; attachments?: NekodePromptAttachment[] }>;
   },
 ): T {
   const workspaceProxyState = createHostRemoteWorkspaceProxyState();
@@ -1354,7 +1327,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     });
   }
 
-  function subscribeSessionMessageRequests(target: T, meta: ZCodeTaskMeta): void {
+  function subscribeSessionMessageRequests(target: T, meta: NekodeTaskMeta): void {
     const onDynamicWorkspaceEvent = Reflect.get(target, "onDynamicWorkspaceEvent");
     if (typeof onDynamicWorkspaceEvent !== "function") {
       return;
@@ -1380,7 +1353,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
   }
 
   function rememberTaskMeta(result: unknown): void {
-    if (isZCodeTaskMeta(result)) {
+    if (isNekodeTaskMeta(result)) {
       workspaceProxyState.rememberTaskMeta(result);
       subscribeSessionMessageRequests(service, result);
       parentPort?.postMessage({
@@ -1420,12 +1393,12 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     taskId: string;
     traceId: TraceId;
     content: string;
-    attachments?: ZCodePromptAttachment[];
+    attachments?: NekodePromptAttachment[];
   }): Promise<{
     taskId: string;
     traceId: TraceId;
     content: string;
-    attachments?: ZCodePromptAttachment[];
+    attachments?: NekodePromptAttachment[];
   }> {
     if (!options?.materializePromptAttachments) {
       return params;
@@ -1443,7 +1416,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
       taskId: string;
       traceId: TraceId;
       content: string;
-      attachments?: ZCodePromptAttachment[];
+      attachments?: NekodePromptAttachment[];
     },
   ): Promise<unknown> {
     const taskRealtimePort = options?.taskRealtimePort;
@@ -1463,7 +1436,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     const leaseResult = await taskRealtimePort
       .acquireTaskRunLease(mirrorTarget)
       .catch((error: unknown) => {
-        logger.warn("Bot remote runtime realtime lease failed:", error);
+        logger.warn("remote runtime realtime lease failed:", error);
         return null;
       });
     if (!leaseResult?.acquired) {
@@ -1480,10 +1453,10 @@ function createReportingRemoteZCodeTaskService<T extends object>(
 
     // 写路径（send/stop/交互回执）已收敛 v4 命令面；本镜像属**读路径**——
     // taskRealtimePort → 手机 relay → 手机端
-    // zcodeSessionStore 的整条消费链词表都是 ZCodeStreamEvent。两个方案的评估结论：
+    // zcodeSessionStore 的整条消费链词表都是 NekodeStreamEvent。两个方案的评估结论：
     // a) relay 直接转发 v4 帧、手机端消费 v4 store（正解）：需要重做 relay stream-op
     //    协议 + 手机端 store；
-    // b) 帧→ZCodeStreamEvent 薄映射：等价复刻 adapter mapSessionEvent，
+    // b) 帧→NekodeStreamEvent 薄映射：等价复刻 adapter mapSessionEvent，
     //    否决。
     // 结论：本镜像保持 legacy 源不动。
     const dynamicStreamEvent = Reflect.get(target, "onDynamicStreamEvent");
@@ -1492,7 +1465,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
         ? dynamicStreamEvent.call(
             target,
             params.taskId,
-          )((event: ZCodeStreamEvent) => {
+          )((event: NekodeStreamEvent) => {
             if (isRemoteMirrorableStreamEvent(event)) {
               taskRealtimePort.publishStreamOp(mirrorTarget, {
                 kind: "stream_event",
@@ -1512,12 +1485,12 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     }
   }
 
-  function finishWorkspaceTask(taskId: string, meta: ZCodeTaskMeta): void {
+  function finishWorkspaceTask(taskId: string, meta: NekodeTaskMeta): void {
     workspaceProxyState.disposeTaskReadySubscription(taskId);
     workspaceTaskTracker.finish(taskId, meta);
   }
 
-  function beginWorkspaceTask(target: T, taskId: string, meta: ZCodeTaskMeta): boolean {
+  function beginWorkspaceTask(target: T, taskId: string, meta: NekodeTaskMeta): boolean {
     const started = workspaceTaskTracker.begin(taskId, meta);
     if (!started) {
       return false;
@@ -1525,12 +1498,12 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     const onDynamicTaskReady = Reflect.get(target, "onDynamicTaskReady");
     if (typeof onDynamicTaskReady !== "function") {
       workspaceTaskTracker.finish(taskId, meta);
-      throw new Error("remote ZCode task service does not expose onDynamicTaskReady");
+      throw new Error("remote Nekode task service does not expose onDynamicTaskReady");
     }
     const subscribe = onDynamicTaskReady.call(target, taskId);
     if (typeof subscribe !== "function") {
       workspaceTaskTracker.finish(taskId, meta);
-      throw new Error("remote ZCode task ready event is not subscribable");
+      throw new Error("remote Nekode task ready event is not subscribable");
     }
     workspaceProxyState.trackTaskReady(
       taskId,
@@ -1541,7 +1514,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
     return true;
   }
 
-  // remote workspace 的 ZCode Agent manager 跑在远端 server，desktop main 不能直接看到
+  // remote workspace 的 Nekode Agent manager 跑在远端 server，desktop main 不能直接看到
   // `handles` 状态。sendPrompt Promise 只是远端 ACK，必须等待 task ready 才能允许回收 workspace。
   return new Proxy(service, {
     get(target, property, receiver) {
@@ -1599,7 +1572,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
       }
 
       return async (...args: unknown[]) => {
-        let trackedTask: { taskId: string; meta: ZCodeTaskMeta; started: boolean } | undefined;
+        let trackedTask: { taskId: string; meta: NekodeTaskMeta; started: boolean } | undefined;
         let tracksOnlyRpcLifetime = false;
         try {
           const params = args[0];
@@ -1614,10 +1587,10 @@ function createReportingRemoteZCodeTaskService<T extends object>(
               taskId: string;
               traceId: TraceId;
               content: string;
-              attachments?: ZCodePromptAttachment[];
+              attachments?: NekodePromptAttachment[];
             };
             const taskMeta = workspaceProxyState.getTaskMeta(promptParams.taskId) as
-              | ZCodeTaskMeta
+              | NekodeTaskMeta
               | undefined;
             if (taskMeta) {
               trackedTask = {
@@ -1661,7 +1634,7 @@ function createReportingRemoteZCodeTaskService<T extends object>(
   });
 }
 
-function warmUpZCodeAgent(
+function warmUpNekodeAgent(
   services: ServiceCollection,
   context: { workspacePath?: string; workspaceIdentity?: string },
   reason: string,
@@ -1671,7 +1644,7 @@ function warmUpZCodeAgent(
   }
   const workspacePath = context.workspacePath;
   const workspaceIdentity = context.workspaceIdentity;
-  const zcodeSessionService = services.getOptional(IZCodeSessionService);
+  const zcodeSessionService = services.getOptional(INekodeSessionService);
   if (!zcodeSessionService) {
     return;
   }
@@ -1684,12 +1657,12 @@ function warmUpZCodeAgent(
       if (!result.available) {
         if (result.reasonCode === "provider_not_ready") {
           logger.info(
-            `ZCode agent warmup waiting for provider/model (${reason}) workspace=${workspacePath}`,
+            `Nekode agent warmup waiting for provider/model (${reason}) workspace=${workspacePath}`,
           );
           return;
         }
         logger.warn(
-          `ZCode agent warmup unavailable (${reason}) workspace=${workspacePath} reason=${result.reason ?? "unknown"}`,
+          `Nekode agent warmup unavailable (${reason}) workspace=${workspacePath} reason=${result.reason ?? "unknown"}`,
         );
         return;
       }
@@ -1697,11 +1670,11 @@ function warmUpZCodeAgent(
       // presentation 只剩 mode 与 slash commands。预热不能为读取 presentation 额外创建
       // Agent App，否则其 MCP close 会占住协议通道并阻塞真正的 Session 初始化。
       logger.info(
-        `ZCode agent warmup ready (${reason}) workspace=${workspacePath} transport=${result.transportKind ?? "unknown"}`,
+        `Nekode agent warmup ready (${reason}) workspace=${workspacePath} transport=${result.transportKind ?? "unknown"}`,
       );
     })
     .catch((error) => {
-      logger.warn(`ZCode agent warmup failed (${reason}) workspace=${workspacePath}:`, error);
+      logger.warn(`Nekode agent warmup failed (${reason}) workspace=${workspacePath}:`, error);
     });
 }
 
@@ -1758,7 +1731,7 @@ let databaseStartup: ReturnType<typeof createHostDatabaseStartup> | undefined;
 const pendingStartupAttachments = new Map<string, () => void>();
 let activeServices: ServiceCollection | null = null;
 /**
- * Main 推送的实时界面语言，供 ZCode endpoint 请求的 X-Client-Language。
+ * Main 推送的实时界面语言，供 Nekode endpoint 请求的 X-Client-Language。
  * 过去 Host 用进程 Intl locale（Dock 启动无 LANG 会回退 en-US）；setting.json 写入可能滞后或失败，
  * 也不能代表当前界面，所以只认 Main 的 InitLocal 初值与 application-locale-changed 变更。
  */
@@ -1783,47 +1756,17 @@ function notifyProjectChange(): void {
     .catch((error) => logger.warn("failed to notify project change", error));
 }
 
-/** Bot 只取得当前 Source 代际，不拥有连接，也不创建 logical tab。 */
-function resolveBotProjectConnection(hostId: string): BotProjectConnection | undefined {
+/** 项目导航只取得当前 Source 代际的 owner，不拥有连接，也不创建 logical tab。 */
+function resolveOnlineSourceOwner(hostId: string): object | undefined {
   const serverId = parseRemoteWorkspaceIdentity(
     buildRemoteHostWorkspaceIdentity(hostId, "/"),
   )?.sourceServerId;
   if (!serverId) return undefined;
   const registered = windowRemoteConnectionRegistry.getOnlineSource(serverId);
   if (registered) {
-    const services = registered.services;
-    return {
-      owner: registered.capabilities?.physicalOwner?.() ?? services,
-      taskService: createControllerRoutedTaskService(services.get(IZCodeTaskService), {
-        kind: "local",
-      }),
-      modelSelectionService: services.get(IModelSelectionService),
-      agentService: services.get(IZCodeAgentService),
-      bindWorkspace: async (target) => {
-        await registered.capabilities?.bindWorkspaceIdentity?.({
-          workspacePath: target.workspacePath,
-          stableWorkspaceIdentity: target.workspaceIdentity,
-          legacyRouteHint: target.workspaceIdentity,
-        });
-      },
-    };
+    return registered.capabilities?.physicalOwner?.() ?? registered.services;
   }
-  const connection = sourceServerConnectionManager?.getOnlineConnection(serverId);
-  if (!connection) return undefined;
-  return {
-    owner: connection.services,
-    taskService: createControllerRoutedTaskService(connection.services.zcodeTaskService, {
-      kind: "local",
-    }),
-    modelSelectionService: connection.services.modelSelectionService,
-    agentService: connection.services.zcodeAgentService,
-    bindWorkspace: async (target) => {
-      await connection.services.sourceServerWorkspaceService.resolveWorkspace({
-        workspacePath: target.workspacePath,
-        legacyRouteHint: target.workspaceIdentity,
-      });
-    },
-  };
+  return sourceServerConnectionManager?.getOnlineConnection(serverId)?.services;
 }
 
 function requireActiveHostApiNetworkTransport(): HostApiNetworkTransport {
@@ -1854,7 +1797,6 @@ async function ensureSourceServerConnectionManager(): Promise<SourceServerConnec
       connectServer: (options) =>
         connectDesktopSourceServer(options, {
           resolveServices: (scope) => windowRemoteConnectionRegistry.resolveScopedServices(scope),
-          getBots: () => activeServices?.getOptional(IBotsService),
           readDynamicWorkflowMode: async () =>
             (await activeServices?.get(ISettingService).get())?.dynamicWorkflowMode,
           onModeSyncError: (error) =>
@@ -1872,7 +1814,7 @@ async function ensureSourceServerConnectionManager(): Promise<SourceServerConnec
 let activeLocalResourceTelemetry: IDisposable | null = null;
 // 资源管理器采样只在 main 请求时执行一次，Host 不维护任何周期定时器。
 const hostResourceUsageResponder = createHostResourceUsageResponder({
-  getAgentService: () => activeServices?.getOptional(IZCodeAgentService),
+  getAgentService: () => activeServices?.getOptional(INekodeAgentService),
   postMessage: (message) => parentPort?.postMessage(message),
 });
 let activeSessionRealtimePort: ReturnType<typeof createTaskRealtimeBridgeForHostInit> = null;
@@ -1898,9 +1840,7 @@ async function createWindowRemoteConnectionHandle(params: {
   }
   const closeListeners = new Set<(event: WindowRemoteConnectionCloseEvent) => void>();
   const reconnectListeners = new Set<() => void>();
-  let topicResourceRelay: ReturnType<typeof createWindowTopicResourceRelay> | undefined;
   const notifyClose = (event: WindowRemoteConnectionCloseEvent) => {
-    topicResourceRelay?.dispose();
     for (const listener of closeListeners) {
       listener(event);
     }
@@ -1952,27 +1892,16 @@ async function createWindowRemoteConnectionHandle(params: {
       intent: params.membershipIntent ?? "add",
     });
     params.signal.throwIfAborted();
-    topicResourceRelay = createWindowTopicResourceRelay({
-      getPeerAgentService: () => connection?.services.zcodeAgentService,
-      resolveServices: (scope) => windowRemoteConnectionRegistry.resolveScopedServices(scope),
-      getBots: () => activeServices?.getOptional(IBotsService),
+    connection = await connectServerRemote(admission.target, {
+      signal: params.signal,
+      fetchImpl: requireActiveHostApiNetworkTransport().fetch,
+      commitMembership: admission.commit,
+      onClose: ({ code, reason }) => {
+        sourceClosed = true;
+        detachOwnSourceSettings();
+        notifyClose({ exitCode: code, signal: null, ...(reason ? { error: reason } : {}) });
+      },
     });
-    try {
-      connection = await connectServerRemote(admission.target, {
-        signal: params.signal,
-        fetchImpl: requireActiveHostApiNetworkTransport().fetch,
-        commitMembership: admission.commit,
-        topicResourceChannel: topicResourceRelay.channel,
-        onClose: ({ code, reason }) => {
-          sourceClosed = true;
-          detachOwnSourceSettings();
-          notifyClose({ exitCode: code, signal: null, ...(reason ? { error: reason } : {}) });
-        },
-      });
-    } catch (error) {
-      topicResourceRelay.dispose();
-      throw error;
-    }
   } else {
     if (!sourceServerDirectory) {
       throw new Error("Source Server manager 尚未初始化");
@@ -2087,7 +2016,6 @@ async function createWindowRemoteConnectionHandle(params: {
   }
 
   if (params.signal.aborted) {
-    topicResourceRelay?.dispose();
     await disposeHostRemoteConnection(connection);
     throw new Error("远程连接已取消");
   }
@@ -2204,7 +2132,6 @@ async function createWindowRemoteConnectionHandle(params: {
       }
       disposed = true;
       detachOwnSourceSettings();
-      topicResourceRelay?.dispose();
       closeListeners.clear();
       reconnectListeners.clear();
       managerStateSubscription?.dispose();
@@ -2253,7 +2180,7 @@ const windowRemoteConnectionRegistry = createWindowRemoteConnectionRegistry<
     }
   },
   releaseWorkspace: async (services, context) => {
-    await services.get(IZCodeTaskService).releaseWorkspacePreparation({
+    await services.get(INekodeTaskService).releaseWorkspacePreparation({
       workspacePath: context.workspacePath,
       ...(context.workspaceIdentity ? { workspaceIdentity: context.workspaceIdentity } : {}),
       provider: "glm",
@@ -2338,8 +2265,8 @@ const windowRemoteConnectionRegistry = createWindowRemoteConnectionRegistry<
       previousScope,
       {
         scope: currentScope,
-        taskService: currentServices.get(IZCodeTaskService),
-        agentService: currentServices.getOptional(IZCodeAgentService),
+        taskService: currentServices.get(INekodeTaskService),
+        agentService: currentServices.getOptional(INekodeAgentService),
         sourceAvailability: "online",
       },
       {
@@ -2389,7 +2316,7 @@ const windowHostControllerRuntime = createWindowHostControllerRuntime({
   createId: randomUUID,
   readHostTaskList: (query) => {
     if (!activeServices) throw new Error("Window Host services unavailable");
-    return activeServices.get(IZCodeTaskService).listTaskList(query);
+    return activeServices.get(INekodeTaskService).listTaskList(query);
   },
   onSourceError: (scope, operation, error) => {
     logger.warn(
@@ -2422,8 +2349,8 @@ const windowHostControllerRuntime = createWindowHostControllerRuntime({
       const services = windowRemoteConnectionRegistry.resolveScopedServices(controllerScope);
       return {
         scope: controllerScope,
-        taskService: services.get(IZCodeTaskService),
-        agentService: services.getOptional(IZCodeAgentService),
+        taskService: services.get(INekodeTaskService),
+        agentService: services.getOptional(INekodeAgentService),
         sourceAvailability: "online" as const,
       };
     }
@@ -2452,15 +2379,15 @@ const windowHostControllerRuntime = createWindowHostControllerRuntime({
             workspaceIdentity: scope.workspaceIdentity,
           },
           taskService:
-            connection?.services.zcodeTaskService ?? registered!.services.get(IZCodeTaskService),
+            connection?.services.zcodeTaskService ?? registered!.services.get(INekodeTaskService),
           agentService:
             connection?.services.zcodeAgentService ??
-            registered!.services.getOptional(IZCodeAgentService),
+            registered!.services.getOptional(INekodeAgentService),
           sourceAvailability: "online" as const,
         };
       return null;
     }
-    const taskService = activeServices?.getOptional(IZCodeTaskService);
+    const taskService = activeServices?.getOptional(INekodeTaskService);
     if (!taskService) {
       return null;
     }
@@ -2471,7 +2398,7 @@ const windowHostControllerRuntime = createWindowHostControllerRuntime({
         ...(scope.workspaceIdentity ? { workspaceIdentity: scope.workspaceIdentity } : {}),
       },
       taskService,
-      agentService: activeServices?.getOptional(IZCodeAgentService),
+      agentService: activeServices?.getOptional(INekodeAgentService),
       sourceAvailability: "online" as const,
     };
   },
@@ -2510,9 +2437,9 @@ type ExposedServicePortHandle = {
 };
 
 function createControllerRoutedTaskService(
-  base: IZCodeTaskService,
+  base: INekodeTaskService,
   attachmentScope: WindowHostAttachmentScope,
-): IZCodeTaskService {
+): INekodeTaskService {
   const route = async (
     params: {
       taskId: string;
@@ -2539,7 +2466,7 @@ function createControllerRoutedTaskService(
   return new Proxy(base, {
     get(target, property, receiver) {
       if (property === "setTaskPinned") {
-        return async (params: Parameters<IZCodeTaskService["setTaskPinned"]>[0]) => {
+        return async (params: Parameters<INekodeTaskService["setTaskPinned"]>[0]) => {
           const meta = await route(params, {
             kind: "pin",
             pinned: params.pinned,
@@ -2551,8 +2478,8 @@ function createControllerRoutedTaskService(
       if (property === "archiveTask" || property === "unarchiveTask") {
         return async (
           params:
-            | Parameters<IZCodeTaskService["archiveTask"]>[0]
-            | Parameters<IZCodeTaskService["unarchiveTask"]>[0],
+            | Parameters<INekodeTaskService["archiveTask"]>[0]
+            | Parameters<INekodeTaskService["unarchiveTask"]>[0],
         ) => {
           const meta = await route(params, {
             kind: "archive",
@@ -2563,12 +2490,12 @@ function createControllerRoutedTaskService(
         };
       }
       if (property === "deleteTask") {
-        return async (params: Parameters<IZCodeTaskService["deleteTask"]>[0]) => {
+        return async (params: Parameters<INekodeTaskService["deleteTask"]>[0]) => {
           await route(params, { kind: "delete" });
         };
       }
       if (property === "deleteArchivedTasks") {
-        return async (params: Parameters<IZCodeTaskService["deleteArchivedTasks"]>[0]) => {
+        return async (params: Parameters<INekodeTaskService["deleteArchivedTasks"]>[0]) => {
           if (params.taskIds.length === 0) {
             return { deletedTaskIds: [], skippedTaskIds: [], failedTaskIds: [] };
           }
@@ -2585,7 +2512,7 @@ function createControllerRoutedTaskService(
         };
       }
       if (property === "deleteArchivedTask") {
-        return async (params: Parameters<IZCodeTaskService["deleteArchivedTask"]>[0]) =>
+        return async (params: Parameters<INekodeTaskService["deleteArchivedTask"]>[0]) =>
           windowHostControllerRuntime.service.deleteArchivedTask({
             address: await windowHostControllerRuntime.resolveTaskAddress({
               ...params,
@@ -2595,7 +2522,7 @@ function createControllerRoutedTaskService(
           });
       }
       if (property === "setTaskUnread") {
-        return async (params: Parameters<IZCodeTaskService["setTaskUnread"]>[0]) => {
+        return async (params: Parameters<INekodeTaskService["setTaskUnread"]>[0]) => {
           const meta = await route(
             params,
             params.unread
@@ -2612,18 +2539,6 @@ function createControllerRoutedTaskService(
         };
       }
       const value = Reflect.get(target, property, receiver) as unknown;
-      if (
-        typeof value === "function" &&
-        [
-          "getBotGroupTaskBlockReason",
-          "cancelBotGroupInput",
-          "submitBotGroupInput",
-          "readBotTopicSummaries",
-        ].includes(String(property))
-      ) {
-        return (params: Record<string, unknown>) =>
-          value.call(target, bindBotGroupTaskScope(params, attachmentScope));
-      }
       return typeof value === "function" ? value.bind(target) : value;
     },
   });
@@ -2637,7 +2552,7 @@ function exposeServicesOnMessagePort(
   port: Electron.MessagePortMain,
   services: ServiceCollection,
   deferInit: boolean,
-  clientMode: ZCodeAgentV4ClientMode = "desktop-continuous",
+  clientMode: NekodeAgentV4ClientMode = "desktop-continuous",
   attachmentScope: WindowHostAttachmentScope = { kind: "local" },
   capabilities?: HostRemoteConnectionCapabilities,
   terminalOwnerId?: string,
@@ -2670,10 +2585,10 @@ function exposeServicesOnMessagePort(
   const rawServer = new ChannelServer(protocol, "host", 1000, deferInit);
   const loggedServer = new LoggingChannelServer(rawServer, logRpc);
   const server = new NetworkTelemetryChannelServer(loggedServer);
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(INekodeAgentService);
   const connectionContext = { connectionId: `host-rpc-${randomUUID()}`, clientMode };
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(agentService, connectionContext)
+    ? createNekodeAgentConnectionScope(agentService, connectionContext)
     : undefined;
   services.register(IWindowControllerService, windowHostControllerRuntime.service);
   // 未读自动写入只归窗口 base renderer；手机和 remote facade 不能重复消费同一完成信号。
@@ -2713,15 +2628,15 @@ function exposeServicesOnMessagePort(
     // dispose 只属于 Host attachment 生命周期，不暴露为 Renderer RPC。
     overrides.set(IPromptAttachmentTransferService.channelName, promptAttachmentService);
   }
-  const taskService = services.getOptional(IZCodeTaskService);
+  const taskService = services.getOptional(INekodeTaskService);
   if (taskService) {
     overrides.set(
-      IZCodeTaskService.channelName,
+      INekodeTaskService.channelName,
       createControllerRoutedTaskService(taskService, attachmentScope),
     );
   }
   if (connectionScope) {
-    overrides.set(IZCodeAgentService.channelName, connectionScope.service);
+    overrides.set(INekodeAgentService.channelName, connectionScope.service);
   }
   const conversationShareService = services.getOptional(IConversationShareService);
   if (conversationShareService) {
@@ -3109,7 +3024,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
       const navigation = createProjectWorkspaceNavigation({
         projectService: services.get(IProjectService),
         remoteProjectService: services.get(IRemoteProjectService),
-        readConnectionOwner: (hostId) => resolveBotProjectConnection(hostId)?.owner,
+        readConnectionOwner: (hostId) => resolveOnlineSourceOwner(hostId),
         openRemoteWorkspace: async ({ host, directories, owner, assertCurrent }) => {
           assertHost();
           const serverId = parseRemoteWorkspaceIdentity(
@@ -3244,7 +3159,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
       try {
         const dispatchResult = await dispatchCronRun({
           ...msg,
-          mode: msg.mode as ZCodeTaskMode | undefined,
+          mode: msg.mode as NekodeTaskMode | undefined,
         });
         parentPort.postMessage({
           type: HostResponseTypes.CronRunResult,
@@ -3322,12 +3237,12 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
   }
 
   if (msg.type === HostMessageTypes.SessionMessageDeliver) {
-    const zcodeTaskService = activeServices?.getOptional(IZCodeTaskService);
+    const zcodeTaskService = activeServices?.getOptional(INekodeTaskService);
     if (!zcodeTaskService) {
       parentPort.postMessage({
         type: HostResponseTypes.SessionMessageDeliverResult,
         result: {
-          error: "ZCode task service is not initialized.",
+          error: "Nekode task service is not initialized.",
           messageId: msg.request.messageId,
           requestId: msg.request.requestId,
           sessionId: msg.request.fromSessionId,
@@ -3361,9 +3276,11 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
   }
 
   if (msg.type === HostMessageTypes.SessionMessageDeliveryResult) {
-    const zcodeTaskService = activeServices?.getOptional(IZCodeTaskService);
+    const zcodeTaskService = activeServices?.getOptional(INekodeTaskService);
     if (!zcodeTaskService) {
-      logger.warn("session message delivery result received before ZCode task service initialized");
+      logger.warn(
+        "session message delivery result received before Nekode task service initialized",
+      );
       return;
     }
     void zcodeTaskService.sendSessionMessageDeliveryResult(msg.result).catch((error) => {
@@ -3480,7 +3397,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
               const services = windowRemoteConnectionRegistry.resolveScopedServices(nextScope);
               await windowHostControllerRuntime.replaceDisconnectedSource(previousScope, {
                 scope: nextScope,
-                taskService: services.get(IZCodeTaskService),
+                taskService: services.get(INekodeTaskService),
                 sourceAvailability: "online",
               });
             } catch (error) {
@@ -3890,14 +3807,6 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
                   },
                 });
               },
-              resolveBotProjectConnection,
-              resolveBotRemoteWorkspace: (workspace) =>
-                sourceServerDirectory
-                  ? resolveBotRemoteWorkspace(workspace, "lookup", {
-                      directory: sourceServerDirectory,
-                      listSessions: () => windowRemoteConnectionRegistry.listSessions(),
-                    })
-                  : Promise.resolve(null),
               setWorkspaceProjection,
               remoteProjectConnection: {
                 connectHost: async (host) => {
@@ -4072,7 +3981,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
                     .listReadyConnections()
                     .map(({ target, services: remoteServices }) => ({
                       target,
-                      zcodeAgentService: remoteServices.get(IZCodeAgentService),
+                      zcodeAgentService: remoteServices.get(INekodeAgentService),
                     })),
                   mode,
                   (error) => logger.warn("remote dynamic workflow user mode forward failed", error),
@@ -4122,15 +4031,15 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
             return initializedServices;
           },
         });
-        const zcodeTaskService = services.getOptional(IZCodeTaskService);
+        const zcodeTaskService = services.getOptional(INekodeTaskService);
         if (zcodeTaskService) {
-          const reportingZCodeTaskService = createReportingRemoteZCodeTaskService(
+          const reportingNekodeTaskService = createReportingRemoteNekodeTaskService(
             zcodeTaskService,
             {
               reportRunningPromptCount: false,
             },
           );
-          services.register(IZCodeTaskService, reportingZCodeTaskService);
+          services.register(INekodeTaskService, reportingNekodeTaskService);
         }
         sourceServerDirectory = new SourceServerDirectory({
           settingService: services.get(ISettingService),
@@ -4227,7 +4136,7 @@ parentPort.on("message", async (e: Electron.MessageEvent) => {
         // Main 已把启动预热限制为 active workspace 1 个；Host 必须显式消费这份固定名单，
         // 不能让后续 task-list observer 再隐式扩大，也不能因失败扫描补位。
         agentWarmupTargets.forEach((target, index) => {
-          warmUpZCodeAgent(
+          warmUpNekodeAgent(
             services,
             target,
             `local host init (${index + 1}/${agentWarmupTargets.length})`,

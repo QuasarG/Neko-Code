@@ -1,5 +1,5 @@
 /*
- * ZCode 官方 Server MCP 的凭证解析与身份头构造。
+ * Nekode 官方 Server MCP 的凭证解析与身份头构造。
  *
  * 本文件与 Off-Peak 的 offPeakRuntimeModel.ts **逻辑等价但完全独立**：
  * 不复用其函数、不修改其行为。理由是两者的套餐门槛、Team 支持范围与凭证通道预期会独立演进，
@@ -21,15 +21,15 @@ import {
   zcodeProviderAccountAccessSchema,
   type OfficialAuthConsumerKind,
   type OfficialMcpAuthFailureReason,
-  type ZCodeAccountAccess,
-  type ZCodeProviderAccountAccess,
+  type NekodeAccountAccess,
+  type NekodeProviderAccountAccess,
 } from "@zcode/shared";
 import type { ModelSelectionView } from "@zcode/provider";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 
 const log = createServiceLogger("official-mcp");
 
-const ZCODE_JWT_TOKEN_KEY = "zcodejwttoken";
+const NEKODE_JWT_TOKEN_KEY = "zcodejwttoken";
 const ACTIVE_OAUTH_PROVIDER_KEY = "oauth:active_provider";
 
 /**
@@ -95,7 +95,7 @@ let lastCredentialResolvedLogKey: string | undefined;
 export interface OfficialMcpCredentialResolveOptions {
   /**
    * 套餐可选（插件命令进程，技术方案 5.8）：选中连接没有有效套餐时不返回 plan_required，
-   * 只给 ZCode 登录身份，由服务端按免费档处理。登录态不完整（缺 MaaS JWT、跨 family）
+   * 只给 Nekode 登录身份，由服务端按免费档处理。登录态不完整（缺 MaaS JWT、跨 family）
    * 仍按 unavailable 返回，绝不把付费用户降成免费。
    */
   planOptional?: boolean;
@@ -103,7 +103,7 @@ export interface OfficialMcpCredentialResolveOptions {
 
 export interface OfficialMcpCredentialResolverDeps {
   accountRequestAuthService: {
-    resolveAccessCurrent(access: ZCodeProviderAccountAccess): Promise<ZCodeAccountAccess | null>;
+    resolveAccessCurrent(access: NekodeProviderAccountAccess): Promise<NekodeAccountAccess | null>;
   };
   credentialService: { load(key: string): Promise<string | null | undefined> };
   modelSelectionService: {
@@ -145,7 +145,7 @@ type SelectedPlan = {
 
 type SelectedProvider = {
   providerId: string;
-  access: ZCodeProviderAccountAccess;
+  access: NekodeProviderAccountAccess;
 };
 
 function fail(reason: OfficialMcpAuthFailureReason): {
@@ -177,7 +177,7 @@ function resolveSelectedProvider(
 
 function resolveSelectedPlan(
   selectedProvider: SelectedProvider,
-  access: ZCodeAccountAccess | null,
+  access: NekodeAccountAccess | null,
 ): { ok: true; plan: SelectedPlan } | { ok: false; reason: OfficialMcpAuthFailureReason } {
   if (
     !access ||
@@ -238,7 +238,7 @@ async function readIdentitySnapshot(
   const [registry, activeProviderValue, jwtValue] = await Promise.all([
     deps.modelSelectionService.getView(),
     deps.credentialService.load(ACTIVE_OAUTH_PROVIDER_KEY),
-    deps.credentialService.load(ZCODE_JWT_TOKEN_KEY),
+    deps.credentialService.load(NEKODE_JWT_TOKEN_KEY),
   ]);
   const activeProvider = activeProviderValue?.trim();
   const jwt = jwtValue?.trim() ?? "";

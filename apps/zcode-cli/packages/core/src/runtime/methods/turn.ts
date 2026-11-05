@@ -3,7 +3,6 @@ import { runtimeInputMetadata } from "../../agent/runtime-input-presentation.js"
 import { refreshWorkspaceTrustAdmission } from "./mcp.js";
 import { withConversationQuotes } from "../helpers/conversation-quotes.js";
 import {
-  ensureGroupTaskPermissionScope,
   telemetryInputOrigin,
   TELEMETRY_INPUT_ORIGIN_ATTRIBUTE,
 } from "./input-intent-persistence.js";
@@ -69,12 +68,6 @@ import {
   closeGoalStateChangeReminderDeferral,
   openGoalStateChangeReminderDeferral,
 } from "./goal-state-reminder.js";
-import {
-  disposeProjectMemoryRecallPrefetch,
-  startProjectMemoryRecallPrefetch,
-} from "../helpers/project-memory-recall.js";
-import { ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH } from "../../memory/project-memory-retrieval-branch.js";
-import { scheduleProjectMemoryExtraction } from "../helpers/project-memory-extraction.js";
 import { appendBrowserTurnScreenshot } from "./browser-turn-screenshot.js";
 import { clearBrowserTurnState } from "../../repl/browser-turn-state.js";
 import {
@@ -475,7 +468,6 @@ export async function executeTurnCommand(
       turnMachine = new TurnMachineImpl(turnMachine.start());
       phaseStartedAt = startTurnPhase("session_persistence");
       await this.ensureSessionPersisted(displayInput, turnTraceContext);
-      await ensureGroupTaskPermissionScope(this.sessionStore, this.sessionId, options?.intent);
       // execution-scoped 临时 Provider（例如闲时任务）拥有本轮自己的模型，不改写
       // Session Selection；普通 Submission 才在真正开跑时应用其原子选择。
       // 创建失败轮不再应用：重复建模会在主 try 之外再次抛错；也不改写选择、mode、plan，
@@ -707,11 +699,7 @@ export async function executeTurnCommand(
         } else if (options?.skipInputRecord !== true) {
           this.messageHistory.addEntries(
             buildRuntimeUserEntriesFromTurn(
-              withConversationQuotes(
-                input,
-                options?.intent?.conversationQuotes,
-                options?.intent?.botGroupSource,
-              ),
+              withConversationQuotes(input, options?.intent?.conversationQuotes),
               resolvedAttachments,
               {
                 browserAmbientContext: options?.browserAmbientContext,
@@ -814,15 +802,6 @@ export async function executeTurnCommand(
         if (!loopModel) {
           throw new Error("Turn model was not created before execution");
         }
-        startProjectMemoryRecallPrefetch(
-          this,
-          {
-            model: loopModel,
-            traceContext: turnTraceContext,
-            turnAbortSignal,
-          },
-          ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH,
-        );
         loopState = {
           activeTurn,
           ...(options?.automationId ? { automationId: options.automationId } : {}),
@@ -836,6 +815,8 @@ export async function executeTurnCommand(
           workflowResultConsumed: options?.workflowResultConsumed === true,
           completedRealToolResultBatch: false,
           inputAttachmentCollectionPending: true,
+          nekoMemoryAttachmentsCollected: false,
+          wardrobeAttachmentCollected: false,
           currentUserMessageId: userMessageId,
           events,
           input,
@@ -974,14 +955,6 @@ export async function executeTurnCommand(
           status: "completed",
           toolCallCount: loopState.toolCallCount,
         });
-        // 单轮执行策略只抑制本次成功 Turn 的后台提取，不修改 Session Memory 配置。
-        if (options?.modelExecution?.memoryExtraction !== "skip") {
-          scheduleProjectMemoryExtraction(this, {
-            model: loopState.model,
-            traceContext: turnTraceContext,
-          });
-        }
-
         const result: TurnResult = {
           response: loopState.modelResponse,
           turnId,
@@ -1135,7 +1108,6 @@ export async function executeTurnCommand(
     );
 
   return turnTelemetry.run(execute).finally(async () => {
-    disposeProjectMemoryRecallPrefetch(this);
     if (targetRunHeartbeat) {
       clearInterval(targetRunHeartbeat);
     }

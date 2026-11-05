@@ -1,89 +1,229 @@
-import { applyDynamicWorkflowUserMode, type ApiClient } from "@zcode/shared";
-import type { ICredentialService } from "../credential/credential.js";
-import type { ICodingPlanSubscriptionService } from "./codingPlanSubscription.js";
-import { BigModelCodingPlanSubscriptionProvider } from "./bigmodelCodingPlanSubscriptionProvider.js";
 import type { ModelSelectionView } from "@zcode/provider";
-import { ZaiCodingPlanSubscriptionProvider } from "./zaiCodingPlanSubscriptionProvider.js";
+import {
+  DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  resolveDynamicWorkflowClientConfig,
+  type CodingPlanBatchPreviewRequest,
+  type CodingPlanBatchPreviewResponse,
+  type CodingPlanBillingDiscountConfig,
+  type CodingPlanCreateSignRequest,
+  type CodingPlanPaymentCheckRequest,
+  type CodingPlanPaymentCheckResponse,
+  type CodingPlanPaypalSubscribeRequest,
+  type CodingPlanPaypalSubscribeResponse,
+  type CodingPlanPaypalSupportResponse,
+  type CodingPlanPaypalSetupTokenRequest,
+  type CodingPlanPaypalSetupTokenResponse,
+  type CodingPlanPendingOrderCheckResponse,
+  type CodingPlanPreviewRequest,
+  type CodingPlanPreviewResponse,
+  type CodingPlanProductInfo,
+  type CodingPlanProductInfoRequest,
+  type CodingPlanStaticProductsConfig,
+  type CodingPlanStaticTeamProductsConfig,
+  type CodingPlanStripeBindRequest,
+  type CodingPlanStripeBindResponse,
+  type CodingPlanStripeCard,
+  type CodingPlanStripePayRequest,
+  type CodingPlanStripePayResponse,
+  type CodingPlanStripeUnbindRequest,
+  type CodingPlanUpdateSignRequest,
+  type CodingPlanAgreementResponse,
+  type DynamicWorkflowClientConfig,
+  type EnterpriseCodingPlanBalanceResponse,
+  type EnterpriseCodingPlanCancelOrderRequest,
+  type EnterpriseCodingPlanCancelOrderResponse,
+  type EnterpriseCodingPlanContinuePayRequest,
+  type EnterpriseCodingPlanCreateOrderRequest,
+  type EnterpriseCodingPlanCreateOrderResponse,
+  type EnterpriseCodingPlanOrderCalculateRequest,
+  type EnterpriseCodingPlanOrderCalculateResponse,
+  type EnterpriseCodingPlanOrderStatusRequest,
+  type EnterpriseCodingPlanOrderStatusResponse,
+  type EnterpriseCodingPlanPendingOrder,
+  type EnterpriseCodingPlanPricingRequest,
+  type EnterpriseCodingPlanPricingResponse,
+  type ForceUpdateConfig,
+  type ManualClaimPlanClaimRequest,
+  type ManualClaimPlanClaimResult,
+  type ManualClaimPlanPreviewSnapshot,
+  type RequestVerificationConfig,
+  type StartPlanPreviewConfig,
+} from "@zcode/shared";
+import type { ICodingPlanSubscriptionService, OffPeakClientConfig } from "./codingPlanSubscription.js";
 
 interface CodingPlanSubscriptionServiceDependencies {
-  apiClient: ApiClient;
-  credentialService: Pick<ICredentialService, "load">;
-  resolveOffPeakModelSelectionView?: () => Promise<ModelSelectionView>;
   /**
-   * 用户在设置里选的动态工作流模式（launch.md「The user's choice」）。只有拥有设置权威的装配
-   * （desktop 本地 Host、web/standalone server）注入；缺省时快照只含服务端的「提供」。
+   * 闲时模型的候选视图。账号后端下线后闲时任务不再开通，但视图仍要能构造出来，
+   * 让设置页与 agent 侧读到一致的「已关闭」事实。
    */
+  resolveOffPeakModelSelectionView?: () => Promise<ModelSelectionView>;
+  /** 用户在设置里选的动态工作流模式（纯本地设置，不涉及远端）。 */
   resolveDynamicWorkflowUserMode?: () => Promise<unknown>;
 }
 
+const EMPTY_MODEL_SELECTION_VIEW: ModelSelectionView = Object.freeze({
+  revision: 0,
+  providers: Object.freeze([]),
+});
+
 /**
- * 原 service 把所有调用直接绑定到单一 BigModelCodingPlanSubscriptionProvider，
- * zai family 没有独立的 Team Plan 定价来源（死代码）。
+ * 账号与订阅后端在本构建中不可用。
  *
- * zai 与 bigmodel Team Plan 全链路对称化：
- * 同时持有 bigmodel 和 zai 两个 provider 实例；enterprise 读路径（getEnterprisePricing）按
- * request.family 路由到对应实例；缺省 family 时保持 bigmodel，向后兼容既有调用点。
- *
- * 其余方法（购买/staticConfigs/preview 等）语义与 family 无关或已在 provider 内部按
- * request.providerId 动态路由，统一委托给 bigmodel provider 即可：
- *   - 企业购买闭环（balance/order/pending/cancel/continue/status）按产品决策仍只走 bigmodel 域。
- *   - staticConfigs 是平台级 client/configs，与 family 无关。
- *   - 购买类（Stripe/PayPal/preview/createSign 等）已通过 request.providerId 在 provider 内路由。
+ * 这里保留 `ICodingPlanSubscriptionService` 的完整形状（UI 与 agent 装配继续按原接口
+ * 编译），但所有实现都不发请求：
+ *   - 产品/定价/订阅/支付/企业订单一律返回空结果，不访问 z.ai / bigmodel；
+ *   - 闲时任务与动态工作流只读本地设置与环境覆盖，fail-closed。
  */
 export function createCodingPlanSubscriptionService(
-  dependencies: CodingPlanSubscriptionServiceDependencies,
+  dependencies: CodingPlanSubscriptionServiceDependencies = {},
 ): ICodingPlanSubscriptionService {
-  const bigmodelProvider = new BigModelCodingPlanSubscriptionProvider(dependencies);
-  const zaiProvider = new ZaiCodingPlanSubscriptionProvider(dependencies);
-
-  // 按 family 选择 enterprise 读路径 provider；缺省（含未指定 family 的历史调用）走 bigmodel。
-  const resolveEnterprisePricingProvider = (
-    family?: "bigmodel" | "zai",
-  ): BigModelCodingPlanSubscriptionProvider => (family === "zai" ? zaiProvider : bigmodelProvider);
+  const resolveModelSelectionView = async (): Promise<ModelSelectionView> =>
+    (await dependencies.resolveOffPeakModelSelectionView?.()) ?? EMPTY_MODEL_SELECTION_VIEW;
 
   return {
-    batchPreview: (request) => bigmodelProvider.batchPreview(request),
-    getStaticProducts: () => bigmodelProvider.getStaticProducts(),
-    getStaticTeamProducts: () => bigmodelProvider.getStaticTeamProducts(),
-    getStartPlanPreview: () => bigmodelProvider.getStartPlanPreview(),
-    getManualClaimPlanPreviews: () => bigmodelProvider.getManualClaimPlanPreviews(),
-    claimManualPlan: (request) => bigmodelProvider.claimManualPlan(request),
-    getOffPeakClientConfig: (options) => bigmodelProvider.getOffPeakClientConfig(options),
-    // 动态工作流灰度：与 client/configs 同源，
-    // 因此和其它平台级配置一样固定走 bigmodel provider，与 family 无关。
-    // 用户选择在这里套到「提供」上，renderer 读到的就是生效值；规则只写在 shared 的
-    // applyDynamicWorkflowUserMode 里，renderer 不自己算。
-    getDynamicWorkflowClientConfig: async (options) => {
-      const offer = await bigmodelProvider.getDynamicWorkflowClientConfig(options);
-      const resolveUserMode = dependencies.resolveDynamicWorkflowUserMode;
-      return resolveUserMode ? applyDynamicWorkflowUserMode(offer, await resolveUserMode()) : offer;
+    async batchPreview(
+      _request?: CodingPlanBatchPreviewRequest,
+    ): Promise<CodingPlanBatchPreviewResponse> {
+      return { productList: [], isSubscribed: false, isAuthenticated: false };
     },
-    getModelContextBudgetStrategy: () => bigmodelProvider.getModelContextBudgetStrategy(),
-    getBillingDiscount: () => bigmodelProvider.getBillingDiscount(),
-    getRequestVerificationConfig: () => bigmodelProvider.getRequestVerificationConfig(),
-    getForceUpdateConfig: () => bigmodelProvider.getForceUpdateConfig(),
-    productInfo: (request) => bigmodelProvider.productInfo(request),
-    preview: (request) => bigmodelProvider.preview(request),
-    createSign: (request) => bigmodelProvider.createSign(request),
-    updateSign: (request) => bigmodelProvider.updateSign(request),
-    checkPayment: (request) => bigmodelProvider.checkPayment(request),
-    checkPendingOrders: (request) => bigmodelProvider.checkPendingOrders(request),
-    queryStripeCards: (request) => bigmodelProvider.queryStripeCards(request),
-    bindStripeCard: (request) => bigmodelProvider.bindStripeCard(request),
-    unbindStripeCard: (request) => bigmodelProvider.unbindStripeCard(request),
-    payStripe: (request) => bigmodelProvider.payStripe(request),
-    checkPaypalSupport: (request) => bigmodelProvider.checkPaypalSupport(request),
-    createPaypalSetupToken: (request) => bigmodelProvider.createPaypalSetupToken(request),
-    subscribePaypal: (request) => bigmodelProvider.subscribePaypal(request),
-    getEnterprisePricing: (request) =>
-      resolveEnterprisePricingProvider(request?.family).getEnterprisePricing(request),
-    getEnterpriseBalance: () => bigmodelProvider.getEnterpriseBalance(),
-    calculateEnterpriseOrder: (request) => bigmodelProvider.calculateEnterpriseOrder(request),
-    createEnterpriseOrder: (request) => bigmodelProvider.createEnterpriseOrder(request),
-    getEnterprisePendingOrders: () => bigmodelProvider.getEnterprisePendingOrders(),
-    cancelEnterpriseOrder: (request) => bigmodelProvider.cancelEnterpriseOrder(request),
-    continueEnterpriseOrderPayment: (request) =>
-      bigmodelProvider.continueEnterpriseOrderPayment(request),
-    checkEnterpriseOrderStatus: (request) => bigmodelProvider.checkEnterpriseOrderStatus(request),
+    async getStaticProducts(): Promise<CodingPlanStaticProductsConfig> {
+      return {};
+    },
+    async getStaticTeamProducts(): Promise<CodingPlanStaticTeamProductsConfig> {
+      return {};
+    },
+    async getStartPlanPreview(): Promise<StartPlanPreviewConfig | null> {
+      return null;
+    },
+    async getManualClaimPlanPreviews(): Promise<ManualClaimPlanPreviewSnapshot> {
+      return { plans: [] };
+    },
+    async claimManualPlan(_request: ManualClaimPlanClaimRequest): Promise<ManualClaimPlanClaimResult> {
+      return { success: false, code: 0, message: "coding_plan_unavailable" };
+    },
+    async getOffPeakClientConfig(_options?: { forceRefresh?: boolean }): Promise<OffPeakClientConfig> {
+      const modelSelectionView = await resolveModelSelectionView();
+      const hasModels = modelSelectionView.providers.some((provider) => provider.models.length > 0);
+      if (process.env["NEKODE_OFFPEAK_MOCK"] === "1") {
+        // 离线 E2E 用环境变量替代远端曝光配置，保持既有 mock 语义。
+        return {
+          enabled: hasModels,
+          modelSelectionView,
+          codingPlanActive: process.env["NEKODE_OFFPEAK_MOCK_NO_PLAN"] !== "1",
+        };
+      }
+      return { enabled: false, modelSelectionView };
+    },
+    async getDynamicWorkflowClientConfig(
+      _options?: { forceRefresh?: boolean },
+    ): Promise<DynamicWorkflowClientConfig> {
+      // 远端配置面已下线；只保留本地覆盖（NEKODE_DYNAMIC_WORKFLOW_MODE）与用户选择。
+      const userMode = dependencies.resolveDynamicWorkflowUserMode
+        ? await dependencies.resolveDynamicWorkflowUserMode()
+        : undefined;
+      return resolveDynamicWorkflowClientConfig({
+        remote: undefined,
+        env: process.env,
+        userMode,
+      });
+    },
+    async getModelContextBudgetStrategy() {
+      return DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY;
+    },
+    async getBillingDiscount(): Promise<CodingPlanBillingDiscountConfig | undefined> {
+      return undefined;
+    },
+    async getRequestVerificationConfig(): Promise<RequestVerificationConfig | null> {
+      return null;
+    },
+    async getForceUpdateConfig(): Promise<ForceUpdateConfig | null> {
+      return null;
+    },
+    async productInfo(request: CodingPlanProductInfoRequest): Promise<CodingPlanProductInfo> {
+      return { productId: request.productId };
+    },
+    async preview(request: CodingPlanPreviewRequest): Promise<CodingPlanPreviewResponse> {
+      return { productId: request.productId, bizId: "" };
+    },
+    async createSign(_request: CodingPlanCreateSignRequest): Promise<CodingPlanAgreementResponse> {
+      return { sign: "" };
+    },
+    async updateSign(_request: CodingPlanUpdateSignRequest): Promise<CodingPlanAgreementResponse> {
+      return { sign: "" };
+    },
+    async checkPayment(
+      _request: CodingPlanPaymentCheckRequest,
+    ): Promise<CodingPlanPaymentCheckResponse> {
+      return { status: "unavailable" };
+    },
+    async checkPendingOrders(): Promise<CodingPlanPendingOrderCheckResponse> {
+      return { hasPendingOrders: false };
+    },
+    async queryStripeCards(): Promise<CodingPlanStripeCard[]> {
+      return [];
+    },
+    async bindStripeCard(request: CodingPlanStripeBindRequest): Promise<CodingPlanStripeBindResponse> {
+      return { paymentMethodId: request.paymentMethodId };
+    },
+    async unbindStripeCard(_request: CodingPlanStripeUnbindRequest): Promise<string> {
+      return "";
+    },
+    async payStripe(_request: CodingPlanStripePayRequest): Promise<CodingPlanStripePayResponse> {
+      return { status: "unavailable" };
+    },
+    async checkPaypalSupport(): Promise<CodingPlanPaypalSupportResponse> {
+      return { isSupport: false };
+    },
+    async createPaypalSetupToken(
+      _request: CodingPlanPaypalSetupTokenRequest,
+    ): Promise<CodingPlanPaypalSetupTokenResponse> {
+      return {};
+    },
+    async subscribePaypal(
+      _request: CodingPlanPaypalSubscribeRequest,
+    ): Promise<CodingPlanPaypalSubscribeResponse> {
+      return {};
+    },
+    async getEnterprisePricing(
+      _request?: EnterpriseCodingPlanPricingRequest,
+    ): Promise<EnterpriseCodingPlanPricingResponse> {
+      return { productList: [] };
+    },
+    async getEnterpriseBalance(): Promise<EnterpriseCodingPlanBalanceResponse> {
+      return { giveBalance: 0, cashBalance: 0, totalBalance: 0 };
+    },
+    async calculateEnterpriseOrder(
+      _request: EnterpriseCodingPlanOrderCalculateRequest,
+    ): Promise<EnterpriseCodingPlanOrderCalculateResponse> {
+      return { totalOriginalAmount: 0, totalPayAmount: 0, thirdPayAmount: 0 };
+    },
+    async createEnterpriseOrder(
+      _request: EnterpriseCodingPlanCreateOrderRequest,
+    ): Promise<EnterpriseCodingPlanCreateOrderResponse> {
+      return { orderNo: "", totalOriginalAmount: 0, totalPayAmount: 0, thirdPayAmount: 0 };
+    },
+    async getEnterprisePendingOrders(): Promise<EnterpriseCodingPlanPendingOrder[]> {
+      return [];
+    },
+    async cancelEnterpriseOrder(
+      request: EnterpriseCodingPlanCancelOrderRequest,
+    ): Promise<EnterpriseCodingPlanCancelOrderResponse> {
+      return { orderNo: request.orderNo, status: "CANCELLED" };
+    },
+    async continueEnterpriseOrderPayment(
+      request: EnterpriseCodingPlanContinuePayRequest,
+    ): Promise<EnterpriseCodingPlanCreateOrderResponse> {
+      return {
+        orderNo: request.orderNo,
+        totalOriginalAmount: 0,
+        totalPayAmount: 0,
+        thirdPayAmount: 0,
+      };
+    },
+    async checkEnterpriseOrderStatus(
+      request: EnterpriseCodingPlanOrderStatusRequest,
+    ): Promise<EnterpriseCodingPlanOrderStatusResponse> {
+      return { orderNo: request.orderNo, paymentStatus: "CLOSED" };
+    },
   };
 }

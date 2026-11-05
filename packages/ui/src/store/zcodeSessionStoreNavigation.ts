@@ -1,5 +1,5 @@
 /**
- * ZCode Session Store 导航切片 —— 任务前进/后退历史管理
+ * Nekode Session Store 导航切片 —— 任务前进/后退历史管理
  *
  * 从 zcodeSessionStore.ts 拆分出来，封装所有任务导航相关的初始状态和 action。
  * 通过 createNavigationSlice(set, get) 返回可直接展开到 store 的对象。
@@ -9,22 +9,21 @@ import {
   createTaskNavigationHistory,
   goBack as navGoBack,
   goForward as navGoForward,
-  pushAutomationsNavEntry,
+  pushWorkflowsNavEntry,
   pushPluginStoreNavEntry,
   removeTaskFromHistory,
-  type AutomationsNavigationTab,
   type WorkspaceNavEntry,
   type TaskNavEntry,
 } from "@/lib/taskNavigationHistory.js";
-import type { ZCodeSessionStoreState } from "./zcodeSessionStoreTypes.js";
+import type { NekodeSessionStoreState } from "./zcodeSessionStoreTypes.js";
 
 type SetFn = (
   partial:
-    | ZCodeSessionStoreState
-    | Partial<ZCodeSessionStoreState>
-    | ((state: ZCodeSessionStoreState) => ZCodeSessionStoreState | Partial<ZCodeSessionStoreState>),
+    | NekodeSessionStoreState
+    | Partial<NekodeSessionStoreState>
+    | ((state: NekodeSessionStoreState) => NekodeSessionStoreState | Partial<NekodeSessionStoreState>),
 ) => void;
-type GetFn = () => ZCodeSessionStoreState;
+type GetFn = () => NekodeSessionStoreState;
 
 // 查看事实只由完整导航提交发布；tab 激活与历史游标移动都可能暴露缓存任务，不能代替提交。
 const taskNavigationCommitted = new Emitter<TaskNavEntry>();
@@ -41,19 +40,12 @@ export function createNavigationSlice(set: SetFn, get: GetFn) {
   return {
     taskNavHistory: createTaskNavigationHistory(),
 
-    taskNavPushAutomations: (
-      workspacePath: string,
-      workspaceIdentity?: string,
-      automationId?: string,
-      automationTab?: AutomationsNavigationTab,
-    ) => {
+    taskNavPushWorkflows: (workspacePath: string, workspaceIdentity?: string) => {
       set((state) => ({
-        taskNavHistory: pushAutomationsNavEntry(
+        taskNavHistory: pushWorkflowsNavEntry(
           state.taskNavHistory,
           workspacePath,
           workspaceIdentity,
-          automationId,
-          automationTab,
         ),
       }));
     },

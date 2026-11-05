@@ -1,4 +1,4 @@
-import { type McpServerStatus, type ZCodeMcpServer } from "@zcode/shared";
+import { type McpServerStatus, type NekodeMcpServer } from "@zcode/shared";
 import {
   TID_MCP_OPEN_AUTHORIZATION_BUTTON,
   TID_MCP_SERVER_ROW,
@@ -6,7 +6,7 @@ import {
 } from "@zcode/shared/test-ids";
 import { Button } from "@/components/ui/button.js";
 import { Switch } from "@/components/ui/switch.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { settingsResourceRowInteraction } from "@/settings/settingsResourceRowInteraction.js";
 import { SettingsScopeBadge } from "@/settings/SettingsScopeBadge.js";
@@ -68,14 +68,14 @@ function McpServerItem({
   onTrust,
   hideMetadata,
 }: {
-  server: ZCodeMcpServer;
-  onEdit: (server: ZCodeMcpServer) => void;
+  server: NekodeMcpServer;
+  onEdit: (server: NekodeMcpServer) => void;
   onToggle: (id: string, enabled: boolean) => void;
-  onOpenAuthorization?: (server: ZCodeMcpServer) => void;
-  onTrust?: (server: ZCodeMcpServer) => void;
+  onOpenAuthorization?: (server: NekodeMcpServer) => void;
+  onTrust?: (server: NekodeMcpServer) => void;
   hideMetadata: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const typeLabel = server.config.command
     ? "stdio"
     : (server.config.type ?? (server.config.url ? "http" : "?"));
@@ -217,17 +217,17 @@ export function McpServerList({
   emptyDescription,
   hideMetadata = false,
 }: {
-  servers: ZCodeMcpServer[];
+  servers: NekodeMcpServer[];
   onCreate: () => void;
-  onEdit: (server: ZCodeMcpServer) => void;
+  onEdit: (server: NekodeMcpServer) => void;
   onToggle: (id: string, enabled: boolean) => void;
-  onOpenAuthorization?: (server: ZCodeMcpServer) => void;
-  onTrust?: (server: ZCodeMcpServer) => void;
+  onOpenAuthorization?: (server: NekodeMcpServer) => void;
+  onTrust?: (server: NekodeMcpServer) => void;
   emptyTitle: string;
   emptyDescription: string;
   hideMetadata?: boolean;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
 
   if (servers.length === 0) {
     return (

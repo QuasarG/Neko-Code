@@ -32,7 +32,7 @@ import {
 
 const CASE_MARKER = "E2E_R3_MEDIA_PREVIEW";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-media-preview",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-media-preview",
 );
 const IMAGE_FILE = "r3-dev05-preview.png";
 // 2x2 红色 PNG（有效、可解码），用于校验预览真实加载出像素尺寸。
@@ -300,7 +300,7 @@ describe(`${CASE_MARKER}: 远端媒体附件的预览读取、断线后访问与
     const remoteImagePath = JSON.stringify(imageRequest?.requestJson).match(
       /\[Image: source: ([^\]]+)\]/u,
     )?.[1];
-    expect(remoteImagePath).toMatch(/^\/home\/dev\/\.zcode\/cli\/image-cache\/[A-Za-z0-9_./-]+$/u);
+    expect(remoteImagePath).toMatch(/^\/home\/dev\/\.nekode\/cli\/image-cache\/[A-Za-z0-9_./-]+$/u);
     const remoteHash = await runSSHCommand(prepared.config, `sha256sum -- '${remoteImagePath}'`);
     expect(remoteHash.code).toBe(0);
     const expectedImageHash = createHash("sha256")

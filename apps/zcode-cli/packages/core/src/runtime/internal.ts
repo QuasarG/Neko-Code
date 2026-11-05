@@ -56,10 +56,6 @@ import type { DynamicWorkflowActivationSource } from "./methods/dynamic-workflow
 import type { AgentRuntimeCoreMethods } from "./internal-methods.js";
 import type { AgentRuntimeTurnMethods } from "./internal-turn-methods.js";
 import type { AgentRuntimeHookMethods } from "./internal-hook-methods.js";
-import type { MemoryRecallState } from "../memory/recall/index.js";
-import type { ProjectMemoryRecallPrefetch } from "./helpers/project-memory-recall.js";
-import type { ProjectMemoryExtractionScheduler } from "./helpers/project-memory-extraction.js";
-import type { ProjectMemoryUpdate } from "./helpers/project-memory-dream.js";
 import type { RuntimeTelemetryFacade } from "../telemetry/runtime-telemetry.js";
 import type { WorkspaceHookRuntimeAdmissionPort } from "../hooks/workspace-hook-runtime-admission.js";
 
@@ -109,13 +105,10 @@ export interface AgentRuntimeInternal
   // 从存储恢复的 runtime 还没有自己读过是否仓库；第一次环境公告读一次后清除。
   repositoryRecheckPending?: boolean;
   latestContextBuildResult?: ContextBuildResult;
-  memoryRoot?: string;
-  memoryIndexContent?: string;
-  memoryRecallState: MemoryRecallState;
-  memoryRecallPrefetch?: ProjectMemoryRecallPrefetch;
-  memoryExtractionScheduler?: ProjectMemoryExtractionScheduler;
-  memoryDreamLastScanAtMs: number;
-  pendingMemoryUpdate?: ProjectMemoryUpdate;
+  /** 主会话注入的 Neko Memory v2 书架；子代理/工作流子会话为空。 */
+  nekoMemoryBooks?: AgentRuntimeDeps["nekoMemoryBooks"];
+  /** 衣橱存储端口；与记忆书独立，主会话由 bootstrap 注入。 */
+  wardrobeStore?: AgentRuntimeDeps["wardrobeStore"];
   contextSourcePort?: ContextSourcePort;
   skillPort?: SkillPort;
   mcpPort?: McpPort;

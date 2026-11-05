@@ -24,7 +24,7 @@ The image paste UX, without a full keybinding system:
 - A path-paste fallback treats pasted image file paths as local image
   attachments.
 
-ZCode keeps these UX ideas but routes external I/O through ZCode's own
+Nekode keeps these UX ideas but routes external I/O through Nekode's own
 adapter boundary.
 
 ## Implementation State
@@ -141,7 +141,7 @@ input editor can replace this with byte ranges or text elements.
 `[image #N]` is not a storage path and is not sufficient to recover the image.
 It is a stable UI placeholder that must have an adjacent attachment record.
 
-ZCode keeps the mapping at three levels:
+Nekode keeps the mapping at three levels:
 
 - Draft input: TUI owns `draftAttachments[]`, keyed by exact `placeholder`.
 - Prompt recall: `InputHistoryEntry.attachments` stores attachment references
@@ -204,7 +204,7 @@ Platform plan:
 - Return `null` when the clipboard has no image or platform tooling is missing;
   do not throw into the TUI for normal absence.
 
-No new `ZCODE_*` environment variable is needed for this feature.
+No new `NEKODE_*` environment variable is needed for this feature.
 
 ## Observability
 

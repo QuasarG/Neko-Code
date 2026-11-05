@@ -1,5 +1,5 @@
 import type { McpTrackedProcess } from "@zcode/adapters";
-import type { ZCodeProcessChildProcessesResult } from "@zcode/shared";
+import type { NekodeProcessChildProcessesResult } from "@zcode/shared";
 import { resolveOfficialPluginNameByHostMcpServerName } from "../app/official-plugin-definitions.js";
 
 /**
@@ -8,7 +8,7 @@ import { resolveOfficialPluginNameByHostMcpServerName } from "../app/official-pl
  */
 export function listChildProcesses(
   tracked: readonly McpTrackedProcess[],
-): ZCodeProcessChildProcessesResult {
+): NekodeProcessChildProcessesResult {
   return {
     processes: tracked.map((process) => {
       const pluginName =

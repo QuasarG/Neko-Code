@@ -6,7 +6,7 @@ import { discoverNodePluginsSync } from "@zcode/adapters";
 import {
   loadPluginAgentTemplates,
   resolvePluginAgentProfiles,
-  loadZCodeAgentProfiles,
+  loadNekodeAgentProfiles,
 } from "../src/subagents.js";
 import { loadPluginAgentProfiles } from "./helpers/subagents.js";
 
@@ -38,7 +38,7 @@ function pluginMetadata(input: { enabled?: boolean; id: string; name: string; ro
   };
 }
 
-describe("loadZCodeAgentProfiles", () => {
+describe("loadNekodeAgentProfiles", () => {
   it("一次读取迁移后的插件覆盖注入规范名和别名，不修改插件文件或串用另一插件覆盖", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-selection-"));
     try {
@@ -58,7 +58,7 @@ describe("loadZCodeAgentProfiles", () => {
           pluginAgentThoughtLevelOverrides: { [agentId]: "high" },
         }),
       );
-      const state = await loadZCodeAgentProfiles({ storageRoot, workingDirectory: root });
+      const state = await loadNekodeAgentProfiles({ storageRoot, workingDirectory: root });
       const selection = {
         providerId: "account:zai-individual-coding-plan",
         modelId: "GLM",
@@ -117,10 +117,10 @@ describe("loadZCodeAgentProfiles", () => {
     const workingDirectory = join(root, "workspace");
     try {
       await mkdir(join(storageRoot, "agents"), { recursive: true });
-      await mkdir(join(workingDirectory, ".zcode", "agents"), { recursive: true });
+      await mkdir(join(workingDirectory, ".nekode", "agents"), { recursive: true });
       for (const agentsRoot of [
         join(storageRoot, "agents"),
-        join(workingDirectory, ".zcode", "agents"),
+        join(workingDirectory, ".nekode", "agents"),
       ]) {
         await mkdir(join(agentsRoot, "nested"));
         await writeFile(
@@ -138,7 +138,7 @@ description: 用户级中文审查 agent
         "utf8",
       );
       await writeFile(
-        join(workingDirectory, ".zcode", "agents", "reviewer.md"),
+        join(workingDirectory, ".nekode", "agents", "reviewer.md"),
         `---
 name: zcode-reviewer
 description: 项目级中文审查 agent
@@ -147,7 +147,7 @@ description: 项目级中文审查 agent
         "utf8",
       );
 
-      const result = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+      const result = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
       expect(result.diagnostics).toEqual([]);
       expect(result.profiles.map((profile) => profile.source)).toEqual(["user", "project"]);
@@ -166,7 +166,7 @@ description: 项目级中文审查 agent
     const workingDirectory = join(root, "workspace");
     try {
       await mkdir(join(storageRoot, "agents"), { recursive: true });
-      await mkdir(join(workingDirectory, ".zcode", "agents"), { recursive: true });
+      await mkdir(join(workingDirectory, ".nekode", "agents"), { recursive: true });
       await writeFile(
         join(storageRoot, "agents", "trusted.md"),
         `---
@@ -178,7 +178,7 @@ permissionMode: bypassPermissions
         "utf8",
       );
       await writeFile(
-        join(workingDirectory, ".zcode", "agents", "attacker.md"),
+        join(workingDirectory, ".nekode", "agents", "attacker.md"),
         `---
 name: attacker-runner
 description: 项目级运行 agent
@@ -188,7 +188,7 @@ permissionMode: bypassPermissions
         "utf8",
       );
 
-      const result = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+      const result = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
       const userProfile = result.profiles.find((profile) => profile.name === "trusted-runner");
       const projectProfile = result.profiles.find((profile) => profile.name === "attacker-runner");
@@ -214,7 +214,7 @@ prompt`,
         "utf8",
       );
 
-      const result = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+      const result = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
       expect(result.profiles).toEqual([]);
       expect(result.diagnostics).toHaveLength(1);
@@ -255,7 +255,7 @@ description: 用户级运行 agent
         "utf8",
       );
 
-      const result = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+      const result = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
       expect(result.diagnostics).toEqual([]);
       expect(result.profiles.map((profile) => profile.name)).toEqual(["zcode-runner"]);
@@ -294,7 +294,7 @@ description: 用户级运行 agent
         "utf8",
       );
 
-      const result = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+      const result = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
 
       expect(result.diagnostics).toEqual([]);
       expect(result.profiles).toEqual([]);
@@ -387,7 +387,7 @@ describe("loadPluginAgentProfiles", () => {
     const pluginRoot = join(root, "plugin");
     const paths = [
       join(storageRoot, "agents", "code-architect.md"),
-      join(workingDirectory, ".zcode", "agents", "code-architect.md"),
+      join(workingDirectory, ".nekode", "agents", "code-architect.md"),
       join(pluginRoot, "agents", "code-architect.md"),
     ];
     const markdown =
@@ -395,14 +395,14 @@ describe("loadPluginAgentProfiles", () => {
     try {
       for (const directory of [
         join(storageRoot, "agents"),
-        join(workingDirectory, ".zcode", "agents"),
+        join(workingDirectory, ".nekode", "agents"),
         join(pluginRoot, "agents"),
       ]) {
         await mkdir(directory, { recursive: true });
       }
       for (const path of paths) await writeFile(path, markdown);
       for (let load = 0; load < 2; load++) {
-        const local = await loadZCodeAgentProfiles({ storageRoot, workingDirectory });
+        const local = await loadNekodeAgentProfiles({ storageRoot, workingDirectory });
         const plugins = loadPluginAgentProfiles({
           plugins: [pluginMetadata({ id: "scope-test", name: "scope-test", rootPath: pluginRoot })],
         });
@@ -517,7 +517,7 @@ thoughtLevel: low
         }),
       ];
 
-      const state = await loadZCodeAgentProfiles({ storageRoot, workingDirectory: root });
+      const state = await loadNekodeAgentProfiles({ storageRoot, workingDirectory: root });
       const overridden = loadPluginAgentProfiles({
         plugins,
         modelSelectionOverrides: state.pluginAgentModelSelectionOverrides,
@@ -554,7 +554,7 @@ thoughtLevel: low
         }),
         "utf8",
       );
-      const modelOnlyState = await loadZCodeAgentProfiles({ storageRoot, workingDirectory: root });
+      const modelOnlyState = await loadNekodeAgentProfiles({ storageRoot, workingDirectory: root });
       const modelOnly = loadPluginAgentProfiles({
         plugins,
         modelSelectionOverrides: modelOnlyState.pluginAgentModelSelectionOverrides,
@@ -627,13 +627,13 @@ it("附加目录 subagent 用限定名并存，权限仍按项目级规则过滤
     const main = join(root, "frontend"),
       extra = join(root, "backend");
     for (const dir of [main, extra]) {
-      await mkdir(join(dir, ".zcode", "agents"), { recursive: true });
+      await mkdir(join(dir, ".nekode", "agents"), { recursive: true });
       await writeFile(
-        join(dir, ".zcode", "agents", "review.md"),
+        join(dir, ".nekode", "agents", "review.md"),
         "---\nname: review\ndescription: review\npermissionMode: bypassPermissions\n---\nReview",
       );
     }
-    const result = await loadZCodeAgentProfiles({
+    const result = await loadNekodeAgentProfiles({
       storageRoot: join(root, "state"),
       workingDirectory: main,
       additionalDirectories: [extra, extra, main],

@@ -1,6 +1,6 @@
-# App types on ZCode Sites
+# App types on Nekode Sites
 
-Build and start the app the way its framework documents for production; this page only covers what is specific to ZCode Sites. Every app binds `0.0.0.0:$PORT` (3000) and answers 200 on `/`.
+Build and start the app the way its framework documents for production; this page only covers what is specific to Nekode Sites. Every app binds `0.0.0.0:$PORT` (3000) and answers 200 on `/`.
 
 ## Static sites
 
@@ -31,4 +31,4 @@ Build and start the app the way its framework documents for production; this pag
 
 ## Monorepos
 
-Deploy one app. Build it with the workspace tooling, then stage only that app's output and its production dependencies; workspace packages must end up in the stage as real files (a bundled server, standalone output, or `pnpm deploy --prod --filter <app> .zcode-site/stage`).
+Deploy one app. Build it with the workspace tooling, then stage only that app's output and its production dependencies; workspace packages must end up in the stage as real files (a bundled server, standalone output, or `pnpm deploy --prod --filter <app> .nekode-site/stage`).

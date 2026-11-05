@@ -42,7 +42,7 @@ const runtimeModuleLookupRoots = [
 const pnpmCommand = "pnpm";
 const DEFAULT_TARGET_OS = "mac";
 const DEFAULT_TARGET_ARCH = "arm64";
-const desktopDistDir = process.env.ZCODE_DESKTOP_DIST_DIR || "dist";
+const desktopDistDir = process.env.NEKODE_DESKTOP_DIST_DIR || "dist";
 const desktopDistRoot = resolve(desktopRoot, desktopDistDir);
 const desktopProductIdentity = resolveDesktopProductIdentity(process.env);
 
@@ -110,9 +110,6 @@ const requiredRuntimeModules = [
   "node-forge",
   // 与 tsup external 对齐，保留 ZIP 解包器的 CommonJS 运行时边界。
   "yauzl",
-  // Bugfix: 飞书 SDK 为了避开 Electron ESM 动态 require 崩溃会作为外部依赖保留，
-  // 生产包必须显式校验 app.asar 中存在该 scoped 包。
-  "@larksuiteoapi/node-sdk",
   // 26.17.0 的 pnpm collector 仍可能漏掉 deduped 传递依赖；最终包从 updater 入口校验完整闭包。
   "electron-updater",
   // ssh2 的关键依赖链（asn1/bcrypt-pbkdf/tweetnacl）若缺失，
@@ -154,7 +151,7 @@ export function resolveElectronMirror(env = process.env) {
 
 export function createElectronRuntimeMirrorEnv(mirror) {
   return {
-    ZCODE_ELECTRON_RUNTIME_MIRROR: mirror,
+    NEKODE_ELECTRON_RUNTIME_MIRROR: mirror,
     // @electron/get 的 Electron runtime 环境变量是全局读取的。
     // 如果传给 electron-builder 主进程，会覆盖 dmg-builder 等 generic artifact 的 mirrorOptions。
     ELECTRON_MIRROR: "",
@@ -213,8 +210,8 @@ export function createElectronBuilderBinariesMirrorEnv(mirror) {
 
 export function createBundleProcessEnvs({ os, arch, electronMirror, electronBuilderMirror }) {
   const commonEnv = {
-    ZCODE_TARGET_OS: os,
-    ZCODE_TARGET_ARCH: arch,
+    NEKODE_TARGET_OS: os,
+    NEKODE_TARGET_ARCH: arch,
     ...createElectronRuntimeMirrorEnv(electronMirror),
   };
   const clearedElectronBuilderEnv = createElectronBuilderBinariesMirrorEnv("");
@@ -298,8 +295,8 @@ function printHelp() {
   -h, --help                   查看帮助
 
 环境变量:
-  ZCODE_TARGET_OS              与 --os 等价
-  ZCODE_TARGET_ARCH            与 --arch 等价
+  NEKODE_TARGET_OS              与 --os 等价
+  NEKODE_TARGET_ARCH            与 --arch 等价
 `);
 }
 
@@ -321,10 +318,10 @@ function normalizeArch(rawArch) {
 
 function parseArgs(argv) {
   const options = {
-    os: process.env.ZCODE_TARGET_OS ?? null,
-    arch: process.env.ZCODE_TARGET_ARCH ?? null,
-    skipPrepare: process.env.ZCODE_SKIP_PREPARE === "1",
-    skipBuild: process.env.ZCODE_SKIP_BUILD === "1",
+    os: process.env.NEKODE_TARGET_OS ?? null,
+    arch: process.env.NEKODE_TARGET_ARCH ?? null,
+    skipPrepare: process.env.NEKODE_SKIP_PREPARE === "1",
+    skipBuild: process.env.NEKODE_SKIP_BUILD === "1",
     dryRun: false,
     positionals: [],
   };

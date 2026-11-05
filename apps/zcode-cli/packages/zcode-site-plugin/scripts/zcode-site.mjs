@@ -1,16 +1,16 @@
 #!/usr/bin/env node
-// zcode-site：ZCode Sites 的命令行客户端（技术方案 4.2、4.3、5.3）。
+// zcode-site：Nekode Sites 的命令行客户端（技术方案 4.2、4.3、5.3）。
 // deploy 的输入是 Agent 准备好的 stage 目录，打包与契约检查、以及本地命令 check 在 stage.mjs；其余只和云端交互，不探测项目。
 // 命令、参数、输出和错误码的完整说明只写在 HELP 里（`zcode-site help`），site-deploy skill 引用它，不再重复。
 //
 // 输出契约：成功时 stdout 输出 JSON，退出码 0；deploy 过程中每个阶段和每条日志各输出一行 JSON（--quiet 只输出终态）。
 // 失败时 stderr 输出一行 {"error":{code,message,hint}}，退出码 1=参数或本地文件错误、2=未登录、3=超出额度或限额、4=部署失败或服务端错误。
 //
-// 鉴权（技术方案 5.8）：CLI 不持有任何登录凭证。请求发给 ZCode agent 侧的官方命令端点，端点按
-// session token 认出会话，补上 ZCode 身份头和 X-ZCode-App-Version 后转发给 zcode-server。
-// 端点地址和 token 由 ZCode 注入当前会话的 Bash，在普通终端里运行会按未登录退出：
-//   ZCODE_OFFICIAL_ENDPOINT        端点地址（macOS / Linux 是 UDS 路径，Windows 是命名管道）
-//   ZCODE_OFFICIAL_ENDPOINT_TOKEN  本会话的 token
+// 鉴权（技术方案 5.8）：CLI 不持有任何登录凭证。请求发给 Nekode agent 侧的官方命令端点，端点按
+// session token 认出会话，补上 Nekode 身份头和 X-Nekode-App-Version 后转发给 zcode-server。
+// 端点地址和 token 由 Nekode 注入当前会话的 Bash，在普通终端里运行会按未登录退出：
+//   NEKODE_OFFICIAL_ENDPOINT        端点地址（macOS / Linux 是 UDS 路径，Windows 是命名管道）
+//   NEKODE_OFFICIAL_ENDPOINT_TOKEN  本会话的 token
 
 import { realpathSync } from "node:fs";
 import { request as httpRequest } from "node:http";
@@ -21,7 +21,7 @@ import { parseArgs } from "node:util";
 
 import { checkStage, packStage } from "./stage.mjs";
 
-const BINDING_FILE = ".zcode-site.json";
+const BINDING_FILE = ".nekode-site.json";
 const POLL_INTERVAL_MS = 2000;
 // 服务端兜底清理会把 publishing / verifying 超 10 分钟的部署置为 failed，这里多等一点再放弃。
 const POLL_TIMEOUT_MS = 15 * 60 * 1000;
@@ -59,8 +59,8 @@ const MESSAGES = {
   ],
   // MaaS JWT 过期时 zcode-server 不按 free 放行，以免付费用户被降级（契约 0.13.0）。
   3101: [
-    "The ZCode coding plan sign-in has expired",
-    "Ask the user to sign in to ZCode again, then retry.",
+    "The Nekode coding plan sign-in has expired",
+    "Ask the user to sign in to Nekode again, then retry.",
   ],
   3601: ["Site not found", "Run `zcode-site list` to see your sites, then pass --site <id>."],
   3602: [
@@ -77,17 +77,17 @@ const MESSAGES = {
   ],
   3605: [
     "Account quota exceeded",
-    "New deployments are paused until the next period. Tell the user that upgrading their ZCode plan raises the limits; the Sites panel in ZCode desktop shows the usage.",
+    "New deployments are paused until the next period. Tell the user that upgrading their Nekode plan raises the limits; the Sites panel in Nekode desktop shows the usage.",
   ],
   3607: [
     "The package is larger than 200MB",
     "Exclude build caches, source maps and dev dependencies from the stage, then deploy again.",
   ],
   3608: [
-    "The current plan cannot hide the ZCode badge",
-    "Free plans always show the badge; tell the user to upgrade to a paid ZCode plan, then run `zcode-site badge hide` again.",
+    "The current plan cannot hide the Nekode badge",
+    "Free plans always show the badge; tell the user to upgrade to a paid Nekode plan, then run `zcode-site badge hide` again.",
   ],
-  3609: ["This ZCode version is too old for Sites", "Ask the user to update ZCode."],
+  3609: ["This Nekode version is too old for Sites", "Ask the user to update Nekode."],
   3610: [
     "Another deployment is in progress",
     "Wait for it to finish (`zcode-site status --site <siteId>`), then retry.",
@@ -121,8 +121,8 @@ function apiError(status, body) {
   if (status === 401) {
     return new CliError(
       "UNAUTHENTICATED",
-      "Not signed in to ZCode",
-      "Ask the user to sign in to ZCode, then retry.",
+      "Not signed in to Nekode",
+      "Ask the user to sign in to Nekode, then retry.",
       2,
     );
   }
@@ -142,13 +142,13 @@ const ENDPOINT_ORIGIN = "http://zcode-official-endpoint";
 const ENDPOINT_ERROR_HEADER = "x-zcode-official-endpoint-error";
 
 function loadEndpoint(env) {
-  const address = env.ZCODE_OFFICIAL_ENDPOINT?.trim();
-  const token = env.ZCODE_OFFICIAL_ENDPOINT_TOKEN?.trim();
+  const address = env.NEKODE_OFFICIAL_ENDPOINT?.trim();
+  const token = env.NEKODE_OFFICIAL_ENDPOINT_TOKEN?.trim();
   if (!address || !token) {
     throw new CliError(
       "UNAUTHENTICATED",
-      "ZCode credentials are not available",
-      "Run zcode-site from a ZCode session (the Sites plugin must be enabled), then retry.",
+      "Nekode credentials are not available",
+      "Run zcode-site from a Nekode session (the Sites plugin must be enabled), then retry.",
       2,
     );
   }
@@ -212,14 +212,14 @@ function createClient(endpoint, fetchImpl) {
       throw new CliError(
         "NETWORK_ERROR",
         `Cannot reach the Sites API: ${err.message}`,
-        "Check the network connection to ZCode and retry.",
+        "Check the network connection to Nekode and retry.",
         4,
       );
     }
     if (res.headers.get(ENDPOINT_ERROR_HEADER) === "network") {
       throw new CliError(
         "NETWORK_ERROR",
-        "ZCode cannot reach the Sites API",
+        "Nekode cannot reach the Sites API",
         "Check the network connection and retry.",
         4,
       );
@@ -594,7 +594,7 @@ async function rename(ctx, name) {
   return summarize(await ctx.client.updateSite(site.id, { name: name.trim() }));
 }
 
-const HELP = `zcode-site: deploy and manage ZCode Sites. Run it from the project root.
+const HELP = `zcode-site: deploy and manage Nekode Sites. Run it from the project root.
 
 Output
   stdout: JSON, one object per line. deploy prints progress events first; the last line is the result.
@@ -603,7 +603,7 @@ Output
 Exit codes
   0  success
   1  bad arguments, a local file or stage problem, or SITE_NOT_SELECTED
-  2  not signed in to ZCode, sign-in expired, or not run inside a ZCode session
+  2  not signed in to Nekode, sign-in expired, or not run inside a Nekode session
   3  quota, rate or size limit, or another deployment in progress
   4  the deployment failed, or a server error
 
@@ -622,14 +622,14 @@ Site commands
       Pack the stage directory (its root becomes /app) and publish it. Packing runs first and
       checks the package contract: root start.sh with LF line endings, size, file count, path
       depth, reserved /.__zcode/, broken symlinks, .env files, dependencies present, and every
-      native binary linux x86-64. It skips .git, .DS_Store, __pycache__ and .zcode-site.json.
+      native binary linux x86-64. It skips .git, .DS_Store, __pycache__ and .nekode-site.json.
       PACKAGE_CHECK_FAILED (exit 1): data.problems lists everything to fix; nothing was created
       or uploaded. Fix all of them, then deploy again.
       --allow-foreign-binaries: accept non-linux binaries; only after confirming each listed file
                 is never loaded at runtime (e.g. prebuilt binaries for other platforms next to
                 the linux-x64 one).
-      Target site: --site <id>, else the site in .zcode-site.json, else with --new a new site.
-      A new site is linked by writing .zcode-site.json; keep it and don't put it in the stage.
+      Target site: --site <id>, else the site in .nekode-site.json, else with --new a new site.
+      A new site is linked by writing .nekode-site.json; keep it and don't put it in the stage.
       --new is ignored (with a warning) when the project is already linked.
       Without --new or --site on an unlinked project: SITE_NOT_SELECTED if the account has sites,
       data.candidates [{id, name, url, status}]; ask the user, never pick one yourself.
@@ -667,14 +667,14 @@ Site commands
           live version was rejected by content review gets 3612. Result: as status.
   rename [--site <id>] <name>   change the display name only; 3611 if it fails content review.
           Result: as status.
-  badge hide|show [--site <id>]   hide or show the "ZCode" badge on the site. Only paid plans can
+  badge hide|show [--site <id>]   hide or show the "Nekode" badge on the site. Only paid plans can
           hide it (usage.badgeRemovable); free plans get 3608. badgeHidden is the user's choice,
           badgeVisible whether the badge actually shows. Result: as status.
   list    Result: {sites: [{id, name, url, status}]}
   usage   Account traffic, requests and storage against the plan; canDeploy and exceededReasons.
   help    this text.
 
-Commands without --site use the site in .zcode-site.json. Numeric error codes come from the Sites
+Commands without --site use the site in .nekode-site.json. Numeric error codes come from the Sites
 API (e.g. 3605 quota exceeded, 3610 another deployment in progress); their hint says what to do.`;
 
 // ---------- 入口 ----------

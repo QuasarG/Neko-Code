@@ -8605,12 +8605,16 @@ describe("AgentRuntime tool loop", () => {
     expect(result.response).toBe("done after queued input");
     expect(modelCallCount).toBe(2);
     expect(secondRequestMessages.slice(-4).map((message) => message.role)).toEqual([
-      "assistant",
       "tool",
       "tool",
       "user",
+      "user",
     ]);
-    expect(providerContentToText(secondRequestMessages.at(-1)?.content)).toContain("note body");
+    const tailTexts = secondRequestMessages
+      .slice(-4)
+      .map((message) => providerContentToText(message.content));
+    expect(tailTexts.some((text) => text.includes("note body"))).toBe(true);
+    expect(tailTexts.some((text) => text.includes("Current time:"))).toBe(true);
     const drainIndex = eventTypes.indexOf(SessionEventType.TurnSteerDrained);
     const toolResultIndexes = eventTypes.flatMap((type, index) =>
       type === SessionEventType.ToolCallResult ? [index] : [],
@@ -8715,12 +8719,15 @@ describe("AgentRuntime tool loop", () => {
     const events = await eventStore.getEvents(sessionId);
     expect(modelCallCount).toBe(2);
     expect(secondRequestMessages.slice(-2).map((message) => message.role)).toEqual([
-      "assistant",
+      "user",
       "user",
     ]);
-    expect(providerContentToText(secondRequestMessages.at(-1)?.content)).toContain(
-      "guide without a tool boundary",
-    );
+    expect(
+      secondRequestMessages
+        .slice(-2)
+        .map((message) => providerContentToText(message.content))
+        .some((text) => text.includes("guide without a tool boundary")),
+    ).toBe(true);
     expect(events.map((event) => event.type)).toContain(SessionEventType.TurnSteerDrained);
     expect(events.map((event) => event.type)).not.toContain(
       SessionEventType.TurnSteerDeliveryChanged,
@@ -9159,7 +9166,9 @@ describe("AgentRuntime tool loop", () => {
     // 同一边界一次取出全部已等待的 guide；下一次请求归因到最后一条的 query。
     expect(requestQueryIds).toEqual(["query_original_request", "query_second_steer"]);
     // 默认测试模型不合并相邻 user 内容，不补换行。
-    expect(trailingUserTexts[1]).toEqual(["first queued follow-up", "second queued follow-up"]);
+    expect(
+      trailingUserTexts[1]?.filter((text) => !text.includes("Current time:")),
+    ).toEqual(["first queued follow-up", "second queued follow-up"]);
     // 一起取出，但每条各自落库并各发一个 drained 事件。
     const drainedPayloads = drainedEvents.map((event) => event.payload as any);
     expect(drainedPayloads.map((payload) => payload.queryIds)).toEqual([
@@ -9388,7 +9397,9 @@ describe("AgentRuntime tool loop", () => {
     );
 
     // 已被 send-now 预留的 guide 归预留方提升；按 FIFO 取到它为止，后面的 guide 也不越过它。
-    expect(trailingUserTexts[1]).toEqual(["guide a"]);
+    expect(trailingUserTexts[1]?.filter((text) => !text.includes("Current time:"))).toEqual([
+      "guide a",
+    ]);
     expect(drainedEvents).toHaveLength(1);
     expect(
       (drainedEvents[0]!.payload as any).drainedInputs.map((input: any) => input.text),
@@ -9562,7 +9573,8 @@ describe("AgentRuntime tool loop", () => {
       next
         .slice(toolCallIndex + 2)
         .filter((message: any) => message.role === "user")
-        .map((message: any) => providerContentToText(message.content)),
+        .map((message: any) => providerContentToText(message.content))
+        .filter((text: string) => !text.includes("Current time:")),
     ).toEqual(["guide a", "guide b", "guide c", "[Request interrupted by user]", "next request"]);
   });
 
@@ -12134,7 +12146,7 @@ describe("AgentRuntime tool loop", () => {
       },
       handler: async () => ({
         content: "- 喜欢吃炸鸡\n",
-        filePath: "C:\\Users\\dev\\.zcode\\cli\\memories\\projects\\z-code\\memory\\MEMORY.md",
+        filePath: "C:\\Users\\dev\\.nekode\\cli\\memories\\projects\\z-code\\memory\\MEMORY.md",
         originalFile: null,
         structuredPatch: [
           {
@@ -14143,15 +14155,15 @@ describe("AgentRuntime tool loop", () => {
       .map(messageText)
       .join("\n");
 
-    // 复制数包含首轮持久化的 environment、model、date 公告，fork 后无需重新宣告。
-    expect(fork.response).toContain("copied 8 messages");
+    // 复制数包含首轮持久化的 date 公告；环境/模型已随 system prompt 下发，不占消息。
+    expect(fork.response).toContain("copied 5 messages");
     // Bugfix 回归：fork 历史包含目标回合，工作区必须保留该回合的产出，
     // 不能恢复目标回合自身 checkpoint 的 beforeContent。
     expect(fileSystemPort.files.get("/work/src/demo.ts")).toBe("export const value = 2;\n");
     expect(fork.targetMessageId).toBe(editedAssistants[0]!.info.id);
     expect(forkEvent?.payload).toMatchObject({
-      // 与复制数一致，含 environment、model、date 公告。
-      forkPoint: 8,
+      // 与复制数一致。
+      forkPoint: 5,
       targetMessageId: editedAssistants[0]!.info.id,
       restoredFileCount: 0,
     });
@@ -14258,11 +14270,7 @@ describe("AgentRuntime tool loop", () => {
     const listings = allChildMessages.filter(
       (message) => message.info.source === "agent_listing_delta",
     );
-    expect(listings).toHaveLength(1);
-    expect(listings[0]?.parts[0]?.metadata?.runtimeMessage).toMatchObject({
-      source: "agent_listing_delta",
-      agentListingDelta: { addedTypes: ["Explore", "general-purpose"] },
-    });
+    expect(listings).toHaveLength(0);
     // 模型专用公告不属于可见对话结构，与 agent listing 一样排除。
     const childMessages = allChildMessages.filter(
       (message) =>
@@ -14271,8 +14279,8 @@ describe("AgentRuntime tool loop", () => {
     );
 
     expect(fork).toMatchObject({
-      // 用户输入、environment、model、agent listing、date 公告与两条 assistant 消息。
-      copiedMessageCount: 7,
+      // 用户输入、date 公告与 assistant 消息；环境/模型在 system prompt。
+      copiedMessageCount: 4,
       parentSessionId: sessionId,
       targetMessageId: target!.info.id,
       restoredFiles: [],

@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { PluginUiToolCallView } from "@/plugin-ui/components/PluginUiToolCallBlock.js";
-import { ZCodeIntlProvider, useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { NekodeIntlProvider, useNekodeIntl } from "@/i18n/IntlProvider.js";
 import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
 document.documentElement.className = `${params.get("theme")} theme-zai-${params.get("theme")}`;
 function Fixture() {
   const [opened, setOpened] = useState(false);
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const label = (id: string) => intl.formatMessage({ id });
   return (
     <main className="min-h-screen bg-background p-4 text-foreground">
@@ -51,7 +51,7 @@ function Fixture() {
   );
 }
 createRoot(document.getElementById("root")!).render(
-  <ZCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
+  <NekodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
     <Fixture />
-  </ZCodeIntlProvider>,
+  </NekodeIntlProvider>,
 );

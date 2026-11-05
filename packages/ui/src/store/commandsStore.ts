@@ -5,7 +5,7 @@ import type {
   CommandSetEnabledParams,
   CommandUpdateParams,
   UserCommand,
-  ZCodeCommand,
+  NekodeCommand,
 } from "@zcode/shared";
 import type { ICommandsService } from "@zcode/services";
 
@@ -17,9 +17,9 @@ interface CommandsStoreState {
   loadedWorkspacePath: string | null;
   loadedWorkspaceIdentity: string | null;
   loadedAuthorityKey: string | null;
-  commands: ZCodeCommand[];
+  commands: NekodeCommand[];
   userCommands: UserCommand[];
-  pluginCommands: ZCodeCommand[];
+  pluginCommands: NekodeCommand[];
   capability: { userScopeAvailable: boolean };
   loading: boolean;
   error: string | null;

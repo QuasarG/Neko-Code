@@ -1,8 +1,8 @@
-import type { ZCodeSessionFile, ZCodeTaskMeta } from "@zcode/shared";
+import type { NekodeSessionFile, NekodeTaskMeta } from "@zcode/shared";
 import { zcodeSessionFileSchema, zcodeTaskMetaSchema, zcodeTaskModeSchema } from "@zcode/shared";
 
-export type LegacyTaskSessionFile = Omit<ZCodeSessionFile, "meta"> & {
-  meta: Omit<ZCodeTaskMeta, "mode"> & { mode?: ZCodeTaskMeta["mode"] };
+export type LegacyTaskSessionFile = Omit<NekodeSessionFile, "meta"> & {
+  meta: Omit<NekodeTaskMeta, "mode"> & { mode?: NekodeTaskMeta["mode"] };
 };
 
 const legacyTaskSessionFileSchema = zcodeSessionFileSchema.extend({

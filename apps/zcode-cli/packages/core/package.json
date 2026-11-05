@@ -21,6 +21,14 @@
     "./create-workflow-graph-bounds": {
       "types": "./dist/tool/handlers/create-workflow-graph-bounds.d.ts",
       "import": "./dist/tool/handlers/create-workflow-graph-bounds.js"
+    },
+    "./neko-memory": {
+      "types": "./dist/neko-memory/index.d.ts",
+      "import": "./dist/neko-memory/index.js"
+    },
+    "./wardrobe": {
+      "types": "./dist/wardrobe/index.d.ts",
+      "import": "./dist/wardrobe/index.js"
     }
   },
   "scripts": {

@@ -1,89 +1,89 @@
-/* oxlint-disable eslint(max-lines) -- ZCode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
+/* oxlint-disable eslint(max-lines) -- Nekode session 到当前聊天 projection 的迁移桥需要同时保持 snapshot 和 event 映射一致。 */
 import {
-  getZCodeAgentAvailableModes as getSharedAgentAvailableModes,
-  normalizeAvailableZCodeMode,
-  coalesceConsecutiveZCodeAssistants,
+  getNekodeAgentAvailableModes as getSharedAgentAvailableModes,
+  normalizeAvailableNekodeMode,
+  coalesceConsecutiveNekodeAssistants,
   extractPlanStepsFromToolInput,
   extractPlanStepsFromToolOutput,
   decodeCustomModelValue,
-  deriveZCodeTaskStatusFromSessionSnapshot,
+  deriveNekodeTaskStatusFromSessionSnapshot,
   generateTraceId,
   getConversationMessageProjectionPolicy,
-  getZCodeGoalActiveIterationCount,
-  getZCodeGoalIterationByAssistantMessageId,
-  getZCodeUserVisibleMessages,
+  getNekodeGoalActiveIterationCount,
+  getNekodeGoalIterationByAssistantMessageId,
+  getNekodeUserVisibleMessages,
   isMainAgentToolProjectionSource,
-  isZCodeGoalContinuationReminderMessage,
-  normalizeZCodeApiRetryStatus,
-  attachZCodeBackgroundTaskNotificationToRaw,
-  collectZCodeBackgroundTaskNotificationsByToolUseId,
-  mergeZCodeBackgroundTaskControlItems,
-  parseZCodeBackgroundTaskControlItems,
-  parseZCodeBackgroundTaskNotifications,
+  isNekodeGoalContinuationReminderMessage,
+  normalizeNekodeApiRetryStatus,
+  attachNekodeBackgroundTaskNotificationToRaw,
+  collectNekodeBackgroundTaskNotificationsByToolUseId,
+  mergeNekodeBackgroundTaskControlItems,
+  parseNekodeBackgroundTaskControlItems,
+  parseNekodeBackgroundTaskNotifications,
   parseModelPickerValue as parseSharedModelSelection,
   formatModelPickerValue as formatSharedModelSelection,
-  resolveZCodeVisibleSessionTitle,
-  textFromZCodeMessageParts,
-  ZCODE_AGENT_PROVIDER,
+  resolveNekodeVisibleSessionTitle,
+  textFromNekodeMessageParts,
+  NEKODE_AGENT_PROVIDER,
   zcodeBackgroundTaskNotificationFailureText,
   zcodeBackgroundTaskNotificationToolUpdateStatus,
-  appendZCodeStreamingToolInputDelta,
-  buildZCodeStreamingToolInputPreview,
-  createZCodeToolProjectionMemory,
-  ensureZCodeToolProjectionMemory,
-  finalizeZCodeToolProjectionInput,
-  forgetZCodeToolProjectionMetadata,
-  isZCodeModelRetryRecoveryProgressPayload,
-  markZCodeStreamingToolInputPreviewMaterialized,
-  resolveZCodeToolProjectionMetadata,
-  shouldMaterializeZCodeStreamingToolInputPreview,
+  appendNekodeStreamingToolInputDelta,
+  buildNekodeStreamingToolInputPreview,
+  createNekodeToolProjectionMemory,
+  ensureNekodeToolProjectionMemory,
+  finalizeNekodeToolProjectionInput,
+  forgetNekodeToolProjectionMetadata,
+  isNekodeModelRetryRecoveryProgressPayload,
+  markNekodeStreamingToolInputPreviewMaterialized,
+  resolveNekodeToolProjectionMetadata,
+  shouldMaterializeNekodeStreamingToolInputPreview,
   zcodeApiRetryFromModelNetworkStatusPayload,
   zcodeApiRetryFromStreamRecoveryPayload,
   zcodeTaskNetworkDebugStatusFromPayload,
-  type ZCodeApiRetryStatus,
-  type ZCodeBackgroundTaskNotificationInfo,
-  type ZCodeBackgroundTaskControlItem,
-  type ZCodeConfigOption,
-  type ZCodePersistedMessage,
-  type ZCodePersistedMessagePart,
-  type ZCodePersistedToolCall,
-  type ZCodeTaskGoal,
-  type ZCodeTaskGoalStats,
-  type ZCodeTaskTargetChangedAction,
-  type ZCodeTaskMode,
-  type ZCodeTaskModeInfo,
-  type ZCodeStreamEvent,
-  type ZCodeTaskMeta,
-  type ZCodeTaskSnapshot,
-  type ZCodeTodoGroup,
-  type ZCodeTurnSteerCommandKind,
-  type ZCodeTurnSteerSource,
-  type ZCodePlanStep,
-  type ZCodePromptAttachment,
-  type ZCodeUsage,
+  type NekodeApiRetryStatus,
+  type NekodeBackgroundTaskNotificationInfo,
+  type NekodeBackgroundTaskControlItem,
+  type NekodeConfigOption,
+  type NekodePersistedMessage,
+  type NekodePersistedMessagePart,
+  type NekodePersistedToolCall,
+  type NekodeTaskGoal,
+  type NekodeTaskGoalStats,
+  type NekodeTaskTargetChangedAction,
+  type NekodeTaskMode,
+  type NekodeTaskModeInfo,
+  type NekodeStreamEvent,
+  type NekodeTaskMeta,
+  type NekodeTaskSnapshot,
+  type NekodeTodoGroup,
+  type NekodeTurnSteerCommandKind,
+  type NekodeTurnSteerSource,
+  type NekodePlanStep,
+  type NekodePromptAttachment,
+  type NekodeUsage,
   type InputId,
   type TraceId,
-  type ZCodeMessagePart,
-  type ZCodeMessageWithParts,
+  type NekodeMessagePart,
+  type NekodeMessageWithParts,
   type ModelSelection,
-  type ZCodePermissionOption,
-  type ZCodePermissionRequest,
-  type ZCodePermissionRequestParams,
-  type ZCodeSessionEvent,
-  type ZCodeSessionMode,
-  type ZCodeSessionSettingsState,
-  type ZCodeSessionStateSnapshot,
-  type ZCodeStateUpdatedNotification,
-  type ZCodeContextCompactionTimelinePhase,
-  type ZCodeContextCompactionTimelineMeta,
-  type ZCodeGoalVerification,
-  type ZCodeGoalVerificationTimelineMeta,
-  type ZCodeTimelineMeta,
-  type ZCodeTimelineStatus,
-  type ZCodeTimelineTrigger,
-  type ZCodeToolProjectionMemory,
-  type ZCodeUserInputRequestParams,
-  type ZCodeUserInputResponse,
+  type NekodePermissionOption,
+  type NekodePermissionRequest,
+  type NekodePermissionRequestParams,
+  type NekodeSessionEvent,
+  type NekodeSessionMode,
+  type NekodeSessionSettingsState,
+  type NekodeSessionStateSnapshot,
+  type NekodeStateUpdatedNotification,
+  type NekodeContextCompactionTimelinePhase,
+  type NekodeContextCompactionTimelineMeta,
+  type NekodeGoalVerification,
+  type NekodeGoalVerificationTimelineMeta,
+  type NekodeTimelineMeta,
+  type NekodeTimelineStatus,
+  type NekodeTimelineTrigger,
+  type NekodeToolProjectionMemory,
+  type NekodeUserInputRequestParams,
+  type NekodeUserInputResponse,
   zcodeContextUsageBreakdownSchema,
 } from "@zcode/shared";
 import { errorAttributionSchema } from "@zcode/shared/zcode-protocol-v4";
@@ -100,33 +100,33 @@ const STREAMING_TOOL_INPUT_INFO_LOG_LINE_BUCKET = 50;
 const streamingToolInputProjectionLogBuckets = new Map<string, number>();
 const COMPACTION_PROJECTION_DIAG_LIMIT = 200;
 const compactionProjectionDiagSignatures = new Set<string>();
-const ZCODE_AGENT_MODE_OPTIONS = getSharedAgentAvailableModes();
+const NEKODE_AGENT_MODE_OPTIONS = getSharedAgentAvailableModes();
 
-export interface ZCodeSessionEventProjectionState extends ZCodeToolProjectionMemory {
+export interface NekodeSessionEventProjectionState extends NekodeToolProjectionMemory {
   activePromptInputIdBySession?: Map<string, InputId>;
   rewindControlTurnKeys?: Set<string>;
   activeApiRetrySessionIds?: Set<string>;
-  backgroundTaskControlsBySession?: Map<string, ZCodeBackgroundTaskControlItem[]>;
+  backgroundTaskControlsBySession?: Map<string, NekodeBackgroundTaskControlItem[]>;
   streamedTurnKeys?: Set<string>;
 }
 
-export function createZCodeSessionEventProjectionState(): ZCodeSessionEventProjectionState {
+export function createNekodeSessionEventProjectionState(): NekodeSessionEventProjectionState {
   return {
-    ...createZCodeToolProjectionMemory(),
+    ...createNekodeToolProjectionMemory(),
     activePromptInputIdBySession: new Map<string, InputId>(),
     activeApiRetrySessionIds: new Set<string>(),
     streamedTurnKeys: new Set<string>(),
   };
 }
 
-export type ZCodeSessionProjectionMode = "active-live" | "background-summary";
+export type NekodeSessionProjectionMode = "active-live" | "background-summary";
 
 export function formatModelPickerValue(ref: ModelSelection | undefined): string {
   return formatSharedModelSelection(ref);
 }
 
 function resolveLatestMessageModelSelection(
-  messages: readonly ZCodeMessageWithParts[],
+  messages: readonly NekodeMessageWithParts[],
 ): ModelSelection | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const model = messages[index]?.info.model;
@@ -138,7 +138,7 @@ function resolveLatestMessageModelSelection(
 }
 
 function resolveTaskMetaModelSelectionFromSnapshot(
-  snapshot: ZCodeSessionStateSnapshot,
+  snapshot: NekodeSessionStateSnapshot,
 ): ModelSelection | undefined {
   // 历史 resume 被错误 runtimeModel 覆盖时，settings.current 会变成 app 当前默认模型，
   // 但消息 info.model 仍记录真实使用的模型。task meta 会作为下次冷恢复 hint，
@@ -150,7 +150,7 @@ export function parseModelPickerValue(value: string): ModelSelection {
   const customModel = decodeCustomModelValue(value);
   if (customModel?.providerId && customModel.modelName) {
     // UI 自定义模型值是展示态 custom:provider:model，
-    // ZCode Protocol 必须收到严格的 providerId/modelId 结构。
+    // Nekode Protocol 必须收到严格的 providerId/modelId 结构。
     return {
       providerId: customModel.providerId,
       modelId: customModel.modelName,
@@ -160,7 +160,7 @@ export function parseModelPickerValue(value: string): ModelSelection {
   return parseSharedModelSelection(value);
 }
 
-export function toZCodeTaskMode(mode: ZCodeTaskMode | undefined): ZCodeSessionMode | undefined {
+export function toNekodeTaskMode(mode: NekodeTaskMode | undefined): NekodeSessionMode | undefined {
   switch (mode) {
     case "plan":
       return "plan";
@@ -185,9 +185,9 @@ export function toZCodeTaskMode(mode: ZCodeTaskMode | undefined): ZCodeSessionMo
 }
 
 export function zcodeSessionSettingsToConfigOptions(
-  settings: ZCodeSessionSettingsState,
-): ZCodeConfigOption[] {
-  const configOptions: ZCodeConfigOption[] = [
+  settings: NekodeSessionSettingsState,
+): NekodeConfigOption[] {
+  const configOptions: NekodeConfigOption[] = [
     {
       id: MODEL_CONFIG_ID,
       name: "Model",
@@ -217,8 +217,8 @@ export function zcodeSessionSettingsToConfigOptions(
       name: "Mode",
       category: "mode",
       type: "select",
-      currentValue: normalizeAvailableZCodeMode(settings.mode.current),
-      options: getZCodeAgentModeSelectOptions(),
+      currentValue: normalizeAvailableNekodeMode(settings.mode.current),
+      options: getNekodeAgentModeSelectOptions(),
     },
   ];
   if (settings.thoughtLevel.enabled) {
@@ -239,22 +239,22 @@ export function zcodeSessionSettingsToConfigOptions(
 }
 
 export function zcodeWorkspacePresentationToConfigOptions(
-  mode: ZCodeSessionMode,
-): ZCodeConfigOption[] {
+  mode: NekodeSessionMode,
+): NekodeConfigOption[] {
   return [
     {
       id: MODE_CONFIG_ID,
       name: "Mode",
       category: "mode",
       type: "select",
-      currentValue: normalizeAvailableZCodeMode(mode),
-      options: getZCodeAgentModeSelectOptions(),
+      currentValue: normalizeAvailableNekodeMode(mode),
+      options: getNekodeAgentModeSelectOptions(),
     },
   ];
 }
 
 function resolveSettingsThoughtLevelCurrentValue(
-  thoughtLevel: ZCodeSessionSettingsState["thoughtLevel"],
+  thoughtLevel: NekodeSessionSettingsState["thoughtLevel"],
 ): string | undefined {
   const thoughtLevelValues = new Set(thoughtLevel.available.map((level) => level.value));
   const currentThoughtLevel =
@@ -265,27 +265,27 @@ function resolveSettingsThoughtLevelCurrentValue(
     thoughtLevel.defaultLevel && thoughtLevelValues.has(thoughtLevel.defaultLevel)
       ? thoughtLevel.defaultLevel
       : undefined;
-  // ZCode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
+  // Nekode Protocol 的 defaultLevel 是模型事实，current 为空时表示用户尚未显式修改。
   // 实时模型状态事件也要投影默认值，否则工具栏会拿到空 currentValue，出现没有档位被选中的 UI。
   return currentThoughtLevel ?? defaultThoughtLevel ?? thoughtLevel.available[0]?.value;
 }
 
-export function zcodeSessionSnapshotToZCodeTaskSnapshot(
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodeTaskSnapshot {
+export function zcodeSessionSnapshotToNekodeTaskSnapshot(
+  snapshot: NekodeSessionStateSnapshot,
+): NekodeTaskSnapshot {
   const meta = zcodeSessionSnapshotToTaskMeta(snapshot);
   const activeGoalIterationCount = getSnapshotGoalActiveIterationCount(snapshot);
-  const goalIterationByAssistantMessageId = getZCodeGoalIterationByAssistantMessageId(
+  const goalIterationByAssistantMessageId = getNekodeGoalIterationByAssistantMessageId(
     snapshot.messages,
     {
       ...(activeGoalIterationCount > 0 ? { maxGoalIteration: activeGoalIterationCount } : {}),
       target: snapshot.projection.target,
     },
   );
-  const visibleMessages = getZCodeUserVisibleMessages(snapshot.messages, {
+  const visibleMessages = getNekodeUserVisibleMessages(snapshot.messages, {
     target: snapshot.projection.target,
   });
-  const backgroundTaskNotifications = collectZCodeBackgroundTaskNotificationsByToolUseId(
+  const backgroundTaskNotifications = collectNekodeBackgroundTaskNotificationsByToolUseId(
     snapshot.messages,
   );
   if (snapshot.projection.target) {
@@ -301,7 +301,7 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
       assistantGoalIterations: goalIterationCounts,
       goalContinuationReminderUsers: snapshot.messages.filter(
         (message) =>
-          message.info.role === "user" && isZCodeGoalContinuationReminderMessage(message),
+          message.info.role === "user" && isNekodeGoalContinuationReminderMessage(message),
       ).length,
       goalStatsIteration: snapshot.goalStats?.iterationCount ?? null,
       rawMessages: snapshot.messages.length,
@@ -316,9 +316,9 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
       addGoalVerificationTimelineSnapshotFallback(
         addGoalObjectiveSnapshotFallback(
           restoreGoalCommandUserMessages(
-            coalesceConsecutiveZCodeAssistants(
+            coalesceConsecutiveNekodeAssistants(
               visibleMessages.map((message) =>
-                zcodeMessageToZCodePersistedMessage(
+                zcodeMessageToNekodePersistedMessage(
                   message,
                   message.info.role === "assistant"
                     ? goalIterationByAssistantMessageId.get(message.info.messageId)
@@ -337,7 +337,7 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
     ),
   );
   logCompactionProjectionDiagnostic(snapshot, visibleMessages, messages);
-  const pendingPermissions: ZCodePermissionRequest[] = snapshot.projection.pendingPermissions
+  const pendingPermissions: NekodePermissionRequest[] = snapshot.projection.pendingPermissions
     .filter((permission) => !isUserInputBackedPermissionToolName(permission.toolName))
     .map((permission) => pendingPermissionToStreamEvent(snapshot.session.sessionId, permission));
   return {
@@ -356,7 +356,7 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
         contextUsageFromProjection(snapshot.projection) ??
         undefined,
       pendingPermissions,
-      backgroundBashJobs: parseZCodeBackgroundTaskControlItems(snapshot.projection.backgroundJobs),
+      backgroundBashJobs: parseNekodeBackgroundTaskControlItems(snapshot.projection.backgroundJobs),
       pendingElicitations: snapshot.projection.pendingPermissions
         .filter((permission) => isUserInputBackedPermissionToolName(permission.toolName))
         .map((permission) =>
@@ -366,7 +366,7 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
           ),
         )
         .filter(
-          (event): event is Extract<ZCodeStreamEvent, { type: "elicitation_request" }> =>
+          (event): event is Extract<NekodeStreamEvent, { type: "elicitation_request" }> =>
             event !== null,
         ),
       // Bugfix: agent 恢复历史 session 时会从 DB 读取 todo；UI 的 todo 面板不能再只依赖
@@ -380,11 +380,11 @@ export function zcodeSessionSnapshotToZCodeTaskSnapshot(
   };
 }
 
-function hasProtocolCompactionPart(message: ZCodeMessageWithParts): boolean {
+function hasProtocolCompactionPart(message: NekodeMessageWithParts): boolean {
   return message.parts.some((part) => part.type === "compaction");
 }
 
-function protocolMessageTimelineStatus(message: ZCodeMessageWithParts) {
+function protocolMessageTimelineStatus(message: NekodeMessageWithParts) {
   for (const part of message.parts) {
     if (part.type !== "compaction") {
       continue;
@@ -401,7 +401,7 @@ function protocolMessageTimelineStatus(message: ZCodeMessageWithParts) {
   return null;
 }
 
-function summarizeProtocolMessageForTimelineDiag(message: ZCodeMessageWithParts, index: number) {
+function summarizeProtocolMessageForTimelineDiag(message: NekodeMessageWithParts, index: number) {
   return {
     index,
     id: message.info.messageId,
@@ -409,12 +409,12 @@ function summarizeProtocolMessageForTimelineDiag(message: ZCodeMessageWithParts,
     created: message.info.time.created,
     completed: message.info.time.completed,
     partTypes: message.parts.map((part) => part.type),
-    textLength: textFromZCodeMessageParts(message.parts).length,
+    textLength: textFromNekodeMessageParts(message.parts).length,
     compaction: protocolMessageTimelineStatus(message),
   };
 }
 
-function summarizePersistedMessageForTimelineDiag(message: ZCodePersistedMessage, index: number) {
+function summarizePersistedMessageForTimelineDiag(message: NekodePersistedMessage, index: number) {
   const timeline = message.syntheticTimeline;
   return {
     index,
@@ -462,9 +462,9 @@ function rememberCompactionProjectionDiagSignature(signature: string): boolean {
 }
 
 function logCompactionProjectionDiagnostic(
-  snapshot: ZCodeSessionStateSnapshot,
-  visibleMessages: readonly ZCodeMessageWithParts[],
-  projectedMessages: readonly ZCodePersistedMessage[],
+  snapshot: NekodeSessionStateSnapshot,
+  visibleMessages: readonly NekodeMessageWithParts[],
+  projectedMessages: readonly NekodePersistedMessage[],
 ) {
   const hasCompaction =
     snapshot.messages.some(hasProtocolCompactionPart) ||
@@ -515,9 +515,9 @@ function logCompactionProjectionDiagnostic(
 }
 
 function restoreGoalCommandUserMessages(
-  messages: ZCodePersistedMessage[],
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+  snapshot: NekodeSessionStateSnapshot,
+): NekodePersistedMessage[] {
   const target = snapshot.projection.target;
   const objective = target?.objective.trim();
   if (!target || !objective) {
@@ -546,32 +546,32 @@ function restoreGoalCommandUserMessages(
   return changed ? restored : messages;
 }
 
-function getSnapshotGoalActiveIterationCount(snapshot: ZCodeSessionStateSnapshot): number {
+function getSnapshotGoalActiveIterationCount(snapshot: NekodeSessionStateSnapshot): number {
   const targetId = snapshot.projection.target?.targetId;
   const timeline =
     snapshot.runtime.goalVerificationTimeline?.filter(
       (item) => !targetId || item.targetId === targetId,
     ) ?? [];
-  return getZCodeGoalActiveIterationCount({
+  return getNekodeGoalActiveIterationCount({
     targetStatus: snapshot.projection.target?.status ?? null,
     timeline,
   });
 }
 
 function addGoalObjectiveSnapshotFallback(
-  messages: ZCodePersistedMessage[],
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+  snapshot: NekodeSessionStateSnapshot,
+): NekodePersistedMessage[] {
   const objective = snapshot.projection.target?.objective.trim();
   if (
     !objective ||
     messages.some((message) => message.role === "user") ||
-    !snapshot.messages.some(isZCodeGoalContinuationReminderMessage)
+    !snapshot.messages.some(isNekodeGoalContinuationReminderMessage)
   ) {
     return messages;
   }
 
-  const continuationMessage = snapshot.messages.find(isZCodeGoalContinuationReminderMessage);
+  const continuationMessage = snapshot.messages.find(isNekodeGoalContinuationReminderMessage);
   // Bugfix: /goal 续跑会把目标包进 model-only system-reminder，shared 可见过滤会正确隐藏内部 XML。
   // 但历史恢复如果没有原始用户 turn，聊天区会只剩 assistant 回复；这里补回用户实际输入的命令形态，
   // 避免首轮 query 被瘦身成 objective 后丢失 "/goal" 上下文。
@@ -590,9 +590,9 @@ function addGoalObjectiveSnapshotFallback(
 }
 
 function addSessionForkSnapshotFallback(
-  messages: ZCodePersistedMessage[],
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+  snapshot: NekodeSessionStateSnapshot,
+): NekodePersistedMessage[] {
   const parentSessionId = snapshot.session.parentSessionId;
   if (
     !parentSessionId ||
@@ -623,9 +623,9 @@ function addSessionForkSnapshotFallback(
 }
 
 function addGoalVerificationTimelineSnapshotFallback(
-  messages: ZCodePersistedMessage[],
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+  snapshot: NekodeSessionStateSnapshot,
+): NekodePersistedMessage[] {
   const timeline = snapshot.runtime.goalVerificationTimeline ?? [];
   if (timeline.length === 0) {
     return messages;
@@ -642,7 +642,7 @@ function addGoalVerificationTimelineSnapshotFallback(
   );
   const timelineMessages = timeline
     .filter((item) => !existingIds.has(goalVerificationTimelineIdentityKey(item)))
-    .map<ZCodePersistedMessage>((item) => ({
+    .map<NekodePersistedMessage>((item) => ({
       id: goalVerificationTimelineMessageId(item),
       role: "assistant",
       content: "",
@@ -658,7 +658,7 @@ function addGoalVerificationTimelineSnapshotFallback(
 }
 
 function goalVerificationTimelineIdentityKey(
-  item: Extract<ZCodeGoalVerificationTimelineMeta, { type: "goal_verification" }>,
+  item: Extract<NekodeGoalVerificationTimelineMeta, { type: "goal_verification" }>,
 ): string {
   if (typeof item.goalIteration === "number") {
     return `${item.targetId}:${item.goalIteration}`;
@@ -667,7 +667,7 @@ function goalVerificationTimelineIdentityKey(
 }
 
 function goalVerificationTimelineMessageId(
-  item: Extract<ZCodeGoalVerificationTimelineMeta, { type: "goal_verification" }>,
+  item: Extract<NekodeGoalVerificationTimelineMeta, { type: "goal_verification" }>,
 ): string {
   if (typeof item.goalIteration === "number") {
     return `zcode-goal-verification-${item.targetId}-${item.goalIteration}`;
@@ -676,9 +676,9 @@ function goalVerificationTimelineMessageId(
 }
 
 function insertGoalVerificationTimelineMessages(
-  messages: ZCodePersistedMessage[],
-  timelineMessages: ZCodePersistedMessage[],
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+  timelineMessages: NekodePersistedMessage[],
+): NekodePersistedMessage[] {
   const result = [...messages];
   for (const message of [...timelineMessages].sort(
     (left, right) => left.timestamp - right.timestamp,
@@ -698,8 +698,8 @@ function insertGoalVerificationTimelineMessages(
 }
 
 function normalizeGoalVerificationTimelineMessageOrder(
-  messages: ZCodePersistedMessage[],
-): ZCodePersistedMessage[] {
+  messages: NekodePersistedMessage[],
+): NekodePersistedMessage[] {
   const timelineMessages = messages.filter(
     (message) => message.syntheticTimeline?.type === "goal_verification",
   );
@@ -715,7 +715,7 @@ function normalizeGoalVerificationTimelineMessageOrder(
 }
 
 function goalVerificationAnchorInsertIndex(
-  messages: readonly ZCodePersistedMessage[],
+  messages: readonly NekodePersistedMessage[],
   anchorIndex: number,
 ): number {
   let index = anchorIndex + 1;
@@ -729,7 +729,7 @@ function goalVerificationAnchorInsertIndex(
 }
 
 function timestampInsertIndex(
-  messages: readonly ZCodePersistedMessage[],
+  messages: readonly NekodePersistedMessage[],
   timestamp: number,
 ): number {
   const index = messages.findIndex((message) => message.timestamp > timestamp);
@@ -737,7 +737,7 @@ function timestampInsertIndex(
 }
 
 function findPersistedMessageIndexById(
-  messages: readonly ZCodePersistedMessage[],
+  messages: readonly NekodePersistedMessage[],
   messageId: string,
 ): number {
   return messages.findIndex(
@@ -746,8 +746,8 @@ function findPersistedMessageIndexById(
 }
 
 function sessionTodosToPlanSteps(
-  todos: ZCodeSessionStateSnapshot["todos"],
-): ZCodePlanStep[] | null {
+  todos: NekodeSessionStateSnapshot["todos"],
+): NekodePlanStep[] | null {
   if (!todos || todos.length === 0) {
     return null;
   }
@@ -759,14 +759,14 @@ function sessionTodosToPlanSteps(
 }
 
 function sessionGoalStatsToRuntime(
-  stats: ZCodeSessionStateSnapshot["goalStats"],
-): ZCodeTaskGoalStats | null {
+  stats: NekodeSessionStateSnapshot["goalStats"],
+): NekodeTaskGoalStats | null {
   return stats ? { ...stats } : null;
 }
 
 function sessionTodoGroupsToRuntime(
-  groups: ZCodeSessionStateSnapshot["todoGroups"],
-): ZCodeTodoGroup[] | null {
+  groups: NekodeSessionStateSnapshot["todoGroups"],
+): NekodeTodoGroup[] | null {
   if (!groups || groups.length === 0) {
     return null;
   }
@@ -785,7 +785,7 @@ function sessionTodoGroupsToRuntime(
   }));
 }
 
-export function zcodeSessionSnapshotToTaskMeta(snapshot: ZCodeSessionStateSnapshot): ZCodeTaskMeta {
+export function zcodeSessionSnapshotToTaskMeta(snapshot: NekodeSessionStateSnapshot): NekodeTaskMeta {
   return {
     taskId: snapshot.session.sessionId,
     traceId: generateTraceId(snapshot.session.sessionId),
@@ -794,11 +794,11 @@ export function zcodeSessionSnapshotToTaskMeta(snapshot: ZCodeSessionStateSnapsh
     workspaceIdentity: snapshot.session.workspace.workspaceIdentity,
     createdAt: snapshot.session.createdAt,
     updatedAt: snapshot.session.updatedAt,
-    mode: fromZCodeMode(snapshot.session.mode),
+    mode: fromNekodeMode(snapshot.session.mode),
     model: formatModelPickerValue(resolveTaskMetaModelSelectionFromSnapshot(snapshot)),
     thoughtLevel: snapshot.settings.thoughtLevel.current,
-    provider: ZCODE_AGENT_PROVIDER,
-    status: deriveZCodeTaskStatusFromSessionSnapshot(snapshot),
+    provider: NEKODE_AGENT_PROVIDER,
+    status: deriveNekodeTaskStatusFromSessionSnapshot(snapshot),
     lastError: snapshot.projection.lastError
       ? {
           code: snapshot.projection.lastError.code ?? snapshot.projection.lastError.type,
@@ -812,17 +812,17 @@ export function zcodeSessionSnapshotToTaskMeta(snapshot: ZCodeSessionStateSnapsh
         }
       : undefined,
     target: snapshot.projection.target
-      ? fromZCodeGoal(snapshot.projection.target)
+      ? fromNekodeGoal(snapshot.projection.target)
       : snapshot.projection.target,
   };
 }
 
-export function zcodeSessionEventToZCodeStreamEvents(params: {
-  event: ZCodeSessionEvent;
-  projectionMode?: ZCodeSessionProjectionMode;
-  state?: ZCodeSessionEventProjectionState;
+export function zcodeSessionEventToNekodeStreamEvents(params: {
+  event: NekodeSessionEvent;
+  projectionMode?: NekodeSessionProjectionMode;
+  state?: NekodeSessionEventProjectionState;
   taskId: string;
-}): ZCodeStreamEvent[] {
+}): NekodeStreamEvent[] {
   const { event, state, taskId, projectionMode = "active-live" } = params;
   const protocolTraceId = event.traceId ?? generateTraceId(taskId);
   const payload = asRecord(event.payload);
@@ -843,7 +843,7 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
     if (inputId) {
       setActivePromptInputId(state, event.sessionId, inputId);
     }
-    const runStartedEvent: ZCodeStreamEvent = {
+    const runStartedEvent: NekodeStreamEvent = {
       type: "task_run_started",
       taskId,
       traceId,
@@ -997,7 +997,7 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
       ];
     }
     case "turn.completed": {
-      const events: ZCodeStreamEvent[] = [];
+      const events: NekodeStreamEvent[] = [];
       const response = stringValue(payload.response);
       const isRewindControlTurn = state?.rewindControlTurnKeys?.has(turnKey) ?? false;
       if (response && !isRewindControlTurn && !state?.streamedTurnKeys?.has(turnKey)) {
@@ -1041,7 +1041,7 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
             taskId,
             traceId,
             eventInputId,
-            stringValue(errorPayload.message) ?? "ZCode compact failed",
+            stringValue(errorPayload.message) ?? "Nekode compact failed",
           ),
         ];
       }
@@ -1054,7 +1054,7 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
           taskId,
           traceId,
           ...(eventInputId ? { inputId: eventInputId } : {}),
-          error: stringValue(errorPayload.message) ?? "ZCode session failed",
+          error: stringValue(errorPayload.message) ?? "Nekode session failed",
           code: stringValue(errorPayload.code) ?? stringValue(errorPayload.type),
           detail: stringValue(errorPayload.detail),
           ...(attribution.success ? { attribution: attribution.data } : {}),
@@ -1095,18 +1095,18 @@ export function zcodeSessionEventToZCodeStreamEvents(params: {
 }
 
 function ensureProjectionToolMemory(
-  state: ZCodeSessionEventProjectionState | undefined,
-): ZCodeToolProjectionMemory | undefined {
+  state: NekodeSessionEventProjectionState | undefined,
+): NekodeToolProjectionMemory | undefined {
   if (!state) {
     return undefined;
   }
   // 修复原因：前台 useTaskStreamEvents 曾漏初始化这个 Map，导致 Write 输入 delta
   // 每次都从空字符串重新解析，界面只能看到首段和最终完整 tool_call，无法实时递增行数。
-  return ensureZCodeToolProjectionMemory(state);
+  return ensureNekodeToolProjectionMemory(state);
 }
 
 function ensureProjectionApiRetrySessionIds(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
 ): Set<string> | undefined {
   if (!state) {
     return undefined;
@@ -1116,10 +1116,10 @@ function ensureProjectionApiRetrySessionIds(
 }
 
 function trackProjectionApiRetryEvents(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
-  events: ZCodeStreamEvent[],
-): ZCodeStreamEvent[] {
+  events: NekodeStreamEvent[],
+): NekodeStreamEvent[] {
   const apiRetrySessionIds = ensureProjectionApiRetrySessionIds(state);
   if (!apiRetrySessionIds) {
     return events;
@@ -1137,23 +1137,23 @@ function trackProjectionApiRetryEvents(
 }
 
 function clearProjectionApiRetryState(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
 ): void {
   state?.activeApiRetrySessionIds?.delete(sessionId);
 }
 
 function takeProjectionApiRetryClearOnModelProgress(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
   taskId: string,
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "session_info_update" }> | null {
+): Extract<NekodeStreamEvent, { type: "session_info_update" }> | null {
   if (
     !state?.activeApiRetrySessionIds?.has(sessionId) ||
-    !isZCodeModelRetryRecoveryProgressPayload(payload)
+    !isNekodeModelRetryRecoveryProgressPayload(payload)
   ) {
     return null;
   }
@@ -1169,19 +1169,19 @@ function takeProjectionApiRetryClearOnModelProgress(
   };
 }
 
-export function zcodeStateUpdatedToZCodeStreamEvents(params: {
-  notification: ZCodeStateUpdatedNotification;
-  settings: ZCodeSessionSettingsState;
+export function zcodeStateUpdatedToNekodeStreamEvents(params: {
+  notification: NekodeStateUpdatedNotification;
+  settings: NekodeSessionSettingsState;
   taskId: string;
-}): ZCodeStreamEvent[] {
+}): NekodeStreamEvent[] {
   const traceId = generateTraceId(params.taskId);
   return [
     {
       type: "mode_update",
       taskId: params.taskId,
       traceId,
-      currentModeId: normalizeAvailableZCodeMode(params.settings.mode.current),
-      availableModes: getZCodeAgentAvailableModes(),
+      currentModeId: normalizeAvailableNekodeMode(params.settings.mode.current),
+      availableModes: getNekodeAgentAvailableModes(),
     },
     {
       type: "glm_agent_model_state_update",
@@ -1218,10 +1218,10 @@ export function zcodeStateUpdatedToZCodeStreamEvents(params: {
   ];
 }
 
-export function zcodePermissionRequestToZCodeStreamEvent(
+export function zcodePermissionRequestToNekodeStreamEvent(
   taskId: string,
-  request: ZCodePermissionRequestParams,
-): ZCodeStreamEvent {
+  request: NekodePermissionRequestParams,
+): NekodeStreamEvent {
   return {
     type: "permission_request",
     taskId,
@@ -1236,10 +1236,10 @@ export function zcodePermissionRequestToZCodeStreamEvent(
   };
 }
 
-export function zcodeUserInputRequestToZCodeStreamEvent(
+export function zcodeUserInputRequestToNekodeStreamEvent(
   taskId: string,
-  request: ZCodeUserInputRequestParams,
-): Extract<ZCodeStreamEvent, { type: "elicitation_request" }> {
+  request: NekodeUserInputRequestParams,
+): Extract<NekodeStreamEvent, { type: "elicitation_request" }> {
   const questions =
     request.questions?.map((question) => ({
       question: question.question,
@@ -1267,14 +1267,14 @@ export function zcodeUserInputRequestToZCodeStreamEvent(
   };
 }
 
-export function zcodeUserInputResponseToZCodeStreamEvent(
+export function zcodeUserInputResponseToNekodeStreamEvent(
   taskId: string,
   response: {
     requestId: string;
-    action: ZCodeUserInputResponse["action"];
+    action: NekodeUserInputResponse["action"];
     content?: Record<string, unknown>;
   },
-): Extract<ZCodeStreamEvent, { type: "elicitation_response" }> {
+): Extract<NekodeStreamEvent, { type: "elicitation_response" }> {
   return {
     type: "elicitation_response",
     taskId,
@@ -1291,10 +1291,10 @@ function backgroundTaskNotificationToolUpdatesFromInput(params: {
   originMeta: unknown;
   taskId: string;
   traceId: TraceId;
-}): Extract<ZCodeStreamEvent, { type: "tool_call_update" }>[] {
+}): Extract<NekodeStreamEvent, { type: "tool_call_update" }>[] {
   // 终态与失败原文优先取本轮 originMeta 的结构化结果，不解析 summary 文本。
   // 合并轮的每条通知各自更新自己的工具。
-  return parseZCodeBackgroundTaskNotifications(params.input, params.originMeta).map((parsed) => {
+  return parseNekodeBackgroundTaskNotifications(params.input, params.originMeta).map((parsed) => {
     const status = zcodeBackgroundTaskNotificationToolUpdateStatus(parsed.notification.status);
     return {
       type: "tool_call_update",
@@ -1310,7 +1310,7 @@ function backgroundTaskNotificationToolUpdatesFromInput(params: {
       ...(status === "failed"
         ? { error: zcodeBackgroundTaskNotificationFailureText(parsed.notification) }
         : {}),
-      raw: attachZCodeBackgroundTaskNotificationToRaw(
+      raw: attachNekodeBackgroundTaskNotificationToRaw(
         { toolCallId: parsed.toolUseId },
         parsed.notification,
       ),
@@ -1318,19 +1318,19 @@ function backgroundTaskNotificationToolUpdatesFromInput(params: {
   });
 }
 
-function zcodeMessageToZCodePersistedMessage(
-  message: ZCodeMessageWithParts,
+function zcodeMessageToNekodePersistedMessage(
+  message: NekodeMessageWithParts,
   goalIteration?: number,
-  backgroundTaskNotifications?: ReadonlyMap<string, ZCodeBackgroundTaskNotificationInfo>,
-): ZCodePersistedMessage {
-  const tools: ZCodePersistedToolCall[] = [];
-  const parts: ZCodePersistedMessagePart[] = [];
+  backgroundTaskNotifications?: ReadonlyMap<string, NekodeBackgroundTaskNotificationInfo>,
+): NekodePersistedMessage {
+  const tools: NekodePersistedToolCall[] = [];
+  const parts: NekodePersistedMessagePart[] = [];
   const attachments = mapPromptAttachmentsFromParts(message.parts);
   const projectionPolicy =
     message.info.role === "user"
       ? getConversationMessageProjectionPolicy(message)
       : "realUserInput";
-  let syntheticTimeline: ZCodeTimelineMeta | undefined;
+  let syntheticTimeline: NekodeTimelineMeta | undefined;
   for (const part of message.parts) {
     if (part.type === "text") {
       if (!syntheticTimeline) {
@@ -1382,18 +1382,18 @@ function zcodeMessageToZCodePersistedMessage(
 }
 
 function mapPromptAttachmentsFromParts(
-  parts: readonly ZCodeMessagePart[],
-): ZCodePromptAttachment[] | undefined {
+  parts: readonly NekodeMessagePart[],
+): NekodePromptAttachment[] | undefined {
   const attachments = parts
-    .filter((part): part is Extract<ZCodeMessagePart, { type: "file" }> => part.type === "file")
+    .filter((part): part is Extract<NekodeMessagePart, { type: "file" }> => part.type === "file")
     .map(mapPromptAttachmentFromFilePart)
-    .filter((attachment): attachment is ZCodePromptAttachment => attachment !== undefined);
+    .filter((attachment): attachment is NekodePromptAttachment => attachment !== undefined);
   return attachments.length > 0 ? attachments : undefined;
 }
 
 function mapPromptAttachmentFromFilePart(
-  part: Extract<ZCodeMessagePart, { type: "file" }>,
-): ZCodePromptAttachment | undefined {
+  part: Extract<NekodeMessagePart, { type: "file" }>,
+): NekodePromptAttachment | undefined {
   const mimeType = part.mime || "application/octet-stream";
   const metadata = asRecord(part.metadata);
   const filename = part.filename?.trim() || filenameFromPathLike(part.url) || "attachment";
@@ -1495,8 +1495,8 @@ function filenameFromPathLike(value: string): string | undefined {
 }
 
 function extractSyntheticTimelineFromTextPart(
-  part: Extract<ZCodeMessagePart, { type: "text" }>,
-): ZCodeTimelineMeta | undefined {
+  part: Extract<NekodeMessagePart, { type: "text" }>,
+): NekodeTimelineMeta | undefined {
   const metadata = part.metadata;
   if (!metadata || typeof metadata !== "object") return undefined;
   const forkContext = (metadata as Record<string, unknown>)["forkContext"];
@@ -1523,8 +1523,8 @@ function extractSyntheticTimelineFromTextPart(
 }
 
 function synthesizeTimelineFromTimelinePart(
-  part: Extract<ZCodeMessagePart, { type: "timeline" }>,
-): ZCodeTimelineMeta | undefined {
+  part: Extract<NekodeMessagePart, { type: "timeline" }>,
+): NekodeTimelineMeta | undefined {
   if (part.timelineType !== "session_fork") {
     return undefined;
   }
@@ -1548,8 +1548,8 @@ function synthesizeTimelineFromTimelinePart(
 }
 
 function synthesizeCompactionTimeline(
-  part: Extract<ZCodeMessagePart, { type: "compaction" }>,
-): ZCodeTimelineMeta | undefined {
+  part: Extract<NekodeMessagePart, { type: "compaction" }>,
+): NekodeTimelineMeta | undefined {
   const metadata = asRecord(part.metadata);
   const operationId = stringValue(metadata.operationId) ?? part.partId;
   const status = timelineStatusValue(metadata.timelineStatus);
@@ -1599,7 +1599,7 @@ function mapCompactTimelinePayload(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "agent_message_chunk" }> | null {
+): Extract<NekodeStreamEvent, { type: "agent_message_chunk" }> | null {
   const timeline = compactTimelineMetaFromPayload(payload, inputId);
   if (!timeline) {
     return null;
@@ -1623,13 +1623,13 @@ function mapSyntheticTimelinePartPayload(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "agent_message_chunk" }> | null {
+): Extract<NekodeStreamEvent, { type: "agent_message_chunk" }> | null {
   const part = asRecord(payload.part);
   if (part.type !== "text") {
     return null;
   }
   const timeline = extractSyntheticTimelineFromTextPart(
-    part as Extract<ZCodeMessagePart, { type: "text" }>,
+    part as Extract<NekodeMessagePart, { type: "text" }>,
   );
   if (!timeline) {
     return null;
@@ -1654,7 +1654,7 @@ function mapGoalVerificationTimelinePayload(
   inputId: InputId | undefined,
   timestamp: number,
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "agent_message_chunk" }> | null {
+): Extract<NekodeStreamEvent, { type: "agent_message_chunk" }> | null {
   const targetId = stringValue(payload.targetId);
   const verificationId = stringValue(payload.verificationId);
   const status = goalVerificationTimelineStatusValue(payload.status);
@@ -1667,7 +1667,7 @@ function mapGoalVerificationTimelinePayload(
   const anchorTurnId = stringValue(payload.anchorTurnId);
   const startedAt =
     numberValue(payload.startedAt) ?? (status === "started" ? timestamp : undefined);
-  const timeline: ZCodeGoalVerificationTimelineMeta = {
+  const timeline: NekodeGoalVerificationTimelineMeta = {
     version: 1,
     kind: "synthetic",
     type: "goal_verification",
@@ -1696,7 +1696,7 @@ function mapGoalVerificationTimelinePayload(
 function compactTimelineMetaFromPayload(
   payload: Record<string, unknown>,
   inputId: InputId | undefined,
-): ZCodeContextCompactionTimelineMeta | null {
+): NekodeContextCompactionTimelineMeta | null {
   const operationId = stringValue(payload.operationId);
   const status = timelineStatusValue(payload.status ?? payload.timelineStatus);
   if (!operationId || !status) {
@@ -1715,7 +1715,7 @@ function compactTimelineMetaFromPayload(
   const phase = compactionPhaseValue(payload.phase);
   const startedAt = numberValue(payload.startedAt);
   const endedAt = numberValue(payload.endedAt);
-  const timeline: ZCodeContextCompactionTimelineMeta = {
+  const timeline: NekodeContextCompactionTimelineMeta = {
     version: 1,
     kind: "synthetic",
     type: "context_compaction",
@@ -1745,7 +1745,7 @@ function compactFailureToTimelineEvent(
   traceId: TraceId,
   inputId: InputId | undefined,
   reason: string,
-): Extract<ZCodeStreamEvent, { type: "agent_message_chunk" }> {
+): Extract<NekodeStreamEvent, { type: "agent_message_chunk" }> {
   const operationId = `compact-failed-${inputId ?? traceId}`;
   return {
     type: "agent_message_chunk",
@@ -1769,14 +1769,14 @@ function compactFailureToTimelineEvent(
 }
 
 function mapToolPart(
-  part: Extract<ZCodeMessagePart, { type: "tool" }>,
-  backgroundTaskNotifications?: ReadonlyMap<string, ZCodeBackgroundTaskNotificationInfo>,
-): ZCodePersistedToolCall {
+  part: Extract<NekodeMessagePart, { type: "tool" }>,
+  backgroundTaskNotifications?: ReadonlyMap<string, NekodeBackgroundTaskNotificationInfo>,
+): NekodePersistedToolCall {
   const state = part.state;
   const taskNotification = backgroundTaskNotifications?.get(part.callId);
-  // 修复原因：ZCode Protocol 的 part.callId 是实时流和终态 snapshot 共同的工具身份。
+  // 修复原因：Nekode Protocol 的 part.callId 是实时流和终态 snapshot 共同的工具身份。
   // 以前只保存 metadata 会丢掉 toolCallId，手机 replayable 里 result-only 临时工具就无法被终态快照覆盖。
-  const raw = attachZCodeBackgroundTaskNotificationToRaw(
+  const raw = attachNekodeBackgroundTaskNotificationToRaw(
     attachToolCallIdToRaw("metadata" in state ? (state.metadata ?? state) : state, part.callId),
     taskNotification,
   );
@@ -1838,9 +1838,9 @@ function mapModelStreaming(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-  toolProjectionMemory?: ZCodeToolProjectionMemory,
-  projectionMode: ZCodeSessionProjectionMode = "active-live",
-): ZCodeStreamEvent | null {
+  toolProjectionMemory?: NekodeToolProjectionMemory,
+  projectionMode: NekodeSessionProjectionMode = "active-live",
+): NekodeStreamEvent | null {
   const kind = stringValue(payload.kind);
   const delta = stringValue(payload.delta);
   const parentToolUseId = parentToolUseIdFromToolPayload(payload);
@@ -1886,9 +1886,9 @@ function mapToolInputStreaming(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-  toolProjectionMemory?: ZCodeToolProjectionMemory,
-  projectionMode: ZCodeSessionProjectionMode = "active-live",
-): ZCodeStreamEvent | null {
+  toolProjectionMemory?: NekodeToolProjectionMemory,
+  projectionMode: NekodeSessionProjectionMode = "active-live",
+): NekodeStreamEvent | null {
   const streamingToolInputById = toolProjectionMemory?.streamingToolInputById;
   const toolNameById = toolProjectionMemory?.toolNameById;
   const kind = stringValue(payload.kind);
@@ -1933,13 +1933,13 @@ function mapToolInputStreaming(
   }
 
   if (kind === "tool_input_delta") {
-    const state = appendZCodeStreamingToolInputDelta(
+    const state = appendNekodeStreamingToolInputDelta(
       streamingToolInputById?.get(toolId),
       stringValue(payload.delta) ?? "",
     );
     streamingToolInputById?.set(toolId, state);
     if (
-      !shouldMaterializeZCodeStreamingToolInputPreview(state, {
+      !shouldMaterializeNekodeStreamingToolInputPreview(state, {
         mode: projectionMode,
         toolName,
       })
@@ -1948,8 +1948,8 @@ function mapToolInputStreaming(
       // 完整参数会在预算点、tool_input_end、最终 tool_call 或切回 active 后再落到消息树。
       return null;
     }
-    const preview = buildZCodeStreamingToolInputPreview(state.rawInput);
-    markZCodeStreamingToolInputPreviewMaterialized(state);
+    const preview = buildNekodeStreamingToolInputPreview(state.rawInput);
+    markNekodeStreamingToolInputPreviewMaterialized(state);
     const previewToolName = toolName ?? inferStreamingToolInputToolName(preview.input);
     const previewTitle = previewToolName ?? title;
     if (previewToolName && !toolName) {
@@ -2037,14 +2037,14 @@ function mapToolInputStreaming(
     const rawInput = state?.rawInput ?? "";
     const hasCompleteInput = "input" in payload;
     const completeInput = hasCompleteInput ? payload.input : undefined;
-    const preview = buildZCodeStreamingToolInputPreview(
+    const preview = buildNekodeStreamingToolInputPreview(
       rawInput,
       hasCompleteInput ? completeInput : undefined,
     );
     const previewToolName = toolName ?? inferStreamingToolInputToolName(preview.input);
     const previewTitle = previewToolName ?? title;
     if ((hasCompleteInput || preview.complete) && toolProjectionMemory) {
-      finalizeZCodeToolProjectionInput(toolId, preview.input, toolProjectionMemory);
+      finalizeNekodeToolProjectionInput(toolId, preview.input, toolProjectionMemory);
     }
     streamingToolInputById?.set(toolId, {
       // 性能修复：最终 tool_call 后，消息树已经持有完整 input；projection tombstone 不再保留
@@ -2249,8 +2249,8 @@ function mapToolUpdated(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-  toolProjectionMemory?: ZCodeToolProjectionMemory,
-): ZCodeStreamEvent[] {
+  toolProjectionMemory?: NekodeToolProjectionMemory,
+): NekodeStreamEvent[] {
   const toolId = stringValue(payload.toolCallId);
   if (!toolId) {
     return [];
@@ -2258,7 +2258,7 @@ function mapToolUpdated(
   const parentToolUseId = parentToolUseIdFromToolPayload(payload);
   const memory = toolProjectionMemory ?? {};
   const toolNameById = memory.toolNameById;
-  const rememberedTool = resolveZCodeToolProjectionMetadata(payload, toolId, memory);
+  const rememberedTool = resolveNekodeToolProjectionMetadata(payload, toolId, memory);
   const rememberedToolName = rememberedTool.toolName;
   const rememberedInput = rememberedTool.hasInput ? rememberedTool.input : undefined;
   if ("input" in payload && "toolName" in payload) {
@@ -2281,8 +2281,8 @@ function mapToolUpdated(
         },
       ];
     }
-    finalizeZCodeToolProjectionInput(toolId, payload.input, memory);
-    const toolEvent: ZCodeStreamEvent = {
+    finalizeNekodeToolProjectionInput(toolId, payload.input, memory);
+    const toolEvent: NekodeStreamEvent = {
       type: "tool_call",
       taskId,
       traceId,
@@ -2320,7 +2320,7 @@ function mapToolUpdated(
     const toolName = rememberedToolName;
     const content = normalizeToolResultContent(toolName, result);
     const status = toolResultStatus(toolName, result);
-    const toolEvent: ZCodeStreamEvent = {
+    const toolEvent: NekodeStreamEvent = {
       type: "tool_call_update",
       taskId,
       traceId,
@@ -2337,7 +2337,7 @@ function mapToolUpdated(
       raw: payload,
     };
     if (status !== "in_progress") {
-      forgetZCodeToolProjectionMetadata(toolId, memory);
+      forgetNekodeToolProjectionMetadata(toolId, memory);
     }
     const planSteps = isMainAgentToolProjectionSource(payload)
       ? extractPlanStepsFromToolOutput({
@@ -2360,7 +2360,7 @@ function mapToolUpdated(
       : [toolEvent];
   }
   if ("error" in payload) {
-    forgetZCodeToolProjectionMetadata(toolId, memory);
+    forgetNekodeToolProjectionMetadata(toolId, memory);
     return [
       {
         type: "tool_call_update",
@@ -2402,7 +2402,7 @@ function mapToolUpdated(
 function toolResultStatus(
   toolName: string | undefined,
   result: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "tool_call_update" }>["status"] {
+): Extract<NekodeStreamEvent, { type: "tool_call_update" }>["status"] {
   if (result.success === false) {
     return "failed";
   }
@@ -2482,7 +2482,7 @@ function isSubagentDispatchToolName(toolName: string | undefined): boolean {
 
 function toolStatusFromPayload(
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "tool_call_update" }>["status"] {
+): Extract<NekodeStreamEvent, { type: "tool_call_update" }>["status"] {
   switch (stringValue(payload.status)) {
     case "tool_started":
       return "in_progress";
@@ -2588,7 +2588,7 @@ function permissionPayloadToStreamEvent(
   traceId: TraceId,
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
-): ZCodeStreamEvent {
+): NekodeStreamEvent {
   return {
     type: "permission_request",
     taskId,
@@ -2600,7 +2600,7 @@ function permissionPayloadToStreamEvent(
     kind: stringValue(payload.toolName) ?? "tool",
     title: stringValue(payload.toolName),
     options: permissionOptionsFromPayload(payload),
-    ...(payload.origin ? { origin: payload.origin as ZCodePermissionRequest["origin"] } : {}),
+    ...(payload.origin ? { origin: payload.origin as NekodePermissionRequest["origin"] } : {}),
     raw: payload,
   };
 }
@@ -2611,7 +2611,7 @@ function permissionResolvedPayloadToStreamEvents(
   inputId: InputId | undefined,
   payload: Record<string, unknown>,
   toolNameById?: Map<string, string>,
-): ZCodeStreamEvent[] {
+): NekodeStreamEvent[] {
   const toolCallId = stringValue(payload.toolCallId);
   const toolName =
     stringValue(payload.toolName) ?? (toolCallId ? toolNameById?.get(toolCallId) : undefined);
@@ -2641,7 +2641,7 @@ function permissionResolvedPayloadToStreamEvents(
     response: {
       decision: decision === "deny" ? "deny" : "allow",
     },
-  } as Extract<ZCodeStreamEvent, { type: "permission_response" }>;
+  } as Extract<NekodeStreamEvent, { type: "permission_response" }>;
 
   if (decision !== "deny" || !toolCallId) {
     return [permissionResponse];
@@ -2670,8 +2670,8 @@ function permissionResolvedPayloadToStreamEvents(
 
 function pendingPermissionToStreamEvent(
   taskId: string,
-  permission: ZCodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
-): ZCodePermissionRequest {
+  permission: NekodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
+): NekodePermissionRequest {
   return {
     type: "permission_request",
     taskId,
@@ -2686,8 +2686,8 @@ function pendingPermissionToStreamEvent(
   };
 }
 
-function permissionOptionsFromPayload(payload: Record<string, unknown>): ZCodePermissionOption[] {
-  return Array.isArray(payload.options) ? (payload.options as ZCodePermissionOption[]) : [];
+function permissionOptionsFromPayload(payload: Record<string, unknown>): NekodePermissionOption[] {
+  return Array.isArray(payload.options) ? (payload.options as NekodePermissionOption[]) : [];
 }
 
 type PendingElicitationQuestion = {
@@ -2699,8 +2699,8 @@ type PendingElicitationQuestion = {
 
 function pendingUserInputBackedPermissionToElicitationEvent(
   taskId: string,
-  permission: ZCodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
-): Extract<ZCodeStreamEvent, { type: "elicitation_request" }> | null {
+  permission: NekodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
+): Extract<NekodeStreamEvent, { type: "elicitation_request" }> | null {
   if (isAskUserQuestionToolName(permission.toolName)) {
     return pendingAskUserQuestionToElicitationEvent(taskId, permission);
   }
@@ -2712,8 +2712,8 @@ function pendingUserInputBackedPermissionToElicitationEvent(
 
 function pendingAskUserQuestionToElicitationEvent(
   taskId: string,
-  permission: ZCodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
-): Extract<ZCodeStreamEvent, { type: "elicitation_request" }> | null {
+  permission: NekodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
+): Extract<NekodeStreamEvent, { type: "elicitation_request" }> | null {
   const questions = askUserQuestionInputToElicitationQuestions(permission.input);
   if (questions.length === 0) {
     return null;
@@ -2736,8 +2736,8 @@ function pendingAskUserQuestionToElicitationEvent(
 
 function pendingExitPlanModeToElicitationEvent(
   taskId: string,
-  permission: ZCodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
-): Extract<ZCodeStreamEvent, { type: "elicitation_request" }> {
+  permission: NekodeSessionStateSnapshot["projection"]["pendingPermissions"][number],
+): Extract<NekodeStreamEvent, { type: "elicitation_request" }> {
   const questions = createExitPlanModeApprovalQuestions();
   const firstQuestion = questions[0];
   return {
@@ -2755,8 +2755,8 @@ function pendingExitPlanModeToElicitationEvent(
 }
 
 function ensureProjectionBackgroundTaskControlsCache(
-  state: ZCodeSessionEventProjectionState | undefined,
-): Map<string, ZCodeBackgroundTaskControlItem[]> | null {
+  state: NekodeSessionEventProjectionState | undefined,
+): Map<string, NekodeBackgroundTaskControlItem[]> | null {
   if (!state) {
     return null;
   }
@@ -2765,40 +2765,40 @@ function ensureProjectionBackgroundTaskControlsCache(
 }
 
 function setProjectionBackgroundTaskControls(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   taskId: string,
-  jobs: ZCodeBackgroundTaskControlItem[],
+  jobs: NekodeBackgroundTaskControlItem[],
 ) {
   ensureProjectionBackgroundTaskControlsCache(state)?.set(taskId, jobs);
 }
 
-export function syncZCodeSessionBackgroundTaskProjection(
-  state: ZCodeSessionEventProjectionState | undefined,
+export function syncNekodeSessionBackgroundTaskProjection(
+  state: NekodeSessionEventProjectionState | undefined,
   taskId: string,
-  jobs: ZCodeBackgroundTaskControlItem[],
+  jobs: NekodeBackgroundTaskControlItem[],
 ) {
   setProjectionBackgroundTaskControls(state, taskId, jobs);
 }
 
-export function syncZCodeSessionBackgroundTaskProjectionFromSnapshot(
-  state: ZCodeSessionEventProjectionState | undefined,
-  snapshot: ZCodeSessionStateSnapshot,
+export function syncNekodeSessionBackgroundTaskProjectionFromSnapshot(
+  state: NekodeSessionEventProjectionState | undefined,
+  snapshot: NekodeSessionStateSnapshot,
 ) {
   // Bugfix: 单 task completion 是增量 payload，必须以同一订阅收到的完整 snapshot
   // 作为 merge 基线；否则切走/切回后新 projection state 会把 peer running task 清掉。
-  syncZCodeSessionBackgroundTaskProjection(
+  syncNekodeSessionBackgroundTaskProjection(
     state,
     snapshot.session.sessionId,
-    parseZCodeBackgroundTaskControlItems(snapshot.projection.backgroundJobs),
+    parseNekodeBackgroundTaskControlItems(snapshot.projection.backgroundJobs),
   );
 }
 
 function updateProjectionBackgroundTaskControlsFromPayload(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   taskId: string,
   payload: Record<string, unknown>,
-): ZCodeBackgroundTaskControlItem[] | null {
-  const parsedJobs = parseZCodeBackgroundTaskControlItems([payload]);
+): NekodeBackgroundTaskControlItem[] | null {
+  const parsedJobs = parseNekodeBackgroundTaskControlItems([payload]);
   if (parsedJobs.length === 0) {
     return null;
   }
@@ -2806,7 +2806,7 @@ function updateProjectionBackgroundTaskControlsFromPayload(
   if (!cache) {
     return parsedJobs;
   }
-  const nextJobs = mergeZCodeBackgroundTaskControlItems(cache.get(taskId) ?? [], parsedJobs);
+  const nextJobs = mergeNekodeBackgroundTaskControlItems(cache.get(taskId) ?? [], parsedJobs);
   cache.set(taskId, nextJobs);
   return nextJobs;
 }
@@ -2875,9 +2875,9 @@ function mapSessionInfoLikePayload(
   inputId: InputId | undefined,
   eventId: string | undefined,
   payload: Record<string, unknown>,
-  state: ZCodeSessionEventProjectionState | undefined,
-): ZCodeStreamEvent[] {
-  const events: ZCodeStreamEvent[] = [];
+  state: NekodeSessionEventProjectionState | undefined,
+): NekodeStreamEvent[] {
+  const events: NekodeStreamEvent[] = [];
   const goalVerification = goalVerificationFromPayload(payload);
   if (goalVerification) {
     events.push({
@@ -2951,8 +2951,8 @@ function mapSessionInfoLikePayload(
       ...(inputId ? { inputId } : {}),
       // Bugfix: EnterPlanMode 写入的 SessionModeChanged 会经 bootstrap 投影成 session.updated；
       // 这里把 mode payload 转成 UI 现有事件，避免菜单仍显示进入 plan 前的模式。
-      currentModeId: normalizeAvailableZCodeMode(mode as ZCodeSessionMode),
-      availableModes: getZCodeAgentAvailableModes(),
+      currentModeId: normalizeAvailableNekodeMode(mode as NekodeSessionMode),
+      availableModes: getNekodeAgentAvailableModes(),
     });
   }
   if ("target" in payload && ("action" in payload || "source" in payload)) {
@@ -2965,16 +2965,16 @@ function mapSessionInfoLikePayload(
       target: {
         action: targetAction,
         source: stringValue(payload.source) === "tool" ? "tool" : "runtime",
-        target: payload.target ? fromZCodeGoal(payload.target as never) : null,
+        target: payload.target ? fromNekodeGoal(payload.target as never) : null,
         previousTarget: payload.previousTarget
-          ? fromZCodeGoal(payload.previousTarget as never)
+          ? fromNekodeGoal(payload.previousTarget as never)
           : undefined,
       },
     });
   }
   const projection = asRecord(payload.projection);
   if (Array.isArray(projection.backgroundJobs)) {
-    const jobs = parseZCodeBackgroundTaskControlItems(projection.backgroundJobs);
+    const jobs = parseNekodeBackgroundTaskControlItems(projection.backgroundJobs);
     setProjectionBackgroundTaskControls(state, taskId, jobs);
     events.push({
       type: "background_bash_jobs_update",
@@ -3001,7 +3001,7 @@ function mapSessionInfoLikePayload(
   return events;
 }
 
-function normalizeTargetChangedAction(action: string | undefined): ZCodeTaskTargetChangedAction {
+function normalizeTargetChangedAction(action: string | undefined): NekodeTaskTargetChangedAction {
   switch (action) {
     case "status_updated":
     case "cleared":
@@ -3018,7 +3018,7 @@ function normalizeTargetChangedAction(action: string | undefined): ZCodeTaskTarg
 
 function goalVerificationFromPayload(
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "goal_verification_update" }>["verification"] | null {
+): Extract<NekodeStreamEvent, { type: "goal_verification_update" }>["verification"] | null {
   if (stringValue(payload.querySource) !== "target_completion_verification") {
     return null;
   }
@@ -3073,7 +3073,7 @@ function taskTokenUsageDeltaFromPayload(
   inputId: InputId | undefined,
   eventId: string | undefined,
   payload: Record<string, unknown>,
-): Extract<ZCodeStreamEvent, { type: "task_token_usage_delta" }> | null {
+): Extract<NekodeStreamEvent, { type: "task_token_usage_delta" }> | null {
   if (!isModelCompleteUsagePayload(payload)) {
     return null;
   }
@@ -3115,17 +3115,17 @@ function isModelCompleteUsagePayload(payload: Record<string, unknown>): boolean 
 
 function apiRetryFromSessionInfoPayload(
   payload: Record<string, unknown>,
-): ZCodeApiRetryStatus | null | undefined {
+): NekodeApiRetryStatus | null | undefined {
   if ("apiRetry" in payload) {
-    return normalizeZCodeApiRetryStatus(payload.apiRetry);
+    return normalizeNekodeApiRetryStatus(payload.apiRetry);
   }
 
-  const runtimeRetry = normalizeZCodeApiRetryStatus(asRecord(payload.runtime).apiRetry);
+  const runtimeRetry = normalizeNekodeApiRetryStatus(asRecord(payload.runtime).apiRetry);
   if (runtimeRetry !== undefined) {
     return runtimeRetry;
   }
 
-  const metaRetry = normalizeZCodeApiRetryStatus(asRecord(asRecord(payload._meta).zcode).apiRetry);
+  const metaRetry = normalizeNekodeApiRetryStatus(asRecord(asRecord(payload._meta).zcode).apiRetry);
   if (metaRetry !== undefined) {
     return metaRetry;
   }
@@ -3137,12 +3137,12 @@ function apiRetryFromSessionInfoPayload(
 }
 
 type ContextUsageUpdate = Pick<
-  Extract<ZCodeStreamEvent, { type: "usage_update" }>,
+  Extract<NekodeStreamEvent, { type: "usage_update" }>,
   "used" | "size" | "cost" | "cache" | "breakdown"
 >;
 
 function contextUsageFromProjection(
-  projection: ZCodeSessionStateSnapshot["projection"],
+  projection: NekodeSessionStateSnapshot["projection"],
 ): ContextUsageUpdate | null {
   if (projection.contextWindow <= 0 || projection.contextUsed <= 0) {
     return null;
@@ -3155,7 +3155,7 @@ function contextUsageFromProjection(
 }
 
 function contextUsageFromRuntime(
-  runtimeUsage: ZCodeSessionStateSnapshot["runtime"]["contextUsage"] | undefined,
+  runtimeUsage: NekodeSessionStateSnapshot["runtime"]["contextUsage"] | undefined,
 ): ContextUsageUpdate | null {
   if (!runtimeUsage || runtimeUsage.size <= 0 || runtimeUsage.used <= 0) {
     return null;
@@ -3187,7 +3187,7 @@ function contextUsageFromPayload(payload: Record<string, unknown>): ContextUsage
   if (size === undefined || size <= 0) {
     return null;
   }
-  // Bugfix: ZCode Protocol session.updated 承载的是 projection 事实源；
+  // Bugfix: Nekode Protocol session.updated 承载的是 projection 事实源；
   // 旧 task UI 只认识 usage_update，必须在迁移桥里把 contextUsed/contextWindow 显式转出来。
   // used=0 只表示初始化或异常兜底，不能渲染成可用的 context meter。
   if (used === undefined || used <= 0) {
@@ -3306,45 +3306,45 @@ function contextCacheUsageFromPayload(
   };
 }
 
-function textFromParts(parts: readonly ZCodeMessagePart[]): string {
-  return textFromZCodeMessageParts(parts);
+function textFromParts(parts: readonly NekodeMessagePart[]): string {
+  return textFromNekodeMessageParts(parts);
 }
 
-function reasoningFromParts(parts: readonly ZCodeMessagePart[]): string | undefined {
+function reasoningFromParts(parts: readonly NekodeMessagePart[]): string | undefined {
   const text = parts
     .filter(
-      (part): part is Extract<ZCodeMessagePart, { type: "reasoning" }> => part.type === "reasoning",
+      (part): part is Extract<NekodeMessagePart, { type: "reasoning" }> => part.type === "reasoning",
     )
     .map((part) => part.text)
     .join("");
   return text || undefined;
 }
 
-function deriveTitleFromSnapshot(snapshot: ZCodeSessionStateSnapshot): string {
-  return resolveZCodeVisibleSessionTitle({
+function deriveTitleFromSnapshot(snapshot: NekodeSessionStateSnapshot): string {
+  return resolveNekodeVisibleSessionTitle({
     title: snapshot.session.title,
     messages: snapshot.messages,
     target: snapshot.projection.target,
   });
 }
 
-function fromZCodeMode(mode: ZCodeSessionMode): ZCodeTaskMode {
+function fromNekodeMode(mode: NekodeSessionMode): NekodeTaskMode {
   return mode === "build" ? "build" : mode;
 }
 
-function getZCodeAgentModeSelectOptions(): NonNullable<ZCodeConfigOption["options"]> {
-  return ZCODE_AGENT_MODE_OPTIONS.map((mode) => ({
+function getNekodeAgentModeSelectOptions(): NonNullable<NekodeConfigOption["options"]> {
+  return NEKODE_AGENT_MODE_OPTIONS.map((mode) => ({
     value: mode.id,
     name: mode.name,
     description: mode.description,
   }));
 }
 
-function getZCodeAgentAvailableModes(): ZCodeTaskModeInfo[] {
-  return ZCODE_AGENT_MODE_OPTIONS.map((mode) => ({ ...mode }));
+function getNekodeAgentAvailableModes(): NekodeTaskModeInfo[] {
+  return NEKODE_AGENT_MODE_OPTIONS.map((mode) => ({ ...mode }));
 }
 
-function fromZCodeGoal(goal: unknown): ZCodeTaskGoal {
+function fromNekodeGoal(goal: unknown): NekodeTaskGoal {
   const record = asRecord(goal);
   const time = asRecord(record.time);
   const status = stringValue(record.status);
@@ -3353,7 +3353,7 @@ function fromZCodeGoal(goal: unknown): ZCodeTaskGoal {
     targetID: stringValue(record.targetID) ?? stringValue(record.targetId) ?? "",
     objective: stringValue(record.objective) ?? "",
     summaryTitle: stringValue(record.summaryTitle) ?? null,
-    status: isZCodeTaskGoalStatus(status) ? status : "active",
+    status: isNekodeTaskGoalStatus(status) ? status : "active",
     tokenBudget: typeof record.tokenBudget === "number" ? record.tokenBudget : null,
     tokensUsed: numberValue(record.tokensUsed) ?? 0,
     timeUsedSeconds: numberValue(record.timeUsedSeconds) ?? 0,
@@ -3367,7 +3367,7 @@ function fromZCodeGoal(goal: unknown): ZCodeTaskGoal {
   };
 }
 
-function isZCodeTaskGoalStatus(status: string | undefined): status is ZCodeTaskGoal["status"] {
+function isNekodeTaskGoalStatus(status: string | undefined): status is NekodeTaskGoal["status"] {
   return (
     status === "active" ||
     status === "paused" ||
@@ -3376,7 +3376,7 @@ function isZCodeTaskGoalStatus(status: string | undefined): status is ZCodeTaskG
   );
 }
 
-function usageFromPayload(value: unknown): ZCodeUsage | undefined {
+function usageFromPayload(value: unknown): NekodeUsage | undefined {
   const usage = asRecord(value);
   if (Object.keys(usage).length === 0) {
     return undefined;
@@ -3401,14 +3401,14 @@ function usageFromPayload(value: unknown): ZCodeUsage | undefined {
 }
 
 function getActivePromptInputId(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
 ): InputId | undefined {
   return state?.activePromptInputIdBySession?.get(sessionId);
 }
 
 function setActivePromptInputId(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
   inputId: InputId,
 ): void {
@@ -3421,7 +3421,7 @@ function setActivePromptInputId(
 }
 
 function clearActivePromptInputId(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   sessionId: string,
   inputId: InputId,
 ): void {
@@ -3431,7 +3431,7 @@ function clearActivePromptInputId(
 }
 
 function rememberRewindControlTurn(
-  state: ZCodeSessionEventProjectionState | undefined,
+  state: NekodeSessionEventProjectionState | undefined,
   turnKey: string,
   input: string | undefined,
 ): void {
@@ -3472,7 +3472,7 @@ function stringValue(value: unknown): string | undefined {
 
 function goalVerificationTimelineStatusValue(
   value: unknown,
-): ZCodeGoalVerificationTimelineMeta["status"] | undefined {
+): NekodeGoalVerificationTimelineMeta["status"] | undefined {
   return value === "started" ||
     value === "completed" ||
     value === "failed_closed" ||
@@ -3481,7 +3481,7 @@ function goalVerificationTimelineStatusValue(
     : undefined;
 }
 
-function goalVerificationFromRecord(record: Record<string, unknown>): ZCodeGoalVerification | null {
+function goalVerificationFromRecord(record: Record<string, unknown>): NekodeGoalVerification | null {
   const reason = stringValue(record.reason)?.trim();
   if (!reason) {
     return null;
@@ -3522,7 +3522,7 @@ function booleanValue(value: unknown): boolean | undefined {
   return typeof value === "boolean" ? value : undefined;
 }
 
-function timelineStatusValue(value: unknown): ZCodeTimelineStatus | undefined {
+function timelineStatusValue(value: unknown): NekodeTimelineStatus | undefined {
   return value === "started" ||
     value === "retrying" ||
     value === "skipped" ||
@@ -3533,7 +3533,7 @@ function timelineStatusValue(value: unknown): ZCodeTimelineStatus | undefined {
     : undefined;
 }
 
-function timelineTriggerValue(value: unknown): ZCodeTimelineTrigger | undefined {
+function timelineTriggerValue(value: unknown): NekodeTimelineTrigger | undefined {
   return value === "manual" ||
     value === "auto" ||
     value === "reactive" ||
@@ -3543,7 +3543,7 @@ function timelineTriggerValue(value: unknown): ZCodeTimelineTrigger | undefined 
     : undefined;
 }
 
-function compactionPhaseValue(value: unknown): ZCodeContextCompactionTimelinePhase | undefined {
+function compactionPhaseValue(value: unknown): NekodeContextCompactionTimelinePhase | undefined {
   return value === "standalone_turn" ||
     value === "pre_request" ||
     value === "mid_turn" ||
@@ -3558,13 +3558,13 @@ function stringArray(value: unknown): string[] {
     : [];
 }
 
-function turnSteerSourceValue(value: unknown): ZCodeTurnSteerSource | undefined {
+function turnSteerSourceValue(value: unknown): NekodeTurnSteerSource | undefined {
   return value === "plan_approval_feedback" || value === "workflow_refine_feedback"
     ? value
     : undefined;
 }
 
-function turnSteerCommandKindValue(value: unknown): ZCodeTurnSteerCommandKind | undefined {
+function turnSteerCommandKindValue(value: unknown): NekodeTurnSteerCommandKind | undefined {
   return value === "sendGoalCommand" || value === "sendText" || value === "compact"
     ? value
     : undefined;

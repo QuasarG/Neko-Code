@@ -9,7 +9,7 @@ describe("远程单目录项目展示", () => {
   before(async function () {
     this.timeout(120_000);
     await prepareV4ConversationE2E({ skipProvider: true });
-    const home = process.env.ZCODE_E2E_HOME_DIR;
+    const home = process.env.NEKODE_E2E_HOME_DIR;
     // 根因：旧守卫只接受手工运行的目录名，拒绝队列按批次/case 分配的独立 HOME。
     // 本例只验离线缓存，可由普通 runner 执行；仍要求统一隔离 HOME 前缀。
     const isolatedRunnerHome = home && basename(home).startsWith(".e2e-home-");
@@ -18,7 +18,7 @@ describe("远程单目录项目展示", () => {
       (!basename(home).startsWith("zcode-remote-project-policy-e2e-") && !isolatedRunnerHome)
     )
       throw new Error("isolated HOME required");
-    const db = new DatabaseSync(join(home, ".zcode/v2/tasks-index.sqlite"));
+    const db = new DatabaseSync(join(home, ".nekode/v2/tasks-index.sqlite"));
     try {
       db.exec("BEGIN IMMEDIATE");
       db.prepare(

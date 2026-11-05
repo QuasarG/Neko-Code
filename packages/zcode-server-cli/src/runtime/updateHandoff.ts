@@ -42,8 +42,8 @@ async function runDaemonLauncher(
     {
       env: {
         ...process.env,
-        ZCODE_DATA_BASE_DIR: layout.dataBaseDir,
-        ZCODE_SERVER_ROOT: layout.serverRoot,
+        NEKODE_DATA_BASE_DIR: layout.dataBaseDir,
+        NEKODE_SERVER_ROOT: layout.serverRoot,
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -64,7 +64,7 @@ async function runDaemonLauncher(
       child.kill("SIGTERM");
       reject(
         new Error(
-          `Timed out starting ZCode Server daemon from ${release.releaseId ?? release.version}`,
+          `Timed out starting Nekode Server daemon from ${release.releaseId ?? release.version}`,
         ),
       );
     }, DAEMON_START_TIMEOUT_MS);
@@ -89,7 +89,7 @@ async function startDaemon(layout: ServerLayout, release: ReleaseManifest): Prom
   const diagnostic = result.stderr.trim() || result.stdout.trim();
   throw new Error(
     diagnostic ||
-      `ZCode Server daemon launcher exited code=${result.exitCode ?? "null"} signal=${result.signal ?? "none"}`,
+      `Nekode Server daemon launcher exited code=${result.exitCode ?? "null"} signal=${result.signal ?? "none"}`,
   );
 }
 

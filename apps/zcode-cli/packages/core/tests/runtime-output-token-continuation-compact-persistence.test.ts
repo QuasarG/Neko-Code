@@ -186,7 +186,13 @@ describe("output-token terminal errors across Compact persistence", () => {
     await resumedRuntime.executeTurn("compare provider history");
 
     const coldRequest = requests.at(-1);
-    expect(coldRequest?.text).toBe(liveRequest?.text);
+    // current_time 只属于当轮请求，不落库，冷恢复不要求字节相同。
+    const withoutCurrentTime = (text: string | undefined) =>
+      (text ?? "").replace(
+        /<system-reminder>\nCurrent time: [^\n]*\n<\/system-reminder>\n?/gu,
+        "",
+      );
+    expect(withoutCurrentTime(coldRequest?.text)).toBe(withoutCurrentTime(liveRequest?.text));
   });
 
   it("keeps a partial terminal assistant in both live and cold preserved history", async () => {

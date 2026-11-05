@@ -232,7 +232,7 @@ deferLoading；模型内容增加严格的 `{type:"tool_reference",toolName:stri
 内置常驻名单：Agent/AskUserQuestion/Bash/Edit/Glob/Grep/Read/ReportFindings/Skill/ToolSearch/Write。
 只暴露当前已注册、作用域允许且满足原有可见性规则的工具；当前没有 ReportFindings 实现，
 不因名单而新增工具。其余已注册内置工具统一在各自 metadata 声明 shouldDefer: true，
-包括 ZCode 工作流（含 FillWorkflowHole）、OffPeak、TodoRead、CronUpdate、js 和子 Agent 协作工具。
+包括 Nekode 工作流（含 FillWorkflowHole）、OffPeak、TodoRead、CronUpdate、js 和子 Agent 协作工具。
 ReplyToChannel 保留实现但不默认注册，因此不进入搜索目录或 provider 工具列表。
 Task 兼容入口保持 providerVisible: false，不因 deferred 分类而进入请求或搜索目录。
 不开启 ToolSearch 时保留完整工具集；开启时首轮只发送常驻定义，真实搜索发现后才追加
@@ -252,7 +252,7 @@ server alwaysLoad 与 `_meta["anthropic/alwaysLoad"]`、`_meta["anthropic/search
 回归覆盖各配置来源/transport，以及真实插件发现 → MCP 工具列表 → 注册 → 请求准备 →
 Anthropic wire：无搜索历史时常驻工具有完整 schema 且不带 defer_loading，默认工具仍延迟。
 
-App 的 `ZCodeAgentMcpServer` 类型与现有配置转换函数必须在 stdio/HTTP/SSE 中透传
+App 的 `NekodeAgentMcpServer` 类型与现有配置转换函数必须在 stdio/HTTP/SSE 中透传
 布尔 `alwaysLoad`，保留 false；缺失或非布尔值不输出字段，不做真值转换。
 回归从 App 转换入口验证 JSON 往返及严格协议 schema；Agent 接收端沿用现有透传。
 当前 App 调用方是 MCP 设置页连接/状态查询，不新增普通会话创建的 MCP DTO 注入；
@@ -360,7 +360,7 @@ Local 描述首句明确 deferred 工具通过 `DeferredToolCall` 调用；搜�
 
 搜索语料使用经过 model contract 投影、包含 modelInstructions 的最终 description。
 不因接口名称不同构造第二份搜索语料。已有工具说明不在此处重写；例如 TaskOutput 已采用
-对应说明，Cron 则保留持久化 automation 等 ZCode 特有行为的描述。
+对应说明，Cron 则保留持久化 automation 等 Nekode 特有行为的描述。
 
 验证固定完整 description/参数说明，以及新增、单个/多个恢复、MCP 分组、30/31 个删除名称
 与混合增删正文；真实 Runtime -> Anthropic wire 检查文案和续写去重，继续复用 compact/SQLite 回归。
@@ -668,7 +668,7 @@ Adapters 与根目录 typecheck、根目录 lint、架构和改动文件格式�
 复跑 Desktop：
 
 ```bash
-ZCODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop test:e2e -- --spec test/e2e/conversation-session/manual-review/pending/conversation-session-toolsearch.test.ts
+NEKODE_E2E_MANUAL_REVIEW=1 pnpm --filter @zcode/desktop test:e2e -- --spec test/e2e/conversation-session/manual-review/pending/conversation-session-toolsearch.test.ts
 ```
 
 ### 提交前复核（2026-09-17）

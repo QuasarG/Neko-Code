@@ -7,7 +7,7 @@ import { extractDisallowedToolsArgs, parseGlobalArgs } from "./arguments.js";
 import { createNodeLoggerFactory } from "@zcode/adapters";
 import { getRuntimeInfo, type PresentationSurface } from "@zcode/core";
 import { color, formatJson, supportsColor } from "@zcode/core";
-import { getZCodeCopy, isUiLocale, type UiLocale } from "@zcode/i18n";
+import { getNekodeCopy, isUiLocale, type UiLocale } from "@zcode/i18n";
 import type { RunContext, GlobalOptions, GlobalOutputFormat } from "@zcode/shared-types";
 import {
   applyCliRuntimeEnvSanitization,
@@ -22,7 +22,6 @@ import { loadBootstrapModule } from "./bootstrap-loader.js";
 import { runEmbeddedSearchCli } from "./internal-search/embedded-search-cli.js";
 import { runCommandsCommand } from "./commands-command.js";
 import { resolveCliCwd } from "./cwd.js";
-import { runLoginCommand, runLogoutCommand } from "./login-command.js";
 import { CLI_COMMAND_NAME, CLI_PROCESS_NAME } from "./process-name.js";
 import { isPluginHostInvocation, runPluginHostCommand } from "./plugin-host-command.js";
 import { isDwfChildInvocation, runDwfChildCommand } from "./dwf-child-command.js";
@@ -60,7 +59,6 @@ const BROWSER_USE_SCOPE_ERROR =
   "--browser-use=headless can only be used with --prompt, --target, or tui.";
 const SURFACE_SCOPE_ERROR =
   "--surface can only be used with --prompt, --target, app-server, or agent-server.";
-const MEMORY_BENCH_SCOPE_ERROR = "--memory-bench can only be used with -p/--prompt.";
 
 const pluginsCommandFlags = (
   values: ReturnType<typeof parseGlobalArgs>["values"],
@@ -112,7 +110,6 @@ const globalOptions = (
     force: values.force === true,
     json: values.json === true,
     locale,
-    ...(values["memory-bench"] === true ? { memoryBench: true } : {}),
     noColor: values["no-color"] === true,
     ...(outputFormat ? { outputFormat } : {}),
     verbose: values.verbose === true,
@@ -137,7 +134,7 @@ const normalizeOutputFormat = (value: string | undefined): GlobalOutputFormat | 
 const normalizeLocaleOption = (value: string | undefined): UiLocale | undefined => {
   if (value === undefined) return undefined;
   if (isUiLocale(value)) return value;
-  throw new Error(getZCodeCopy().cli.errors.localeUnsupported(value));
+  throw new Error(getNekodeCopy().cli.errors.localeUnsupported(value));
 };
 
 const normalizePromptMode = (value: string | undefined): CliPermissionMode | undefined => {
@@ -249,7 +246,7 @@ const runDoctor = (ctx: RunContext, options: GlobalOptions, workingDirectory: st
   return 0;
 };
 
-const runZCodeProtocolCommand = async (
+const runNekodeProtocolCommand = async (
   ctx: RunContext,
   options: GlobalOptions,
   deps: RunDependencies,
@@ -261,7 +258,7 @@ const runZCodeProtocolCommand = async (
     const workingDirectory = (deps.cwd ?? process.cwd)();
     // 打包态 app-server 是 desktop host 的内部协议子进程。
     // 如果这里继续从 workspace 向上读取用户 .env，读文件失败或环境污染会在协议建立前
-    // 直接退出，外层只能看到 ZCode agent transport closed。
+    // 直接退出，外层只能看到 Nekode agent transport closed。
     const dotenvResult = shouldLoadCliDotenvForProtocolServer(env)
       ? (deps.loadDotenv ?? loadCliDotenv)({
           cwd: workingDirectory,
@@ -280,7 +277,7 @@ const runZCodeProtocolCommand = async (
     }
 
     const runProtocolAgent =
-      deps.runZCodeProtocolAgent ?? (await loadBootstrapModule()).runZCodeProtocolAgent;
+      deps.runNekodeProtocolAgent ?? (await loadBootstrapModule()).runNekodeProtocolAgent;
     await runProtocolAgent({
       lifecycle: deps.protocolLifecycle,
       cwd: workingDirectory,
@@ -488,14 +485,6 @@ export const run = async (ctx: RunContext, deps: RunDependencies = {}): Promise<
   }
 
   if (
-    options.memoryBench &&
-    (typeof parsed.values.prompt !== "string" || parsed.positionals.length > 0)
-  ) {
-    ctx.stderr.write(`${MEMORY_BENCH_SCOPE_ERROR}\n`);
-    return 1;
-  }
-
-  if (
     browserUse === "headless" &&
     !isForceMcsSupportedInvocation({
       positionals: parsed.positionals,
@@ -607,7 +596,7 @@ export const run = async (ctx: RunContext, deps: RunDependencies = {}): Promise<
       return 0;
     case "agent-server":
     case "app-server":
-      return await runZCodeProtocolCommand(
+      return await runNekodeProtocolCommand(
         ctx,
         options,
         commandDeps,
@@ -616,16 +605,6 @@ export const run = async (ctx: RunContext, deps: RunDependencies = {}): Promise<
       );
     case "doctor":
       return runDoctor(ctx, options, workingDirectory);
-    case "login":
-      return await runLoginCommand(
-        ctx,
-        options,
-        commandDeps,
-        parsed.values["no-browser"] === true,
-        parsed.positionals.slice(1),
-      );
-    case "logout":
-      return await runLogoutCommand(ctx, options, commandDeps);
     case "commands":
       return await runCommandsCommand(ctx, options, commandDeps, parsed.positionals.slice(1));
     case "plugin":

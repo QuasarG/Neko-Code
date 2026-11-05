@@ -7,21 +7,21 @@ import {
 } from "@zcode/shared/zcode-protocol-v4";
 import {
   zcodeTopicResourceReadResultSchema,
-  type ZCodePromptAttachment,
-  type ZCodeProtocolTrace,
+  type NekodePromptAttachment,
+  type NekodeProtocolTrace,
 } from "@zcode/shared";
 import { uploadBotGroupAttachments } from "./groupAttachmentUpload.js";
-import type { ZCodeProtocolClient } from "./zcodeProtocolClient.js";
-import type { ZCodeAgentSessionTarget } from "./zcodeAgent.js";
+import type { NekodeProtocolClient } from "./zcodeProtocolClient.js";
+import type { NekodeAgentSessionTarget } from "./zcodeAgent.js";
 
 /** 反向请求绑定实际 CLI 连接；上传不能再次按路径选择运行时。 */
 export async function uploadTopicResourceToClient(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<NekodeProtocolClient, "request">,
   connectionId: string,
-  target: ZCodeAgentSessionTarget,
-  attachment: ZCodePromptAttachment,
+  target: NekodeAgentSessionTarget,
+  attachment: NekodePromptAttachment,
   signal: AbortSignal,
-  trace?: ZCodeProtocolTrace,
+  trace?: NekodeProtocolTrace,
 ) {
   const [ref] = await uploadBotGroupAttachments(
     {

@@ -243,6 +243,26 @@ export interface OpenPlanDetailSideTabRequest {
   planFilePath?: string;
 }
 
+/** 运行时注入（记忆四块）的详情 tab：一个用户轮一个，按 rowId 幂等。 */
+export interface InjectionSidePaneTab {
+  id: string;
+  type: "injection";
+  openedAt?: number;
+  ownerTaskId?: string | null;
+  workspaceKey: string;
+  parentSessionId: string;
+  rowId: string;
+  title: string;
+  text: string;
+}
+
+export interface OpenInjectionSideTabRequest {
+  parentSessionId: string;
+  rowId: string;
+  title: string;
+  text: string;
+}
+
 /**
  * workflow run 的详情页 tab。
  *
@@ -513,6 +533,11 @@ export interface OpenScopedPlanDetailSideTabRequest extends OpenPlanDetailSideTa
   remoteSessionId?: string;
 }
 
+export interface OpenScopedInjectionSideTabRequest extends OpenInjectionSideTabRequest {
+  workspaceIdentity?: string;
+  workspacePath?: string;
+}
+
 export interface OpenSelectionSideChatRequest {
   workspacePath: string;
   workspaceIdentity?: string;
@@ -581,6 +606,7 @@ export type WorkspaceSidePaneTab =
   | SubagentDirectorySidePaneTab
   | SelectionSideChatPaneTab
   | PlanDetailSidePaneTab
+  | InjectionSidePaneTab
   | PluginUiSidePaneTab
   | WorkflowRunSidePaneTab
   | WorkflowRunDirectorySidePaneTab
@@ -1180,6 +1206,7 @@ export function isSidePaneTabVisibleInScope(
       return tab.rootSessionId === scope.ownerTaskId;
     case "selection-side-chat":
     case "plan-detail":
+    case "injection":
     case "plugin-ui":
     case "workflow-run":
     case "workflow-directory":
@@ -1991,6 +2018,27 @@ export function openPlanDetailSidePane(
   );
   // 同一个 toolCall 只保留一个 tab；再次点击用卡片当前正文刷新 fallback，
   // 详情组件的实时正文仍以父 conversation projection 为权威。
+  return activateSidePaneTab(current, existing ? { ...existing, ...nextTab } : nextTab);
+}
+
+/** 打开或复用一轮的注入详情 tab（rowId 幂等，重复点击只刷新正文与标题）。 */
+export function openInjectionSidePane(
+  current: WorkspaceSidePaneState | null,
+  options: OpenScopedInjectionSideTabRequest & { workspaceKey: string },
+): WorkspaceSidePaneState {
+  const nextTab: InjectionSidePaneTab = {
+    id: `injection:${options.parentSessionId}:${options.rowId}`,
+    type: "injection",
+    openedAt: Date.now(),
+    workspaceKey: options.workspaceKey,
+    parentSessionId: options.parentSessionId,
+    rowId: options.rowId,
+    title: options.title,
+    text: options.text,
+  };
+  const existing = current?.tabs.find(
+    (tab): tab is InjectionSidePaneTab => tab.type === "injection" && tab.id === nextTab.id,
+  );
   return activateSidePaneTab(current, existing ? { ...existing, ...nextTab } : nextTab);
 }
 

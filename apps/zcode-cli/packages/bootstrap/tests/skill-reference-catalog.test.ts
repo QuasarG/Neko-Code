@@ -8,8 +8,8 @@ import { zcodeSkillsReferenceCatalogResultSchema } from "@zcode/shared";
 import type { SkillLoadOutcome } from "@zcode/contracts";
 import { getSkillReferenceCatalog } from "../src/zcode-protocol/skill-reference-catalog.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 
 const SESSION_CATALOG: SkillLoadOutcome = {
@@ -17,9 +17,9 @@ const SESSION_CATALOG: SkillLoadOutcome = {
     {
       name: "frozen",
       description: "Frozen session skill",
-      path: "/workspace/.zcode/skills/frozen/SKILL.md",
-      directory: "/workspace/.zcode/skills/frozen",
-      rootPath: "/workspace/.zcode/skills",
+      path: "/workspace/.nekode/skills/frozen/SKILL.md",
+      directory: "/workspace/.nekode/skills/frozen",
+      rootPath: "/workspace/.nekode/skills",
       scope: "project",
       source: "zcode",
       safeToAutoLoad: true,
@@ -30,16 +30,16 @@ const SESSION_CATALOG: SkillLoadOutcome = {
   totalDiscovered: 1,
 };
 
-function contextWithSession(sessionId: string): ZCodeProtocolAgentServerContext {
+function contextWithSession(sessionId: string): NekodeProtocolAgentServerContext {
   const record = {
     app: {
       getSkillCatalog: async () => SESSION_CATALOG,
     },
-  } as unknown as ZCodeProtocolSessionRecord;
+  } as unknown as NekodeProtocolSessionRecord;
   return {
     deps: { env: {} },
     sessions: new Map([[sessionId, record]]),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("skills/referenceCatalog protocol", () => {
@@ -53,10 +53,10 @@ describe("skills/referenceCatalog protocol", () => {
       authority: "session",
       skills: [
         {
-          id: "glm:workspace:/workspace/.zcode/skills/frozen/SKILL.md",
+          id: "glm:workspace:/workspace/.nekode/skills/frozen/SKILL.md",
           name: "frozen",
           description: "Frozen session skill",
-          path: "/workspace/.zcode/skills/frozen/SKILL.md",
+          path: "/workspace/.nekode/skills/frozen/SKILL.md",
           scope: "workspace",
           enabled: true,
         },
@@ -76,7 +76,7 @@ describe("skills/referenceCatalog protocol", () => {
 
   it("rescans the current workspace catalog for a draft request", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-skill-reference-workspace-"));
-    const skillDirectory = join(root, ".zcode", "skills", "manual-added");
+    const skillDirectory = join(root, ".nekode", "skills", "manual-added");
     await mkdir(skillDirectory, { recursive: true });
     await writeFile(
       join(skillDirectory, "SKILL.md"),
@@ -88,11 +88,11 @@ describe("skills/referenceCatalog protocol", () => {
           deps: {
             env: {
               HOME: root,
-              ZCODE_STORAGE_DIR: join(root, "cli"),
+              NEKODE_STORAGE_DIR: join(root, "cli"),
             },
           },
           sessions: new Map(),
-        } as unknown as ZCodeProtocolAgentServerContext,
+        } as unknown as NekodeProtocolAgentServerContext,
         { workspace: { workspacePath: root, workspaceKey: root } },
       );
 

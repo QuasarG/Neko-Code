@@ -2,7 +2,7 @@ import { setImmediate as nextTurn } from "node:timers/promises";
 import { describe, expect, it, vi } from "vitest";
 import { createProtocolInteractionBroker } from "../src/zcode-protocol/interaction-broker.js";
 import { V4InteractionRegistry } from "../src/zcode-protocol-v4/interaction-registry.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -31,7 +31,7 @@ function fixture(approvalMode?: "user-once") {
     v4Interactions: registry,
     requestClient,
     v4Gateway: { waitForPermissionGrantCommit },
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
   const broker = createProtocolInteractionBroker(context);
   const request = {
     requestId: "p",

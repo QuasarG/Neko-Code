@@ -88,7 +88,7 @@ export function ConversationAgentToolCallRow({
         onOpenCodeViewer={context.onOpenCodeViewer}
         onOpenFileLink={context.onOpenFileLink}
         onOpenBrowserUrl={context.onOpenBrowserUrl}
-        onOpenAutomationsMain={context.onOpenAutomationsMain}
+        onOpenWorkflowsMain={context.onOpenWorkflowsMain}
         agentSummaryAction={agentSummaryAction}
         authoritativeAgentType={subagentType}
       />

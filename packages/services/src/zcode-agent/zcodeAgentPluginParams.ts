@@ -1,19 +1,19 @@
 import type {
   ModelSelection,
-  ZCodeAgentMcpServer,
-  ZCodeAutomationScheduleRule,
-  ZCodeMcpListMode,
+  NekodeAgentMcpServer,
+  NekodeAutomationScheduleRule,
+  NekodeMcpListMode,
 } from "@zcode/shared";
 import type { McpAppsAppToolCallResult, McpAppsAppToolDescriptor } from "@zcode/shared/mcp-apps";
 
-export interface ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentWorkspaceTarget {
   workspacePath: string;
   workspaceIdentity?: string;
   /** 远程 workspace 的运行时会话身份；只用于隔离/路由，不能替代 workspacePath。 */
   remoteSessionId?: string;
 }
 
-export interface ZCodeAgentPluginMutationTarget extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentPluginMutationTarget extends NekodeAgentWorkspaceTarget {
   /** 仅 Host 观测使用；不会传给 CLI。 */
   telemetry?: {
     entry?:
@@ -28,31 +28,31 @@ export interface ZCodeAgentPluginMutationTarget extends ZCodeAgentWorkspaceTarge
   };
 }
 
-export interface ZCodeAgentPluginViewParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentPluginViewParams extends NekodeAgentWorkspaceTarget {
   configScope?: "user" | "workspace";
 }
 
-export interface ZCodeAgentListMcpServerStatusesParams extends ZCodeAgentWorkspaceTarget {
-  mcpServers?: ZCodeAgentMcpServer[];
-  mode?: ZCodeMcpListMode;
+export interface NekodeAgentListMcpServerStatusesParams extends NekodeAgentWorkspaceTarget {
+  mcpServers?: NekodeAgentMcpServer[];
+  mode?: NekodeMcpListMode;
 }
 
-export interface ZCodeAgentAddPluginMarketplaceParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentAddPluginMarketplaceParams extends NekodeAgentPluginMutationTarget {
   dryRun?: boolean;
   operationId?: string;
   source: string;
 }
 
-export interface ZCodeAgentRemovePluginMarketplaceParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentRemovePluginMarketplaceParams extends NekodeAgentPluginMutationTarget {
   marketplace: string;
 }
 
-export interface ZCodeAgentUpdatePluginMarketplaceParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentUpdatePluginMarketplaceParams extends NekodeAgentPluginMutationTarget {
   marketplace?: string;
   operationId?: string;
 }
 
-export interface ZCodeAgentInstallPluginParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentInstallPluginParams extends NekodeAgentPluginMutationTarget {
   dryRun?: boolean;
   marketplace: string;
   operationId?: string;
@@ -60,27 +60,27 @@ export interface ZCodeAgentInstallPluginParams extends ZCodeAgentPluginMutationT
   scope?: "user" | "workspace";
 }
 
-export interface ZCodeAgentCancelPluginOperationParams {
+export interface NekodeAgentCancelPluginOperationParams {
   operationId: string;
 }
 
-export interface ZCodeAgentUninstallPluginParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentUninstallPluginParams extends NekodeAgentPluginMutationTarget {
   marketplace?: string;
   pluginId?: string;
   pluginName?: string;
   removeCache?: boolean;
 }
 
-export interface ZCodeAgentUpdatePluginParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentUpdatePluginParams extends NekodeAgentPluginMutationTarget {
   pluginId?: string;
   marketplace?: string;
 }
 
-export interface ZCodeAgentRestoreBuiltinPluginParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentRestoreBuiltinPluginParams extends NekodeAgentPluginMutationTarget {
   pluginId: string;
 }
 
-export interface ZCodeAgentConfigurePluginParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentConfigurePluginParams extends NekodeAgentPluginMutationTarget {
   clearOptionKeys?: string[];
   dryRun?: boolean;
   options: Record<string, unknown>;
@@ -88,23 +88,23 @@ export interface ZCodeAgentConfigurePluginParams extends ZCodeAgentPluginMutatio
   scope?: "user" | "workspace";
 }
 
-export interface ZCodeAgentResetPluginConfigParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentResetPluginConfigParams extends NekodeAgentPluginMutationTarget {
   pluginId: string;
   scope?: "user" | "workspace";
 }
 
-export interface ZCodeAgentValidatePluginParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentValidatePluginParams extends NekodeAgentWorkspaceTarget {
   marketplace?: string;
   pluginName?: string;
   source?: string;
 }
 
-export interface ZCodeAgentDescribePluginParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentDescribePluginParams extends NekodeAgentWorkspaceTarget {
   marketplace: string;
   pluginName: string;
 }
 
-export interface ZCodeAgentSetPluginEnabledParams extends ZCodeAgentPluginMutationTarget {
+export interface NekodeAgentSetPluginEnabledParams extends NekodeAgentPluginMutationTarget {
   enabled: boolean;
   operationId?: string;
   pluginId: string;
@@ -114,18 +114,18 @@ export interface ZCodeAgentSetPluginEnabledParams extends ZCodeAgentPluginMutati
 // Plugin 对话引用 catalog：
 // 带 sessionId → session-owned 冻结 catalog（必须路由到持有该 session 的 workspace client）；
 // 不带 → workspace 当前 catalog（新建草稿 Picker）。
-export interface ZCodeAgentPluginReferenceCatalogParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentPluginReferenceCatalogParams extends NekodeAgentWorkspaceTarget {
   sessionId?: string;
 }
 
 // Composer Skill catalog：与 Plugin 引用相同，以 sessionId 区分 workspace 当前目录和
 // resident Session runtime 快照；不参与 Settings 管理目录。
-export interface ZCodeAgentSkillReferenceCatalogParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentSkillReferenceCatalogParams extends NekodeAgentWorkspaceTarget {
   sessionId?: string;
 }
 
 /** 插件 UI：UI 发起的 `ui://` 资源读取。 */
-export interface ZCodeAgentReadMcpResourceParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentReadMcpResourceParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
@@ -134,10 +134,10 @@ export interface ZCodeAgentReadMcpResourceParams extends ZCodeAgentWorkspaceTarg
 }
 
 /** 插件 UI 页面发起的 `resources/read`；参数与 readMcpResource 同形，结果受 8 MiB 与 mimeType 白名单约束。 */
-export type ZCodeAgentReadMcpResourceForUiParams = ZCodeAgentReadMcpResourceParams;
+export type NekodeAgentReadMcpResourceForUiParams = NekodeAgentReadMcpResourceParams;
 
 /** 插件 UI：UI 回调本插件工具；不进审批流，归属由 agent 侧 catalog fail closed。 */
-export interface ZCodeAgentCallMcpToolForUiParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentCallMcpToolForUiParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
@@ -148,7 +148,7 @@ export interface ZCodeAgentCallMcpToolForUiParams extends ZCodeAgentWorkspaceTar
   callId: string;
 }
 /** 插件 UI 页面发起的 resources/list、resources/templates/list、subscribe、unsubscribe。 */
-export interface ZCodeAgentListMcpResourcesForUiParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentListMcpResourcesForUiParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
@@ -156,7 +156,7 @@ export interface ZCodeAgentListMcpResourcesForUiParams extends ZCodeAgentWorkspa
   cursor?: string;
 }
 /** App-Provided Tools：实例身份 = 会话 + 沙箱作用域 + 代际。 */
-export interface ZCodeAgentAppToolInstanceForUiParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentAppToolInstanceForUiParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
@@ -164,17 +164,17 @@ export interface ZCodeAgentAppToolInstanceForUiParams extends ZCodeAgentWorkspac
   scopeId: string;
   generation: number;
 }
-export interface ZCodeAgentRegisterAppToolsForUiParams extends ZCodeAgentAppToolInstanceForUiParams {
+export interface NekodeAgentRegisterAppToolsForUiParams extends NekodeAgentAppToolInstanceForUiParams {
   tools: McpAppsAppToolDescriptor[];
 }
-export interface ZCodeAgentAppToolCallForUiParams extends ZCodeAgentAppToolInstanceForUiParams {
+export interface NekodeAgentAppToolCallForUiParams extends NekodeAgentAppToolInstanceForUiParams {
   callId: string;
 }
-export interface ZCodeAgentResolveAppToolCallForUiParams extends ZCodeAgentAppToolCallForUiParams {
+export interface NekodeAgentResolveAppToolCallForUiParams extends NekodeAgentAppToolCallForUiParams {
   result?: McpAppsAppToolCallResult;
   error?: { message: string };
 }
-export interface ZCodeAgentMcpResourceSubscriptionForUiParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentMcpResourceSubscriptionForUiParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
@@ -183,14 +183,14 @@ export interface ZCodeAgentMcpResourceSubscriptionForUiParams extends ZCodeAgent
   generation: number;
   uri: string;
 }
-export interface ZCodeAgentCancelMcpToolCallForUiParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentCancelMcpToolCallForUiParams extends NekodeAgentWorkspaceTarget {
   instance: import("@zcode/shared/mcp-apps").McpAppInstance;
   sessionId: string;
   pluginId: string;
   serverName: string;
   callId: string;
 }
-export interface ZCodeAgentResolveSuggestedPluginReferenceParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentResolveSuggestedPluginReferenceParams extends NekodeAgentWorkspaceTarget {
   stableId: string;
   operationId: string;
   clientMode: "desktop-continuous" | "web-remote-replayable";
@@ -199,7 +199,7 @@ export interface ZCodeAgentResolveSuggestedPluginReferenceParams extends ZCodeAg
 
 // ---- 定时任务(automation)管理参数 ----
 
-export interface ZCodeAgentCreateAutomationParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentCreateAutomationParams extends NekodeAgentWorkspaceTarget {
   projectId?: string | null;
   title: string;
   cronExpr: string;
@@ -210,10 +210,10 @@ export interface ZCodeAgentCreateAutomationParams extends ZCodeAgentWorkspaceTar
   recurring?: boolean;
   maxRuns?: number;
   endAt?: number;
-  scheduleRule?: ZCodeAutomationScheduleRule;
+  scheduleRule?: NekodeAutomationScheduleRule;
 }
 
-export interface ZCodeAgentUpdateAutomationParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentUpdateAutomationParams extends NekodeAgentWorkspaceTarget {
   automationId: string;
   title?: string;
   cronExpr?: string;
@@ -223,19 +223,19 @@ export interface ZCodeAgentUpdateAutomationParams extends ZCodeAgentWorkspaceTar
   recurring?: boolean;
   maxRuns?: number | null;
   endAt?: number | null;
-  scheduleRule?: ZCodeAutomationScheduleRule | null;
+  scheduleRule?: NekodeAutomationScheduleRule | null;
   scheduleEditedByUser?: boolean;
 }
 
-export interface ZCodeAgentAutomationIdParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentAutomationIdParams extends NekodeAgentWorkspaceTarget {
   automationId: string;
 }
 
-export interface ZCodeAgentSetAutomationEnabledParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentSetAutomationEnabledParams extends NekodeAgentWorkspaceTarget {
   automationId: string;
   enabled: boolean;
 }
 
-export interface ZCodeAgentDeleteAutomationRunParams extends ZCodeAgentWorkspaceTarget {
+export interface NekodeAgentDeleteAutomationRunParams extends NekodeAgentWorkspaceTarget {
   runId: string;
 }

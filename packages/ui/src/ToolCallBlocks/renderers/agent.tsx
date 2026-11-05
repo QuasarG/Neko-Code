@@ -4,7 +4,7 @@ import { useCallback, useMemo, type ReactNode } from "react";
 import type { AgentColor } from "@zcode/shared";
 import { MessageResponse } from "@/components/ai-elements/message.js";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { resolveSubagentColorFromName, SUBAGENT_TEXT_COLOR_CLASS } from "@/lib/subagentColors.js";
 import { ToolSnapshotFieldNotice } from "@/ToolCallBlocks/ToolSnapshotFieldNotice.js";
 import { ToolLayout } from "../ToolLayout.js";
@@ -32,7 +32,7 @@ function AgentChildToolList({
   onOpenCodeViewer,
   onOpenFileLink,
   onOpenBrowserUrl,
-  onOpenAutomationsMain,
+  onOpenWorkflowsMain,
   onLoadFullToolCallFields,
 }: {
   nestedToolRenderer: ToolCallBlockRenderContext["nestedToolRenderer"];
@@ -43,7 +43,7 @@ function AgentChildToolList({
   onOpenCodeViewer?: ToolCallBlockRenderContext["onOpenCodeViewer"];
   onOpenFileLink?: ToolCallBlockRenderContext["onOpenFileLink"];
   onOpenBrowserUrl?: ToolCallBlockRenderContext["onOpenBrowserUrl"];
-  onOpenAutomationsMain?: ToolCallBlockRenderContext["onOpenAutomationsMain"];
+  onOpenWorkflowsMain?: ToolCallBlockRenderContext["onOpenWorkflowsMain"];
   onLoadFullToolCallFields?: ToolCallBlockRenderContext["onLoadFullToolCallFields"];
 }) {
   if (childToolCalls.length === 0) {
@@ -65,7 +65,7 @@ function AgentChildToolList({
           onOpenCodeViewer={onOpenCodeViewer}
           onOpenFileLink={onOpenFileLink}
           onOpenBrowserUrl={onOpenBrowserUrl}
-          onOpenAutomationsMain={onOpenAutomationsMain}
+          onOpenWorkflowsMain={onOpenWorkflowsMain}
           onLoadFullToolCallFields={onLoadFullToolCallFields}
           suppressSourceLabel
         />
@@ -154,7 +154,7 @@ function BackgroundAgentProcessSection({
   isRunning: boolean;
   status: string | undefined;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const msg = (id: string, fallback: string) => formatAgentMessage(intl, id, fallback);
   const launchStatus =
     status === "failed"
@@ -208,7 +208,7 @@ function BackgroundAgentProcessSection({
 }
 
 export function AgentToolCallBlock(context: ToolCallBlockRenderContext) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const { toolCall, childToolCalls } = context.toolCallNode;
   const prompt = getAgentPrompt(toolCall);
   const fallbackLabel = formatAgentMessage(intl, "chat.toolCall.agent.fallback", "SubAgent");
@@ -312,7 +312,7 @@ export function AgentToolCallBlock(context: ToolCallBlockRenderContext) {
           onOpenCodeViewer={context.onOpenCodeViewer}
           onOpenFileLink={context.onOpenFileLink}
           onOpenBrowserUrl={context.onOpenBrowserUrl}
-          onOpenAutomationsMain={context.onOpenAutomationsMain}
+          onOpenWorkflowsMain={context.onOpenWorkflowsMain}
           onLoadFullToolCallFields={context.onLoadFullToolCallFields}
         />
       </div>

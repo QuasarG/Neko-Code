@@ -1,4 +1,5 @@
 import {
+  SessionEventType,
   createMessageId,
   createModelId,
   createModelProviderId,
@@ -17,6 +18,7 @@ import {
   type RuntimeMessageEntry,
   type RuntimeMessageMetadata,
 } from "../../agent/message-history.js";
+import { isNekoMemoryContextSource } from "../../neko-memory/context-sources.js";
 import type { AgentRuntimeInternal } from "../internal.js";
 
 /** 普通收集和 compact 共用隐藏提醒落盘，正文与 runtime metadata 写入同一 text part。 */
@@ -32,10 +34,46 @@ export async function persistRuntimeReminderMessage(
   try {
     await this.persistMessage(record.info, traceContext);
     for (const part of record.parts) await this.persistPart(part, traceContext);
+    const source = record.info.semantics?.source;
+    if (isNekoMemoryContextSource(source)) {
+      await emitContextInjected.call(this, record, source, traceContext);
+    }
     return record.info.id;
   } catch (error) {
     await removeRuntimePersistenceMessagesBestEffort.call(this, [record.info.id], traceContext);
     throw error;
+  }
+}
+
+/**
+ * 记忆注入的可见性事件：正文已经落库，产品投影只消费这一份。
+ * 事件失败不能回滚已写好的模型上下文（重试会让同一轮重复注入），故只记日志。
+ */
+async function emitContextInjected(
+  this: AgentRuntimeInternal,
+  record: MessageWithParts,
+  source: string,
+  traceContext: TraceContext,
+): Promise<void> {
+  const text = record.parts.find((part) => part.type === "text")?.text;
+  if (!text) return;
+  try {
+    await this.appendEvent(
+      this.createEvent(
+        SessionEventType.ContextInjected,
+        { source, text, messageId: record.info.id },
+        traceContext,
+      ),
+      traceContext,
+    );
+  } catch (error) {
+    this.logger?.warn("Context injection event persistence failed", {
+      ...traceContextToLogContext(traceContext),
+      errorMessage: error instanceof Error ? error.message : String(error),
+      event: "runtime.context_injected.failed",
+      module: "core.runtime",
+      source,
+    });
   }
 }
 

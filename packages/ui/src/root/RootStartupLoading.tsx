@@ -18,14 +18,14 @@ export function RootStartupLoading({ label, children, busy = true }: RootStartup
       aria-label={label}
       data-testid="root-startup-loading"
     >
-      <ZCodeStartupLogoBadge />
+      <NekodeStartupLogoBadge />
       {children}
     </div>
   );
 }
 
 /** 初始化与引导共用品牌图标，保持底色、描边、圆角和标志比例一致。 */
-export function ZCodeStartupLogoBadge({
+export function NekodeStartupLogoBadge({
   animated = true,
   size = "default",
 }: {
@@ -43,7 +43,7 @@ export function ZCodeStartupLogoBadge({
       )}
     >
       {/* Button 会给 SVG 默认尺寸；紧凑 Logo 显式恢复自动高度，保持标志原始比例。 */}
-      <ZCodeStartupLogo
+      <NekodeStartupLogo
         className={size === "titlebar" ? "size-auto w-3.25" : "h-auto w-14"}
         animated={animated}
       />
@@ -51,7 +51,7 @@ export function ZCodeStartupLogoBadge({
   );
 }
 
-export function ZCodeStartupLogo({
+export function NekodeStartupLogo({
   className,
   animated = true,
 }: {
@@ -62,9 +62,9 @@ export function ZCodeStartupLogo({
     <svg
       xmlns="http://www.w3.org/2000/svg"
       width="118"
-      height="100"
+      height="118"
       fill="none"
-      viewBox="0 0 256 218"
+      viewBox="0 0 256 256"
       className={cn("shrink-0 text-current", className)}
       aria-hidden="true"
       focusable="false"
@@ -78,15 +78,10 @@ export function ZCodeStartupLogo({
           values="1;0.4;1"
         />
       ) : null}
-      <path
-        fill="currentColor"
-        d="M134.4 0.130152L116.48 25.6022C113.665 29.5699 109.054 32.0019 104.064 32.0019H6.3999V0C6.3999 0.130149 134.4 0.130152 134.4 0.130152Z"
-      />
-      <path fill="currentColor" d="M256 0.130127L102.401 217.732H0L153.599 0.130127H256Z" />
-      <path
-        fill="currentColor"
-        d="M121.601 217.732L139.65 192.134C142.465 188.166 147.076 185.734 152.067 185.734H249.604V217.736H121.601V217.732Z"
-      />
+<path d="M 52 53 L 92 82 H 164 L 204 53 V 151 C 204 187, 175 203, 128 211 C 81 203, 52 187, 52 151 Z" fill="#B988EA" />
+        <path d="M 84 119 L 109 143 L 84 167" fill="none" stroke="#111111" stroke-width="12" stroke-linecap="butt" stroke-linejoin="miter" />
+        <path d="M 172 119 L 147 143 L 172 167" fill="none" stroke="#111111" stroke-width="12" stroke-linecap="butt" stroke-linejoin="miter" />
+        <rect x="118" y="178" width="20" height="12" fill="#111111" />
     </svg>
   );
 }

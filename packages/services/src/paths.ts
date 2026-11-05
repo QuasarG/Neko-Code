@@ -6,12 +6,14 @@ import { basename, join, win32 } from "node:path";
 import { homedir } from "node:os";
 import {
   DATA_BASE_DIR_FORBIDDEN_WINDOWS_INSTALL_DIR_ERROR_CODE,
-  ZCODE_AGENT_RUNTIME,
+  NEKODE_AGENT_RUNTIME,
 } from "@zcode/shared";
+import { resolveNekodeCliRoot, resolveNekodeDataBaseRoot } from "@zcode/shared/node";
 
 let _dataBaseDir: string | null = null;
-export const ZCODE_WINDOWS_APP_INSTALL_DIR_ENV = "ZCODE_WINDOWS_APP_INSTALL_DIR";
-const envDataBaseDir = process.env.ZCODE_DATA_BASE_DIR?.trim() || null;
+export const NEKODE_WINDOWS_APP_INSTALL_DIR_ENV = "NEKODE_WINDOWS_APP_INSTALL_DIR";
+const envDataBaseDir =
+  process.env.NEKODE_DATA_BASE_DIR?.trim() || process.env.NEKODE_DATA_BASE_DIR?.trim() || null;
 const defaultDataBaseDir = process.env.HOME?.trim() || homedir();
 
 export interface DataBaseDirTargetValidationOptions {
@@ -33,7 +35,7 @@ export function setDataBaseDir(dir: string | null): void {
   _dataBaseDir = dir?.trim() || null;
 }
 
-/** Get the current base directory. Priority: setDataBaseDir() > env ZCODE_DATA_BASE_DIR > homedir(). */
+/** Get the current base directory. Priority: setDataBaseDir() > env NEKODE_DATA_BASE_DIR > homedir(). */
 export function getDataBaseDir(): string {
   if (_dataBaseDir) return _dataBaseDir;
   if (envDataBaseDir) return envDataBaseDir;
@@ -42,36 +44,40 @@ export function getDataBaseDir(): string {
   return defaultDataBaseDir;
 }
 
-/** {dataBaseDir}/.zcode */
-export function getZCodeDataRootDir(): string {
-  return join(getDataBaseDir(), ".zcode");
+/** {dataBaseDir}/.nekode */
+export function getNekodeDataRootDir(): string {
+  // 守卫原因：dataBaseDir 可被用户/宿主改成 ~/.zcode；Nekode 不允许写官方根。
+  return resolveNekodeDataBaseRoot(getDataBaseDir());
 }
 
-/** 非项目对话共享的真实工作目录；默认 ~/.zcode/workspace/default。 */
+/** 非项目对话共享的真实工作目录；默认 ~/.nekode/workspace/default。 */
 export function getConversationWorkspaceDir(): string {
-  return join(getZCodeDataRootDir(), "workspace", "default");
+  return join(getNekodeDataRootDir(), "workspace", "default");
 }
 
-/** {dataBaseDir}/.zcode/v2 */
+/** {dataBaseDir}/.nekode/v2 */
 export function getAppConfigDir(): string {
-  return join(getZCodeDataRootDir(), "v2");
+  return join(getNekodeDataRootDir(), "v2");
 }
 
 /**
  * Agent 侧用户级默认指令（个性化）文件的 home 解析。
- * 必须与 CLI adapter（apps/zcode-cli/packages/adapters/src/context/index.ts 的
- * resolveUserHomeDir）保持完全一致：只认 HOME/USERPROFILE。不能改用
- * ZCODE_DATA_BASE_DIR（CLI 读该文件时忽略它）或 ZCODE_DESKTOP_HOME_DIR
- * （agent 子进程不认），否则 App 写的文件和 Agent 读的文件会分叉。
+ * 保留给只认 HOME/USERPROFILE 的调用方；AGENTS/persona 的实际根统一走
+ * `resolveNekodeCliRoot`，与 CLI adapter 使用同一套优先级和 ~/.zcode 守卫。
  */
 export function resolveAgentUserInstructionsHomeDir(env: NodeJS.ProcessEnv = process.env): string {
   const envHome = env.HOME?.trim() || env.USERPROFILE?.trim();
   return envHome && envHome.length > 0 ? envHome : homedir();
 }
 
-/** `{home}/.zcode/AGENTS.md`：用户自定义指令（个性化）的唯一事实源文件。 */
+/** `{NEKODE_HOME|NEKODE_STORAGE_DIR|NEKODE_ROOT|~/.nekode}/AGENTS.md`。 */
 export function getAgentUserInstructionsFilePath(env: NodeJS.ProcessEnv = process.env): string {
-  return join(resolveAgentUserInstructionsHomeDir(env), ".zcode", "AGENTS.md");
+  return join(resolveNekodeCliRoot(env), "AGENTS.md");
+}
+
+/** `{NEKODE_HOME|NEKODE_STORAGE_DIR|NEKODE_ROOT|~/.nekode}/persona/persona.md`。 */
+export function getPersonaFilePath(env: NodeJS.ProcessEnv = process.env): string {
+  return join(resolveNekodeCliRoot(env), "persona", "persona.md");
 }
 
 function readEnvValue(env: Record<string, string | undefined>, key: string): string | undefined {
@@ -132,11 +138,11 @@ function collectWindowsForbiddenAppInstallDirs(
   const localAppData = readEnvValue(env, "LOCALAPPDATA");
   const candidates = [
     options.appInstallDir,
-    readEnvValue(env, ZCODE_WINDOWS_APP_INSTALL_DIR_ENV),
-    programFiles ? win32.join(programFiles, "ZCode") : null,
-    programFilesX86 ? win32.join(programFilesX86, "ZCode") : null,
-    programW6432 ? win32.join(programW6432, "ZCode") : null,
-    localAppData ? win32.join(localAppData, "Programs", "ZCode") : null,
+    readEnvValue(env, NEKODE_WINDOWS_APP_INSTALL_DIR_ENV),
+    programFiles ? win32.join(programFiles, "Nekode") : null,
+    programFilesX86 ? win32.join(programFilesX86, "Nekode") : null,
+    programW6432 ? win32.join(programW6432, "Nekode") : null,
+    localAppData ? win32.join(localAppData, "Programs", "Nekode") : null,
   ];
   const seen = new Set<string>();
   const result: string[] = [];
@@ -179,15 +185,15 @@ export function validateDataBaseDirTarget(
 }
 
 export function getExportLogStageDir(): string {
-  return join(getZCodeDataRootDir(), "export-log-stage");
+  return join(getNekodeDataRootDir(), "export-log-stage");
 }
 
 export function getExportLogDir(): string {
-  return join(getZCodeDataRootDir(), "export-log");
+  return join(getNekodeDataRootDir(), "export-log");
 }
 
 export function getFeedbackRootDir(): string {
-  return join(getZCodeDataRootDir(), "feedback");
+  return join(getNekodeDataRootDir(), "feedback");
 }
 
 export function getFeedbackAttachmentDir(): string {
@@ -199,10 +205,10 @@ export function getFeedbackLogArchiveDir(): string {
 }
 
 export function getGitCheckpointIndexRootDir(): string {
-  return join(getZCodeDataRootDir(), "git-checkpoint-index");
+  return join(getNekodeDataRootDir(), "git-checkpoint-index");
 }
 
-/** ~/.zcode/v2/tasks-index.sqlite */
+/** ~/.nekode/v2/tasks-index.sqlite */
 export function getTasksIndexDatabasePath(): string {
   return join(getAppConfigDir(), "tasks-index.sqlite");
 }
@@ -212,7 +218,7 @@ function getWorkspaceKey(workspacePath: string, workspaceIdentity?: string): str
   return workspaceIdentity?.trim() || workspacePath;
 }
 
-/** 与 ZCode session 持久化一致：使用 workspaceKey 的 SHA-256 前 12 位 */
+/** 与 Nekode session 持久化一致：使用 workspaceKey 的 SHA-256 前 12 位 */
 export function getWorkspaceHash(workspacePath: string, workspaceIdentity?: string): string {
   return createHash("sha256")
     .update(getWorkspaceKey(workspacePath, workspaceIdentity))
@@ -220,12 +226,12 @@ export function getWorkspaceHash(workspacePath: string, workspaceIdentity?: stri
     .slice(0, 12);
 }
 
-/** ~/.zcode/v2/sessions/{workspaceHash} */
+/** ~/.nekode/v2/sessions/{workspaceHash} */
 function getTaskSessionDir(workspacePath: string, workspaceIdentity?: string): string {
   return join(getAppConfigDir(), "sessions", getWorkspaceHash(workspacePath, workspaceIdentity));
 }
 
-/** ~/.zcode/v2/sessions/{workspaceHash}/{taskId}.json */
+/** ~/.nekode/v2/sessions/{workspaceHash}/{taskId}.json */
 export function getLegacyTaskSessionSnapshotPath(
   workspacePath: string,
   taskId: string,
@@ -234,7 +240,7 @@ export function getLegacyTaskSessionSnapshotPath(
   return join(getTaskSessionDir(workspacePath, workspaceIdentity), `${taskId}.json`);
 }
 
-/** ~/.zcode/v2/sessions/{workspaceHash}/{taskId}.deleted.json */
+/** ~/.nekode/v2/sessions/{workspaceHash}/{taskId}.deleted.json */
 export function getLegacyDeletedTaskSessionSnapshotPath(
   workspacePath: string,
   taskId: string,
@@ -244,24 +250,24 @@ export function getLegacyDeletedTaskSessionSnapshotPath(
 }
 
 /**
- * GLM（唯一 agent provider）的配置目录：~/.zcode/cli。
+ * GLM（唯一 agent provider）的配置目录：~/.nekode/cli。
  * Bugfix：GLM 配置改为直接读写新版 zcode-cli 的全局配置目录，不做 workspace 隔离，
  * 避免同机不同工作区配置漂移。
  */
 export function getProviderWorkspaceConfigDir(): string {
-  return ZCODE_AGENT_RUNTIME.nativeConfigDir
-    ? join(getDataBaseDir(), ZCODE_AGENT_RUNTIME.nativeConfigDir)
-    : join(getDataBaseDir(), ".zcode", "cli");
+  // 统一走受守卫的 App 根，避免 dataBaseDir 指向 ~/.zcode 时写进官方目录。
+  return join(resolveNekodeDataBaseRoot(getDataBaseDir()), "cli");
 }
 
 /**
- * Copy the .zcode/v2 data directory from one base dir to another.
+ * Copy the .nekode/v2 data directory from one base dir to another.
  * Excludes setting.json and its transient atomic-write siblings — bootstrap
  * state must only live at the default homedir location.
  */
 export async function copyDataDirectory(oldBaseDir: string, newBaseDir: string): Promise<void> {
-  const oldDir = join(oldBaseDir, ".zcode", "v2");
-  const newDir = join(newBaseDir, ".zcode", "v2");
+  // 守卫原因：迁移源/目标同样不能落到官方 ~/.zcode 根。
+  const oldDir = join(resolveNekodeDataBaseRoot(oldBaseDir), "v2");
+  const newDir = join(resolveNekodeDataBaseRoot(newBaseDir), "v2");
   await cp(oldDir, newDir, {
     recursive: true,
     force: false,

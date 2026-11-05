@@ -24,8 +24,8 @@ const desktopPackage = JSON.parse(
   await readFile(resolve(desktopPackageRoot, "package.json"), "utf8"),
 );
 const sourceRoot = await resolveWindowsCuaHelperSourceRoot({
-  runtimePackageDir: process.env.ZCODE_CUA_HELPER_RUNTIME_PACKAGE_DIR,
-  devRoot: process.env.ZCODE_CUA_DEV_ROOT,
+  runtimePackageDir: process.env.NEKODE_CUA_HELPER_RUNTIME_PACKAGE_DIR,
+  devRoot: process.env.NEKODE_CUA_DEV_ROOT,
   servicesPackageRoot,
 });
 const result = await prepareWindowsCuaHelperAssets({

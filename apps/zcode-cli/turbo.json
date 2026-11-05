@@ -40,7 +40,7 @@
       ],
       "outputs": ["dist/**"],
       "cache": true,
-      "env": ["ZCODE_ENV", "NODE_ENV"]
+      "env": ["NEKODE_ENV", "NODE_ENV"]
     },
     "dev": {
       "cache": false,
@@ -49,7 +49,7 @@
     "test": {
       "dependsOn": ["build"],
       "inputs": ["**"],
-      "env": ["ZCODE_CUA_REPO", "VITEST_MAX_WORKERS"],
+      "env": ["NEKODE_CUA_REPO", "VITEST_MAX_WORKERS"],
       "outputs": []
     },
     "coverage": {
@@ -87,7 +87,7 @@
       ],
       "outputs": ["dist/**"],
       "cache": true,
-      "env": ["ZCODE_ENV", "NODE_ENV"]
+      "env": ["NEKODE_ENV", "NODE_ENV"]
     }
   }
 }

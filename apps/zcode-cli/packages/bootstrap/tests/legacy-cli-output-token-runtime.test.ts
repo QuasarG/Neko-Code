@@ -4,10 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { createSharedZCodeCredentialStore } from "@zcode/adapters/auth";
+import { createSharedNekodeCredentialStore } from "@zcode/adapters/auth";
 import { AiSdkModelAdapter } from "@zcode/adapters/model";
 import { createSqliteSessionStore } from "@zcode/adapters/storage";
-import { createZCodeApp } from "../src/app/create-app.js";
+import { createNekodeApp } from "../src/app/create-app.js";
 import { startProcessProviderRegistryRuntime } from "../src/app/process-provider-registry-runtime.js";
 
 const OUTPUT_BUDGET = 24_000;
@@ -45,14 +45,14 @@ describe("CLI 旧输出上限从首次导入到请求", () => {
       const legacyPath = join(directory, "config.json");
       const personalPath = join(directory, "provider_config.json");
       const env = {
-        ZCODE_DATA_BASE_DIR: directory,
-        ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: builtinPath,
-        ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
+        NEKODE_DATA_BASE_DIR: directory,
+        NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: builtinPath,
+        NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
       };
       const options = {
         standalone: {
           legacyCliUserConfigFilePath: legacyPath,
-          credentialStore: createSharedZCodeCredentialStore({
+          credentialStore: createSharedNekodeCredentialStore({
             baseDir: join(directory, "credentials"),
             env,
           }),
@@ -85,7 +85,7 @@ describe("CLI 旧输出上限从首次导入到请求", () => {
           expect(config?.optionSpecs.maxOutputTokens.max).toBe(OUTPUT_BUDGET);
           expect(config?.optionSpecs.maxOutputTokens.map).toContain(field);
           expect(await readFile(legacyPath, "utf8")).toBe(original);
-          const app = await createZCodeApp({
+          const app = await createNekodeApp({
             env,
             providerRegistry: processRuntime.runtime.registryService,
             configuredDefaultModelSelection: processRuntime.configuredDefaultModelSelection,

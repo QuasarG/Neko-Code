@@ -5,7 +5,7 @@ import type {
   SessionStorePort,
   WorkflowAgentCallInput,
 } from "@zcode/contracts";
-import { homedir } from "node:os";
+import { resolveNekodeCliRoot } from "@zcode/shared/node";
 import { isAbsolute, join, relative } from "node:path";
 
 const STRUCTURED_OUTPUT_PROMPT =
@@ -170,8 +170,8 @@ export function inferScriptWorkflowScope(
   scriptPath: string,
   workingDirectory: string,
 ): "explicit" | "project" | "user" {
-  if (isWithin(scriptPath, join(workingDirectory, ".zcode", "workflows"))) return "project";
-  if (isWithin(scriptPath, join(homedir(), ".zcode", "workflows"))) return "user";
+  if (isWithin(scriptPath, join(workingDirectory, ".nekode", "workflows"))) return "project";
+  if (isWithin(scriptPath, join(resolveNekodeCliRoot(), "workflows"))) return "user";
   return "explicit";
 }
 

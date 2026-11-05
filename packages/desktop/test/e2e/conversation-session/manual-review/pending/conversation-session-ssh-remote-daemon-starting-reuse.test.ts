@@ -27,14 +27,14 @@ const STARTING_WINDOW_ENABLED = process.env.R3_DAEMON_STARTING_WINDOW !== "0";
 // Core 在 require 阶段同步阻塞的时长。要短于 Supervisor 首启 15 秒的 ready 预算，
 // 又要长到 Desktop 的 probe 与 serve --daemon 落在 starting 窗口内。
 const SLOW_CORE_MS = 8_000;
-const SERVER_ROOT = "/home/dev/.zcode/server";
+const SERVER_ROOT = "/home/dev/.nekode/server";
 const SLOW_CORE_SCRIPT = "/home/dev/.e2e-slow-core.cjs";
 const SAMPLER_SCRIPT = "/home/dev/.e2e-daemon-sampler.sh";
 const SAMPLER_LOG = "/tmp/e2e-daemon-samples.log";
 const desktopRoot = process.cwd();
 const repoRoot = resolve(desktopRoot, "../..");
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/ssh-daemon-starting-reuse",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/ssh-daemon-starting-reuse",
 );
 const execFileAsync = promisify(execFile);
 
@@ -68,13 +68,13 @@ async function preinstallRemoteRelease(container: string, appVersion: string): P
     container,
     [
       "set -eu",
-      'b="$HOME/.zcode/server/.e2e-bootstrap"',
+      'b="$HOME/.nekode/server/.e2e-bootstrap"',
       'rm -rf "$b"',
       'mkdir -p "$b"',
       'tar -xzf /tmp/e2e-zcode-server.tar.gz -C "$b" --strip-components=1',
-      '"$b/bin/zcode" update --from-archive /tmp/e2e-zcode-server.tar.gz --server-root "$HOME/.zcode/server" --json',
+      '"$b/bin/zcode" update --from-archive /tmp/e2e-zcode-server.tar.gz --server-root "$HOME/.nekode/server" --json',
       // update 会拉起 daemon；停掉后由本用例按需制造 starting 窗口。
-      '"$HOME/.zcode/server/bin/zcode" stop --wait --server-root "$HOME/.zcode/server" --json',
+      '"$HOME/.nekode/server/bin/zcode" stop --wait --server-root "$HOME/.nekode/server" --json',
       'rm -rf "$b" /tmp/e2e-zcode-server.tar.gz',
     ].join("; "),
   );
@@ -137,7 +137,7 @@ async function startDaemonInStartingWindow(container: string): Promise<number> {
     container,
     "sh",
     "-c",
-    `"$HOME/.zcode/server/bin/zcode" serve --daemon --server-root "$HOME/.zcode/server" > /tmp/e2e-background-serve.log 2>&1`,
+    `"$HOME/.nekode/server/bin/zcode" serve --daemon --server-root "$HOME/.nekode/server" > /tmp/e2e-background-serve.log 2>&1`,
   ]);
   let snapshot: DaemonSnapshot = { lockPid: null, state: null };
   await browser.waitUntil(
@@ -240,7 +240,7 @@ describe(`${MARKER}: 远端 daemon 正在 starting 时连接，以及远端 agen
     expect(remoteRequests.length).toBeGreaterThan(0);
     for (const request of remoteRequests) {
       // AI SDK 会在产品标识后追加 ai-sdk/runtime 片段；断言首个产品标识是 App 版本。
-      expect(request.userAgent?.split(" ")[0]).toBe(`ZCode/${appVersion}`);
+      expect(request.userAgent?.split(" ")[0]).toBe(`Nekode/${appVersion}`);
       expect(request.appVersion).toBe(appVersion);
     }
   });

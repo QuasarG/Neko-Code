@@ -7,22 +7,22 @@ import {
 } from "@zcode/provider";
 import {
   isBuiltinModelProviderId,
-  resolveRuntimeZCodeEndpointOrigin,
-  ZCODE_VERSION,
+  resolveRuntimeNekodeEndpointOrigin,
+  NEKODE_VERSION,
 } from "@zcode/shared";
 import { dirname, join } from "node:path";
 import {
   NodeModelSelectionConfigRepository,
   NodeProviderRegistryRuntime,
   resolveNodeProviderRuntimePaths,
-  downloadZCodeBuiltinRelease,
-  resolveZCodeBuiltinClientPlatform,
-  ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV,
-  type ZCodeBuiltinRefreshEvent,
+  downloadNekodeBuiltinRelease,
+  resolveNekodeBuiltinClientPlatform,
+  NEKODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV,
+  type NekodeBuiltinRefreshEvent,
 } from "@zcode/provider-node";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "@zcode/adapters/auth";
 import { readLegacyCliPersonalProviderConfig } from "./legacy-cli-personal-provider-config-importer.js";
 import {
@@ -33,12 +33,12 @@ import {
 export interface ProcessProviderRegistryRuntimeOptions {
   /** Standalone Prompt CLI / TUI 自己拥有账号凭据与旧配置的一次性导入。 */
   readonly standalone?: {
-    readonly credentialStore?: SharedZCodeCredentialStore;
+    readonly credentialStore?: SharedNekodeCredentialStore;
     readonly legacyCliUserConfigFilePath?: string;
     readonly onAccountInitializationError?: (error: unknown) => void;
     readonly request?: typeof fetch;
     readonly onBuiltinRefreshError?: (error: unknown) => void;
-    readonly onBuiltinRefreshResult?: (event: ZCodeBuiltinRefreshEvent) => void;
+    readonly onBuiltinRefreshResult?: (event: NekodeBuiltinRefreshEvent) => void;
   };
 }
 
@@ -48,16 +48,16 @@ export async function startProcessProviderRegistryRuntime(
 ) {
   const paths = resolveNodeProviderRuntimePaths(env);
   if (!paths) {
-    throw new Error("缺少进程 Provider Registry 的 ZCode Built-in / Personal Config 路径");
+    throw new Error("缺少进程 Provider Registry 的 Nekode Built-in / Personal Config 路径");
   }
 
   const accountSource = new MutableAccountProviderConfigSource();
   const credentialStore = options.standalone
-    ? (options.standalone.credentialStore ?? createSharedZCodeCredentialStore({ env: { ...env } }))
+    ? (options.standalone.credentialStore ?? createSharedNekodeCredentialStore({ env: { ...env } }))
     : undefined;
   let standaloneAccount: AccountProviderService | undefined;
   const bundledFile = options.standalone
-    ? env[ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV]?.trim()
+    ? env[NEKODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE_ENV]?.trim()
     : undefined;
   const runtime = new NodeProviderRegistryRuntime({
     ...paths,
@@ -70,20 +70,20 @@ export async function startProcessProviderRegistryRuntime(
               dirname(paths.zcodeBuiltinFilePath),
               "zcode-builtin-refresh.json",
             ),
-            resolveEndpointKey: () => resolveRuntimeZCodeEndpointOrigin(env),
+            resolveEndpointKey: () => resolveRuntimeNekodeEndpointOrigin(env),
             fetchRelease: (endpointOrigin, signal) =>
-              downloadZCodeBuiltinRelease({
+              downloadNekodeBuiltinRelease({
                 endpointOrigin,
                 signal,
-                appVersion: ZCODE_VERSION,
-                platform: resolveZCodeBuiltinClientPlatform(),
+                appVersion: NEKODE_VERSION,
+                platform: resolveNekodeBuiltinClientPlatform(),
                 request: options.standalone?.request ?? globalThis.fetch,
               }),
             onRefreshResult: options.standalone?.onBuiltinRefreshResult,
           },
         }
       : {}),
-    onZCodeBuiltinRefreshError: options.standalone?.onBuiltinRefreshError,
+    onNekodeBuiltinRefreshError: options.standalone?.onBuiltinRefreshError,
     accountSource,
     ...(credentialStore
       ? {
@@ -129,12 +129,12 @@ export async function startProcessProviderRegistryRuntime(
       : {}),
   });
   const disposeRecovery = standaloneAccount
-    ? runtime.onDidCheckZCodeBuiltin(async () => {
+    ? runtime.onDidCheckNekodeBuiltin(async () => {
         const [config, account] = await Promise.all([
           runtime.configService.read(),
           standaloneAccount!.read(),
         ]);
-        if (config.zcodeBuiltinRevision !== account.basedOnZCodeBuiltinRevision)
+        if (config.zcodeBuiltinRevision !== account.basedOnNekodeBuiltinRevision)
           await standaloneAccount!.refresh("builtin-account-recovery");
       })
     : undefined;
@@ -201,14 +201,14 @@ export async function startProcessProviderRegistryRuntime(
 /** 把协议信封解析为进程 Registry 使用的第三层 Account Config Overlay。 */
 export function parseProcessAccountProviderConfigSnapshot(input: {
   readonly revision: string;
-  readonly basedOnZCodeBuiltinRevision: string;
+  readonly basedOnNekodeBuiltinRevision: string;
   readonly providers: unknown;
   readonly states?: AccountProviderStates;
 }): AccountProviderConfigSnapshot {
   const revision = input.revision.trim();
   if (!revision) throw new Error("Account Config revision 不能为空");
-  const basedOnZCodeBuiltinRevision = input.basedOnZCodeBuiltinRevision.trim();
-  if (!basedOnZCodeBuiltinRevision) {
+  const basedOnNekodeBuiltinRevision = input.basedOnNekodeBuiltinRevision.trim();
+  if (!basedOnNekodeBuiltinRevision) {
     throw new Error("Account Config Built-in revision 不能为空");
   }
   const providers = parseAccountProviderConfigMap(input.providers);
@@ -225,7 +225,7 @@ export function parseProcessAccountProviderConfigSnapshot(input: {
   }
   return Object.freeze({
     revision,
-    basedOnZCodeBuiltinRevision,
+    basedOnNekodeBuiltinRevision,
     providers,
     // 与 Overlay 属于同一快照；不能只更新 revision 却丢掉当前连接事实。
     ...(input.states ? { states: input.states } : {}),

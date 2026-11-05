@@ -55,17 +55,8 @@ export const useFeedbackStore = create<FeedbackUiState>((set) => ({
   submitDraft: null,
   submissionJobId: null,
   selectedTicketId: null,
-  openSubmit: (draft) =>
-    set({
-      // “问题上报”是新建入口，不能隐式续接上一次仍在上传的 job，
-      // 否则新表单会继承旧 job 的 submitting 状态并阻止用户继续提交。
-      open: true,
-      featureRequestOpen: false,
-      tab: "submit",
-      submitDraft: draft ?? null,
-      submissionJobId: null,
-      selectedTicketId: null,
-    }),
+  // Nekode：反馈通道已砍掉，所有打开入口保持 no-op（签名保留，旧调用点可编译）。
+  openSubmit: (_draft) => {},
   openSubmissionJob: (jobId) =>
     set({
       open: true,
@@ -75,24 +66,8 @@ export const useFeedbackStore = create<FeedbackUiState>((set) => ({
       submissionJobId: jobId,
       selectedTicketId: null,
     }),
-  openFeatureRequest: () =>
-    set({
-      // 需求反馈和问题上报是两个独立 Dialog，必须互斥打开，避免后台浮层或快捷入口叠出双弹窗。
-      open: false,
-      featureRequestOpen: true,
-      submitDraft: null,
-      submissionJobId: null,
-      selectedTicketId: null,
-    }),
-  openTickets: (ticketId) =>
-    set({
-      open: true,
-      featureRequestOpen: false,
-      tab: "tickets",
-      submitDraft: null,
-      submissionJobId: null,
-      selectedTicketId: ticketId ?? null,
-    }),
+  openFeatureRequest: () => {},
+  openTickets: (_ticketId) => {},
   setTab: (tab) =>
     set({
       tab,

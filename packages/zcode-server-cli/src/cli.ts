@@ -4,7 +4,7 @@ import { access, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import type { Readable, Writable } from "node:stream";
-import { isPublicZCodeErrorCode, ZCODE_VERSION } from "@zcode/shared";
+import { isPublicNekodeErrorCode, NEKODE_VERSION } from "@zcode/shared";
 import { SourceServerWorkspaceAliasRepo } from "@zcode/services/node";
 import {
   CORE_KILL_TIMEOUT_MS,
@@ -90,7 +90,7 @@ async function acquireLifecycleCommandLock(
 }
 
 export function serviceRegistrationEnabled(env: NodeJS.ProcessEnv = process.env): boolean {
-  return env.ZCODE_SERVER_SKIP_SERVICE_REGISTRATION !== "1";
+  return env.NEKODE_SERVER_SKIP_SERVICE_REGISTRATION !== "1";
 }
 
 export function daemonStartupMode(env: NodeJS.ProcessEnv = process.env): "service" | "fallback" {
@@ -122,7 +122,7 @@ export async function runServerCli(
     if (command === "version" || command === "--version") {
       // Bug 原因：Server --version 过去落入 legacy delegate，实际输出取决于旁边的 Agent
       // zcode.cjs，Desktop probe 无法稳定判断 Server compatibility。
-      stdout(io, json ? { product: "zcode-server", version: ZCODE_VERSION } : ZCODE_VERSION);
+      stdout(io, json ? { product: "zcode-server", version: NEKODE_VERSION } : NEKODE_VERSION);
       return 0;
     }
     const proxyStdioRequested =
@@ -179,7 +179,7 @@ export async function runServerCli(
         // 或卸载接管的服务。锁被占用时直接失败（不等待、不停止现有服务），沿用 uninstall 的冲突输出。
         const restartLock = await acquireLifecycleCommandLock(
           layout,
-          "A ZCode Server update is already running",
+          "A Nekode Server update is already running",
         );
         try {
           return await runRestart(io, json, layout, runtimeOptions);
@@ -193,7 +193,7 @@ export async function runServerCli(
       case "update": {
         const updateLock = await acquireLifecycleCommandLock(
           layout,
-          "Another ZCode Server update is already running",
+          "Another Nekode Server update is already running",
         );
         const updateDaemonHandoff =
           runtimeOptions.updateDaemonHandoff ?? createUpdateDaemonHandoff();
@@ -223,7 +223,7 @@ export async function runServerCli(
       case "uninstall": {
         const uninstallLock = await acquireLifecycleCommandLock(
           layout,
-          "A ZCode Server update is already running",
+          "A Nekode Server update is already running",
         );
         try {
           return await runUninstall(io, json, layout);
@@ -240,7 +240,7 @@ export async function runServerCli(
         error && typeof error === "object"
           ? (error as { code?: unknown; retryable?: unknown })
           : null;
-      const publicCode = isPublicZCodeErrorCode(structured?.code) ? structured.code : undefined;
+      const publicCode = isPublicNekodeErrorCode(structured?.code) ? structured.code : undefined;
       stdout(io, {
         ok: false,
         ...(publicCode ? { code: publicCode } : {}),
@@ -309,7 +309,7 @@ async function runServe(
         const reused = existing.state === "ready" ? existing : await waitForControlReady(layout);
         if (json) stdout(io, reused);
         else
-          stdout(io, `ZCode Server ${reused.state} at ${reused.host ?? ""}:${reused.port ?? ""}`);
+          stdout(io, `Nekode Server ${reused.state} at ${reused.host ?? ""}:${reused.port ?? ""}`);
         return 0;
       }
       if (existing.runningTaskCount > 0) {
@@ -359,7 +359,7 @@ async function runServe(
         if (!isServiceLoadFailure(error)) throw error;
         serviceFallbackReason = (error as Error).message.trim();
         if (!json)
-          stderr(io, `Starting ZCode Server in detached fallback mode: ${serviceFallbackReason}`);
+          stderr(io, `Starting Nekode Server in detached fallback mode: ${serviceFallbackReason}`);
       }
     }
     if (!serviceStarted) {
@@ -374,8 +374,8 @@ async function runServe(
           stdio: "ignore",
           env: {
             ...process.env,
-            ZCODE_DATA_BASE_DIR: layout.dataBaseDir,
-            ZCODE_SERVER_ROOT: layout.serverRoot,
+            NEKODE_DATA_BASE_DIR: layout.dataBaseDir,
+            NEKODE_SERVER_ROOT: layout.serverRoot,
           },
         },
       );
@@ -406,7 +406,7 @@ async function runServe(
         baselineUpdatedAt,
         () =>
           childEarlyExit
-            ? `ZCode Server daemon exited before ready (code=${childEarlyExit.code ?? "null"} signal=${childEarlyExit.signal ?? "none"})`
+            ? `Nekode Server daemon exited before ready (code=${childEarlyExit.code ?? "null"} signal=${childEarlyExit.signal ?? "none"})`
             : undefined,
         serviceStarted,
       );
@@ -420,7 +420,7 @@ async function runServe(
     }
     // 回退原因只属于本次启动结果，不写入 status.json。
     if (json) stdout(io, serviceFallbackReason ? { ...started, serviceFallbackReason } : started);
-    else stdout(io, `ZCode Server ${started.state} at ${started.host ?? ""}:${started.port ?? ""}`);
+    else stdout(io, `Nekode Server ${started.state} at ${started.host ?? ""}:${started.port ?? ""}`);
     process.stdin.pause();
     process.stdin.destroy();
     return 0;
@@ -450,8 +450,8 @@ async function runServe(
           : process.execPath;
         const inheritedEnv = {
           ...process.env,
-          ZCODE_DATA_BASE_DIR: layout.dataBaseDir,
-          ZCODE_SERVER_ROOT: layout.serverRoot,
+          NEKODE_DATA_BASE_DIR: layout.dataBaseDir,
+          NEKODE_SERVER_ROOT: layout.serverRoot,
         };
         const releaseWiring = runtimeRoot
           ? createReleaseAgentWiring(runtimeRoot, runtimeNode, inheritedEnv)
@@ -461,14 +461,14 @@ async function runServe(
           env: {
             ...inheritedEnv,
             ...releaseWiring,
-            ...(runtimeRoot ? { ZCODE_SERVER_RUNTIME_ROOT: runtimeRoot } : {}),
-            ...(release?.releaseId ? { ZCODE_SERVER_RELEASE_ID: release.releaseId } : {}),
+            ...(runtimeRoot ? { NEKODE_SERVER_RUNTIME_ROOT: runtimeRoot } : {}),
+            ...(release?.releaseId ? { NEKODE_SERVER_RELEASE_ID: release.releaseId } : {}),
           },
           stdio: ["ignore", "ignore", "ignore", "ipc"],
         });
       },
     },
-    version: ZCODE_VERSION,
+    version: NEKODE_VERSION,
     ...(supervisorReleaseId ? { supervisorReleaseId } : {}),
     serviceRegistered,
     onStopped: () => {
@@ -495,7 +495,7 @@ async function runServe(
     throw error;
   }
   if (json) stdout(io, status);
-  else stdout(io, `ZCode Server ${status.state} at ${status.host ?? ""}:${status.port ?? ""}`);
+  else stdout(io, `Nekode Server ${status.state} at ${status.host ?? ""}:${status.port ?? ""}`);
   await new Promise<void>((resolve) => {
     foregroundStopped = resolve;
     if (!daemon) {
@@ -545,12 +545,12 @@ async function runControl(
   } catch (error: unknown) {
     if (command === "status") {
       const persisted = await readPersistedStatusDetailed(layout);
-      result = persisted.status ?? createStoppedServerStatus(ZCODE_VERSION);
+      result = persisted.status ?? createStoppedServerStatus(NEKODE_VERSION);
     } else if (command === "stop") {
       // 快照缺失表示 daemon 从未写出过状态，按已停止输出。
       result =
         (await readStatusForStopWithoutControl(layout, error)) ??
-        createStoppedServerStatus(ZCODE_VERSION);
+        createStoppedServerStatus(NEKODE_VERSION);
     } else {
       throw error;
     }
@@ -576,7 +576,7 @@ async function runStopAndWait(
     io,
     isStoppedServerStatus(status)
       ? status
-      : createStoppedServerStatus(ZCODE_VERSION, {
+      : createStoppedServerStatus(NEKODE_VERSION, {
           serviceRegistered: status?.serviceRegistered ?? false,
         }),
   );
@@ -607,7 +607,7 @@ async function runUninstall(
   json: boolean,
   layout: ReturnType<typeof resolveServerLayout>,
 ): Promise<number> {
-  const first = await (io.confirm?.("Type DELETE to uninstall ZCode Server: ") ??
+  const first = await (io.confirm?.("Type DELETE to uninstall Nekode Server: ") ??
     Promise.resolve(""));
   if (first !== "DELETE") throw new Error("Uninstall cancelled");
   const second = await (io.confirm?.("Type DELETE again to confirm: ") ?? Promise.resolve(""));
@@ -684,11 +684,11 @@ async function finishUninstall(
       .filter((entry) => entry !== "run")
       .sort();
     // server root 允许用户显式指定，不能递归删除未知内容。卸载只清理上面的
-    // ZCode allowlist，并把保留项写入结果供用户审计。先落盘 marker，再释放 lock，
+    // Nekode allowlist，并把保留项写入结果供用户审计。先落盘 marker，再释放 lock，
     // 让并发 Supervisor 在删除 run 目录的最后窗口也会 fail-closed。
     await writeFile(
       layout.uninstalledFile,
-      `${JSON.stringify({ uninstalled: true, uninstalledAt: Date.now(), version: ZCODE_VERSION, preservedPaths }, null, 2)}\n`,
+      `${JSON.stringify({ uninstalled: true, uninstalledAt: Date.now(), version: NEKODE_VERSION, preservedPaths }, null, 2)}\n`,
       { encoding: "utf8", mode: 0o600 },
     );
     await uninstallLock.release();
@@ -807,12 +807,12 @@ async function readControlStatus(
 
 async function delegateLegacyCli(argv: readonly string[], io: CliIO): Promise<number> {
   const candidate =
-    process.env.ZCODE_LEGACY_CLI_ENTRY?.trim() ||
+    process.env.NEKODE_LEGACY_CLI_ENTRY?.trim() ||
     join(dirname(fileURLToPath(import.meta.url)), "zcode.cjs");
   try {
     await access(candidate);
   } catch {
-    stdout(io, argv.length ? `Unknown command: ${argv[0]}` : "ZCode TUI");
+    stdout(io, argv.length ? `Unknown command: ${argv[0]}` : "Nekode TUI");
     return argv.length ? 1 : 0;
   }
   const child = fork(candidate, [...argv], { stdio: "inherit" });

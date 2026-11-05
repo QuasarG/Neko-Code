@@ -1,9 +1,9 @@
 import React from "react";
 import { SessionEventType, type SessionEvent } from "@zcode/contracts";
 import type {
-  ZCodeSessionSubagentsResult,
-  ZCodeSessionRunningSubagent,
-  ZCodeSessionEndedSubagent,
+  NekodeSessionSubagentsResult,
+  NekodeSessionRunningSubagent,
+  NekodeSessionEndedSubagent,
 } from "@zcode/shared";
 import type { TuiOptions } from "./types.js";
 import { changesSubagentDirectory } from "./app-subagent-events.js";
@@ -13,8 +13,8 @@ import {
   type SubagentTranscript,
 } from "./app-subagent-transcript.js";
 
-export type SubagentItem = ZCodeSessionRunningSubagent | ZCodeSessionEndedSubagent;
-const EMPTY_DIRECTORY: ZCodeSessionSubagentsResult = {
+export type SubagentItem = NekodeSessionRunningSubagent | NekodeSessionEndedSubagent;
+const EMPTY_DIRECTORY: NekodeSessionSubagentsResult = {
   revision: 0,
   childSessionIds: [],
   running: [],

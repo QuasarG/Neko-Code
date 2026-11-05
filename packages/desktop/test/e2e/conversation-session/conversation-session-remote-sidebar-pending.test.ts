@@ -21,7 +21,7 @@ import {
 
 const CASE_MARKER = "E2E_REMOTE_SIDEBAR_PENDING";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-sidebar-pending",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-sidebar-pending",
 );
 const run = promisify(execFile);
 
@@ -50,18 +50,18 @@ async function setAppearance(locale: "zh-CN" | "en-US", theme: "light" | "dark")
 }
 
 async function readRemoteCurrentSha(): Promise<string> {
-  const container = process.env.ZCODE_E2E_SSH_CONTAINER?.trim();
-  if (!container) throw new Error(`${CASE_MARKER}: 缺少 ZCODE_E2E_SSH_CONTAINER`);
+  const container = process.env.NEKODE_E2E_SSH_CONTAINER?.trim();
+  if (!container) throw new Error(`${CASE_MARKER}: 缺少 NEKODE_E2E_SSH_CONTAINER`);
   const { stdout } = await run(
     "docker",
     [
       "exec",
       "-u",
-      process.env.ZCODE_E2E_SSH_USERNAME?.trim() || "dev",
+      process.env.NEKODE_E2E_SSH_USERNAME?.trim() || "dev",
       container,
       "bash",
       "-lc",
-      'grep -o \'"archiveSha256": *"[0-9a-f]*"\' "$HOME/.zcode/server/current.json" | grep -o "[0-9a-f]\\{64\\}"',
+      'grep -o \'"archiveSha256": *"[0-9a-f]*"\' "$HOME/.nekode/server/current.json" | grep -o "[0-9a-f]\\{64\\}"',
     ],
     { timeout: 30_000 },
   );

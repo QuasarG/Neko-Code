@@ -10,7 +10,7 @@ import {
 } from "../helpers/plugin-management-lifecycle.js";
 
 const CASE_MARKER = "E2E_WPL_013_BUILTIN_WORKSPACE_DISABLE";
-const BUILTIN_ID = "skill-creator@zcode-plugins-official";
+const BUILTIN_ID = "zcode-guide@zcode-plugins-official";
 
 describe("WPL-013 builtin Workspace disable E2E", () => {
   after(async () => {
@@ -23,8 +23,8 @@ describe("WPL-013 builtin Workspace disable E2E", () => {
 
     const { homeDir, storageRoot, workspace: workspaceA } = getE2EAppDataPaths();
     const workspaceB = join(homeDir, "WorkspaceB");
-    const workspaceAConfigPath = join(workspaceA, ".zcode", "config.json");
-    const workspaceBConfigPath = join(workspaceB, ".zcode", "config.json");
+    const workspaceAConfigPath = join(workspaceA, ".nekode", "config.json");
+    const workspaceBConfigPath = join(workspaceB, ".nekode", "config.json");
     const userConfigPath = join(storageRoot, "cli", "config.json");
     const installedPluginsPath = pluginStoragePath("installed_plugins.json");
     const dataPath = join(pluginDataPath(BUILTIN_ID), "state.json");

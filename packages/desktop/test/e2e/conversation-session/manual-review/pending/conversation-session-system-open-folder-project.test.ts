@@ -17,7 +17,7 @@ import {
 async function openFolder(path: string) {
   // 使用 Explorer 的 argv 入口，保留真实 Main → preload → Root → Host 项目保存链路。
   await browser.electron.execute((electron, folder) => {
-    electron.app.emit("second-instance", {}, ["ZCode.exe", "--open-workspace", folder], "", {});
+    electron.app.emit("second-instance", {}, ["Nekode.exe", "--open-workspace", folder], "", {});
   }, path);
 }
 async function draft() {
@@ -101,7 +101,7 @@ describe("系统目录打开项目", () => {
       (await readProjects()).filter((item) => item.roots.some((entry) => entry.rootPath === warm)),
     ).toHaveLength(1);
     await browser.saveScreenshot(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "OFP02-project-reused.png"),
+      join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "OFP02-project-reused.png"),
     );
   });
   it("OFP01: argv 冷启动先创建项目再初始化草稿", async function () {
@@ -124,7 +124,7 @@ describe("系统目录打开项目", () => {
       (await readProjects()).filter((item) => item.roots.some((entry) => entry.rootPath === cold)),
     ).toHaveLength(1);
     await browser.saveScreenshot(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "OFP01-cold-project.png"),
+      join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "OFP01-cold-project.png"),
     );
   });
 });

@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import type { ConversationRow } from "@zcode/shared/zcode-protocol-v4";
 import { ConversationTimeline } from "@/v4/ConversationTimeline.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { NekodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import { DEFAULT_CODE_PREVIEW_SETTINGS } from "@/lib/codePreviewSettings.js";
 import "@/styles.css";
@@ -93,7 +93,7 @@ function Fixture() {
   });
   return (
     <TooltipProvider>
-      <ZCodeIntlProvider initialLocale={params.get("mobile") === "true" ? "en-US" : "zh-CN"}>
+      <NekodeIntlProvider initialLocale={params.get("mobile") === "true" ? "en-US" : "zh-CN"}>
         <div className="@container/conversation flex h-dvh min-w-0 flex-col bg-background text-foreground">
           <ConversationTimeline
             rows={rows}
@@ -112,7 +112,7 @@ function Fixture() {
             }
           />
         </div>
-      </ZCodeIntlProvider>
+      </NekodeIntlProvider>
     </TooltipProvider>
   );
 }

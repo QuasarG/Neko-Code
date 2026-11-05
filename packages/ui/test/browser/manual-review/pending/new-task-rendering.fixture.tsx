@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Event, ProxyChannel } from "@zcode/rpc";
 import { useRemoteWorkspaceHistory } from "@/root/useRemoteWorkspaceHistory.js";
 import { createRoot } from "react-dom/client";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { NekodeIntlProvider } from "@/i18n/IntlProvider.js";
 import { ChatLoading } from "@/components/ai-elements/chat-loading.js";
 import { TooltipProvider } from "@/components/ui/tooltip.js";
 import {
@@ -13,7 +13,7 @@ import {
   ProjectComposerMenu,
 } from "@/project-sidebar/index.js";
 import { useRootWorkspaceActions } from "@/root/useRootWorkspaceActions.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import type { ProjectTree, ProjectSidebarProps } from "@/project-sidebar/contract.js";
 import type { IServiceAccessor } from "@zcode/services";
 import { attachTaskListRowActivity } from "@/v4/taskListRowActivity.js";
@@ -127,7 +127,7 @@ const services = {
   zcodeTaskService: { onDynamicWorkspaceEvent: () => dispose },
 } as unknown as IServiceAccessor;
 Object.assign(window, { __renderFixture: { services, tabStore, activityStore } });
-useZCodeSessionStore.getState().setActiveTaskId("/example", "old-session");
+useNekodeSessionStore.getState().setActiveTaskId("/example", "old-session");
 const common = {
   workspacePath: "/example",
   theme,
@@ -168,7 +168,7 @@ const actions = {
     : ("desktop-continuous" as const),
   // 手机 bridge 只模拟导航完成；Renderer 仍走实际 replayable 分支。
   openMobileProjectDraft: async () => {
-    useZCodeSessionStore.getState().startDraft("/example");
+    useNekodeSessionStore.getState().startDraft("/example");
   },
 };
 function Controls() {
@@ -188,7 +188,7 @@ function Controls() {
           <button
             data-testid="activate-task"
             onClick={() =>
-              useZCodeSessionStore.getState().setActiveTaskId("/example", "running-task")
+              useNekodeSessionStore.getState().setActiveTaskId("/example", "running-task")
             }
           >
             Activate task
@@ -244,7 +244,7 @@ function DirectoryCommandConsumer() {
 }
 function Fixture() {
   const [revision, setRevision] = useState(0);
-  const task = useZCodeSessionStore((state) => state.workspaces["/example"]?.activeTaskId);
+  const task = useNekodeSessionStore((state) => state.workspaces["/example"]?.activeTaskId);
   // 模拟 Root 每轮装配导航实现；执行和侧栏均使用真实生产 hook/组件。
   const remote = useRemoteWorkspaceHistory({
     intl: actions.intl,
@@ -295,9 +295,9 @@ function Fixture() {
   );
 }
 createRoot(document.getElementById("root")!).render(
-  <ZCodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
+  <NekodeIntlProvider initialLocale={params.get("locale") === "zh-CN" ? "zh-CN" : "en-US"}>
     <TooltipProvider>
       <Fixture />
     </TooltipProvider>
-  </ZCodeIntlProvider>,
+  </NekodeIntlProvider>,
 );

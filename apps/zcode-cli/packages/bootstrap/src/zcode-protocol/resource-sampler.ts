@@ -4,24 +4,24 @@ import {
   memoryUsageToSampleFields,
   zcodeProtocolNotifications,
   type MemorySample,
-  type ZCodeProtocolNotification,
+  type NekodeProtocolNotification,
 } from "@zcode/shared";
 import {
-  createZCodeProcessResourceSampler,
-  type ZCodeProcessResourceSampler,
+  createNekodeProcessResourceSampler,
+  type NekodeProcessResourceSampler,
 } from "../process-resource-sampler.js";
-import type { ZCodeProtocolAgentServer } from "./server.js";
+import type { NekodeProtocolAgentServer } from "./server.js";
 
 export function startProtocolResourceSampler(
-  server: ZCodeProtocolAgentServer,
-  send: (message: ZCodeProtocolNotification) => void,
+  server: NekodeProtocolAgentServer,
+  send: (message: NekodeProtocolNotification) => void,
   logger: Logger,
-): ZCodeProcessResourceSampler | undefined {
+): NekodeProcessResourceSampler | undefined {
   try {
     // 本地内存诊断日志：复用同一 60s 节拍，
     // 变化/心跳门控后才写一行，避免与消息流同频刷盘。
     const memoryDiagnosticsGate = createMemorySampleWriteGate();
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       onSample: (sample, memoryUsage) => {
         send({
           method: zcodeProtocolNotifications.processResourceSample,

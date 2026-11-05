@@ -173,7 +173,7 @@
   );
   // Match the trusted bootstrap element, not the same text in an authored title.
   frame.srcdoc = srcdoc.replace(
-    '<script type="application/json" id="zcode-visualization-widget-state">__ZCODE_VISUALIZATION_WIDGET_STATE__</script>',
+    '<script type="application/json" id="zcode-visualization-widget-state">__NEKODE_VISUALIZATION_WIDGET_STATE__</script>',
     () =>
       '<script type="application/json" id="zcode-visualization-widget-state">' +
       JSON.stringify(initialGlobals).replaceAll("<", "\\u003c") +

@@ -95,10 +95,10 @@ export function createNativeApplicationAdapter(
         Buffer.from(WINDOWS_APPLICATION_SCRIPT, "utf16le").toString("base64"),
       ],
       {
-        ZCODE_FILE_APP_PATH: path,
-        ZCODE_FILE_APP_ACTION: action,
-        ZCODE_FILE_APP_HANDLER: handler,
-        ZCODE_FILE_APP_INCLUDE_ICONS: includeIcons ? "1" : "0",
+        NEKODE_FILE_APP_PATH: path,
+        NEKODE_FILE_APP_ACTION: action,
+        NEKODE_FILE_APP_HANDLER: handler,
+        NEKODE_FILE_APP_INCLUDE_ICONS: includeIcons ? "1" : "0",
       },
     );
   return {

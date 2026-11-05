@@ -6,7 +6,7 @@
 //    `plugin_reference` reminder（确定性 replay fixture 以 bodyIncludes "<plugin_reference>"
 //    才放行主响应，并驱动一次 Read 测试工具调用），最终回复 marker 出现在时间线；
 //    reminder 不出现在用户可见时间线，请求中不含路径/env 等禁injected 字段。
-// 引用目标使用默认启用的官方纯内容插件 skill-creator（stable id 确定，无需安装步骤）。
+// 引用目标使用默认启用的官方纯内容插件 zcode-guide（stable id 确定，无需安装步骤）。
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import {
@@ -36,7 +36,7 @@ import {
   openPluginSettings,
 } from "../helpers/plugin-management-lifecycle.js";
 
-const PLUGIN_STABLE_ID = "skill-creator@zcode-plugins-official";
+const PLUGIN_STABLE_ID = "zcode-guide@zcode-plugins-official";
 const STORE_TRY_PLUGIN_STABLE_ID = "zcode-guide@zcode-plugins-official";
 const STORE_TRY_PLUGIN_ICON =
   "https://cdn-zcode.z.ai/zcode/official-plugin/assets/zcode-guide/icon.png";
@@ -163,17 +163,17 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     );
     const tryNowText = (await getV4ComposerText()) ?? "";
     for (const prompt of [
-      "How do I configure MCP servers in ZCode?",
-      "Diagnose my current ZCode setup",
-      "ZCode 里怎么配置 MCP 服务器？",
-      "帮我诊断当前的 ZCode 配置",
+      "How do I configure MCP servers in Nekode?",
+      "Diagnose my current Nekode setup",
+      "Nekode 里怎么配置 MCP 服务器？",
+      "帮我诊断当前的 Nekode 配置",
     ]) {
       expect(tryNowText).not.toContain(prompt);
     }
     const tryNowMention = await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID);
     expect(tryNowMention.found).toBe(true);
     expect(tryNowMention.iconSrc).toBe(STORE_TRY_PLUGIN_ICON);
-    expect(["ZCode Guide", "ZCode 使用指南"]).toContain(tryNowMention.label);
+    expect(["Nekode Guide", "Nekode 使用指南"]).toContain(tryNowMention.label);
     await captureEvidence("04-plugin-store-try-now-draft");
 
     // 回归守卫：Try now 只预填引用、没有尾随文本时，光标会落在 mention token 内部，
@@ -210,10 +210,10 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
         return (
           text.includes(`plugin://${STORE_TRY_PLUGIN_STABLE_ID}`) &&
           [
-            "How do I configure MCP servers in ZCode?",
-            "Diagnose my current ZCode setup",
-            "ZCode 里怎么配置 MCP 服务器？",
-            "帮我诊断当前的 ZCode 配置",
+            "How do I configure MCP servers in Nekode?",
+            "Diagnose my current Nekode setup",
+            "Nekode 里怎么配置 MCP 服务器？",
+            "帮我诊断当前的 Nekode 配置",
           ].some((prompt) => text.includes(prompt))
         );
       },
@@ -225,7 +225,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     const storeMention = await readPluginMentionPresentation(STORE_TRY_PLUGIN_STABLE_ID);
     expect(storeMention.found).toBe(true);
     expect(storeMention.iconSrc).toBe(STORE_TRY_PLUGIN_ICON);
-    expect(["ZCode Guide", "ZCode 使用指南"]).toContain(storeMention.label);
+    expect(["Nekode Guide", "Nekode 使用指南"]).toContain(storeMention.label);
     await captureEvidence("03-plugin-store-try-draft");
 
     // 试用只预填，不自动发送；保持 draft 且手动清空，避免影响 wire 用例。
@@ -242,7 +242,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     await writeFile(join(DEFAULT_WORKSPACE, "plugin-reference-e2e", "note.md"), NOTE_BODY, "utf8");
 
     await sendV4Prompt(
-      `${PROMPT_MARKER} read ${NOTE_RELATIVE_PATH} with [@skill-creator](plugin://${PLUGIN_STABLE_ID})`,
+      `${PROMPT_MARKER} read ${NOTE_RELATIVE_PATH} with [@zcode-guide](plugin://${PLUGIN_STABLE_ID})`,
     );
     await waitForV4TimelineContaining(REPLY_MARKER, 60000);
     await waitForV4Pane(
@@ -258,7 +258,7 @@ describe("PLG plugin 引用：@ 面板 plugins 分组与 plugin_reference remind
     expect(serialized).toContain(PLUGIN_STABLE_ID);
     expect((serialized.match(/<plugin_reference>/g) ?? []).length).toBe(1);
     // identifiers-only：禁injected 字段（路径、插件环境变量、rootPath 字段名）不得进入 provider 输入。
-    expect(serialized).not.toContain("ZCODE_PLUGIN_ROOT");
+    expect(serialized).not.toContain("NEKODE_PLUGIN_ROOT");
     expect(serialized).not.toContain('"rootPath"');
 
     // reminder 是 model-only：用户可见时间线不得渲染 plugin_reference 标签。

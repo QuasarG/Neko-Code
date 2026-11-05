@@ -7,7 +7,7 @@ const GIT_MARKER = ".git";
 const HOME_PREFIX = "~/";
 const PRIORITY_STEP = 10;
 const SKILLS_DIR = "skills";
-const ZCODE_DIR = ".zcode";
+const NEKODE_DIR = ".nekode";
 const AGENTS_DIR = ".agents";
 
 export interface SkillRootResolutionOptions {
@@ -109,10 +109,15 @@ function skillRootsForBase(
   scope: SkillRoot["scope"],
   nextPriority: () => number,
 ): SkillRoot[] {
-  // 合并而不是 fallback：用户可能同时安装原生 `.zcode` skill 和兼容 `.agents` skill。
-  // 同一级别仍保持 `.zcode` 优先，后续同名按 root 顺序解析。
+  // 用户级只有 ~/.nekode/skills 这一个全局 skill 位置：不再读 ~/.agents/skills，
+  // Nekode 的 skill 与其他 harness 的安装位彻底分家（zexin 2026-11-03 拍板）。
+  // 项目级保留 .agents/skills 兼容：仓库自带的 skill（如本仓库 architecture-governance）
+  // 仍要被认出来；同一级别 .nekode 优先。
+  if (scope === "user") {
+    return [root(join(baseDirectory, NEKODE_DIR, SKILLS_DIR), scope, "zcode", nextPriority())];
+  }
   return [
-    root(join(baseDirectory, ZCODE_DIR, SKILLS_DIR), scope, "zcode", nextPriority()),
+    root(join(baseDirectory, NEKODE_DIR, SKILLS_DIR), scope, "zcode", nextPriority()),
     root(join(baseDirectory, AGENTS_DIR, SKILLS_DIR), scope, "agents", nextPriority()),
   ];
 }

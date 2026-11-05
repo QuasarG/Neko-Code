@@ -29,6 +29,9 @@ export function getSidePaneTabSearchHint(tab: WorkspaceSidePaneTab): string {
   if (tab.type === "plan-detail") {
     return `${tab.parentSessionId} ${tab.toolCallId} plan ExitPlanMode`;
   }
+  if (tab.type === "injection") {
+    return `${tab.title} ${tab.parentSessionId} injection context memory`;
+  }
   if (tab.type === "plugin-ui") {
     return `${tab.title} ${tab.pluginId} ${tab.toolCallId ?? tab.surfaceId ?? ""} plugin ui`;
   }
@@ -117,6 +120,7 @@ export function getSidePaneTabTypeLabel(
 ): string {
   if (tab.type === "new-tab") return labels.newTabTitle ?? "New tab";
   if (tab.type === "plan-detail") return labels.planTitle;
+  if (tab.type === "injection") return tab.title;
   if (tab.type === "plugin-ui") return tab.title;
   if (tab.type === "workflow-run") return labels.workflowRunTitle;
   if (tab.type === "workflow-directory") return labels.workflowDirectoryTitle;

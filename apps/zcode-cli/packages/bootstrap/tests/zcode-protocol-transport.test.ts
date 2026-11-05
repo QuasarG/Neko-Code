@@ -1,12 +1,12 @@
 import { PassThrough } from "node:stream";
 import { describe, expect, it, vi } from "vitest";
-import { zcodeProtocolMethods, type ZCodeProtocolMessage } from "@zcode/shared";
-import { ZCodeProtocolNdjsonConnection } from "../src/zcode-protocol/transport.js";
+import { zcodeProtocolMethods, type NekodeProtocolMessage } from "@zcode/shared";
+import { NekodeProtocolNdjsonConnection } from "../src/zcode-protocol/transport.js";
 
-describe("ZCodeProtocolNdjsonConnection", () => {
+describe("NekodeProtocolNdjsonConnection", () => {
   it("stdout 背压时丢弃观测批次，业务响应仍可写入", () => {
     const output = new PassThrough({ highWaterMark: 1 });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       input: new PassThrough(),
       output,
       handleMessage: async () => undefined,
@@ -26,7 +26,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     const input = new PassThrough();
     const output = new PassThrough();
     const controls: unknown[] = [];
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       input,
       output,
       handleMessage: async (message) => {
@@ -49,7 +49,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     const input = new PassThrough();
     const output = new PassThrough();
     const closed = vi.fn();
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       input,
       output,
       handleMessage: () => new Promise(() => {}),
@@ -73,7 +73,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       };
       order.push(value.id ? "response" : `wire-${value.params?.fragmentIndex}`);
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) =>
         "id" in message && "method" in message
           ? { id: message.id, result: { ack: {} } }
@@ -108,7 +108,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       return originalWrite(chunk);
     }) as typeof output.write;
     const commit = vi.fn(() => true);
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) =>
         "id" in message && "method" in message
           ? { id: message.id, result: { ack: {} } }
@@ -142,7 +142,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       messages: [{ method: "v4/conversation/frame", params: { kind: "complete" } }],
       commit,
     }));
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages,
       handleMessage: async (message) =>
         "id" in message && "method" in message
@@ -178,7 +178,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         if (!("id" in message) || !("method" in message)) return undefined;
         return {
@@ -246,7 +246,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) =>
         "id" in message && "method" in message
           ? {
@@ -284,7 +284,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     const input = new PassThrough();
     const output = new PassThrough();
     const clearPostResponseMessages = vi.fn();
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages,
       handleMessage: async () => {
         throw new Error("request failed");
@@ -310,7 +310,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     const input = new PassThrough();
     const output = new PassThrough();
     const clearPostResponseMessages = vi.fn();
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages,
       handleMessage: async () => {
         throw new Error("bypass failed");
@@ -354,7 +354,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages,
       handleMessage: async () => {
         resolveStarted();
@@ -411,7 +411,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       }
     });
 
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         if (!("method" in message)) {
           return undefined;
@@ -487,7 +487,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       }
     });
 
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         if (!("method" in message) || !("id" in message)) {
           return undefined;
@@ -573,7 +573,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       resolveResponseHandled = resolve;
     });
 
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         handled.push(message);
         if ("method" in message && message.method === zcodeProtocolMethods.sessionCompact) {
@@ -635,7 +635,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
     let sendActive = false;
     let stopSawActiveSend = false;
 
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         if (!("method" in message)) {
           return undefined;
@@ -703,7 +703,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
       zcodeProtocolMethods.pluginsOverview,
     ];
     const order: string[] = [];
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       handleMessage: async (message) => {
         if (!("method" in message) || !("id" in message)) return undefined;
         order.push(`${message.method}#${message.id}`);
@@ -742,7 +742,7 @@ describe("ZCodeProtocolNdjsonConnection", () => {
   });
 });
 
-function frame(message: ZCodeProtocolMessage): string {
+function frame(message: NekodeProtocolMessage): string {
   return `${JSON.stringify(message)}\n`;
 }
 
@@ -752,7 +752,7 @@ describe("session lifecycle transport admission", () => {
     const output = new PassThrough();
     const entered: string[] = [];
     const gate = Promise.withResolvers<void>();
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       input,
       output,
       handleMessage: async (message) => {
@@ -787,7 +787,7 @@ describe("shared CLI session admission", () => {
     const output = new PassThrough();
     const gate = Promise.withResolvers<void>();
     const entered: string[] = [];
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       input,
       output,
       handleMessage: async (message) => {

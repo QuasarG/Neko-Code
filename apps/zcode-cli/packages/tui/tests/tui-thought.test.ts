@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SessionEventType, type SessionEvent } from "@zcode/contracts";
-import { getZCodeCopy } from "@zcode/i18n";
+import { getNekodeCopy } from "@zcode/i18n";
 import { applySessionEventToState } from "../src/app-events.js";
 import type { Message, ThoughtTranscriptPart } from "../src/app-model.js";
 import {
@@ -9,7 +9,7 @@ import {
   thoughtPlaceholderLabel,
 } from "../src/app-thought-components.js";
 
-const EN_COPY = getZCodeCopy("en-US").tui;
+const EN_COPY = getNekodeCopy("en-US").tui;
 
 test("projects streamed reasoning as an expandable thought placeholder", () => {
   const state = createSessionEventState();

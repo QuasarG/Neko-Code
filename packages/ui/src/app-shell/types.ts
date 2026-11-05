@@ -2,10 +2,10 @@ import type { FileManagerTarget } from "@/lib/workspaceSidePane.js";
 import type { ComposerDraftHandoff } from "@/v4/composer/composerDraftWorkspaceTransfer.js";
 import type { RefObject } from "react";
 import type {
-  ZCodeProvider,
+  NekodeProvider,
   SessionCreateSource,
-  ZCodeTaskRuntimeStatus,
-  ZCodeTaskMeta,
+  NekodeTaskRuntimeStatus,
+  NekodeTaskMeta,
   GitChangeSourceId,
   DesktopWindowChromeState,
   IPlatformService,
@@ -35,7 +35,7 @@ import type {
   OpenScopedWorkflowWorkspaceSideTabRequest,
   WorkspaceSidePaneState,
 } from "@/lib/workspaceSidePane.js";
-import type { WorkspaceZCodeUIState } from "@/store/zcodeSessionStore.js";
+import type { WorkspaceNekodeUIState } from "@/store/zcodeSessionStore.js";
 import type { RemoteConnectionLogEntry } from "@/hooks/useRemoteConnectionLogs.js";
 import type { Theme } from "@/useTheme.js";
 import type {
@@ -45,18 +45,18 @@ import type {
 } from "@/v4/legacyChatViewTypes.js";
 import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
 import type { TaskFindDialogProps } from "@/quickpick/TaskFindDialog.js";
-import type { AutomationsNavigationTab, OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
+import type { OpenWorkflowsMain } from "@/lib/taskNavigationHistory.js";
 import type { SidePaneFullViewController } from "@/side-pane-full-view/contract.js";
 
-export interface WorkspaceShellZCodeState {
-  activeTaskId: WorkspaceZCodeUIState["activeTaskId"];
-  draftFocusVersion: WorkspaceZCodeUIState["draftFocusVersion"];
-  modelSwitchPending: WorkspaceZCodeUIState["modelSwitchPending"];
-  modelSwitchStage: WorkspaceZCodeUIState["modelSwitchStage"];
-  selectedProvider: WorkspaceZCodeUIState["selectedProvider"];
-  optimisticTaskListByTaskId: WorkspaceZCodeUIState["optimisticTaskListByTaskId"];
-  workspaceInit: WorkspaceZCodeUIState["workspaceInit"];
-  taskStatus: ZCodeTaskRuntimeStatus;
+export interface WorkspaceShellNekodeState {
+  activeTaskId: WorkspaceNekodeUIState["activeTaskId"];
+  draftFocusVersion: WorkspaceNekodeUIState["draftFocusVersion"];
+  modelSwitchPending: WorkspaceNekodeUIState["modelSwitchPending"];
+  modelSwitchStage: WorkspaceNekodeUIState["modelSwitchStage"];
+  selectedProvider: WorkspaceNekodeUIState["selectedProvider"];
+  optimisticTaskListByTaskId: WorkspaceNekodeUIState["optimisticTaskListByTaskId"];
+  workspaceInit: WorkspaceNekodeUIState["workspaceInit"];
+  taskStatus: NekodeTaskRuntimeStatus;
   taskError: string | null;
 }
 
@@ -69,7 +69,7 @@ export interface CreateTaskOptions {
   onError?: (error: unknown) => void;
   /** 异步预填只能提交到解析 Skill 时的同一新任务目标。 */
   expectedWorkspaceKey?: string;
-  provider?: ZCodeProvider;
+  provider?: NekodeProvider;
   projectId?: string | null;
   /** 未归类任务目录准备的幂等身份，不作为 session 身份。 */
   draftId?: string;
@@ -92,7 +92,7 @@ export interface CreateTaskOptions {
   };
 }
 
-export type CreateTaskRequest = ZCodeProvider | CreateTaskOptions;
+export type CreateTaskRequest = NekodeProvider | CreateTaskOptions;
 
 export interface RemoteWorkspaceRecoveryStatus {
   mode: "automatic" | "manual";
@@ -208,27 +208,24 @@ export interface GitChangeSummary {
   removed: number;
 }
 
-export type WorkspaceMainView = "chat" | "automations" | "plugin-store";
+export type WorkspaceMainView = "chat" | "workflows" | "plugin-store";
 
 export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackService"> {
   workspaceReadOnlyReason?: string;
   workspaceMainView: WorkspaceMainView;
   pluginStoreOpenVersion: number;
-  openAutomationId: string | null;
-  openAutomationTab: AutomationsNavigationTab | null;
   /** 中枢深链：落到某个已保存工作流的详情页；定位后由 `onOpenWorkflowConsumed` 清空。 */
   openWorkflow: SavedWorkflowsOpenTarget | null;
   onOpenWorkflowConsumed: () => void;
   /**
-   * 完成卡「已保存」芯片 → 中枢那一页（docs/dynamic-workflow/transcript-and-notifications.md
-   * 「Saving the run, and running it again」）：切到自动化主视图的「工作流」标签并设深链。
+   * 完成卡「已保存」芯片 → 工作流主视图（docs/dynamic-workflow/transcript-and-notifications.md
+   * 「Saving the run, and running it again」）：切到工作流主视图并设深链。
    */
   onOpenSavedWorkflowInHub: (target: SavedWorkflowHubTarget) => void;
   onWorkspaceMainViewChange: (view: WorkspaceMainView) => void;
-  onOpenAutomationConsumed: () => void;
-  handleOpenAutomations: OpenAutomationsMain;
+  handleOpenWorkflows: OpenWorkflowsMain;
   handleOpenPluginStore: () => void;
-  workspaceShellZCodeState: WorkspaceShellZCodeState;
+  workspaceShellNekodeState: WorkspaceShellNekodeState;
   theme: Theme;
   isMacFullscreen: boolean;
   desktopWindowChromeState: DesktopWindowChromeState | null;
@@ -277,8 +274,8 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   sidePaneOwnerId: string | null;
   activeTraceId: string | null;
   activeSessionId: string | null;
-  activeTaskProvider: ZCodeProvider | null;
-  resolvedActiveTaskMeta?: ZCodeTaskMeta | null;
+  activeTaskProvider: NekodeProvider | null;
+  resolvedActiveTaskMeta?: NekodeTaskMeta | null;
   activeTaskTitle: string;
   activeTaskChangeSummary: ReturnType<
     typeof import("@/lib/taskChangeSummary.js").getTaskChangeSummary
@@ -314,7 +311,7 @@ export interface WorkspaceShellLayoutProps extends Omit<AppProps, "baseFeedbackS
   reloadSessionPending: boolean;
   handleReloadSession: (options?: {
     resumeTaskId?: string | null;
-    provider?: ZCodeProvider | null;
+    provider?: NekodeProvider | null;
   }) => Promise<void>;
   handleSelectTask: (
     targetWorkspacePath: string,

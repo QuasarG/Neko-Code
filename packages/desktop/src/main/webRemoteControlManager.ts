@@ -15,7 +15,7 @@ import {
   classifyRemoteUsageError,
   parseRemoteWorkspaceIdentity,
   WEB_REMOTE_CONTROL_OUTBOUND_PAYLOAD_BUFFER_TIMEOUT_MS,
-  type ZCodeEndpointUrls,
+  type NekodeEndpointUrls,
   type HostPreparedProjectWorkspace,
   type HostProjectWorkspaceNavigationInput,
   resolveUnrecognizedWebRemoteControlRequest,
@@ -171,13 +171,19 @@ interface WindowControlRuntime {
 }
 
 interface WebRemoteControlManagerDependencies {
-  getEndpointUrls?: () => Promise<ZCodeEndpointUrls> | ZCodeEndpointUrls;
+  getEndpointUrls?: () => Promise<NekodeEndpointUrls> | NekodeEndpointUrls;
   relayWsUrl: string;
   mobileRemoteControlUrl: string;
   deviceMid: string;
   deviceName: string;
   appVersion: string;
   getLogin(): Promise<WebRemoteControlLogin | undefined>;
+  /**
+   * 私域 relay 静态令牌模式：为 true 时账号登录/登出通知与远控无关，
+   * 不因渲染层启动必报的 signed-out 把远控钉成 auth-required
+   *（Nekode 分支已移除账号登录入口，见 docs/web-remote-control/private-relay-deployment.md）。
+   */
+  hasStaticLogin?: boolean;
   deviceStorage: WebRemoteControlDeviceStorage;
   startupRestoreStorageProvider: {
     load(): Promise<WebRemoteControlStartupRestoreContext | undefined>;
@@ -2039,6 +2045,10 @@ export function createWebRemoteControlManager(dependencies: WebRemoteControlMana
       windowId: number,
       change: WebRemoteControlAuthStateChange,
     ): Promise<void> {
+      // 私域静态令牌模式：账号体系与远控完全无关。Nekode 分支已移除登录入口，
+      // 渲染层启动时必然上报 signed-out；若照常处理会把所有窗口钉成 auth-required，
+      // 而登录按钮在 fork 里是死链。静态模式下直接忽略账号通知。
+      if (dependencies.hasStaticLogin) return;
       const revision = ++authNotificationRevision;
       if (change.state === "signed-in") {
         const login = await dependencies.getLogin();

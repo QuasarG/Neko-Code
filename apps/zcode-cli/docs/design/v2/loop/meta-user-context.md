@@ -13,7 +13,7 @@ ordinary user message in history: a real prompt, a new-turn `task_notification`
 or `subagent_reply`, an interrupt marker, or a compact summary (the same rule
 counts the turns of the plan reminder cadence). Tool results, output-token
 recovery prompts, synthetic context and mid-turn inputs do not: a `user_steer` (including a
-running "send now", which ZCode presents as a steer) or another `*_steer`
+running "send now", which Nekode presents as a steer) or another `*_steer`
 message continues the stretch, because mid-turn input is delivered as an
 attachment. Subagent requests, the first request of a new turn, and
 output-token recovery do not collect this reminder. The main-session default
@@ -49,19 +49,25 @@ both MCS and user-side reminder delivery.
 
 ## Ownership and assembly
 
-ContextBuilder renders resolved snapshots; it performs no host IO. Stable and
-behavior system sections remain in the initial system blocks; the context
-prefix now holds only those system messages. Instruction files and the Memory
-index retain the `context_prefix` source name, but are delivered as a dynamic
-announcement like every other row below.
+ContextBuilder renders resolved snapshots; it performs no host IO. Harness-level
+facts belong to the initial system blocks, not to the user turn:
 
 ```text
-instruction files + Memory index -> context_prefix -> user reminder
-Git snapshot                     -> session_context -> user reminder
-current environment              -> environment    -> MCS or user reminder
-executing Model                  -> model          -> MCS or user reminder
-current date                     -> date           -> MCS or user reminder
-skill catalog                    -> skills_listing -> MCS or user reminder
+instruction files + Memory index -> system (dynamic body)
+Git snapshot                     -> system (dynamic body)
+current environment              -> system (dynamic body)
+executing Model                  -> system (dynamic body)
+skill catalog                    -> system (dynamic body)
+subagent type listing            -> system (dynamic body)
+```
+
+Only per-turn facts remain dynamic announcements:
+
+```text
+current date -> date         -> MCS or user reminder (deduplicated per day)
+current time -> current_time -> turn request only (Beijing time, not persisted)
+output style -> output_style_instructions -> MCS or user reminder (on change)
+runtime memory -> runtime_memory -> MCS or user reminder (per user turn)
 ```
 
 `context_prefix` starts directly with the instruction preamble. It has no
@@ -71,101 +77,10 @@ workspace labels say `project instructions, checked into the codebase`.
 The Memory index retains its existing auto-memory label and cleaning policy.
 
 `session_context` currently supports only `gitStatus`. It renders the context
-intro, `# gitStatus`, the initial snapshot, and the product-neutral ZCode
-attachment notice without indentation. Git is decided once per context window
-(the history since the session start or since the last compaction), and the
-decision looks only at history. Before a model request: history already holds a
-`session_context` → reuse it, read nothing (a directory change does not re-read
-Git; a restored announcement wins over a newly constructed snapshot); history
-already holds a `date` announcement → the window has decided, read nothing (the
-window's first request places its request announcements, `date` included, in
-one batch right after the decision), also when that decision announced no Git and
-the directory has since become, or moved into, a repository; otherwise this is
-the window's first request → read Git for the current working directory through
-`ContextSourcePort.resolveGitContext` and announce it when the directory is a
-repository. A cold resume continues the restored window, so it reads nothing
-either; a repository created in the meantime shows up in the environment notice,
-and its Git snapshot comes with the next window. Compaction with a non-empty kept
-tail decides for the compacted history: the kept tail holds a `session_context` →
-reuse it; otherwise read. Outside a repository nothing is announced.
-Repository membership is a file system fact: the adapter walks from the
-directory's real path (symlinks and junctions resolved, the location git itself
-runs in) up to the file system root and looks for a `.git` entry, either a
-directory or a file (the gitdir pointer of a worktree or submodule); a symlink
-counts when its target exists. When the real path cannot be resolved (for
-example a deleted directory), the walk starts from the path as given. It starts
-no git process, so the answer is always
-definite: `GIT_DIR` / `GIT_WORK_TREE` do not change it, and a hung or missing git
-does not turn a repository into a non-repository. The project root (AGENTS.md
-lookup, Project Context) comes from the same walk over the path as given, so
-instruction file paths keep the path the user opened. When the real path equals
-the given path, context initialization walks once and the found directory
-serves both. They differ only for a link that points into a repository's
-subdirectory (a repository, no project root) or a link inside a repository that
-points outside it (not a repository, project root found). The runtime remembers a
-directory as "not a repository" for its lifetime (a cold resume starts a new
-runtime); a later decision in a remembered directory (compaction, or the first
-request after a compaction that kept nothing) reads nothing. Inside a repository the snapshot commands run
-in parallel, each with the 3 s timeout and the request's abort signal. Status is
-`--no-optional-locks status --short --ignore-submodules=dirty`. Every automatic git command
-is hardened the same way:
-
-- The executable is `git` looked up on the process `PATH` with the rules Node uses for a
-  bare program name, except the working directory: relative entries resolve against the
-  process directory (skipped when it cannot be read, for example after it was deleted;
-  absolute entries are still searched), empty entries are skipped; on Windows the value is split at `;`,
-  surrounding double quotes are removed (the same split as the Bash tool), and each directory
-  is tried with `.com`, then `.exe` (`PATHEXT` is not read). The lookup does not add the working directory the way Windows does
-  for a bare program name, so a `git.exe` in the project does not run. The found path is kept for the process; when nothing is found the
-  commands fail like a missing git and the next read looks again. Fix reason (2026-10-26):
-  the lookup kept the quotes of an entry such as `"C:\Program Files\Git\cmd"`, so git was not
-  found and the snapshot showed default values; it also skipped git when `PATHEXT` did not list
-  `.EXE`, which Node does not do; and it read the process directory before any entry, so a
-  deleted process directory hid a git on an absolute entry.
-- The arguments start with `-c` overrides: `core.fsmonitor=`, `core.hooksPath=` the null
-  device (`/dev/null`, `\\.\NUL` on Windows), `core.askPass=`, `protocol.ext.allow=never`,
-  `submodule.recurse=false`, `log.showSignature=false`, `format.pretty=medium`, `gc.auto=0`,
-  `maintenance.auto=false` and `hook.<name>.enabled=false` for each git hook name. The same
-  pairs are repeated as `GIT_CONFIG_COUNT` / `GIT_CONFIG_KEY_<n>` / `GIT_CONFIG_VALUE_<n>`.
-- The environment is the process environment without the inherited repository and config
-  selectors (`GIT_DIR`, `GIT_WORK_TREE`, `GIT_COMMON_DIR`, `GIT_INDEX_FILE`,
-  `GIT_CEILING_DIRECTORIES`, `GIT_DISCOVERY_ACROSS_FILESYSTEM`, `GIT_OBJECT_DIRECTORY`,
-  `GIT_ALTERNATE_OBJECT_DIRECTORIES`, `GIT_SHALLOW_FILE`, `GIT_NAMESPACE`,
-  `GIT_IMPLICIT_WORK_TREE`, `GIT_REFERENCE_BACKEND`, `GIT_CONFIG`, `GIT_CONFIG_COUNT`,
-  `GIT_CONFIG_PARAMETERS`, `GIT_CONFIG_GLOBAL`, `GIT_CONFIG_SYSTEM`, `GIT_CONFIG_KEY_<n>`,
-  `GIT_CONFIG_VALUE_<n>`, any letter case). It sets `GIT_ALLOW_PROTOCOL=/`,
-  `GIT_CONFIG_PARAMETERS` (`'alias.remote-none=version' 'alias.remote-none.command=version'
-'alias.remote-/.command=version' 'fetch.bundleURI=' 'help.autocorrect=0'`),
-  `GIT_NO_LAZY_FETCH=1`, `GIT_NO_REPLACE_OBJECTS=1`, `GIT_TERMINAL_PROMPT=0`,
-  `GIT_LFS_SKIP_SMUDGE=1`, `GIT_SSH_COMMAND=false` and `GIT_PROXY_COMMAND` (empty unless
-  already set). `PATH` keeps only absolute entries: on macOS and Linux the variable named
-  exactly `PATH` is split by `:` and keeps the entries that start with `/`; on Windows the
-  variable of any letter case is split with the same rule as the lookup, and it keeps the
-  entries with a drive letter or a UNC prefix. When none is left it is the null device.
-  Fix reason (2026-10-26): on Windows the desktop host starts the Agent with the key in upper
-  case, and the `:` / `/` rule removed every Windows entry. git then could not start helper
-  programs such as git-lfs, status failed in an LFS repository and the snapshot said clean.
-  The `-c` overrides and their `GIT_CONFIG_*` copy are built once per platform.
-
-A filter driver configured in the repository can still run during status. A failed
-command contributes empty output (for example `Current branch: HEAD` and
-`(clean)`), and the result is announced once. An aborted request announces
-nothing. Running `git init` in a
-remembered directory is noticed by a new runtime: a cold resume re-reads
-repository membership for its environment notice (see below), and the Git
-snapshot follows with the next window. A new session's context initialization has just read Git;
-that read serves the first decision only (prefetched at startup) when the working
-directory has not changed. A prefetch that says "not a repository" announces
-nothing and remembers the directory. A resumed session's snapshot comes from storage and is
-never used as the prefetch. Without a context port the session-start snapshot is
-the only Git source. Subagents and custom system prompts never read or announce
-Git. Compaction re-reads only when it keeps a non-empty tail (otherwise the next
-request reads); the result exists only as the announcement inside the compacted
-history, so a failed or aborted compaction leaves no Git facts behind and the
-runtime's context snapshot keeps the session-start values. Rewind and fork keep
-the runtime's latest
-snapshot. The current branch comes from `git symbolic-ref --short -q HEAD`,
-which works before the first commit; a detached HEAD uses `HEAD`.
+intro, `# gitStatus`, the initial snapshot, and the product-neutral Nekode
+attachment notice without indentation. It is rebuilt from the runtime's
+environment snapshot for every request, so a repository rename or branch change
+does not accumulate history-backed announcements.
 
 `environment` reuses EnvInfo fields: cwd, repository boolean, platform, shell,
 and OS version, followed by one fixed bullet: `Downloaded files and extracted
@@ -186,6 +101,10 @@ catalog facts. Session selection changes cannot rewrite an active step's model.
 `date` initially renders `Today's date is <date>.` without a heading. A later
 change renders `The date has changed. Today's date is now <date>. No need to
 announce the new date — the user's own clock shows it.`
+
+`current_time` renders `Current time: <YYYY-MM-DD HH:mm:ss> (Asia/Shanghai, UTC+8).`
+It is injected once per user input, uses a fixed UTC+8 clock regardless of the
+machine timezone, and is not persisted to session history.
 
 ## Dynamic history
 

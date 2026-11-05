@@ -13,8 +13,8 @@ import {
   ModelRequestSessionFeature,
   PermissionCapabilityGroup,
   SESSION_ENTRY_SESSION_FEATURES,
-  ZCODE_MCP_NODE_REPL_BROWSER_USE_META_KEY,
-  ZCODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY,
+  NEKODE_MCP_NODE_REPL_BROWSER_USE_META_KEY,
+  NEKODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY,
   isModelRequestSessionFeature,
   isToolSearchName,
   type MessageWithParts,
@@ -171,10 +171,10 @@ export function sessionFeaturesFromToolResult(
     const meta =
       isRecord(result.output) && isRecord(result.output._meta) ? result.output._meta : {};
     return [
-      ...(meta[ZCODE_MCP_NODE_REPL_BROWSER_USE_META_KEY] === true
+      ...(meta[NEKODE_MCP_NODE_REPL_BROWSER_USE_META_KEY] === true
         ? [ModelRequestSessionFeature.BrowserUse]
         : []),
-      ...(meta[ZCODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY] === true
+      ...(meta[NEKODE_MCP_NODE_REPL_COMPUTER_USE_META_KEY] === true
         ? [ModelRequestSessionFeature.ComputerUse]
         : []),
     ];

@@ -12,7 +12,7 @@ import type {
   TuiSubmitPrompt,
   TuiSubscribeSessionEvents,
 } from "@zcode/tui";
-import type { ZCodeAppOptions } from "@zcode/bootstrap";
+import type { NekodeAppOptions } from "@zcode/bootstrap";
 import type { CliModeState, CliPermissionMode, CliRuntimeMode } from "./cli-types.js";
 
 export type TuiPromptHandler = TuiSubmitPrompt & {
@@ -33,7 +33,7 @@ export type TuiPromptHandler = TuiSubmitPrompt & {
 };
 
 export const TUI_TITLE_GENERATION_CONFIG: NonNullable<
-  NonNullable<ZCodeAppOptions["runtimeConfig"]>["titleGeneration"]
+  NonNullable<NekodeAppOptions["runtimeConfig"]>["titleGeneration"]
 > = {};
 
 export const createCliModeState = (mode?: CliPermissionMode): CliModeState => ({

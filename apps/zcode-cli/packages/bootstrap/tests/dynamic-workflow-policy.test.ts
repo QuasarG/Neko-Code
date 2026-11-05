@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { updateDynamicWorkflowPolicy } from "../src/zcode-protocol/dynamic-workflow-policy.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { closeSession, createSessionRecordForV4 } from "../src/zcode-protocol/server-operations.js";
 import { listProtocolSlashCommands } from "../src/zcode-protocol/slash-commands.js";
-import type { ZCodeAppOptions } from "../src/app/types.js";
+import type { NekodeAppOptions } from "../src/app/types.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 
 const workspace = { workspaceKey: "/w", workspacePath: "/w" };
@@ -17,7 +17,7 @@ function makeContext() {
       offPeakToolEnabled: false,
       dynamicWorkflowEnabled: false,
     },
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("workspace/updateDynamicWorkflowPolicy（灰度门 workspace 级事实）", () => {
@@ -66,14 +66,14 @@ describe("session 创建：runtimeConfig.dynamicWorkflowEnabled", () => {
     preference?: boolean;
     preferenceMode?: "disabled" | "onDemand" | "alwaysOn";
   }): Promise<{ enabled: boolean | undefined; onDemand: boolean | undefined }> {
-    let appOptions: ZCodeAppOptions | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    let appOptions: NekodeAppOptions | undefined;
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         appOptions = options;
         return createFakeApp(options);
       },
     });
-    const context = (server as unknown as { context: ZCodeProtocolAgentServerContext }).context;
+    const context = (server as unknown as { context: NekodeProtocolAgentServerContext }).context;
     if (params.preference !== undefined) {
       await updateDynamicWorkflowPolicy(context, {
         workspace,
@@ -158,7 +158,7 @@ describe("session 创建：runtimeConfig.dynamicWorkflowEnabled", () => {
 describe("`/` 目录：灰度关闭时没有 workflow", () => {
   it("关闭剔除、开启保留并紧随 goal 之后（内置命令，不依赖任何插件）", async () => {
     const options = {
-      env: { ZCODE_ENV: "test" },
+      env: { NEKODE_ENV: "test" },
       skipUserConfig: true,
       workingDirectory: process.cwd(),
     };

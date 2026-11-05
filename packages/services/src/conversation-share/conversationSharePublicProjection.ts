@@ -270,6 +270,8 @@ function projectTimelineMarker(
     case "forkNotice":
     case "forkCreated":
     case "checkpointRestored":
+    case "contextInjection":
+      // 记忆注入正文可能是私有记忆记录：投影片一律 fail-closed，绝不外泄。
       throwProjectionError(
         "invalid_conversation",
         "Timeline references outside the shared projection are not supported",

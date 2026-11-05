@@ -502,7 +502,7 @@ describe("buildProviderRequestMessages", () => {
     const entries = [
       entry(assistant("previous response")),
       entry(user("follow-up prompt"), "real_user"),
-      attachment("relevant_memory", "memory reminder"),
+      attachment("runtime_memory", "memory reminder"),
       attachment("runtime_mode", "runtime mode reminder"),
       entry(assistant("next response")),
       entry(user("later prompt"), "real_user"),
@@ -734,7 +734,7 @@ describe("buildProviderRequestMessages", () => {
       entry(assistant("used Bash")),
       entry(toolResult("bash output\n", "tool-1", "Bash")),
       attachment("todo_reminder", "todo body"),
-      entry(user("  <system-reminder>\nmemory\n</system-reminder>\n"), "relevant_memory"),
+      entry(user("  <system-reminder>\nmemory\n</system-reminder>\n"), "runtime_memory"),
     ] satisfies RuntimeMessageEntry[];
 
     const result = buildProviderRequestMessages({
@@ -921,7 +921,7 @@ describe("buildProviderRequestMessages", () => {
       metadata: { source: "real_user", inputPresentation: "user_steer" },
     });
     const steerText = (body: string) =>
-      `The user sent a new message while you were working:\n${body}\n\nThis is how ZCode surfaces messages the user sends mid-turn — within the running turn, often alongside the next tool result, rather than as a separate conversation turn. Address the message above as you continue this turn.`;
+      `The user sent a new message while you were working:\n${body}\n\nThis is how Nekode surfaces messages the user sends mid-turn — within the running turn, often alongside the next tool result, rather than as a separate conversation turn. Address the message above as you continue this turn.`;
 
     // guide 是轮内中途消息：MCS 下与其他中途消息一样并入 run 的 system，不带外层标签。
     it("puts a text steer into the run system message, user-side reminders still fold", () => {
@@ -1286,7 +1286,7 @@ describe("buildProviderRequestMessages", () => {
     const entries = [
       entry(assistant("assistant used a tool")),
       entry(toolResultUser()),
-      entry(user("memory reminder"), "relevant_memory"),
+      entry(user("memory reminder"), "runtime_memory"),
       entry(user("next real prompt"), "real_user"),
     ] satisfies RuntimeMessageEntry[];
 

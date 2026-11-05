@@ -20,7 +20,7 @@ import { selectV4TaskById } from "../../../helpers/v4-conversation.js";
 
 const CASE_MARKER = "E2E_R3_CONNECTIVITY_TEST";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-connectivity-test",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-connectivity-test",
 );
 
 async function openModelProviderSettings(): Promise<void> {
@@ -166,7 +166,7 @@ describe(`${CASE_MARKER}: 激活远端 workspace 时模型设置连通性测试�
     await selectV4TaskById(taskA.taskId);
     const remoteLogBefore = await runSSHCommand(
       prepared.config,
-      'F=$(ls -t ~/.zcode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
+      'F=$(ls -t ~/.nekode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
     );
 
     // ① 远端 workspace 激活 + 本地默认 workspace tab 存在：测试 Upstream E2E（本机回放可达）→ 本地执行。
@@ -177,7 +177,7 @@ describe(`${CASE_MARKER}: 激活远端 workspace 时模型设置连通性测试�
     const requestsAfter = await getUpstreamRequestRecordCount();
     const remoteLogAfter = await runSSHCommand(
       prepared.config,
-      'F=$(ls -t ~/.zcode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
+      'F=$(ls -t ~/.nekode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
     );
     facts.withLocalWorkspace = {
       ...withLocal,
@@ -275,7 +275,7 @@ describe(`${CASE_MARKER}: 激活远端 workspace 时模型设置连通性测试�
     const requestsAfter2 = await getUpstreamRequestRecordCount();
     const remoteLogAfter2 = await runSSHCommand(
       prepared.config,
-      'F=$(ls -t ~/.zcode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
+      'F=$(ls -t ~/.nekode/cli/log/*.jsonl | head -n1); grep -c "model.network" "$F" || true',
     );
     facts.withoutLocalWorkspace = {
       ...withoutLocal,

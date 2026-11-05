@@ -1,14 +1,15 @@
 import { createWorkspaceMcpTrust } from "../workspace-mcp-trust/index.js";
 import {
   zcodeWorkspaceMcpTrustParamsSchema,
-  type ZCodeWorkspaceMcpTrustResult,
+  type NekodeWorkspaceMcpTrustResult,
 } from "@zcode/shared";
+import { guardNekodeRoot } from "@zcode/shared/node";
 import { createConfig, resolvePath } from "@zcode/adapters/config";
 import type { Logger, McpConnectionSnapshot, McpPort, McpServerStatus } from "@zcode/contracts";
 import {
   zcodeMcpListParamsSchema,
   zcodeMcpListResultSchema,
-  type ZCodeMcpListResult,
+  type NekodeMcpListResult,
 } from "@zcode/shared";
 import {
   listMcpServerStatuses,
@@ -19,7 +20,7 @@ import { StartupTimer, startupNow } from "../startup-logging.js";
 import { getCliStorageRoot } from "../app/paths.js";
 import { resolveStartupPlugins } from "../app/startup-marks.js";
 import { protocolMcpServersToRuntimeMcpConfig } from "./protocol-mcp-config.js";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "./server-types.js";
+import { parseParams, type NekodeProtocolAgentServerContext } from "./server-types.js";
 
 const noopLogger: Logger = {
   debug: () => undefined,
@@ -33,16 +34,18 @@ const MCP_OAUTH_AUTHORIZATION_STATUS_WAIT_MS = 5_000;
 const MCP_OAUTH_AUTHORIZATION_STATUS_POLL_MS = 100;
 
 export async function listMcpServers(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodeMcpListResult> {
+): Promise<NekodeMcpListResult> {
   const params = parseParams(zcodeMcpListParamsSchema, rawParams);
   const workingDirectory = params.workspace.workspacePath;
   const configResult = createConfig({
     env: context.deps.env,
     workingDirectory,
   });
-  const cliStorageRoot = getCliStorageRoot(resolvePath(configResult.config.storage.dir));
+  const cliStorageRoot = getCliStorageRoot(
+    guardNekodeRoot(resolvePath(configResult.config.storage.dir), context.deps.env),
+  );
   const startupTimer = new StartupTimer(
     context.logger ?? noopLogger,
     {
@@ -65,7 +68,7 @@ export async function listMcpServers(
   const explicitRuntimeMcp = protocolMcpServersToRuntimeMcpConfig(params.mcpServers);
   const configuredMcpServers = {
     ...pluginOutcome.mcpServers,
-    // 设置页的本地 MCP 列表由 desktop main 解析 `.zcode` / `.agents` fallback，
+    // 设置页的本地 MCP 列表由 desktop main 解析 `.nekode` / `.agents` fallback，
     // session runtime 也使用这批 params.mcpServers。mcp/list 不能再只靠 agent createConfig，
     // 否则 `.agents` fallback 行会缺少 status snapshot 并被 UI 误标红。
     ...(explicitMcpServersProvided
@@ -271,9 +274,9 @@ async function settingsPort(
 }
 
 export async function setWorkspaceMcpTrust(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodeWorkspaceMcpTrustResult> {
+): Promise<NekodeWorkspaceMcpTrustResult> {
   const params = parseParams(zcodeWorkspaceMcpTrustParamsSchema, rawParams);
   try {
     await createWorkspaceMcpTrust({

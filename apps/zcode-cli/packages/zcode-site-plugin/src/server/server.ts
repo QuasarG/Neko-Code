@@ -34,7 +34,7 @@ const TOOLS = [
   {
     name: RENAME_SITE_TOOL,
     title: "Rename site",
-    description: "Change the display name of a ZCode Sites site. The domain does not change.",
+    description: "Change the display name of a Nekode Sites site. The domain does not change.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -49,8 +49,8 @@ const TOOLS = [
   },
   {
     name: SET_SITE_BADGE_TOOL,
-    title: "Show or hide the ZCode badge",
-    description: "Hide or show the ZCode badge on a ZCode Sites site.",
+    title: "Show or hide the Nekode badge",
+    description: "Hide or show the Nekode badge on a Nekode Sites site.",
     inputSchema: {
       type: "object" as const,
       properties: {

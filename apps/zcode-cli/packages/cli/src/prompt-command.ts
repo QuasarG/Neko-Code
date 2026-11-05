@@ -62,8 +62,6 @@ const wantsEventStream = (options: GlobalOptions): boolean =>
 const IMAGE_EXTENSIONS = new Set([".gif", ".jpeg", ".jpg", ".png", ".webp"]);
 const VIDEO_EXTENSIONS = new Set([".mp4", ".m4v", ".mov", ".webm", ".mkv", ".avi"]);
 const EMPTY_PROMPT_ERROR = "--prompt requires non-empty text.";
-const MEMORY_BENCH_DISABLED_ERROR =
-  "--memory-bench requires Project Memory to be enabled (features.memory=true and memory.use=true).";
 const TARGET_SELECTION_UNAVAILABLE_ERROR =
   "Headless goal commands cannot open an interactive replacement picker. Re-run with --target-replace or use /goal replace <objective>.";
 
@@ -131,7 +129,7 @@ export const runPrompt = async (
 
   let traceId: string | undefined;
   let app:
-    | Awaited<ReturnType<Awaited<ReturnType<typeof loadBootstrapModule>>["createZCodeApp"]>>
+    | Awaited<ReturnType<Awaited<ReturnType<typeof loadBootstrapModule>>["createNekodeApp"]>>
     | undefined;
   let closePromise: Promise<void> | undefined;
   let browserRuntime: ReturnType<typeof createCliHeadlessBrowserRuntime>;
@@ -186,9 +184,9 @@ export const runPrompt = async (
     }
 
     const sessionId = await resolveResumeSession(resumeRequest, workingDirectory, env, deps);
-    const bootstrapModule = deps.createZCodeApp ? undefined : await loadBootstrapModule();
-    const createApp = deps.createZCodeApp ?? bootstrapModule?.createZCodeApp;
-    if (!createApp) throw new Error("ZCode app factory is unavailable.");
+    const bootstrapModule = deps.createNekodeApp ? undefined : await loadBootstrapModule();
+    const createApp = deps.createNekodeApp ?? bootstrapModule?.createNekodeApp;
+    if (!createApp) throw new Error("Nekode app factory is unavailable.");
     const streamsEvents = wantsEventStream(options);
     let mapSessionEvent: NonNullable<RunDependencies["mapSessionEvent"]> | undefined;
     if (streamsEvents) {
@@ -204,14 +202,14 @@ export const runPrompt = async (
       stdout: ctx.stdout,
     });
     const prepareTelemetry =
-      deps.prepareZCodeTelemetryEnv ?? bootstrapModule?.prepareZCodeTelemetryEnv;
+      deps.prepareNekodeTelemetryEnv ?? bootstrapModule?.prepareNekodeTelemetryEnv;
     if (prepareTelemetry) {
-      shutdownTelemetry = deps.shutdownZCodeTelemetry ?? bootstrapModule?.shutdownZCodeTelemetry;
+      shutdownTelemetry = deps.shutdownNekodeTelemetry ?? bootstrapModule?.shutdownNekodeTelemetry;
     }
     const appEnv = prepareTelemetry
       ? await prepareTelemetry(env, {
           cliVersion: version,
-          productVersion: env.ZCODE_APP_VERSION,
+          productVersion: env.NEKODE_APP_VERSION,
         })
       : env;
     const startProviderRegistryRuntime =
@@ -264,7 +262,6 @@ export const runPrompt = async (
         toolSearch: { mode: toolsearchMode },
         ...(forceMcs ? { midConversationSystem: { mode: "force" as const } } : {}),
         ...resolveWorkflowModeRuntimeConfig(workflowMode),
-        memory: { extractionEnabled: options.memoryBench === true },
         modelStreaming: "on",
         presentationSurface,
         workingDirectory,
@@ -283,9 +280,6 @@ export const runPrompt = async (
       throw abortController.signal.reason;
     }
     traceId = app.traceId;
-    if (options.memoryBench && !app.runtime.isProjectMemoryEnabled()) {
-      throw new Error(MEMORY_BENCH_DISABLED_ERROR);
-    }
 
     // 按**可解析性**分流，不按拼写。
     //
@@ -353,11 +347,6 @@ export const runPrompt = async (
         runtime: runtimeFacts,
         signal: abortController.signal,
       });
-    }
-    // bench 的正常等待必须先于 close；close 会取消 Extraction，且有独立的清理时限。
-    if (options.memoryBench) {
-      await app.runtime.drainMemoryExtractions(null);
-      abortController.signal.throwIfAborted();
     }
     // 结果行之后绝不能再冒出事件行——stream-json 的 result 是流的终止符。
     stopObservingEvents();
@@ -497,7 +486,7 @@ async function isResolvableCustomCommand(deps: RunDependencies, name: string): P
   // 直接返回 undefined、不做展开，所以这里若把一个保留名判成"可解析"，它就会以字面文本
   // `/compress …` 被当成普通 prompt 提交给模型——静默走错路，没有任何报错。
   //
-  // 探测刻意用「保留名检查 + load」这一对，而不是直接调 resolveZCodeCustomCommandPrompt：
+  // 探测刻意用「保留名检查 + load」这一对，而不是直接调 resolveNekodeCustomCommandPrompt：
   // 后者会执行 `!` shell expansion，拿它探测等于把用户的 shell 片段跑两遍。
   // 这一对是它的无副作用等价物（load 只读文件）。
   if (await isReservedSlashCommandName(deps, name)) return false;
@@ -518,7 +507,7 @@ async function isResolvableCustomCommand(deps: RunDependencies, name: string): P
 async function isReservedSlashCommandName(deps: RunDependencies, name: string): Promise<boolean> {
   if (deps.isReservedSlashCommandName) return deps.isReservedSlashCommandName(name);
   const bootstrap = await loadBootstrapModule();
-  return bootstrap.isReservedZCodeSlashCommandName(name);
+  return bootstrap.isReservedNekodeSlashCommandName(name);
 }
 
 async function runPromptCommandCenterCommand(
@@ -568,11 +557,6 @@ async function runPromptCommandCenterCommand(
     return 1;
   }
 
-  if (options.memoryBench) {
-    await app.runtime.drainMemoryExtractions(null);
-    abortSignal.throwIfAborted();
-  }
-
   if (wantsJsonSummary(options)) {
     ctx.stdout.write(
       formatJson({
@@ -595,7 +579,7 @@ async function listCustomCommandsForPrompt(deps: RunDependencies) {
     return await deps.listCustomCommands({ env, logger: deps.logger, workingDirectory });
   }
   const bootstrap = await loadBootstrapModule();
-  return await bootstrap.listZCodeCustomCommands({ env, logger: deps.logger, workingDirectory });
+  return await bootstrap.listNekodeCustomCommands({ env, logger: deps.logger, workingDirectory });
 }
 
 async function loadCustomCommandForPrompt(deps: RunDependencies, name: string) {
@@ -605,7 +589,7 @@ async function loadCustomCommandForPrompt(deps: RunDependencies, name: string) {
     return await deps.loadCustomCommand({ env, logger: deps.logger, name, workingDirectory });
   }
   const bootstrap = await loadBootstrapModule();
-  return await bootstrap.loadZCodeCustomCommand({
+  return await bootstrap.loadNekodeCustomCommand({
     env,
     logger: deps.logger,
     name,

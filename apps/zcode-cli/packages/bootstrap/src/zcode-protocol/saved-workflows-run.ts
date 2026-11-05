@@ -27,13 +27,13 @@ import {
 import {
   zcodeWorkflowsForRunParamsSchema,
   zcodeWorkflowsSaveParamsSchema,
-  type ZCodeSavedWorkflowEntry,
-  type ZCodeWorkflowsForRunResult,
-  type ZCodeWorkflowsSaveResult,
+  type NekodeSavedWorkflowEntry,
+  type NekodeWorkflowsForRunResult,
+  type NekodeWorkflowsSaveResult,
 } from "@zcode/shared";
 import type { RunRecord } from "@zcode/dynamic-workflow";
 import { resolveDynamicWorkflowJournalStore } from "../app/dynamic-workflow-run-service.js";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "./server-types.js";
+import { parseParams, type NekodeProtocolAgentServerContext } from "./server-types.js";
 
 /** 诊断回给 GUI 的上界：弹层里只放得下开头几条，完整诊断属于模型那条路。 */
 const SAVE_DIAGNOSTICS_MAX_LINES = 5;
@@ -41,7 +41,7 @@ const SAVE_DIAGNOSTICS_MAX_CHARS = 1_000;
 
 /**
  * 脚本比对要扫的文件数上界。一个项目的定义是个位到两位数量级；给个常数只为让异常目录
- * （有人把几千个文件倒进 `.zcode/workflows/`）不至于把一次查询变成一次全盘读。
+ * （有人把几千个文件倒进 `.nekode/workflows/`）不至于把一次查询变成一次全盘读。
  */
 const SCRIPT_MATCH_SCAN_LIMIT = 50;
 
@@ -66,7 +66,7 @@ function boundedDiagnostics(
 }
 
 /** 解析结果 → 协议 entry（与 `workflows/list` 的行同形，不含脚本正文）。 */
-function entryOf(resolved: ResolvedSavedWorkflow): ZCodeSavedWorkflowEntry {
+function entryOf(resolved: ResolvedSavedWorkflow): NekodeSavedWorkflowEntry {
   return {
     name: resolved.name,
     description: resolved.meta.description,
@@ -78,7 +78,7 @@ function entryOf(resolved: ResolvedSavedWorkflow): ZCodeSavedWorkflowEntry {
 }
 
 function runRecordOf(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   runId: string,
 ): RunRecord | undefined {
   const journal = resolveDynamicWorkflowJournalStore(context.deps.sessionStore);
@@ -92,9 +92,9 @@ function runRecordOf(
  * 之前，是因为「已经有同名的了」是调用方要先回答的问题，而编译失败时本来就一个字节都不会写。
  */
 export async function saveSavedWorkflowFromRunOp(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodeWorkflowsSaveResult> {
+): Promise<NekodeWorkflowsSaveResult> {
   const params = parseParams(zcodeWorkflowsSaveParamsSchema, rawParams);
   const cwd = params.workspace.workspacePath;
   const scope = scopeOf(params);
@@ -157,9 +157,9 @@ export async function saveSavedWorkflowFromRunOp(
  * 查不到 run 记录时只跳过 2、3（候选仍然算数）：一条查不到的 run 不该让整个查询失败。
  */
 export async function findSavedWorkflowForRunOp(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodeWorkflowsForRunResult> {
+): Promise<NekodeWorkflowsForRunResult> {
   const params = parseParams(zcodeWorkflowsForRunParamsSchema, rawParams);
   const cwd = params.workspace.workspacePath;
   const record = runRecordOf(context, params.runId);

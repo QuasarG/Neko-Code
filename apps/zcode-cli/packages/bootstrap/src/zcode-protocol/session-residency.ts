@@ -7,13 +7,13 @@ import type {
   SessionDeactivationDecision,
   SessionResidentPoolHost,
 } from "./session-resident-pool.js";
-import type { ZCodeProtocolAgentServerContext } from "./server-types.js";
+import type { NekodeProtocolAgentServerContext } from "./server-types.js";
 import { SessionLifecycleController } from "../session-lifecycle/index.js";
 import { activateSessionRuntime } from "./server-operations.js";
 import { abortMcpUiToolCallsForSession, clearMcpUiAppToolsForSession } from "./mcp-ui/index.js";
 
 export function getSessionLifecycle(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
 ): SessionLifecycleController {
   return (context.sessionLifecycle ??= new SessionLifecycleController({
     exists: async (sessionId) => {
@@ -59,7 +59,7 @@ export function getSessionLifecycle(
 
 /** 条件关闭和删除复用资源释放；调用方保留自己的产品预检及软删除顺序。 */
 export function closeSessionRuntime(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
   deleted = false,
 ): Promise<void> {
@@ -69,7 +69,7 @@ export function closeSessionRuntime(
 }
 
 export function discardSessionRuntime(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
 ): Promise<void> {
   return getSessionLifecycle(context).dispose(sessionId, () =>
@@ -79,7 +79,7 @@ export function discardSessionRuntime(
 
 /** 整体退出保留原有投影收口顺序；尚未初始化完成的 app 仍由进程资源 owner 收集。 */
 export function shutdownSessionRuntime(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
 ): Promise<void> {
   return getSessionLifecycle(context).dispose(sessionId, () =>
@@ -100,7 +100,7 @@ export {
  * registry 缺席不代表已经释放，只有 owner 确认关闭成功后才能恢复新实例。
  */
 export async function deactivateSessionRecord(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
 ): Promise<void> {
   const record = context.sessions.get(sessionId);
@@ -114,7 +114,7 @@ export async function deactivateSessionRecord(
 }
 
 async function releaseSessionRecord(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
   mode: "close" | "deactivate" | "discard" | "delete" | "shutdown",
 ): Promise<void> {
@@ -200,7 +200,7 @@ async function releaseSessionRecord(
 }
 
 export function createSessionResidentPoolHost(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
 ): SessionResidentPoolHost {
   return {
     deactivate: (sessionId) => deactivateSessionRecord(context, sessionId),

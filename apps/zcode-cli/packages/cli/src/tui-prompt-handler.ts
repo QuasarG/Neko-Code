@@ -1,7 +1,7 @@
 import type { ToolSearchMode } from "@zcode/contracts";
 import { getDefaultConfigPath, updateUiLocaleInFileConfig } from "@zcode/adapters/config";
 import type { SessionEvent } from "@zcode/contracts";
-import type { ZCodeAppOptions } from "@zcode/bootstrap";
+import type { NekodeAppOptions } from "@zcode/bootstrap";
 import { DEFAULT_LOCALE, type SupportedLocale } from "@zcode/i18n";
 import type { TuiRequestPermission } from "@zcode/tui";
 import type { GlobalOptions } from "@zcode/shared-types";
@@ -65,7 +65,7 @@ export function createTuiSubmitPrompt(
   browserExecutable?: GlobalOptions["browserExecutable"],
   workflowMode: DynamicWorkflowMode = DEFAULT_CLI_WORKFLOW_MODE,
 ): TuiPromptHandler {
-  let app: Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>> | undefined;
+  let app: Awaited<ReturnType<NonNullable<RunDependencies["createNekodeApp"]>>> | undefined;
   let activeUiLocale = uiLocale;
   // 进程级句柄（telemetry / Provider Registry / endpoint 路由）跨 App 替换复用，见 runtime 文件。
   const processRuntime = createTuiProcessRuntimeState();
@@ -80,7 +80,7 @@ export function createTuiSubmitPrompt(
     1,
     Math.trunc(deps.shutdownCleanupTimeoutMs ?? DEFAULT_CLI_CLEANUP_TIMEOUT_MS),
   );
-  const permissionBroker: NonNullable<ZCodeAppOptions["permissionBroker"]> = {
+  const permissionBroker: NonNullable<NekodeAppOptions["permissionBroker"]> = {
     requestPermission: async (request, requestOptions) => {
       const requestPermission = activeRequestPermission;
       if (!requestPermission) {
@@ -121,7 +121,7 @@ export function createTuiSubmitPrompt(
   });
 
   const replaceApp = async (
-    factory: () => Promise<Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>>>,
+    factory: () => Promise<Awaited<ReturnType<NonNullable<RunDependencies["createNekodeApp"]>>>>,
   ): Promise<CommandCenterApp> => {
     const previousApp = app;
     const nextApp = await factory();
@@ -148,7 +148,7 @@ export function createTuiSubmitPrompt(
     } = await prepareTuiAppRuntime(deps, version, request, processRuntime);
     const providerEndpointRoutingPort = processRuntime.providerEndpointRoutingPort;
     const browserRuntime = createCliHeadlessBrowserRuntime({ browserExecutable, browserUse }, deps);
-    let createdApp: Awaited<ReturnType<NonNullable<RunDependencies["createZCodeApp"]>>>;
+    let createdApp: Awaited<ReturnType<NonNullable<RunDependencies["createNekodeApp"]>>>;
     try {
       createdApp = await createAppFactory({
         modelSelectionMode: "cli-default",

@@ -1,5 +1,5 @@
 import {
-  createZCodeApp,
+  createNekodeApp,
   startProcessProviderRegistryRuntime,
 } from "../../../../../../apps/zcode-cli/packages/bootstrap/dist/index.js";
 
@@ -9,7 +9,7 @@ const providers = await startProcessProviderRegistryRuntime(process.env);
 const options = JSON.parse(process.argv[3] ?? "{}");
 const recordingTool = "mcp__catalog__lookup";
 const recordedRequests = [];
-const app = await createZCodeApp({
+const app = await createNekodeApp({
   providerRegistry: providers.runtime.registryService,
   configuredDefaultModelSelection: providers.configuredDefaultModelSelection,
   env: process.env,

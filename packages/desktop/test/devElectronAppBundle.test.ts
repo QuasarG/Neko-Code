@@ -76,12 +76,12 @@ describe("dev Electron app bundle", () => {
       arch: "arm64",
     });
 
-    expect(result.appPath).toBe(`${outputRoot}/41.0.3-arm64/ZCode Dev.app`);
+    expect(result.appPath).toBe(`${outputRoot}/41.0.3-arm64/Nekode Dev.app`);
     expect(result.executablePath).toBe(
-      `${outputRoot}/41.0.3-arm64/ZCode Dev.app/Contents/MacOS/Electron`,
+      `${outputRoot}/41.0.3-arm64/Nekode Dev.app/Contents/MacOS/Electron`,
     );
     const plist = await readFile(join(result.appPath, "Contents", "Info.plist"), "utf8");
-    expect(plist).toContain("dev.zcode.app.development");
+    expect(plist).toContain("dev.nekode.app.development");
     expect(plist).toContain("<string>zcode</string>");
   });
 
@@ -157,7 +157,7 @@ describe("dev Electron app bundle", () => {
       electronVersion: "41.0.3",
       arch: "arm64",
     });
-    const stampPath = join(outputRoot, "41.0.3-arm64", ".zcode-dev-electron-source.json");
+    const stampPath = join(outputRoot, "41.0.3-arm64", ".nekode-dev-electron-source.json");
     const stamp = JSON.parse(await readFile(stampPath, "utf8"));
     expect(stamp.format).toBe(DEV_ELECTRON_BUNDLE_FORMAT);
     // 模拟旧版脚本留下的缓存：没有 format 字段，源二进制指纹却仍然匹配。
@@ -308,7 +308,7 @@ it("签名失败不发布缓存指纹；下次重新准备可恢复", async () =
       },
     }),
   ).rejects.toThrow("signer failed");
-  const stamp = join(input.runtimeRoot, "44.7.0-arm64", ".zcode-dev-electron-source.json");
+  const stamp = join(input.runtimeRoot, "44.7.0-arm64", ".nekode-dev-electron-source.json");
   await expect(readFile(stamp, "utf8")).rejects.toMatchObject({ code: "ENOENT" });
   const recovered = vi.fn(async () => {});
   await prepareDevElectronAppBundle({ ...input, signApp: recovered });

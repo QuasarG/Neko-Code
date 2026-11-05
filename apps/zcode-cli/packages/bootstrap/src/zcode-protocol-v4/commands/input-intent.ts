@@ -12,7 +12,6 @@ import { commandAdmissionOf } from "./executor.js";
 export interface CanonicalCommandIntent {
   inputOrigin?: "desktop" | "mobile";
   conversationQuotes?: import("@zcode/contracts").TurnInputIntentMetadata["conversationQuotes"];
-  botGroupSource?: TurnInputIntentMetadata["botGroupSource"];
   kind: "sendText" | "sendGoalCommand";
   text: string;
   modelSelection?: ModelSelection;
@@ -37,7 +36,6 @@ export function inputIntentMetadata(
     text: string;
     inputOrigin?: "desktop" | "mobile";
     conversationQuotes?: import("@zcode/contracts").TurnInputIntentMetadata["conversationQuotes"];
-    botGroupSource?: TurnInputIntentMetadata["botGroupSource"];
     requestedDelivery: TurnInputIntentMetadata["requestedDelivery"];
     admittedDelivery?: TurnInputIntentMetadata["admittedDelivery"];
     fallbackReasonCode?: string;
@@ -60,7 +58,6 @@ export function inputIntentMetadata(
       ? { inputOrigin: envelope.inputOrigin ?? options.inputOrigin }
       : {}),
     ...(options.conversationQuotes ? { conversationQuotes: options.conversationQuotes } : {}),
-    ...(options.botGroupSource ? { botGroupSource: options.botGroupSource } : {}),
     sourceCommandId: envelope.commandId,
     queueItemId: admission.queueItemId,
     clientId: envelope.clientId || "cli",
@@ -109,7 +106,6 @@ export function inputIntentMetadataFromCanonical(
       ? { inputOrigin: envelope.inputOrigin ?? canonical.inputOrigin }
       : {}),
     ...(canonical.conversationQuotes ? { conversationQuotes: canonical.conversationQuotes } : {}),
-    ...(canonical.botGroupSource ? { botGroupSource: canonical.botGroupSource } : {}),
     sourceCommandId: envelope.commandId,
     queueItemId: admission.queueItemId,
     clientId: envelope.clientId || canonical.clientId || "cli",
@@ -147,7 +143,6 @@ export function inputIntentMetadataFromQueueItem(
   return {
     ...(item.inputOrigin ? { inputOrigin: item.inputOrigin } : {}),
     ...(item.conversationQuotes ? { conversationQuotes: item.conversationQuotes } : {}),
-    ...(item.botGroupSource ? { botGroupSource: item.botGroupSource } : {}),
     sourceCommandId: item.sourceCommandId,
     queueItemId: item.queueItemId,
     clientId: item.clientId,

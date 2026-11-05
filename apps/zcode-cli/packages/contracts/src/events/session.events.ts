@@ -113,6 +113,9 @@ export const SessionEventType = {
   AssistantMessage: "assistant_message",
   AssistantFeedbackUpdated: "assistant_feedback_updated",
   HighspeedMetricsUpdated: "highspeed_metrics_updated",
+  // 运行时注入的隐藏提醒（记忆四块）落库后补发，供产品投影成可折叠上下文行；
+  // 不影响 provider 输入，也不进入可见用户气泡。
+  ContextInjected: "context_injected",
   // （2026-09-12）：原 ToolWidgetStateUpdated / SessionPluginUiStateUpdated 已删除，
   // 插件 UI widgetState 回退 renderer 内存，不再经 CLI 事件流。
   SystemMessage: "system_message",
@@ -672,6 +675,13 @@ export type TurnResultType =
 export interface UserMessagePayload {
   content: string;
   attachments?: Attachment[];
+}
+
+/** 已落库的隐藏提醒正文；messageId 指向那条 model-only 的 user 记录。 */
+export interface ContextInjectedPayload {
+  source: string;
+  text: string;
+  messageId?: MessageId;
 }
 
 export interface AssistantMessagePayload {
@@ -1337,6 +1347,7 @@ export type SessionEventPayload =
   | UserMessagePayload
   | AssistantMessagePayload
   | SystemMessagePayload
+  | ContextInjectedPayload
   | ModelRequestPayload
   | ModelSelectedPayload
   | TurnExecutionModelFallbackPayload

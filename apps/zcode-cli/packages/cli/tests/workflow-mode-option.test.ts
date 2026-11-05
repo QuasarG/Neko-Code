@@ -55,7 +55,7 @@ function createRecordingDeps(): { deps: RunDependencies; seen: RuntimeConfigSeen
   const seen: RuntimeConfigSeen[] = [];
   const deps: RunDependencies = {
     createModelAdapter: () => ({}) as never,
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       const config = (options?.runtimeConfig ?? {}) as RuntimeConfigSeen;
       seen.push({
         dynamicWorkflowEnabled: config.dynamicWorkflowEnabled,

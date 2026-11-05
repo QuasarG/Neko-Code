@@ -72,7 +72,7 @@ try {
       `mkdir -p '${bootstrapDir}'`,
       `tar -xzf '${archivePath}' -C '${bootstrapDir}' --strip-components=1`,
       `'${bootstrapDir}/bin/zcode' update --from-archive '${archivePath}' --server-root '${serverRoot}' --json`,
-      `ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 '${serverRoot}/bin/zcode' serve --daemon --server-root '${serverRoot}' --json`,
+      `NEKODE_SERVER_SKIP_SERVICE_REGISTRATION=1 '${serverRoot}/bin/zcode' serve --daemon --server-root '${serverRoot}' --json`,
     ].join(" && "),
   );
   const statusResult = await wsl([

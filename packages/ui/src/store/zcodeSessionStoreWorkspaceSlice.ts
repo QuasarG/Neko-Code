@@ -2,29 +2,29 @@ import type { SessionCreateSource } from "@zcode/shared";
 /* eslint-disable max-lines -- workspace 级状态动作集中在同一 slice，先保持收口便于维护。 */
 import {
   buildNativeSupplierKey,
-  normalizeAgentProviderToZCodeAgent,
-  type ZCodeConfigOption,
+  normalizeAgentProviderToNekodeAgent,
+  type NekodeConfigOption,
   type ModelSelectionResolution,
-  type ZCodeProvider,
-  type ZCodeSlashCommand,
-  type ZCodeTaskMeta,
-  type ZCodeTaskRuntimeStatus,
-  type ZCodeWorkspaceInitStatus,
+  type NekodeProvider,
+  type NekodeSlashCommand,
+  type NekodeTaskMeta,
+  type NekodeTaskRuntimeStatus,
+  type NekodeWorkspaceInitStatus,
 } from "@zcode/shared";
 import { persistLastSelectedAgentProvider } from "@/lib/zcodeProviderPreference.js";
 import { areConfigOptionsEquivalent } from "@/lib/configOptionsEquality.js";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { NekodeUiError } from "@/lib/zcodeUiError.js";
 import { pushNavEntry } from "@/lib/taskNavigationHistory.js";
 import { notifyTaskNavigationCommitted } from "@/store/zcodeSessionStoreNavigation.js";
 import { resolveTaskRestorePreloadConfigOptions } from "@/lib/taskModelRecovery.js";
 import type {
-  ZCodeSessionStoreState,
+  NekodeSessionStoreState,
   ComposerInitialConfig,
   ComposerInitialization,
   ConfigOptionsStatus,
   ComposerMentionPrefill,
   ModelSwitchStage,
-  WorkspaceZCodeUIState,
+  WorkspaceNekodeUIState,
 } from "@/store/zcodeSessionStoreTypes.js";
 import {
   getTaskMeta,
@@ -35,12 +35,12 @@ import {
 
 type SetFn = (
   partial:
-    | ZCodeSessionStoreState
-    | Partial<ZCodeSessionStoreState>
-    | ((state: ZCodeSessionStoreState) => ZCodeSessionStoreState | Partial<ZCodeSessionStoreState>),
+    | NekodeSessionStoreState
+    | Partial<NekodeSessionStoreState>
+    | ((state: NekodeSessionStoreState) => NekodeSessionStoreState | Partial<NekodeSessionStoreState>),
 ) => void;
 
-function normalizeThoughtLevelConfigOption(option: ZCodeConfigOption): ZCodeConfigOption {
+function normalizeThoughtLevelConfigOption(option: NekodeConfigOption): NekodeConfigOption {
   if (
     option.type !== "select" ||
     (option.id !== "thought_level" && option.category !== "thought_level")
@@ -59,25 +59,25 @@ function normalizeThoughtLevelConfigOption(option: ZCodeConfigOption): ZCodeConf
   return { ...option, currentValue: fallbackValue };
 }
 
-function normalizeConfigOptions(options: ZCodeConfigOption[]): ZCodeConfigOption[] {
+function normalizeConfigOptions(options: NekodeConfigOption[]): NekodeConfigOption[] {
   return options.map(normalizeThoughtLevelConfigOption);
 }
 
-function cloneConfigOptions(options: readonly ZCodeConfigOption[]): ZCodeConfigOption[] {
+function cloneConfigOptions(options: readonly NekodeConfigOption[]): NekodeConfigOption[] {
   return options.map((option) => ({
     ...option,
     options: option.options?.map((entry) => ({ ...entry })),
   }));
 }
 
-function isModeConfigOption(option: ZCodeConfigOption): boolean {
+function isModeConfigOption(option: NekodeConfigOption): boolean {
   return option.category === "mode" && option.type === "select";
 }
 
 function createFallbackModeOption(params: {
   currentModeId: string;
-  options?: NonNullable<ZCodeConfigOption["options"]>;
-}): ZCodeConfigOption {
+  options?: NonNullable<NekodeConfigOption["options"]>;
+}): NekodeConfigOption {
   const options = params.options?.length
     ? params.options
     : [{ value: params.currentModeId, name: params.currentModeId }];
@@ -92,9 +92,9 @@ function createFallbackModeOption(params: {
 }
 
 function replaceModeConfigOption(
-  currentOptions: ZCodeConfigOption[] | null,
-  nextModeOption: ZCodeConfigOption | null,
-): ZCodeConfigOption[] | null {
+  currentOptions: NekodeConfigOption[] | null,
+  nextModeOption: NekodeConfigOption | null,
+): NekodeConfigOption[] | null {
   const options = currentOptions ?? [];
   const modeIndex = options.findIndex(isModeConfigOption);
   if (modeIndex === -1) {
@@ -119,9 +119,9 @@ function replaceModeConfigOption(
 }
 
 function updateCurrentModeConfigOption(
-  currentOptions: ZCodeConfigOption[] | null,
+  currentOptions: NekodeConfigOption[] | null,
   modeId: string | null,
-): ZCodeConfigOption[] | null {
+): NekodeConfigOption[] | null {
   const options = currentOptions ?? [];
   const existingModeOption = options.find(isModeConfigOption);
   if (!modeId) {
@@ -151,9 +151,9 @@ function updateCurrentModeConfigOption(
 }
 
 function updateActiveTaskConfigOptions(
-  current: WorkspaceZCodeUIState,
-  updater: (options: ZCodeConfigOption[] | null) => ZCodeConfigOption[] | null,
-): Pick<WorkspaceZCodeUIState, "taskConfigOptionsByTaskId"> | null {
+  current: WorkspaceNekodeUIState,
+  updater: (options: NekodeConfigOption[] | null) => NekodeConfigOption[] | null,
+): Pick<WorkspaceNekodeUIState, "taskConfigOptionsByTaskId"> | null {
   const activeTaskId = current.activeTaskId;
   if (!activeTaskId) {
     return null;
@@ -178,9 +178,9 @@ function updateActiveTaskConfigOptions(
 }
 
 function resolveActiveTaskConfigOptionsOnSwitch(
-  current: WorkspaceZCodeUIState,
+  current: WorkspaceNekodeUIState,
   taskId: string,
-): { configOptions: ZCodeConfigOption[]; status: ConfigOptionsStatus } | null {
+): { configOptions: NekodeConfigOption[]; status: ConfigOptionsStatus } | null {
   const cachedTaskConfigOptions = current.taskConfigOptionsByTaskId[taskId];
   if (cachedTaskConfigOptions) {
     return {
@@ -430,7 +430,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     startDraft: (
       workspacePath: string,
-      provider?: ZCodeProvider,
+      provider?: NekodeProvider,
       workspaceIdentity?: string,
       options?: {
         projectId?: string | null;
@@ -439,7 +439,7 @@ export function createWorkspaceSlice(set: SetFn) {
       },
     ) => {
       const normalizedProvider = provider
-        ? normalizeAgentProviderToZCodeAgent(provider)
+        ? normalizeAgentProviderToNekodeAgent(provider)
         : undefined;
       if (normalizedProvider) {
         persistLastSelectedAgentProvider(normalizedProvider);
@@ -450,7 +450,7 @@ export function createWorkspaceSlice(set: SetFn) {
           state,
           workspacePath,
           (current) => {
-            const nextSelectedProvider = normalizeAgentProviderToZCodeAgent(
+            const nextSelectedProvider = normalizeAgentProviderToNekodeAgent(
               normalizedProvider ?? current.selectedProvider,
             );
             const shouldResetSupplierForDraftProvider =
@@ -537,7 +537,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     bindRuntimeProvider: (
       workspacePath: string,
-      provider: ZCodeProvider,
+      provider: NekodeProvider,
       workspaceIdentity?: string,
     ) =>
       set((state) =>
@@ -546,7 +546,7 @@ export function createWorkspaceSlice(set: SetFn) {
           workspacePath,
           (current) => ({
             ...current,
-            selectedProvider: normalizeAgentProviderToZCodeAgent(provider),
+            selectedProvider: normalizeAgentProviderToNekodeAgent(provider),
           }),
           workspaceIdentity,
         ),
@@ -577,7 +577,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setWorkspaceInitState: (
       workspacePath: string,
-      status: ZCodeWorkspaceInitStatus,
+      status: NekodeWorkspaceInitStatus,
       error?: string | null,
       workspaceIdentity?: string,
     ) => {
@@ -621,7 +621,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setTaskState: (
       workspacePath: string,
-      status: ZCodeTaskRuntimeStatus,
+      status: NekodeTaskRuntimeStatus,
       error?: string | null,
       workspaceIdentity?: string,
     ) => {
@@ -643,7 +643,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setDraftError: (
       workspacePath: string,
-      error: ZCodeUiError | null,
+      error: NekodeUiError | null,
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -735,7 +735,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setConfigOptions: (
       workspacePath: string,
-      options: ZCodeConfigOption[],
+      options: NekodeConfigOption[],
       workspaceIdentity?: string,
     ) => {
       set((state) => {
@@ -782,7 +782,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setSlashCommands: (
       workspacePath: string,
-      commands: ZCodeSlashCommand[],
+      commands: NekodeSlashCommand[],
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -845,7 +845,7 @@ export function createWorkspaceSlice(set: SetFn) {
 
     setTaskListCache: (
       workspacePath: string,
-      tasks: ZCodeTaskMeta[],
+      tasks: NekodeTaskMeta[],
       workspaceIdentity?: string,
     ) => {
       set((state) =>

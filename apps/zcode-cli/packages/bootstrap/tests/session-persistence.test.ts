@@ -25,7 +25,7 @@ import { DEFAULT_EXPERT_WORKFLOW_STRATEGY } from "@zcode/core";
 import {
   createNodeProviderRuntimePathEnv,
   encodeProviderConfigFile,
-  serializeZCodeBuiltinRelease,
+  serializeNekodeBuiltinRelease,
 } from "@zcode/provider-node";
 import { ModelConfigRules, ProviderConfigMap, ProviderTemplateMap } from "@zcode/provider";
 import { zcodeStorageStartupStateSchema } from "@zcode/shared";
@@ -46,11 +46,11 @@ import {
   type TargetChangedPayload,
   type WorkflowRunSnapshot,
 } from "@zcode/contracts";
-import { resolveLatestSession, runZCodeProtocolAgent } from "../src/index.js";
+import { resolveLatestSession, runNekodeProtocolAgent } from "../src/index.js";
 import { ProductProjection } from "../src/zcode-protocol-v4/product-projection.js";
 import { synthesizeEventsFromMessages } from "../src/zcode-protocol-v4/transcript-hydration.js";
 import {
-  createRegistryBackedTestApp as createZCodeApp,
+  createRegistryBackedTestApp as createNekodeApp,
   createTestProviderRegistry,
 } from "./helpers/registry-backed-test-app.js";
 
@@ -84,8 +84,8 @@ describe("session persistence", () => {
         withContext: (context) => loggerFor(context),
       };
       try {
-        const app = await createZCodeApp({
-          env: { ZCODE_STORAGE_DIR: tempRoot },
+        const app = await createNekodeApp({
+          env: { NEKODE_STORAGE_DIR: tempRoot },
           loggerFactory,
           ...(modelSelectionMode ? { modelSelectionMode } : {}),
           modelExecutor: {
@@ -148,7 +148,7 @@ describe("session persistence", () => {
     const sessionId = createSessionId("highspeed-message-metadata");
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {},
         modelExecutor: {
           async generateText() {
@@ -211,7 +211,7 @@ describe("session persistence", () => {
     const primeSpy = vi.spyOn(artifactStore, "primeMediaAttachmentPath");
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         artifactStore,
         env: {},
         runtimeConfig: { workingDirectory: process.cwd() },
@@ -297,7 +297,7 @@ describe("session persistence", () => {
     const messageId = createMessageId();
     const persistedBytes = Uint8Array.from([1, 2, 3, 4]);
     const changedOriginalBytes = Uint8Array.from([9, 8, 7, 6]);
-    let app: Awaited<ReturnType<typeof createZCodeApp>> | undefined;
+    let app: Awaited<ReturnType<typeof createNekodeApp>> | undefined;
 
     try {
       await store.createSession({
@@ -309,7 +309,7 @@ describe("session persistence", () => {
         version: "test",
       });
       await writeFile(originalPath, changedOriginalBytes);
-      app = await createZCodeApp({
+      app = await createNekodeApp({
         artifactStore,
         bootstrapModelConfig: {
           main: {
@@ -426,21 +426,21 @@ describe("session persistence", () => {
     const configPath = join(tempRoot, "config.json");
     const enabledSkillPath = join(
       tempRoot,
-      ".zcode",
+      ".nekode",
       "skills",
       "enabled-runtime-skill",
       "SKILL.md",
     );
     const disabledSkillPath = join(
       tempRoot,
-      ".zcode",
+      ".nekode",
       "skills",
       "disabled-runtime-skill",
       "SKILL.md",
     );
     const store = await createSqliteSessionStore({ dbPath: ":memory:" });
     const requests: Array<Array<{ content: unknown; role: string }>> = [];
-    let app: Awaited<ReturnType<typeof createZCodeApp>> | undefined;
+    let app: Awaited<ReturnType<typeof createNekodeApp>> | undefined;
 
     try {
       await mkdir(dirname(enabledSkillPath), { recursive: true });
@@ -474,10 +474,10 @@ describe("session persistence", () => {
         }),
       );
 
-      app = await createZCodeApp({
+      app = await createNekodeApp({
         env: {
           HOME: tempRoot,
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           async generateText(request: { messages: Array<{ content: unknown; role: string }> }) {
@@ -523,7 +523,7 @@ describe("session persistence", () => {
     const requests: string[][] = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {},
         modelExecutor: {
           async generateText(request) {
@@ -572,7 +572,7 @@ describe("session persistence", () => {
     const requests: string[][] = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {},
         modelExecutor: {
           async generateText(request) {
@@ -629,9 +629,9 @@ describe("session persistence", () => {
     const sessionId = createSessionId("bootstrap-session-version");
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           async generateText() {
@@ -712,9 +712,9 @@ describe("session persistence", () => {
     const store = await createSqliteSessionStore({ dbPath });
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         eventStore,
         modelExecutor: {
@@ -770,9 +770,9 @@ describe("session persistence", () => {
     const queueItemId = "queue-goal-visible-prompt";
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         eventStore,
         modelExecutor: {
@@ -900,11 +900,11 @@ describe("session persistence", () => {
       await mkdir(shellDir, { recursive: true });
       await writeFile(zshPath, "#!/bin/sh\n");
       await chmod(zshPath, 0o755);
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
           PATH: shellDir,
           SHELL: join(shellDir, "fish"),
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           async generateText() {
@@ -955,9 +955,9 @@ describe("session persistence", () => {
     const replacementDisplayText = `/GoAl replace ${replacementObjective}`;
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         eventStore,
         modelExecutor: {
@@ -1036,9 +1036,9 @@ describe("session persistence", () => {
     const store = await createSqliteSessionStore({ dbPath });
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           async generateText() {
@@ -1111,15 +1111,15 @@ describe("session persistence", () => {
 
     try {
       let switched = false;
-      let app: Awaited<ReturnType<typeof createZCodeApp>>;
-      app = await createZCodeApp({
+      let app: Awaited<ReturnType<typeof createNekodeApp>>;
+      app = await createNekodeApp({
         configuredDefaultModelSelection: {
           providerId: "zai",
           modelId: "glm-main",
           options: { reasoningLevel: "high" },
         },
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           setModelIoFullRetentionEnabled() {},
@@ -1207,11 +1207,11 @@ describe("session persistence", () => {
         }),
       );
 
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
           PATH: shellDir,
           SHELL: join(shellDir, "fish"),
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           setModelIoFullRetentionEnabled() {},
@@ -1298,9 +1298,9 @@ describe("session persistence", () => {
 
     try {
       await workflowStore.writeSnapshot(snapshot);
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           setModelIoFullRetentionEnabled() {},
@@ -1344,7 +1344,7 @@ describe("session persistence", () => {
       const latest = await resolveLatestSession({
         directory: tempRoot,
         env: {
-          ZCODE_SESSION_DB_PATH: dbPath,
+          NEKODE_SESSION_DB_PATH: dbPath,
         },
       });
 
@@ -1373,9 +1373,9 @@ describe("session persistence", () => {
 
     try {
       await expect(
-        createZCodeApp({
+        createNekodeApp({
           env: {
-            ZCODE_SESSION_DB_PATH: dbPath,
+            NEKODE_SESSION_DB_PATH: dbPath,
           },
           runtimeConfig: {
             workingDirectory: tempRoot,
@@ -1388,7 +1388,7 @@ describe("session persistence", () => {
     }
   });
 
-  it("blocks ZCode Protocol startup on database migration before protocol connection", async () => {
+  it("blocks Nekode Protocol startup on database migration before protocol connection", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-protocol-migration-gate-"));
     const dbPath = join(tempRoot, "session.sqlite");
     const db = new DatabaseSync(dbPath);
@@ -1408,10 +1408,10 @@ describe("session persistence", () => {
 
     try {
       await expect(
-        runZCodeProtocolAgent({
+        runNekodeProtocolAgent({
           env: {
             ...providerEnv,
-            ZCODE_SESSION_DB_PATH: dbPath,
+            NEKODE_SESSION_DB_PATH: dbPath,
           },
           input: createNeverEndingReadable(),
           output,
@@ -1426,7 +1426,7 @@ describe("session persistence", () => {
     }
   });
 
-  it("schedules log retention cleanup after ZCode Protocol startup completes", async () => {
+  it("schedules log retention cleanup after Nekode Protocol startup completes", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-protocol-log-retention-"));
     const dbPath = join(tempRoot, "session.sqlite");
     const output = createMemoryWritable();
@@ -1434,12 +1434,12 @@ describe("session persistence", () => {
     const providerEnv = await createProtocolProviderEnv(tempRoot);
 
     try {
-      await runZCodeProtocolAgent({
+      await runNekodeProtocolAgent({
         env: {
           ...providerEnv,
-          ZCODE_LOG_DIR: join(tempRoot, "log"),
-          ZCODE_SESSION_DB_PATH: dbPath,
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_LOG_DIR: join(tempRoot, "log"),
+          NEKODE_SESSION_DB_PATH: dbPath,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         input,
         output,
@@ -1461,7 +1461,7 @@ describe("session persistence", () => {
     }
   });
 
-  it("routes AI SDK warnings away from ZCode Protocol stdout", async () => {
+  it("routes AI SDK warnings away from Nekode Protocol stdout", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-protocol-ai-sdk-warning-"));
     const dbPath = join(tempRoot, "session.sqlite");
     const logDir = join(tempRoot, "log");
@@ -1470,12 +1470,12 @@ describe("session persistence", () => {
     const providerEnv = await createProtocolProviderEnv(tempRoot);
 
     try {
-      await runZCodeProtocolAgent({
+      await runNekodeProtocolAgent({
         env: {
           ...providerEnv,
-          ZCODE_LOG_DIR: logDir,
-          ZCODE_SESSION_DB_PATH: dbPath,
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_LOG_DIR: logDir,
+          NEKODE_SESSION_DB_PATH: dbPath,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         input: createClosableReadable(),
         output,
@@ -1513,11 +1513,11 @@ describe("session persistence", () => {
       await mkdir(join(workspace, ".git"));
       await writeFile(join(workspace, "AGENTS.md"), "Always follow marker: project-rule-314.\n");
 
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         modelExecutor: {
           async generateText(request: { messages: Array<{ role: string; content: string }> }) {
@@ -1603,11 +1603,11 @@ describe("session persistence", () => {
     } satisfies ExecutionPort;
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {
-          ZCODE_STORAGE_DIR: tempRoot,
+          NEKODE_STORAGE_DIR: tempRoot,
         },
         eventStore,
         executionPort,
@@ -1723,7 +1723,7 @@ describe("session persistence", () => {
     const liveEventTypes: string[] = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -1776,7 +1776,7 @@ describe("session persistence", () => {
     let capturedMessages: Array<{ content: string; role: string }> = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -1841,7 +1841,7 @@ describe("session persistence", () => {
     let secondRequestMessages: Array<{ content: string; role: string }> = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -1913,7 +1913,7 @@ describe("session persistence", () => {
     let modelCallCount = 0;
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -1985,7 +1985,7 @@ describe("session persistence", () => {
     const store = await createSqliteSessionStore({ dbPath: join(tempRoot, "session.sqlite") });
 
     try {
-      const firstApp = await createZCodeApp({
+      const firstApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2012,7 +2012,7 @@ describe("session persistence", () => {
 
       await firstApp.setMode("yolo");
 
-      const restoredApp = await createZCodeApp({
+      const restoredApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2038,7 +2038,7 @@ describe("session persistence", () => {
       });
       expect(restoredApp.getMode()).toBe("yolo");
 
-      const otherProjectApp = await createZCodeApp({
+      const otherProjectApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2064,7 +2064,7 @@ describe("session persistence", () => {
       });
       expect(otherProjectApp.getMode()).toBe("build");
 
-      const cliOverrideApp = await createZCodeApp({
+      const cliOverrideApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2133,8 +2133,8 @@ describe("session persistence", () => {
     };
 
     try {
-      const firstApp = await createZCodeApp({
-        env: { ZCODE_STORAGE_DIR: tempRoot },
+      const firstApp = await createNekodeApp({
+        env: { NEKODE_STORAGE_DIR: tempRoot },
         modelExecutor: createWriteModelExecutor(firstFile, "hello") as never,
         runtimeConfig: {
           mode: "yolo",
@@ -2148,8 +2148,8 @@ describe("session persistence", () => {
       await firstApp.close?.();
       expect(await readFile(firstFile, "utf8")).toBe("hello");
 
-      const resumedApp = await createZCodeApp({
-        env: { ZCODE_STORAGE_DIR: tempRoot },
+      const resumedApp = await createNekodeApp({
+        env: { NEKODE_STORAGE_DIR: tempRoot },
         modelExecutor: createWriteModelExecutor(secondFile, "world") as never,
         resume: true,
         runtimeConfig: {
@@ -2184,7 +2184,7 @@ describe("session persistence", () => {
       await writeFile(zshPath, "#!/bin/sh\n");
       await chmod(zshPath, 0o755);
 
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {
@@ -2241,7 +2241,7 @@ describe("session persistence", () => {
       await chmod(oldZshPath, 0o755);
       await chmod(newBashPath, 0o755);
 
-      const firstApp = await createZCodeApp({
+      const firstApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {
@@ -2271,7 +2271,7 @@ describe("session persistence", () => {
       await firstApp.submitPrompt("first prompt");
       await rm(oldZshPath, { force: true });
 
-      const secondApp = await createZCodeApp({
+      const secondApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {
@@ -2320,7 +2320,7 @@ describe("session persistence", () => {
     const sessionId = createSessionId("resume-transcript");
 
     try {
-      const firstApp = await createZCodeApp({
+      const firstApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2346,7 +2346,7 @@ describe("session persistence", () => {
 
       await firstApp.submitPrompt("first prompt");
 
-      const resumedApp = await createZCodeApp({
+      const resumedApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2406,7 +2406,7 @@ describe("session persistence", () => {
       isGitRepository: true,
       gitBranch: "feature/original",
       gitMainBranch: "main",
-      gitUser: "ZCode Tester <tester@example.com>",
+      gitUser: "Nekode Tester <tester@example.com>",
       gitStatus: "dirty",
       gitStatusLines: [" M first.ts"],
       recentCommits: ["abc123 first commit"],
@@ -2419,7 +2419,7 @@ describe("session persistence", () => {
     };
 
     try {
-      const firstApp = await createZCodeApp({
+      const firstApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2446,7 +2446,7 @@ describe("session persistence", () => {
 
       await firstApp.submitPrompt("first prompt");
 
-      const secondApp = await createZCodeApp({
+      const secondApp = await createNekodeApp({
         // 持久化测试不读取操作者配置，避免真实插件和 MCP 混入会话生命周期。
         skipUserConfig: true,
         env: {},
@@ -2515,7 +2515,7 @@ async function createProtocolProviderEnv(root: string): Promise<Record<string, s
   const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
   const personalFilePath = join(root, "provider-personal.json");
   // 用正式编码器构造启动夹具，避免旧配置结构让用例在被测边界之前失败。
-  const emptyBuiltinRelease = serializeZCodeBuiltinRelease({
+  const emptyBuiltinRelease = serializeNekodeBuiltinRelease({
     schemaVersion: 1,
     revision: 1,
     config: {

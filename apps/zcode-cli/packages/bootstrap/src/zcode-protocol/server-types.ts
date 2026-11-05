@@ -17,21 +17,20 @@ import type { AccountProviderConfigSnapshot } from "@zcode/provider";
 import {
   zcodeProtocolErrorCodes,
   type AppToolSearchMode,
-  type ZCodeAutomationBotDeliveryTarget,
-  type ZCodeDeliveryKind,
+  type NekodeDeliveryKind,
   type ModelSelection,
-  type ZCodeModelContextBudgetStrategy,
-  type ZCodeProtocolMessage,
-  type ZCodeProtocolMethod,
-  type ZCodeProtocolNotification,
-  type ZCodeProtocolRequest,
-  type ZCodeProtocolRequestId,
-  type ZCodeProtocolTrace,
-  type ZCodeSessionMode,
-  type ZCodeSessionPersistence,
-  type ZCodeWorkspaceRef,
+  type NekodeModelContextBudgetStrategy,
+  type NekodeProtocolMessage,
+  type NekodeProtocolMethod,
+  type NekodeProtocolNotification,
+  type NekodeProtocolRequest,
+  type NekodeProtocolRequestId,
+  type NekodeProtocolTrace,
+  type NekodeSessionMode,
+  type NekodeSessionPersistence,
+  type NekodeWorkspaceRef,
 } from "@zcode/shared";
-import type { ZCodeApp, ZCodeAppOptions } from "../app/types.js";
+import type { NekodeApp, NekodeAppOptions } from "../app/types.js";
 import type { V4InteractionRegistry } from "../zcode-protocol-v4/interaction-registry.js";
 import type { ConversationV4Gateway } from "../zcode-protocol-v4/v4-gateway.js";
 import type { SessionResidentPool, SessionResidentPoolOptions } from "./session-resident-pool.js";
@@ -41,8 +40,8 @@ export interface ParamsSchema<T> {
   parse(input: unknown): T;
 }
 
-export interface ZCodeProtocolAgentDependencies {
-  createZCodeApp(options?: Omit<ZCodeAppOptions, "providerRegistry">): ZCodeApp | Promise<ZCodeApp>;
+export interface NekodeProtocolAgentDependencies {
+  createNekodeApp(options?: Omit<NekodeAppOptions, "providerRegistry">): NekodeApp | Promise<NekodeApp>;
   /**
    * 每个 session record 的内存 event store 工厂。
    * 默认 turn 窗口保留策略；测试可注入 spy 或 unbounded 实现做对照。
@@ -71,29 +70,29 @@ export interface ZCodeProtocolAgentDependencies {
   refreshProviderRegistry?: (reason: string) => Promise<void>;
 }
 
-export type ZCodeProtocolAgentResolvedDependencies = ZCodeProtocolAgentDependencies & {
+export type NekodeProtocolAgentResolvedDependencies = NekodeProtocolAgentDependencies & {
   createSessionEventStore(sessionId: string): SessionEventStorePort;
   workspaceHookPolicyProvider: WorkspaceHookPolicyProvider;
 };
 
-export interface ZCodeProtocolEventSequenceState {
+export interface NekodeProtocolEventSequenceState {
   lastSeq: number;
   seqBySourceEventKey: Map<string, number>;
 }
 
-export interface ZCodeProtocolToolInputTransmissionState {
+export interface NekodeProtocolToolInputTransmissionState {
   streamedToolCallIdsWithInput: Set<string>;
 }
 
-export interface ZCodeProtocolSessionRecord {
-  app: ZCodeApp;
+export interface NekodeProtocolSessionRecord {
+  app: NekodeApp;
   subagentRuntimeConfigEnabled?: boolean;
   memoryEnabled: boolean;
   nativeSearchEnhancementsEnabled: boolean;
   toolSearchMode: AppToolSearchMode;
-  modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
+  modelContextBudgetStrategy: NekodeModelContextBudgetStrategy;
   createdAt: number;
-  deliveryKind?: ZCodeDeliveryKind;
+  deliveryKind?: NekodeDeliveryKind;
   /**
    * 旧 session/subscribe 没有 unsubscribe RPC；只在真正 subscribe 时置位，不能用
    * 会被 session/read 写入的 deliveryKind 代替。连接结束会销毁整个 CLI 进程。
@@ -101,16 +100,16 @@ export interface ZCodeProtocolSessionRecord {
   legacyStreamSubscribed?: boolean;
   eventStore: SessionEventStorePort;
   parentSessionId?: SessionId;
-  persistence: ZCodeSessionPersistence;
-  protocolEventSequences: Map<string, ZCodeProtocolEventSequenceState>;
-  protocolToolInputTransmissions: Map<string, ZCodeProtocolToolInputTransmissionState>;
+  persistence: NekodeSessionPersistence;
+  protocolEventSequences: Map<string, NekodeProtocolEventSequenceState>;
+  protocolToolInputTransmissions: Map<string, NekodeProtocolToolInputTransmissionState>;
   stateRevision: number;
   taskType?: SessionTaskType;
   traceContext: TraceContext;
   unsubscribe?: () => void;
   updatedAt: number;
   lastOutcome?: "completed" | "interrupted" | "error";
-  workspace: ZCodeWorkspaceRef;
+  workspace: NekodeWorkspaceRef;
   activeAbortController?: AbortController;
   /** background runner 释放 ready lock 后，持久化/snapshot/broadcast 尚未完成的引用计数。 */
   residencyFinalizationCount?: number;
@@ -118,27 +117,25 @@ export interface ZCodeProtocolSessionRecord {
   activeAutomationId?: string;
   /** 当前正在执行的闲时派发 turn；只在 turn 运行期间存在，禁止递归 OffPeakCreate。 */
   activeOffPeakTaskId?: string;
-  /** 当前 Bot 入站 turn 的稳定回推地址；只允许 CronCreate 在本轮读取。 */
-  activeBotDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
   restoreWarning?: { message: string; type: string };
   /** 冷恢复候选只供初始投影；新的选模事件立即清除，不能替代 Runtime 执行绑定。 */
   restoredModelSelection?: ModelSelection;
 }
 
-export interface ZCodeProtocolClientRequestOptions {
+export interface NekodeProtocolClientRequestOptions {
   signal?: AbortSignal;
   timeoutMs?: number;
-  trace?: ZCodeProtocolTrace;
+  trace?: NekodeProtocolTrace;
   reannounceIntervalMs?: number;
 }
 
-export interface ZCodeProtocolAgentServerContext {
+export interface NekodeProtocolAgentServerContext {
   /** 本 stdio Host 已确认能接收目录来源字段；随进程关闭失效，不存目录缓存。 */
   sessionDirectorySourceEnabled?: boolean;
   sessionWorkspaceRoutingEnabled?: boolean;
   /** 进程退出期间，迟到的异步物化不能重新登记 session。 */
   assertServing?: () => void;
-  deps: ZCodeProtocolAgentResolvedDependencies;
+  deps: NekodeProtocolAgentResolvedDependencies;
   logger?: Logger;
   appRuntimePreferences: {
     askUserQuestionAutoResolutionEnabled: boolean;
@@ -167,21 +164,21 @@ export interface ZCodeProtocolAgentServerContext {
   // 协议请求则持有 operation lease，禁止异步 handler 与容量回收交错。
   sessionResidentPool?: SessionResidentPool;
   sessionLifecycle?: import("../session-lifecycle/index.js").SessionLifecycleController;
-  sessions: Map<string, ZCodeProtocolSessionRecord>;
+  sessions: Map<string, NekodeProtocolSessionRecord>;
   /** 仅覆盖异步创建窗口，结束即释放；输入命令仍由 CommandInbox 排队。 */
   sessionCreationIds?: Set<string>;
-  notify(notification: ZCodeProtocolNotification): void;
+  notify(notification: NekodeProtocolNotification): void;
   requestClient<T>(
-    method: ZCodeProtocolMethod,
+    method: NekodeProtocolMethod,
     params: unknown,
     resultSchema: ParamsSchema<T>,
-    options?: ZCodeProtocolClientRequestOptions,
+    options?: NekodeProtocolClientRequestOptions,
   ): Promise<T>;
 }
 
 /** server → client 请求失败的协议错误码；server.ts 抛出，适配层按码翻译，不在业务逻辑中散落字面量。 */
 export const PROTOCOL_CLIENT_REQUEST_ERROR_CODES = {
-  /** 没有 ZCode Protocol client 挂载，无法投递请求。 */
+  /** 没有 Nekode Protocol client 挂载，无法投递请求。 */
   noClientAttached: -32020,
   /** 请求在收到应答前被取消。 */
   cancelled: -32021,
@@ -200,24 +197,24 @@ export class ProtocolRequestError extends Error {
   }
 }
 
-export function isRequest(message: ZCodeProtocolMessage): message is ZCodeProtocolRequest {
+export function isRequest(message: NekodeProtocolMessage): message is NekodeProtocolRequest {
   return "method" in message && "id" in message;
 }
 
 export function isNotification(
-  message: ZCodeProtocolMessage,
-): message is ZCodeProtocolNotification {
+  message: NekodeProtocolMessage,
+): message is NekodeProtocolNotification {
   return "method" in message && !("id" in message);
 }
 
 export function isResponse(
-  message: ZCodeProtocolMessage,
-): message is { id: ZCodeProtocolRequestId; result: unknown } {
+  message: NekodeProtocolMessage,
+): message is { id: NekodeProtocolRequestId; result: unknown } {
   return "id" in message && "result" in message;
 }
 
-export function isErrorResponse(message: ZCodeProtocolMessage): message is {
-  id: ZCodeProtocolRequestId;
+export function isErrorResponse(message: NekodeProtocolMessage): message is {
+  id: NekodeProtocolRequestId;
   error: { code: number; message: string; data?: unknown };
 } {
   return "id" in message && "error" in message;
@@ -257,7 +254,7 @@ export function parseParams<T>(schema: ParamsSchema<T>, params: unknown): T {
 }
 
 export function assertExpectedRevision(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   expectedRevision: number | undefined,
 ): void {
   if (expectedRevision !== undefined && expectedRevision !== record.stateRevision) {
@@ -305,7 +302,7 @@ export function createProtocolTraceId(_sessionId: SessionId): TraceContext["trac
 
 export function createProtocolRootTraceContext(
   sessionId: SessionId,
-  trace?: ZCodeProtocolTrace,
+  trace?: NekodeProtocolTrace,
 ): TraceContext {
   const context = createRootTraceContext({
     sessionId,
@@ -321,7 +318,7 @@ export function createProtocolRootTraceContext(
   return context;
 }
 
-export function protocolTraceFromTraceContext(context: TraceContext): ZCodeProtocolTrace {
+export function protocolTraceFromTraceContext(context: TraceContext): NekodeProtocolTrace {
   return {
     traceId: context.traceId,
     ...(context.spanId ? { spanId: context.spanId } : {}),
@@ -332,10 +329,10 @@ export function protocolTraceFromTraceContext(context: TraceContext): ZCodeProto
 }
 
 export function requireSession(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
-  options: { deliveryKind?: ZCodeDeliveryKind; operation?: string } = {},
-): ZCodeProtocolSessionRecord {
+  options: { deliveryKind?: NekodeDeliveryKind; operation?: string } = {},
+): NekodeProtocolSessionRecord {
   if (context.sessionLifecycle && !context.sessionLifecycle.isReady(sessionId)) {
     throw new ProtocolRequestError(
       zcodeProtocolErrorCodes.sessionUnavailable,
@@ -347,7 +344,7 @@ export function requireSession(
   if (!record) {
     // 诊断：readSession 只读取活跃 runtime；记录缺失时要区分“冷会话尚未恢复”和“ID 已失效”，
     // 不能只留下相同的错误文本，否则无法判断 UI 是读早了还是 task index 带来了脏引用。
-    context.logger?.warn("ZCode Protocol session runtime missing", {
+    context.logger?.warn("Nekode Protocol session runtime missing", {
       activeSessionCount: context.sessions.size,
       event: "zcode_protocol.session.require_missing",
       hasSessionStore: Boolean(context.deps.sessionStore),
@@ -364,7 +361,7 @@ export function requireSession(
   return record;
 }
 
-export function createProtocolLogger(deps: ZCodeProtocolAgentDependencies): Logger | undefined {
+export function createProtocolLogger(deps: NekodeProtocolAgentDependencies): Logger | undefined {
   return deps.loggerFactory?.createLogger("zcode").child({
     module: "bootstrap.zcode_protocol",
   });

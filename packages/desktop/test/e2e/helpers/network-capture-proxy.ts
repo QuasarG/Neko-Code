@@ -5,9 +5,9 @@ import { readdir, readFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { rootCertificates } from "node:tls";
 import {
-  ZCODE_AGENT_CA_CERT_ENV_KEY,
-  ZCODE_HTTP_PROXY_ENV_KEY,
-  ZCODE_NO_PROXY_ENV_KEY,
+  NEKODE_AGENT_CA_CERT_ENV_KEY,
+  NEKODE_HTTP_PROXY_ENV_KEY,
+  NEKODE_NO_PROXY_ENV_KEY,
 } from "@zcode/shared";
 import { Proxy } from "http-mitm-proxy";
 import type { IContext } from "http-mitm-proxy";
@@ -30,7 +30,7 @@ export const DEFAULT_E2E_NETWORK_CAPTURE_NO_PROXY = [
   "zcode.z.ai",
   // Plugin 商店原始图标 CDN 不需要进入模型请求抓包；直连也避免 Electron MITM 证书导致图片回退。
   "cdn-zcode.z.ai",
-  "cdn.zcode-ai.com",
+  "cdn.nekode-ai.com",
 ].join(",");
 export interface E2ENetworkCaptureRecord {
   completedAt?: string;
@@ -725,10 +725,10 @@ function buildProxyEnv(
     REQUESTS_CA_BUNDLE: caBundlePath,
     SSL_CERT_FILE: caBundlePath,
     // Bugfix: agent provider fetch 会过滤标准 HTTP_PROXY/HTTPS_PROXY，只认
-    // ZCode 显式网络出口配置；否则真实模型请求会直连上游，capture artifact 为空。
-    [ZCODE_AGENT_CA_CERT_ENV_KEY]: caCertPath,
-    [ZCODE_HTTP_PROXY_ENV_KEY]: proxyUrl,
-    [ZCODE_NO_PROXY_ENV_KEY]: noProxy,
+    // Nekode 显式网络出口配置；否则真实模型请求会直连上游，capture artifact 为空。
+    [NEKODE_AGENT_CA_CERT_ENV_KEY]: caCertPath,
+    [NEKODE_HTTP_PROXY_ENV_KEY]: proxyUrl,
+    [NEKODE_NO_PROXY_ENV_KEY]: noProxy,
   };
 }
 

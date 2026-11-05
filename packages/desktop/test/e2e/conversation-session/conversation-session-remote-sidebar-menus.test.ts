@@ -40,7 +40,7 @@ import {
 
 const CASE_MARKER = "E2E_REMOTE_SIDEBAR_MENUS";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-sidebar-menus",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-sidebar-menus",
 );
 
 async function buttonIn(selector: string, labels: RegExp) {
@@ -353,7 +353,7 @@ describe(`${CASE_MARKER}: 侧栏详情和设备菜单`, () => {
       { timeout: 30_000 },
     );
     // 当前远端断线时输入框不可操作；从本地草稿验证菜单内离线项目，覆盖实际可用入口。
-    const localProject = $('[data-project-name="ZCodeProject"]');
+    const localProject = $('[data-project-name="NekodeProject"]');
     await localProject.moveTo();
     await localProject.$('[data-testid="virtual-project-create-task"]').click();
     await waitForWorkspaceApp(DEFAULT_WORKSPACE, 30_000);

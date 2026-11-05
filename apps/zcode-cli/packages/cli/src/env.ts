@@ -3,12 +3,12 @@ import { homedir } from "node:os";
 import { dirname, join, parse, resolve } from "node:path";
 import { config as loadDotenv } from "dotenv";
 import {
-  ZCODE_RUNTIME_ENV_KEY,
-  buildZCodeToolEnvPassthroughEnv,
-  normalizeZCodeRuntimeEnv,
-  sanitizeZCodeRuntimeEnv,
-  sanitizeZCodeRuntimeEnvInPlace,
-  type ZCodeRuntimeEnv,
+  NEKODE_RUNTIME_ENV_KEY,
+  buildNekodeToolEnvPassthroughEnv,
+  normalizeNekodeRuntimeEnv,
+  sanitizeNekodeRuntimeEnv,
+  sanitizeNekodeRuntimeEnvInPlace,
+  type NekodeRuntimeEnv,
 } from "@zcode/shared/runtime-env";
 
 export type CliEnv = Record<string, string | undefined>;
@@ -30,8 +30,8 @@ export function prepareCliRuntimeEnv(
   argv: readonly string[] = process.argv,
 ): CliEnv {
   const prepared = {
-    ...sanitizeZCodeRuntimeEnv(env),
-    ...buildZCodeToolEnvPassthroughEnv(env),
+    ...sanitizeNekodeRuntimeEnv(env),
+    ...buildNekodeToolEnvPassthroughEnv(env),
   };
   applyCliRuntimeEnvDefaults(prepared, argv);
   return prepared;
@@ -41,8 +41,8 @@ export function applyCliRuntimeEnvSanitization(
   env: CliEnv,
   argv: readonly string[] = process.argv,
 ): void {
-  const toolEnvPassthrough = buildZCodeToolEnvPassthroughEnv(env);
-  sanitizeZCodeRuntimeEnvInPlace(env);
+  const toolEnvPassthrough = buildNekodeToolEnvPassthroughEnv(env);
+  sanitizeNekodeRuntimeEnvInPlace(env);
   Object.assign(env, toolEnvPassthrough);
   applyCliRuntimeEnvDefaults(env, argv);
 }
@@ -112,12 +112,12 @@ export function shouldLoadCliDotenvForProtocolServer(env: CliEnv): boolean {
 }
 
 function applyCliRuntimeEnvDefaults(env: CliEnv, argv: readonly string[]): void {
-  env[ZCODE_RUNTIME_ENV_KEY] = resolveCliRuntimeEnv(env, argv);
+  env[NEKODE_RUNTIME_ENV_KEY] = resolveCliRuntimeEnv(env, argv);
   applyBetaStorageDefault(env, argv);
 }
 
-function resolveCliRuntimeEnv(env: CliEnv, argv: readonly string[]): ZCodeRuntimeEnv {
-  const explicit = normalizeZCodeRuntimeEnv(env[ZCODE_RUNTIME_ENV_KEY]);
+function resolveCliRuntimeEnv(env: CliEnv, argv: readonly string[]): NekodeRuntimeEnv {
+  const explicit = normalizeNekodeRuntimeEnv(env[NEKODE_RUNTIME_ENV_KEY]);
   if (explicit) {
     return explicit;
   }
@@ -131,9 +131,9 @@ function resolveCliRuntimeEnv(env: CliEnv, argv: readonly string[]): ZCodeRuntim
 }
 
 function applyBetaStorageDefault(env: CliEnv, argv: readonly string[]): void {
-  if (env.ZCODE_STORAGE_DIR?.trim()) return;
-  const explicitBeta = env.ZCODE_BETA === "1" || env.ZCODE_ENV === "beta";
+  if (env.NEKODE_STORAGE_DIR?.trim() || env.NEKODE_STORAGE_DIR?.trim()) return;
+  const explicitBeta = env.NEKODE_BETA === "1" || env.NEKODE_ENV === "beta";
   const invokedAsBeta = argv.some((arg) => /(^|[/\\])zcode-beta(?:$|\.)/u.test(arg));
   if (!explicitBeta && !invokedAsBeta) return;
-  env.ZCODE_STORAGE_DIR = join(homedir(), ".zcode-beta");
+  env.NEKODE_STORAGE_DIR = join(homedir(), ".nekode-beta");
 }

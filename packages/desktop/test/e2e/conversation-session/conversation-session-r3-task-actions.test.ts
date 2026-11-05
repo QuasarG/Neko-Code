@@ -24,7 +24,7 @@ import {
 } from "../helpers/v4-conversation.js";
 
 const CASE_MARKER = "E2E_R3_TASK_ACTIONS";
-const artifactDir = resolve(process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-task-actions");
+const artifactDir = resolve(process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-task-actions");
 
 async function readTaskOrder(): Promise<string[]> {
   return browser.execute(
@@ -185,7 +185,7 @@ describe(`${CASE_MARKER}: 多 Source task 的置顶/归档写操作命中原 Sou
           `python3 - <<'PY'
 import base64,json,os,sqlite3
 ids=json.loads(base64.b64decode("${idsBase64}"))
-path=os.path.expanduser("~/.zcode/v2/tasks-index.sqlite")
+path=os.path.expanduser("~/.nekode/v2/tasks-index.sqlite")
 with sqlite3.connect("file:"+path+"?mode=ro",uri=True) as connection:
     connection.row_factory=sqlite3.Row
     rows=connection.execute("SELECT task_id,workspace_path,pinned,archived FROM tasks WHERE task_id IN (?,?)",ids).fetchall()

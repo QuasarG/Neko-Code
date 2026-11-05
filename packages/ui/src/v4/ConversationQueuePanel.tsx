@@ -1,7 +1,5 @@
-import { BotChannelMessageContent } from "@/v4/ChannelMentionContent.js";
 import { parsePromptConversationSelections } from "@/lib/conversationSelectionReference.js";
 import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSelectionReferenceChip.js";
-import { BotGroupSourceLabel } from "@/v4/BotGroupSourceLabel.js";
 import {
   closestCenter,
   DndContext,
@@ -29,7 +27,7 @@ import { ArrowUpFromLine, GripVertical, PencilIcon, Trash2Icon } from "lucide-re
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { cn } from "@/components/lib/utils.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
 
 export interface ConversationQueuePanelProps {
@@ -116,7 +114,7 @@ const restrictQueueDragToPanel: Modifier = ({
 interface QueueRowProps {
   item: QueueItem;
   index: number;
-  intl: ReturnType<typeof useZCodeIntl>["intl"];
+  intl: ReturnType<typeof useNekodeIntl>["intl"];
   sortable: boolean;
   onDeleteItem?: (queueItemId: string) => void;
   onEditItem?: (queueItemId: string) => Promise<void> | void;
@@ -221,13 +219,7 @@ const QueueRow = memo(function QueueRow({
         title={parsedInput.visibleContent}
       >
         <span className="flex min-w-0 flex-col">
-          <BotGroupSourceLabel source={item.botGroupSource} />
-          <span className="truncate">
-            <BotChannelMessageContent
-              source={isCompact ? undefined : item.botGroupSource}
-              text={isCompact ? "/compact" : parsedInput.visibleContent}
-            />
-          </span>
+          <span className="truncate">{isCompact ? "/compact" : parsedInput.visibleContent}</span>
           {parsedInput.references.length ? (
             <ConversationSelectionReferenceChip references={parsedInput.references} />
           ) : null}
@@ -316,7 +308,7 @@ function ConversationQueuePanelImpl({
   onMoveItem,
   onResume,
 }: ConversationQueuePanelProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const [resumePending, setResumePending] = useState(false);
   const sensors = useSensors(
     useSensor(PointerSensor, {

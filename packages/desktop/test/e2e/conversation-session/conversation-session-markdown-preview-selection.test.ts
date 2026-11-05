@@ -85,9 +85,9 @@ describe("Markdown preview selection", () => {
         };
       });
       expect(layout).toEqual({ horizontal: true, adaptive: true, inside: true });
-      if (i === 0 && process.env.ZCODE_E2E_ARTIFACT_DIR) {
+      if (i === 0 && process.env.NEKODE_E2E_ARTIFACT_DIR) {
         await browser.saveScreenshot(
-          join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-selection-tooltip.png"),
+          join(process.env.NEKODE_E2E_ARTIFACT_DIR, "markdown-selection-tooltip.png"),
         );
       }
       await action.click();
@@ -97,9 +97,9 @@ describe("Markdown preview selection", () => {
     );
     await chip.waitForDisplayed();
     expect(await chip.getText()).toContain("selection.md");
-    if (process.env.ZCODE_E2E_ARTIFACT_DIR) {
+    if (process.env.NEKODE_E2E_ARTIFACT_DIR) {
       await browser.saveScreenshot(
-        join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-selection-composer.png"),
+        join(process.env.NEKODE_E2E_ARTIFACT_DIR, "markdown-selection-composer.png"),
       );
     }
     const state = await browser.execute(
@@ -228,9 +228,9 @@ describe("Markdown preview selection", () => {
       };
     }, TID_V4_COMPOSER_INPUT);
     expect(sideState).toEqual({ sideText: "", mainText: "E2E_MARKDOWN_MAIN_KEEP", distinct: true });
-    if (process.env.ZCODE_E2E_ARTIFACT_DIR)
+    if (process.env.NEKODE_E2E_ARTIFACT_DIR)
       await browser.saveScreenshot(
-        join(process.env.ZCODE_E2E_ARTIFACT_DIR, "markdown-side-conversation.png"),
+        join(process.env.NEKODE_E2E_ARTIFACT_DIR, "markdown-side-conversation.png"),
       );
   });
 });

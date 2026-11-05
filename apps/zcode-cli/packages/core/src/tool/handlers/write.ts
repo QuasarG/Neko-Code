@@ -17,7 +17,6 @@ import {
   type TraceContext,
 } from "@zcode/contracts";
 import { createStructuredPatch } from "../diff.js";
-import { stampMemoryOriginSessionId } from "../../memory/origin-session.js";
 import { resolveWorkspacePath } from "../path-policy.js";
 import {
   findLatestReadFileState,
@@ -33,6 +32,7 @@ import {
   fileByteCount,
   workspaceKind,
 } from "./tool-perf.js";
+import { nekoMemoryBookBudgetMessage } from "./neko-memory-guard.js";
 
 const WRITE_PROVIDER_DESCRIPTION = [
   "Writes a file to the local filesystem, overwriting if one exists.",
@@ -116,12 +116,23 @@ export const writeHandler: ToolHandler = async (input, context) => {
     }
   }
 
-  const contentToWrite = stampMemoryOriginSessionId({
-    content,
-    filePath,
-    memoryRoot: context.memoryRoot,
-    sessionId: context.sessionId,
-  });
+  const contentToWrite = content;
+  // Neko Memory v2 预算闸门：writeTextFile 之前。新建或覆写记忆书都要过这道门，
+  // 让模型在同一本书内整理而不是把内容挪到预算之外。
+  const memoryBook = context.nekoMemoryBooks?.bookForPath(filePath);
+  if (memoryBook && Buffer.byteLength(contentToWrite, "utf8") > memoryBook.budgetBytes) {
+    throw createCoreError(
+      CoreErrorType.ToolExecutionFailed,
+      nekoMemoryBookBudgetMessage(memoryBook, Buffer.byteLength(contentToWrite, "utf8")),
+      {
+        context: {
+          code: "write_neko_memory_book_over_budget",
+          filePath,
+        },
+        recoverable: true,
+      },
+    );
+  }
   const writeStartedAt = Date.now();
   const writeResult = await fileSystemPort.writeTextFile(
     {

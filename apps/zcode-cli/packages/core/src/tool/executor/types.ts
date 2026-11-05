@@ -19,7 +19,6 @@ import type {
   Model,
   ModelCatalogPort,
   OffPeakPort,
-  TopicResourcePort,
   PdfDocumentPort,
   PermissionBrokerPort,
   SessionEvent,
@@ -37,6 +36,8 @@ import type {
   WorkflowSubmitPort,
 } from "@zcode/contracts";
 import type { HookRunner } from "../../hooks/index.js";
+import type { NekoMemoryBooksPort } from "../../neko-memory/ports.js";
+import type { WardrobeStorePort } from "../../wardrobe/ports.js";
 import type { PermissionService } from "../../permission/service.js";
 import type { RuntimeTaskRegistry } from "../../runtime-task/registry.js";
 import type { ToolRegistry } from "../registry.js";
@@ -110,7 +111,6 @@ export interface ToolExecutorOptions {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
-  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;
@@ -136,7 +136,8 @@ export interface ToolExecutorOptions {
   getWorkingDirectory?: () => string;
   setWorkingDirectory?: (cwd: string) => Promise<void> | void;
   getWorkspaceRoot?: () => string;
-  getMemoryRoot?: () => string | undefined;
+  getNekoMemoryBooks?: () => NekoMemoryBooksPort | undefined;
+  getWardrobeStore?: () => WardrobeStorePort | undefined;
   traceContext?: TraceContext;
   mode?: CollaborationMode;
   getMode?: () => CollaborationMode;
@@ -237,7 +238,6 @@ export interface ToolExecutorDeps {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
-  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;
@@ -261,7 +261,8 @@ export interface ToolExecutorDeps {
   remoteSessionId?: string;
   clientMode?: "desktop-continuous" | "web-remote-replayable";
   deliveryKind?: "desktop-continuous" | "web-remote-replayable";
-  getMemoryRoot?: () => string | undefined;
+  getNekoMemoryBooks?: () => NekoMemoryBooksPort | undefined;
+  getWardrobeStore?: () => WardrobeStorePort | undefined;
   runtimeScope: ToolRuntimeScope;
   traceContext?: TraceContext;
   getMode: () => CollaborationMode;

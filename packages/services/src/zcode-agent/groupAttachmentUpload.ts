@@ -1,20 +1,20 @@
 import { createHash, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
-import type { ZCodePromptAttachment } from "@zcode/shared";
+import type { NekodePromptAttachment } from "@zcode/shared";
 import { PROTOCOL_V4_LIMITS, type AttachmentRef } from "@zcode/shared/zcode-protocol-v4";
-import type { IZCodeAgentService, ZCodeAgentSessionTarget } from "#src/zcode-agent/zcodeAgent.js";
+import type { INekodeAgentService, NekodeAgentSessionTarget } from "#src/zcode-agent/zcodeAgent.js";
 
 const CHUNK_BYTES = 384 * 1024;
 type UploadAgent = Pick<
-  IZCodeAgentService,
+  INekodeAgentService,
   "attachmentBeginV4" | "attachmentChunkV4" | "attachmentCommitV4" | "attachmentAbortV4"
 >;
 
-/** 内容寄存在目标 CLI，群队列只保存引用；远端不能直接使用桌面临时路径。 */
+/** 内容寄存在目标 CLI，队列只保存引用；远端不能直接使用桌面临时路径。 */
 export async function uploadBotGroupAttachments(
   agent: UploadAgent,
-  target: ZCodeAgentSessionTarget,
-  attachments: readonly ZCodePromptAttachment[],
+  target: NekodeAgentSessionTarget,
+  attachments: readonly NekodePromptAttachment[],
   signal?: AbortSignal,
 ): Promise<AttachmentRef[]> {
   const refs: AttachmentRef[] = [];

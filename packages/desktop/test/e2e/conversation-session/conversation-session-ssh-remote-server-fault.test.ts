@@ -2,7 +2,7 @@ import { reconnectRemoteProject } from "../helpers/remote-project-actions.js";
 import { clearAppData } from "../helpers/desktop-app.js";
 import {
   connectSSHWorkspaceAndSendFirstTurn,
-  listRemoteZCodeServerPids,
+  listRemoteNekodeServerPids,
   prepareSSHLifecycle,
   readTaskRowInProject,
   sendSSHFollowTurn,
@@ -35,7 +35,7 @@ describe(`${CASE_MARKER}: SSH zcode-server fault and grouped reconnect`, () => {
     const prepared = await prepareSSHLifecycle(CASE_MARKER);
     provider = prepared.provider;
     const [workspaceA, workspaceB] = prepared.config.workspacePaths;
-    const serverPidsBefore = await listRemoteZCodeServerPids(prepared.config);
+    const serverPidsBefore = await listRemoteNekodeServerPids(prepared.config);
     const taskA = await connectSSHWorkspaceAndSendFirstTurn({
       caseMarker: CASE_MARKER,
       config: prepared.config,
@@ -51,7 +51,7 @@ describe(`${CASE_MARKER}: SSH zcode-server fault and grouped reconnect`, () => {
       workspacePath: workspaceB,
     });
     const hostBeforeFault = await readHostProcesses();
-    expect(await listRemoteZCodeServerPids(prepared.config)).toEqual(
+    expect(await listRemoteNekodeServerPids(prepared.config)).toEqual(
       expect.arrayContaining(serverPidsBefore),
     );
 
@@ -64,14 +64,14 @@ describe(`${CASE_MARKER}: SSH zcode-server fault and grouped reconnect`, () => {
     await stopOwnedSSHServer(prepared.config, serverPidsBefore, CASE_MARKER);
     const faultContext = async () => ({
       sessionsBeforeFault,
-      remoteServerPids: await listRemoteZCodeServerPids(prepared.config).catch(
+      remoteServerPids: await listRemoteNekodeServerPids(prepared.config).catch(
         () => "probe-failed",
       ),
       remoteServerStatus:
         (
           await runSSHCommand(
             prepared.config,
-            'cat "$HOME/.zcode/server/run/status.json" 2>/dev/null | tr -d "\\n " | cut -c1-200',
+            'cat "$HOME/.nekode/server/run/status.json" 2>/dev/null | tr -d "\\n " | cut -c1-200',
           ).catch(() => null)
         )?.stdout.trim() ?? null,
     });

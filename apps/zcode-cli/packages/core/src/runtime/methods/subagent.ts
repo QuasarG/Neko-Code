@@ -36,13 +36,13 @@ import type { AgentRuntimeDeps } from "../types.js";
 import { toMcpToolName } from "../../mcp/index.js";
 import { createBorrowedSubagentMcpAccess } from "../../subagent/borrowed-mcp-port.js";
 import { createSubagentMessageSink } from "../../subagent/message-steering.js";
-import { latestAnnouncedEnvironment } from "./context-refresh.js";
 import {
   extractRequiredMcpServerNames,
   matchesRequiredMcpServer,
 } from "../../subagent/mcp-config.js";
 import { mirrorSubagentToolEvent } from "../../subagent/tool-event-mirror.js";
 import { isBuiltInExploreAgentProfile } from "../../subagent/profile.js";
+import { isEnvInfoGitRepository } from "../../context/sections/env-info.js";
 import {
   buildSubagentChildDisallowRules,
   filterSubagentChildToolNames,
@@ -53,7 +53,6 @@ import { getSessionShellEnvironment } from "./session-shell-environment.js";
 import { deriveChildClientPorts } from "../helpers/child-client-ports.js";
 import { createCoordinatorResponsePort } from "../../subagent/coordinator-response.js";
 import { isStaleBranchRuntimeTaskEvent } from "./runtime-command-generation.js";
-import { loadPersistentAgentMemory } from "../../subagent/persistent-memory.js";
 import {
   createOfficialCuaPolicy,
   SUBAGENT_COMPUTER_USE_UNAVAILABLE_CODE,
@@ -168,33 +167,22 @@ export function createDefaultSubagentPort(
           builtInExplore && request.systemPrompt?.trim() === ""
             ? buildExploreAgentPrompt({ embeddedSearchEnabled })
             : request.systemPrompt?.trim();
-        const persistentMemory = await loadPersistentAgentMemory({
-          fileSystemPort: deps.fileSystemPort,
-          logger: this.logger,
-          memory: this.config.memory,
-          profile: request.profile,
-          traceContext: request.traceContext,
-          workspaceRoot: request.workspaceRoot,
-        });
-        // 空 agent prompt 不是一个语义段；先硬拼 `\n\n` 会把缺失段的边界
-        // 泄漏到 persistent Memory 开头。这里只组合非空正文，block 左边界由 builder 统一添加。
-        const agentPrompt = [baseAgentPrompt, persistentMemory?.prompt]
-          .filter((part): part is string => typeof part === "string" && part.length > 0)
-          .join("\n\n");
-        const announcedEnvironment = latestAnnouncedEnvironment(
-          this.messageHistory.borrowReadOnlyRuntimeEntries(),
-        );
+        const agentPrompt = baseAgentPrompt ?? "";
+        const parentEnvironment = this.contextSourceSnapshot?.envInfo ?? this.config.envInfo;
+        // 仓库属性只对具体目录成立：父快照的 cwd 与 child 不同时必须丢弃，
+        // 让 child 的第一次 context 解析重新探测。
+        const {
+          isGitRepository: _parentIsGitRepository,
+          gitBranch: _parentGitBranch,
+          gitStatus: _parentGitStatus,
+          ...inheritedEnv
+        } = childEnvInfo;
         const childRuntimeEnvInfo = {
-          ...childEnvInfo,
-          // 父会话切目录后，起始快照的仓库属性已过期；只继承同一 cwd 的最近已接受环境。
-          // 附加目录属于父运行配置，child 不继承，不能随快照混入 envInfo。
-          ...(announcedEnvironment?.cwd === request.workingDirectory
-            ? {
-                platform: announcedEnvironment.platform,
-                shell: announcedEnvironment.shell,
-                osVersion: announcedEnvironment.osVersion,
-                isGitRepository: announcedEnvironment.isGitRepository,
-              }
+          ...inheritedEnv,
+          ...(parentEnvironment &&
+          parentEnvironment.cwd === request.workingDirectory &&
+          isEnvInfoGitRepository(parentEnvironment)
+            ? { isGitRepository: true }
             : {}),
           cwd: request.workingDirectory,
         };
@@ -402,7 +390,6 @@ export function createDefaultSubagentPort(
             httpClientPort: deps.httpClientPort,
             imageProcessorPort: deps.imageProcessorPort,
             pdfDocumentPort: deps.pdfDocumentPort,
-            memoryRoot: persistentMemory?.rootDir,
             mcpPort: childMcpAccess.port,
             skillPort: childSkillPort,
             artifactStore: deps.artifactStore,
@@ -518,7 +505,6 @@ export function createDefaultSubagentPort(
                   offPeakTaskId: offPeak!.offPeakTaskId,
                   modelExecution: {
                     selectionScope: "execution" as const,
-                    memoryExtraction: "skip" as const,
                   },
                 }
               : { offPeakTaskId: undefined }),

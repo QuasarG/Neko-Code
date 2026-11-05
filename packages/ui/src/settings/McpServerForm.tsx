@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import type { McpSource, ZCodeMcpServer } from "@zcode/shared";
+import type { McpSource, NekodeMcpServer } from "@zcode/shared";
 import { Button } from "@/components/ui/button.js";
 import { Input } from "@/components/ui/input.js";
 import {
@@ -9,7 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { PluginScopeMenu } from "@/settings/PluginScopeMenu.js";
 import type { ConfigWorkspaceTarget } from "@/workspace-config-catalog/index.js";
 import { SettingsFormTextarea } from "@/settings/SettingsFormTextarea.js";
@@ -41,7 +41,7 @@ function McpScopeMenu({
   workspaceTabs: ConfigWorkspaceTarget[];
   onChange: (scopeKey: string) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const scopeLabel = intl.formatMessage({ id: "settings.scope.label" });
 
   return (
@@ -70,7 +70,7 @@ export function McpServerForm({
   workspaceTabs,
   onScopeKeyChange,
 }: {
-  initial?: ZCodeMcpServer;
+  initial?: NekodeMcpServer;
   editingId?: string;
   editorMode: McpEditorMode;
   source?: McpSource;
@@ -78,11 +78,11 @@ export function McpServerForm({
   workspaceTabs: ConfigWorkspaceTarget[];
   onScopeKeyChange: (scopeKey: string) => void;
   onEditorModeChange: (mode: McpEditorMode) => void;
-  onSave: (form: FormState, prevServer?: ZCodeMcpServer) => void;
+  onSave: (form: FormState, prevServer?: NekodeMcpServer) => void;
   onCancel: () => void;
-  onDelete?: (server: ZCodeMcpServer) => void;
+  onDelete?: (server: NekodeMcpServer) => void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const initialForm: FormState = initial
     ? serverToForm(initial)
     : {

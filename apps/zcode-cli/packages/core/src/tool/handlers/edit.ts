@@ -28,7 +28,6 @@ import {
   type TraceContext,
 } from "@zcode/contracts";
 import { createStructuredPatch } from "../diff.js";
-import { stampMemoryOriginSessionId } from "../../memory/origin-session.js";
 import {
   findEditMatch,
   normalizeLineEndings,
@@ -49,6 +48,7 @@ import {
   fileByteCount,
   workspaceKind,
 } from "./tool-perf.js";
+import { completeNekoMemoryCheckpointForEdit, nekoMemoryBookBudgetMessage } from "./neko-memory-guard.js";
 
 const EDIT_PROVIDER_DESCRIPTION = [
   "Performs exact string replacement in a file.",
@@ -64,6 +64,9 @@ const EDIT_NOT_READ_MESSAGE = "File has not been read yet. Read it first before 
 const EDIT_STALE_MESSAGE =
   "File has been modified since read, either by the user or by a linter. Read it again before attempting to write it.";
 const EDIT_FRESHNESS_SUFFIX = " (file state is current in your context — no need to Read it back)";
+// Neko Memory v2 预算闸门：contracts 的 EditErrorCode 没有「超记忆书预算」档位，
+// 取未占用的 14；失败消息由 neko-memory-guard 统一生成（含整理指引与禁挪书）。
+const EDIT_ERROR_MEMORY_BOOK_OVER_BUDGET = 14;
 
 function formatEditModelContent(output: unknown): string {
   const filePath =
@@ -483,7 +486,7 @@ async function writeEditResult(input: {
   matchAttempts: number;
   matchStrategy?: string;
   matchCandidateCount?: number;
-}): Promise<EditOutput> {
+}): Promise<EditOutput | ToolHandlerFailure> {
   const fileSystemPort = input.context.fileSystemPort;
   if (!fileSystemPort) {
     throw createCoreError(
@@ -499,12 +502,19 @@ async function writeEditResult(input: {
     );
   }
 
-  const contentToWrite = stampMemoryOriginSessionId({
-    content: input.newContent,
-    filePath: input.filePath,
-    memoryRoot: input.context.memoryRoot,
-    sessionId: input.context.sessionId,
-  });
+  const contentToWrite = input.newContent;
+  // Neko Memory v2 预算闸门：newContent 已算出、写盘之前。超预算的记忆书编辑
+  // 必须被拒（spec §4），让模型在同一本书内整理而不是无限增长。
+  const memoryBook = input.context.nekoMemoryBooks?.bookForPath(input.filePath);
+  if (
+    memoryBook &&
+    Buffer.byteLength(contentToWrite, "utf8") > memoryBook.budgetBytes
+  ) {
+    return editFailure(
+      EDIT_ERROR_MEMORY_BOOK_OVER_BUDGET,
+      nekoMemoryBookBudgetMessage(memoryBook, Buffer.byteLength(contentToWrite, "utf8")),
+    );
+  }
   const writeStartedAt = Date.now();
   const writeResult = await fileSystemPort.writeTextFile(
     {
@@ -520,6 +530,8 @@ async function writeEditResult(input: {
     { signal: input.context.abortSignal },
   );
   const fsWriteMs = elapsedMsSince(writeStartedAt);
+  // 写盘成功且落在记忆书上：一次成功的记忆写入满足当前 checkpoint 区间。
+  completeNekoMemoryCheckpointForEdit(input.context, input.filePath);
 
   const readFileStateEntry = updateReadFileStateAfterEdit(
     input.context.readFileState,

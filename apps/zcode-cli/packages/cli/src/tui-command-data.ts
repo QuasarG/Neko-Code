@@ -13,7 +13,7 @@ export async function listCustomCommandsForTui(deps: RunDependencies) {
     return await deps.listCustomCommands({ env, logger: deps.logger, workingDirectory });
   }
   const bootstrap = await loadBootstrapModule();
-  return await bootstrap.listZCodeCustomCommands({ env, logger: deps.logger, workingDirectory });
+  return await bootstrap.listNekodeCustomCommands({ env, logger: deps.logger, workingDirectory });
 }
 
 export async function loadCustomCommandForTui(deps: RunDependencies, name: string) {
@@ -23,7 +23,7 @@ export async function loadCustomCommandForTui(deps: RunDependencies, name: strin
     return await deps.loadCustomCommand({ env, logger: deps.logger, name, workingDirectory });
   }
   const bootstrap = await loadBootstrapModule();
-  return await bootstrap.loadZCodeCustomCommand({
+  return await bootstrap.loadNekodeCustomCommand({
     env,
     logger: deps.logger,
     name,
@@ -34,8 +34,8 @@ export async function loadCustomCommandForTui(deps: RunDependencies, name: strin
 export async function listSkillsForTui(deps: RunDependencies) {
   const env = deps.env ?? process.env;
   const workingDirectory = (deps.cwd ?? process.cwd)();
-  const listZCodeSkillsForTui = deps.listSkills ?? (await loadBootstrapModule()).listZCodeSkills;
-  return await listZCodeSkillsForTui({
+  const listNekodeSkillsForTui = deps.listSkills ?? (await loadBootstrapModule()).listNekodeSkills;
+  return await listNekodeSkillsForTui({
     env,
     logger: deps.logger,
     workingDirectory,
@@ -45,9 +45,9 @@ export async function listSkillsForTui(deps: RunDependencies) {
 export async function listSessionsForTui(deps: RunDependencies) {
   const env = deps.env ?? process.env;
   const workingDirectory = (deps.cwd ?? process.cwd)();
-  const listZCodeSessionsForTui =
-    deps.listSessions ?? (await loadBootstrapModule()).listZCodeSessions;
-  const sessions = await listZCodeSessionsForTui({
+  const listNekodeSessionsForTui =
+    deps.listSessions ?? (await loadBootstrapModule()).listNekodeSessions;
+  const sessions = await listNekodeSessionsForTui({
     directory: workingDirectory,
     env,
     limit: 50,

@@ -24,7 +24,7 @@
     },
     {
       "id": "plugin-reference-reminder-tool-call",
-      "description": "PLG01 wire 门禁：请求 body 必须携带 identifiers-only 的 <plugin_reference> reminder（含 skill-creator stable id）才放行，并驱动一次 Read 测试工具调用。",
+      "description": "PLG01 wire 门禁：请求 body 必须携带 identifiers-only 的 <plugin_reference> reminder（含 zcode-guide stable id）才放行，并驱动一次 Read 测试工具调用。",
       "kind": "main",
       "source": "synthetic",
       "timingPolicy": "fast-text",

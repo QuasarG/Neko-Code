@@ -8,7 +8,7 @@ import {
   getCurrentModelInvocationContext,
   type ModelRequestSessionFeature,
 } from "@zcode/contracts";
-import { createRegistryBackedTestApp as createZCodeApp } from "./helpers/registry-backed-test-app.js";
+import { createRegistryBackedTestApp as createNekodeApp } from "./helpers/registry-backed-test-app.js";
 
 // docs/design/v2/model/session-features-header.md 的装配层一半：内置 `/workflow` 的展开处
 // （create-app.ts 的 builtin prompt resolver）打 workflow_cmd，先于 executeTurn，所以敲命令那一轮的
@@ -17,7 +17,7 @@ import { createRegistryBackedTestApp as createZCodeApp } from "./helpers/registr
 async function withApp(
   runtimeConfig: Record<string, unknown>,
   run: (input: {
-    app: Awaited<ReturnType<typeof createZCodeApp>>;
+    app: Awaited<ReturnType<typeof createNekodeApp>>;
     seen: Array<readonly ModelRequestSessionFeature[] | undefined>;
     sessionStore: Awaited<ReturnType<typeof createSqliteSessionStore>>;
   }) => Promise<void>,
@@ -26,7 +26,7 @@ async function withApp(
   const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
   const seen: Array<readonly ModelRequestSessionFeature[] | undefined> = [];
   try {
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       modelExecutor: {
         async generateText() {

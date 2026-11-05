@@ -1,49 +1,18 @@
-import {
-  BIGMODEL_PROVIDER_ID,
-  BUILTIN_MODEL_PROVIDER_IDS,
-  ZAI_PROVIDER_ID,
-  type OAuthProviderId,
-} from "@zcode/shared";
-import { accountProviderCredentialKey } from "../model-provider/accountProviderCredentialKey.js";
-import type { AccountProviderCredentialStore } from "../model-provider/accountProviderCredentialStore.js";
+import type { OAuthProviderId } from "@zcode/shared";
 
 interface OAuthProviderLogoutDependencies {
-  readonly accountProviderCredentialStore: Pick<AccountProviderCredentialStore, "deleteApiKey">;
+  readonly accountProviderCredentialStore?: { deleteApiKey(key: string): Promise<void> };
   readonly refreshAccountProviders?: (reason: string) => Promise<unknown>;
 }
 
+/**
+ * 账号登出的派生清理入口。
+ *
+ * 账号登录已下线：这里不再删除任何派生 Coding Plan API Key，也不再触发账号 Provider
+ * 刷新（避免任何账号后端的连带请求）。函数签名保持不变，既有装配可以继续调用。
+ */
 export function createOAuthProviderLogoutHandler(
-  dependencies: OAuthProviderLogoutDependencies,
+  _dependencies: OAuthProviderLogoutDependencies,
 ): (provider: OAuthProviderId, accountIdentity?: string | null) => Promise<void> {
-  return async (provider, accountIdentity) => {
-    const providerIds = resolveProviderIds(provider);
-    if (!providerIds) return;
-
-    if (accountIdentity?.trim()) {
-      await dependencies.accountProviderCredentialStore.deleteApiKey(
-        accountProviderCredentialKey({
-          providerId: providerIds.codingPlan,
-          planKind: "individual-coding-plan",
-          accountIdentity,
-        }),
-      );
-    }
-    await dependencies.refreshAccountProviders?.(`oauth-logout:${provider}`);
-  };
-}
-
-function resolveProviderIds(provider: OAuthProviderId): {
-  readonly codingPlan: string;
-} | null {
-  if (provider === ZAI_PROVIDER_ID) {
-    return {
-      codingPlan: BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan,
-    };
-  }
-  if (provider === BIGMODEL_PROVIDER_ID) {
-    return {
-      codingPlan: BUILTIN_MODEL_PROVIDER_IDS.bigmodelIndividualCodingPlan,
-    };
-  }
-  return null;
+  return async () => {};
 }

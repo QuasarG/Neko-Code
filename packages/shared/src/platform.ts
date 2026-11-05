@@ -386,7 +386,7 @@ export interface SSHConfigAliasOption {
   source?: string;
 }
 
-export interface ZCodeStdioTapDevState {
+export interface NekodeStdioTapDevState {
   enabled: boolean;
   visible: boolean;
   logDir: string;
@@ -685,11 +685,11 @@ export const DesktopCommandIds = {
   PullMobileLogs: "pullMobileLogs",
   ToggleDevTools: "toggleDevTools",
   OpenResourceManager: "openResourceManager",
-  ToggleZCodeStdioTapDevProxy: "toggleZCodeStdioTapDevProxy",
-  SetZCodeEndpointProduction: "setZCodeEndpointProduction",
-  SetZCodeEndpointTest: "setZCodeEndpointTest",
-  SetZCodeEndpointCustom: "setZCodeEndpointCustom",
-  ResetZCodeEndpoint: "resetZCodeEndpoint",
+  ToggleNekodeStdioTapDevProxy: "toggleNekodeStdioTapDevProxy",
+  SetNekodeEndpointProduction: "setNekodeEndpointProduction",
+  SetNekodeEndpointTest: "setNekodeEndpointTest",
+  SetNekodeEndpointCustom: "setNekodeEndpointCustom",
+  ResetNekodeEndpoint: "resetNekodeEndpoint",
   ClearAllData: "clearAllData",
   ClearCodingPlanWebviewStorage: "clearCodingPlanWebviewStorage",
   GetCuaOsSupport: "getCuaOsSupport",
@@ -764,7 +764,7 @@ export interface IPlatformService {
   createLocalMediaPreviewUrl?(path: string): string;
 
   /**
-   * 在宿主 ~/.zcode 临时目录创建文本附件文件。
+   * 在宿主 ~/.nekode 临时目录创建文本附件文件。
    * 手机远控必须通过 shared-host/platform proxy 写到桌面宿主，避免大文本进入 prompt payload。
    */
   createTempTextAttachment?(
@@ -902,7 +902,7 @@ export interface IPlatformService {
   /** 使用系统默认应用打开本地文件；普通 Web 平台返回 unsupported。 */
   openExternalFile?(path: string): Promise<{ success: boolean; error?: string }>;
 
-  /** 打开 ZCode Computer Use 的完整权限引导。Desktop only。 */
+  /** 打开 Nekode Computer Use 的完整权限引导。Desktop only。 */
   openCuaPermissionOnboarding?(
     options?: OpenCuaPermissionOnboardingOptions,
   ): Promise<CuaAccessibilitySettingsResult>;
@@ -932,7 +932,7 @@ export interface IPlatformService {
    */
   onPaymentCallback(callback: (url: string) => void): () => void;
 
-  /** 注册 `zcode://share/import?code=...` 导入意图。 */
+  /** 注册 `nekode://share/import?code=...` 导入意图。 */
   onShareImport?(callback: (payload: { shareCode: string }) => void): () => void;
 
   /** 通知 main process renderer 已就绪，触发缓存的冷启动 deep link 转发 */
@@ -1130,7 +1130,7 @@ export interface IPlatformService {
   /** 注册用户点击系统通知后跳转到对应任务的回调，返回 disposer */
   onTaskNotificationClick(handler: (taskId: string) => void): () => void;
 
-  /** 导出日志：打包 ~/.zcode/v2 及外部 agent 日志为 zip 并在系统文件浏览器中显示 */
+  /** 导出日志：打包 ~/.nekode/v2 及外部 agent 日志为 zip 并在系统文件浏览器中显示 */
   exportLogs(): Promise<{ success: boolean; path?: string; error?: string }>;
 
   /** 截取当前窗口，用于错误反馈携带现场画面；Web fallback 可返回 null */
@@ -1220,7 +1220,7 @@ export interface IPlatformService {
   }>;
 
   /** 开发环境 stdio tap proxy 开关状态；非桌面平台可不实现 */
-  getZCodeStdioTapDevState?(): Promise<ZCodeStdioTapDevState>;
+  getNekodeStdioTapDevState?(): Promise<NekodeStdioTapDevState>;
 
   /** 是否为本地开发运行形态；桌面端用 !app.isPackaged 注入，Web 端可省略。 */
   isLocalDevelopmentRuntime?: boolean;

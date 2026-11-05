@@ -1,28 +1,28 @@
 import {
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
-  getZCodeGoalActiveIterationCount,
+  NEKODE_PROTOCOL_NAME,
+  NEKODE_PROTOCOL_VERSION,
+  getNekodeGoalActiveIterationCount,
   zcodeApiRetryFromModelNetworkStatusPayload,
   zcodeApiRetryFromStreamRecoveryPayload,
   zcodeContextUsageBreakdownSchema,
-  type ZCodeActiveToolCall,
-  type ZCodeContextUsageBreakdownItem,
-  type ZCodeDeliveryKind,
-  type ZCodePendingPermission,
-  type ZCodeSessionContextUsage,
-  type ZCodeSessionEvent,
-  type ZCodeSessionGoal,
-  type ZCodeSessionGoalVerification,
-  type ZCodeSessionGoalVerificationTimeline,
-  type ZCodeSessionGoalStats,
-  type ZCodeSessionInfo,
-  type ZCodeSessionKind,
-  type ZCodeSessionProjection,
-  type ZCodeSessionRuntimeState,
-  type ZCodeSessionSettingsState,
-  type ZCodeSessionStateSnapshot,
-  type ZCodeSessionTodoGroup,
-  type ZCodeWorkspaceRef,
+  type NekodeActiveToolCall,
+  type NekodeContextUsageBreakdownItem,
+  type NekodeDeliveryKind,
+  type NekodePendingPermission,
+  type NekodeSessionContextUsage,
+  type NekodeSessionEvent,
+  type NekodeSessionGoal,
+  type NekodeSessionGoalVerification,
+  type NekodeSessionGoalVerificationTimeline,
+  type NekodeSessionGoalStats,
+  type NekodeSessionInfo,
+  type NekodeSessionKind,
+  type NekodeSessionProjection,
+  type NekodeSessionRuntimeState,
+  type NekodeSessionSettingsState,
+  type NekodeSessionStateSnapshot,
+  type NekodeSessionTodoGroup,
+  type NekodeWorkspaceRef,
   isMainAgentToolProjectionSource,
 } from "@zcode/shared";
 import {
@@ -42,7 +42,7 @@ import {
   type TodoItem,
   type ToolState,
 } from "@zcode/contracts";
-import type { ZCodeApp } from "../app/types.js";
+import type { NekodeApp } from "../app/types.js";
 import { mapMessageWithParts } from "./message-mapper.js";
 import { formatProtocolModelSelection, optionalModelSelectionFromString } from "./model-mapper.js";
 import {
@@ -57,8 +57,8 @@ import {
 const SNAPSHOT_INLINE_IMAGE_DATA_URL_MAX_BYTES = 20 * 1024 * 1024;
 
 export async function buildSessionSnapshot(input: {
-  app: ZCodeApp;
-  deliveryKind?: ZCodeDeliveryKind;
+  app: NekodeApp;
+  deliveryKind?: NekodeDeliveryKind;
   eventSeq: number;
   fallbackCreatedAt?: number;
   fallbackUpdatedAt?: number;
@@ -72,8 +72,8 @@ export async function buildSessionSnapshot(input: {
   slashCommandOptions?: ListProtocolSlashCommandsOptions;
   target?: SessionGoal | null;
   todos?: TodoItem[];
-  workspace: ZCodeWorkspaceRef;
-}): Promise<ZCodeSessionStateSnapshot> {
+  workspace: NekodeWorkspaceRef;
+}): Promise<NekodeSessionStateSnapshot> {
   const runtimeProjection = await input.app.runtime.getProjection();
   const activeTurn = input.app.runtime.getActiveTurnInfo();
   const persistedGoalProjection = mergePersistedGoalVerificationEvents(
@@ -101,8 +101,8 @@ export async function buildSessionSnapshot(input: {
     messages,
     projection: mapSessionProjection(projection),
     protocol: {
-      name: ZCODE_PROTOCOL_NAME,
-      version: ZCODE_PROTOCOL_VERSION,
+      name: NEKODE_PROTOCOL_NAME,
+      version: NEKODE_PROTOCOL_VERSION,
     },
     runtime: mapRuntimeState({
       activeTurn,
@@ -136,7 +136,7 @@ export async function buildSessionSnapshot(input: {
 }
 
 async function mapSnapshotMessages(
-  app: Pick<ZCodeApp, "readToolResultArtifact">,
+  app: Pick<NekodeApp, "readToolResultArtifact">,
   messages: readonly MessageWithParts[],
 ) {
   const mapped = messages.map(mapMessageWithParts);
@@ -149,7 +149,7 @@ async function mapSnapshotMessages(
 }
 
 async function hydrateSnapshotFilePartUrl(
-  app: Pick<ZCodeApp, "readToolResultArtifact">,
+  app: Pick<NekodeApp, "readToolResultArtifact">,
   part: ReturnType<typeof mapMessageWithParts>["parts"][number],
 ) {
   // 历史图片附件持久化后只剩 zcode-artifact:// 引用，UI/手机端不能直接渲染。
@@ -213,12 +213,12 @@ function isUsableDataUrl(value: string): boolean {
 }
 
 export async function mapSessionSettings(
-  app: ZCodeApp,
+  app: NekodeApp,
   options: {
     currentModelContextWindow?: number;
     modelAvailability?: "all" | "current";
   } = {},
-): Promise<ZCodeSessionSettingsState> {
+): Promise<NekodeSessionSettingsState> {
   const thoughtLevels = app.listThoughtLevels();
   const rawCurrentThoughtLevel = app.getThoughtLevel();
   // setModel 后 runtime 可能短暂保留上一个模型的 thoughtLevel。
@@ -277,15 +277,15 @@ export async function mapSessionSettings(
 }
 
 export function mapSessionInfo(input: {
-  app?: Pick<ZCodeApp, "getMode" | "getModel" | "sessionId" | "traceId">;
+  app?: Pick<NekodeApp, "getMode" | "getModel" | "sessionId" | "traceId">;
   fallbackCreatedAt?: number;
   fallbackUpdatedAt?: number;
   projection?: SessionProjection;
   session?: SessionInfo | null;
   taskType?: SessionInfo["taskType"];
   parentSessionId?: string;
-  workspace: ZCodeWorkspaceRef;
-}): ZCodeSessionInfo {
+  workspace: NekodeWorkspaceRef;
+}): NekodeSessionInfo {
   const sessionId = String(input.session?.id ?? input.app?.sessionId ?? "unknown");
   // 刚创建的 protocol session 可能还没有持久化 session 行。
   // 此时 runtime projection 的时间可能继承 workspace 预热 draft，不能作为正式 session 时间。
@@ -306,7 +306,7 @@ export function mapSessionInfo(input: {
     parentSessionId: input.session?.parentID ?? input.parentSessionId,
     traceId: input.session?.traceID ?? input.app?.traceId,
     sessionId,
-    sessionKind: (input.session?.taskType ?? input.taskType ?? "interactive") as ZCodeSessionKind,
+    sessionKind: (input.session?.taskType ?? input.taskType ?? "interactive") as NekodeSessionKind,
     status: input.projection?.status ?? "idle",
     target: mapSessionGoal(input.projection?.target),
     title: input.session?.title ?? "",
@@ -318,9 +318,9 @@ export function mapSessionInfo(input: {
 
 export function mapSessionEvent(
   event: SessionEvent,
-  deliveryKind?: ZCodeDeliveryKind,
+  deliveryKind?: NekodeDeliveryKind,
   options: { seq?: number } = {},
-): ZCodeSessionEvent {
+): NekodeSessionEvent {
   return {
     deliveryKind,
     eventId: String(event.id),
@@ -336,9 +336,9 @@ export function mapSessionEvent(
 
 export function mapSessionEventForProtocol(
   event: SessionEvent,
-  deliveryKind?: ZCodeDeliveryKind,
+  deliveryKind?: NekodeDeliveryKind,
   options: { seq?: number } = {},
-): ZCodeSessionEvent | null {
+): NekodeSessionEvent | null {
   if (!shouldExposeSessionEventToProtocol(event)) {
     return null;
   }
@@ -347,11 +347,11 @@ export function mapSessionEventForProtocol(
 
 export function mapSessionEvents(
   events: readonly SessionEvent[],
-  deliveryKind?: ZCodeDeliveryKind,
-): ZCodeSessionEvent[] {
+  deliveryKind?: NekodeDeliveryKind,
+): NekodeSessionEvent[] {
   return events
     .map((event) => mapSessionEventForProtocol(event, deliveryKind))
-    .filter((event): event is ZCodeSessionEvent => event !== null);
+    .filter((event): event is NekodeSessionEvent => event !== null);
 }
 
 export function shouldExposeSessionEventToProtocol(event: SessionEvent): boolean {
@@ -368,6 +368,12 @@ export function shouldExposeSessionEventToProtocol(event: SessionEvent): boolean
     // 迁移都跨进程搬一遍。**注意与前置特性的偏斜危害不同**：这里的剥离不是为了防丢事件，
     // 新类型不会被 v3 拒收（mapSessionEventType 的 default 落到 session.updated，其 payload
     // 是宽松的 jsonObjectSchema），纯粹是带宽与语义干净。
+    return false;
+  }
+
+  if (event.type === SessionEventType.ContextInjected) {
+    // 记忆注入行只服务 v4 的可折叠上下文投影；v3 不消费，且正文可能含完整记忆记录，
+    // 透出只会以宽松 session.updated 形式跨进程搬运一遍。
     return false;
   }
 
@@ -538,7 +544,7 @@ function mapStreamRecoveryPayload(payload: unknown): Record<string, unknown> {
   };
 }
 
-export function mapSessionProjection(projection: SessionProjection): ZCodeSessionProjection {
+export function mapSessionProjection(projection: SessionProjection): NekodeSessionProjection {
   return {
     activeToolCalls: projection.activeToolCalls.map(mapActiveToolCall),
     backgroundJobs: projection.backgroundTasks.map(mapBackgroundTask),
@@ -557,14 +563,14 @@ export function mapSessionProjection(projection: SessionProjection): ZCodeSessio
 }
 
 function mapRuntimeState(input: {
-  activeTurn?: ReturnType<ZCodeApp["runtime"]["getActiveTurnInfo"]>;
-  deliveryKind?: ZCodeDeliveryKind;
+  activeTurn?: ReturnType<NekodeApp["runtime"]["getActiveTurnInfo"]>;
+  deliveryKind?: NekodeDeliveryKind;
   eventSeq: number;
   messages: MessageWithParts[];
   persistedContextUsageBreakdownEvents?: readonly SessionEvent[];
   projection: SessionProjection;
   stateRevision: number;
-}): ZCodeSessionRuntimeState {
+}): NekodeSessionRuntimeState {
   // projection.currentTurnId 是投影最后处理过的 turn，不代表当前仍在运行。
   // session 恢复/subscribe 快照如果把它回填成 runtime.activeTurnId，会让已 idle/complete 的任务误显示为 thinking。
   const activeTurnId = input.activeTurn?.turnId;
@@ -593,7 +599,7 @@ function mapRuntimeState(input: {
 }
 
 interface ContextUsageBreakdownCandidate {
-  breakdown: ZCodeContextUsageBreakdownItem[];
+  breakdown: NekodeContextUsageBreakdownItem[];
   contextWindow?: number;
   used: number;
 }
@@ -608,7 +614,7 @@ export function resolveSessionContextUsage(input: {
   messages: readonly MessageWithParts[];
   persistedContextUsageBreakdownEvents?: readonly SessionEvent[];
   projection: SessionProjection;
-}): ZCodeSessionContextUsage | undefined {
+}): NekodeSessionContextUsage | undefined {
   const persistedContextUsage = contextUsageFromPersistedMessages(
     input.messages,
     input.projection.contextWindow,
@@ -625,9 +631,9 @@ export function resolveSessionContextUsage(input: {
 }
 
 function applyContextUsageBreakdown(
-  contextUsage: ZCodeSessionContextUsage | undefined,
+  contextUsage: NekodeSessionContextUsage | undefined,
   candidate: ContextUsageBreakdownCandidate | undefined,
-): ZCodeSessionContextUsage | undefined {
+): NekodeSessionContextUsage | undefined {
   if (!contextUsage || !candidate || candidate.breakdown.length === 0) {
     return contextUsage;
   }
@@ -678,7 +684,7 @@ function latestContextUsageBreakdownFromEvents(
 
 function mapGoalVerifications(
   verifications: SessionProjection["targetCompletionVerifications"] | undefined,
-): ZCodeSessionGoalVerification[] {
+): NekodeSessionGoalVerification[] {
   return (verifications ?? []).map((verification) => ({
     nextAction: verification.nextAction ?? null,
     passed: verification.passed,
@@ -688,7 +694,7 @@ function mapGoalVerifications(
 
 function mapGoalVerificationTimeline(
   timeline: SessionProjection["targetCompletionVerificationTimeline"] | undefined,
-): ZCodeSessionGoalVerificationTimeline[] {
+): NekodeSessionGoalVerificationTimeline[] {
   return (timeline ?? []).map((item) => ({
     version: 1,
     kind: "synthetic",
@@ -718,8 +724,8 @@ function mapGoalVerificationTimeline(
 
 function contextUsageFromProjection(
   projection: SessionProjection,
-  cache: ZCodeSessionContextUsage["cache"] | undefined,
-): ZCodeSessionContextUsage | undefined {
+  cache: NekodeSessionContextUsage["cache"] | undefined,
+): NekodeSessionContextUsage | undefined {
   if (projection.contextUsed <= 0 || projection.contextWindow <= 0) {
     return undefined;
   }
@@ -734,7 +740,7 @@ function contextUsageFromProjection(
 function contextUsageFromPersistedMessages(
   messages: readonly MessageWithParts[],
   contextWindow: number,
-): ZCodeSessionContextUsage | undefined {
+): NekodeSessionContextUsage | undefined {
   if (contextWindow <= 0) {
     return undefined;
   }
@@ -812,7 +818,7 @@ function contextUsedFromTokens(
 
 function contextCacheUsageFromMessages(
   messages: readonly MessageWithParts[],
-): ZCodeSessionContextUsage["cache"] | undefined {
+): NekodeSessionContextUsage["cache"] | undefined {
   let inputTokens = 0;
   let cacheReadTokens = 0;
   let cacheWriteTokens = 0;
@@ -858,7 +864,7 @@ function contextCacheUsageFromMessages(
 
 function mapPendingPermission(
   permission: PendingPermission,
-): ZCodePendingPermission {
+): NekodePendingPermission {
   // display / optionsPolicy 刻意不进 legacy v3 输出。
   // 根因不是"扩 schema 只能单向兼容"，而是 strict schema 随 packages/shared 打进每个桌面端
   // 的产物：今天把 zcodePendingPermissionSchema（shared/src/zcode-protocol/index.ts:1139）和
@@ -906,7 +912,7 @@ function mapPermissionRequestedPayload(
   };
 }
 
-function mapActiveToolCall(toolCall: ActiveToolCall): ZCodeActiveToolCall {
+function mapActiveToolCall(toolCall: ActiveToolCall): NekodeActiveToolCall {
   return {
     startedAt: toolCall.startedAt?.getTime(),
     status: toolCall.status,
@@ -1051,7 +1057,7 @@ function normalizeText(value: string): string {
   return value.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-function mapSessionGoal(goal: SessionGoal | null | undefined): ZCodeSessionGoal | null | undefined {
+function mapSessionGoal(goal: SessionGoal | null | undefined): NekodeSessionGoal | null | undefined {
   if (goal === undefined) return undefined;
   if (goal === null) return null;
   return {
@@ -1094,7 +1100,7 @@ interface GoalIterationBucket {
 function buildGoalStats(
   projection: SessionProjection,
   messages: readonly MessageWithParts[],
-): ZCodeSessionGoalStats | undefined {
+): NekodeSessionGoalStats | undefined {
   const target = projection.target;
   if (!target) {
     return undefined;
@@ -1136,10 +1142,10 @@ function buildTodoGroups(
   messages: readonly MessageWithParts[],
   currentTodos: readonly TodoItem[],
   projection: SessionProjection,
-): ZCodeSessionTodoGroup[] {
+): NekodeSessionTodoGroup[] {
   const target = projection.target;
   const timeline = getTargetGoalVerificationTimeline(projection, target);
-  const groups = new Map<string, ZCodeSessionTodoGroup>();
+  const groups = new Map<string, NekodeSessionTodoGroup>();
   const todoOwners = new Map<string, { fingerprint: string; groupId: string }>();
   const sortedMessages = [...messages].sort(compareMessagesByCreatedTime);
 
@@ -1213,7 +1219,7 @@ function buildTodoGroups(
 }
 
 function ensureTodoGroup(
-  groups: Map<string, ZCodeSessionTodoGroup>,
+  groups: Map<string, NekodeSessionTodoGroup>,
   input: {
     goalIteration: number | undefined;
     groupId: string;
@@ -1221,13 +1227,13 @@ function ensureTodoGroup(
     targetId?: string;
     updatedAt: number;
   },
-): ZCodeSessionTodoGroup {
+): NekodeSessionTodoGroup {
   const existing = groups.get(input.groupId);
   if (existing) {
     existing.updatedAt = Math.max(existing.updatedAt ?? 0, input.updatedAt);
     return existing;
   }
-  const group: ZCodeSessionTodoGroup = {
+  const group: NekodeSessionTodoGroup = {
     id: input.groupId,
     source: input.goalIteration ? "goal_iteration" : "session",
     ...(input.goalIteration ? { goalIteration: input.goalIteration } : {}),
@@ -1241,7 +1247,7 @@ function ensureTodoGroup(
 }
 
 function addOrUpdateTodoInGroup(
-  group: ZCodeSessionTodoGroup,
+  group: NekodeSessionTodoGroup,
   fingerprint: string,
   todo: TodoItem,
 ): void {
@@ -1261,7 +1267,7 @@ function getGoalActiveIterationCount(
   target?: SessionGoal | null,
 ): number {
   const timeline = getTargetGoalVerificationTimeline(projection, target);
-  return getZCodeGoalActiveIterationCount({
+  return getNekodeGoalActiveIterationCount({
     targetStatus: target?.status ?? null,
     timeline,
   });
@@ -1486,7 +1492,7 @@ function compareMessagesByCreatedTime(left: MessageWithParts, right: MessageWith
   return String(left.info.id).localeCompare(String(right.info.id));
 }
 
-function mapSessionEventType(type: SessionEvent["type"]): ZCodeSessionEvent["type"] {
+function mapSessionEventType(type: SessionEvent["type"]): NekodeSessionEvent["type"] {
   switch (type) {
     case SessionEventType.SessionCreated:
       return "session.created";

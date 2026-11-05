@@ -1,9 +1,9 @@
 import type { ProviderSettingsView } from "@zcode/services";
-import { type ZCodeProviderAccountAccess, zcodeProviderAccountAccessSchema } from "@zcode/shared";
+import { type NekodeProviderAccountAccess, zcodeProviderAccountAccessSchema } from "@zcode/shared";
 
 export interface EntitledAccountProviderAccess {
   readonly providerId: string;
-  readonly access: ZCodeProviderAccountAccess;
+  readonly access: NekodeProviderAccountAccess;
   readonly label?: string;
 }
 

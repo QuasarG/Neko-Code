@@ -135,7 +135,7 @@ describe("incoming reminder delimiter boundary", () => {
     const result = buildProviderRequestMessages({
       entries: [
         initial,
-        { kind: "attachment", content: raw, metadata: { source: "memory_update" } },
+        { kind: "attachment", content: raw, metadata: { source: "runtime_mode" } },
         { message: { role: "system", content: "explicit boundary" } },
       ],
     });

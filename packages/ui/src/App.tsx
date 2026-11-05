@@ -3,8 +3,8 @@ import { PluginUiWorkspaceProvider } from "@/plugin-ui/index.js";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useShallow } from "zustand/react/shallow";
 import { resolveWorkspaceKey, type GitChangeSourceId, type WorkspacePurpose } from "@zcode/shared";
-import { useZCodeStore } from "@/store/StoreProvider.js";
-import { getVisibleTaskMetas, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeStore } from "@/store/StoreProvider.js";
+import { getVisibleTaskMetas, useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { useTaskQueryCacheStore } from "@/store/taskQueryCacheStore.js";
 import { useAppPanels } from "@/hooks/useAppPanels.js";
 import { useGitAutoRefresh } from "@/hooks/useGitAutoRefresh.js";
@@ -18,7 +18,7 @@ import { useEnsureWorkspaceMcpLoaded } from "@/hooks/useEnsureWorkspaceMcpLoaded
 import { useTabStore } from "@/store/TabStoreProvider.js";
 import { isWorkspaceReadOnly, isWorkspaceTab } from "@/store/tabStore.js";
 import type { TaskChatMessage as TestChatMessage } from "@/lib/taskChatMessageTypes.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { getPathLeaf } from "@/lib/path.js";
 import {
@@ -37,7 +37,6 @@ import {
 } from "@/quickpick/taskFindNavigationState.js";
 import { createQuickPickCommands } from "@/quickpick/quickPickCommands.js";
 import { CommandCenterDialog } from "@/command-center/CommandCenterDialog.js";
-import { FeedbackHost } from "@/feedback/FeedbackHost.js";
 import { useFeedbackStore } from "@/feedback/feedbackStore.js";
 import {
   resolveQuickPickConversationNavigation,
@@ -49,25 +48,20 @@ import {
   type SettingsSectionId,
 } from "@/lib/settingsNavigation.js";
 import { runWorkspaceVisibleCommand } from "@/lib/workspaceVisibleCommand.js";
-import { ZCODE_PRODUCT_DOCS_URL } from "@/lib/productDocs.js";
+import { NEKODE_PRODUCT_DOCS_URL } from "@/lib/productDocs.js";
 import appLogoUrl from "@/assets/provider-icons/logo-zai.svg";
 import { resolveTheme } from "@/useTheme.js";
 import { WorkspaceShellLayout } from "@/app-shell/WorkspaceShellLayout.js";
 import { useAppChromeState } from "@/app-shell/useAppChromeState.js";
 import { useWorkspaceSessionReload } from "@/app-shell/useWorkspaceSessionReload.js";
 import { useWorkspaceShellLifecycle } from "@/app-shell/useWorkspaceShellLifecycle.js";
-import { useWorkspaceShellZCodeState } from "@/app-shell/useWorkspaceShellZCodeState.js";
+import { useWorkspaceShellNekodeState } from "@/app-shell/useWorkspaceShellNekodeState.js";
 import { useWorkspaceMainViewSettingsExit } from "@/app-shell/useWorkspaceMainViewSettingsExit.js";
-import {
-  useWorkspaceTaskNavigation,
-  type AutomationsNavigationTarget,
-} from "@/app-shell/useWorkspaceTaskNavigation.js";
+import { useWorkspaceTaskNavigation } from "@/app-shell/useWorkspaceTaskNavigation.js";
 import { useTaskSidePaneMemoryBridge } from "@/app-shell/useTaskSidePaneMemoryBridge.js";
 import { resolveAppWorkspaceRpcTarget } from "@/app-shell/workspaceRpcTarget.js";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import { useWorkspaceTerminalTaskNotifications } from "@/hooks/useTaskNotifications.js";
-import { useMarketingTaskCompletionRefresh } from "@/components/marketing-touch/useMarketingTaskCompletionRefresh.js";
-import { useOffPeakTaskNotifications } from "@/hooks/useOffPeakTaskNotifications.js";
 import type { AppProps, WorkspaceMainView } from "@/app-shell/types.js";
 import type {
   ChatSearchResultHighlightRequest,
@@ -75,6 +69,7 @@ import type {
   ConversationFindMatchState,
 } from "@/v4/legacyChatViewTypes.js";
 import { getActiveSidePaneTab } from "@/lib/workspaceSidePane.js";
+import { useInjectionPanelStore } from "@/v4/injectionPanelStore.js";
 import { logger } from "@/logger.js";
 import { taskListE2EActions } from "@/lib/taskListE2EActions.js";
 import {
@@ -95,7 +90,6 @@ const EMPTY_REMOTE_CONNECTION_LOGS: NonNullable<AppProps["remoteConnectionLogs"]
 
 export function App({
   services,
-  baseFeedbackService,
   onConnectRemote,
   onSelectRemoteProject,
   onCancelRemoteProject,
@@ -143,7 +137,7 @@ export function App({
   const openWorkspaceShortcutLabel = useShortcutCommandLabel("openWorkspace");
   const isLinuxDesktop = Boolean(isDesktop && !isMacDesktop && !isWindowsDesktop);
   const supportsEmbeddedBrowser = explicitSupportsEmbeddedBrowser ?? Boolean(isDesktop);
-  const { intl, locale, setLocale } = useZCodeIntl();
+  const { intl, locale, setLocale } = useNekodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const platform = usePlatform();
   // 进程内存本地诊断日志：每窗口一个 60s 采样器，
@@ -206,15 +200,15 @@ export function App({
   const workspaceReadOnlyReason = workspaceReadOnly
     ? intl.formatMessage({ id: "workspaceSidebar.unavailableLocalDirectory" })
     : undefined;
-  const { workspaceShellZCodeState, reloadSessionDisabled } = useWorkspaceShellZCodeState(
+  const { workspaceShellNekodeState, reloadSessionDisabled } = useWorkspaceShellNekodeState(
     workspaceAbsPath,
     workspaceIdentity,
   );
-  const activeTaskId = workspaceShellZCodeState.activeTaskId;
+  const activeTaskId = workspaceShellNekodeState.activeTaskId;
   const sidePaneOwnerId = activeTaskId;
   const [summaryPanelVariantOverride, setSummaryPanelVariantOverride] =
     useState<ChatViewSummaryPanelVariant | null>(null);
-  const draftFocusVersion = workspaceShellZCodeState.draftFocusVersion;
+  const draftFocusVersion = workspaceShellNekodeState.draftFocusVersion;
   const {
     isTerminalOpen,
     setIsTerminalOpen,
@@ -245,6 +239,7 @@ export function App({
     handleSyncSubagentSessionTabs,
     handleOpenSelectionSideChat,
     handleOpenPlanDetail,
+    handleOpenInjection,
     handleOpenPluginUi,
     handleOpenWorkflowRun,
     handleOpenWorkflowRunDirectory,
@@ -279,14 +274,24 @@ export function App({
       id: "whiteboard.defaultName",
     }),
   });
+
+  // 注入按钮只发一个轻量信号；真正的面板复用系统右侧栏 tab。
+  const injectionRequest = useInjectionPanelStore((state) =>
+    state.open
+      ? { rowId: state.rowId, title: state.title, text: state.text, parentSessionId: state.parentSessionId }
+      : null,
+  );
+  useEffect(() => {
+    if (!injectionRequest) return;
+    useInjectionPanelStore.getState().close();
+    handleOpenInjection({
+      ...injectionRequest,
+      workspacePath: workspaceAbsPath ?? undefined,
+      workspaceIdentity: workspaceIdentity ?? undefined,
+    });
+  }, [injectionRequest, handleOpenInjection, workspaceAbsPath, workspaceIdentity]);
   const workspaceKey = workspaceIdentity?.trim() || workspaceAbsPath;
-  const notificationEnabled = useZCodeStore((s) => s.notificationEnabled);
-  useMarketingTaskCompletionRefresh({
-    workspacePath: workspaceAbsPath,
-    ...(workspaceIdentity ? { workspaceIdentity } : {}),
-    ...(workspaceRemoteSessionId ? { endpointKey: workspaceRemoteSessionId } : {}),
-    rpcReady: workspaceRpcReady,
-  });
+  const notificationEnabled = useNekodeStore((s) => s.notificationEnabled);
   useWorkspaceTerminalTaskNotifications({
     workspacePath: workspaceAbsPath,
     ...(workspaceIdentity ? { workspaceIdentity } : {}),
@@ -294,13 +299,6 @@ export function App({
     enabled: notificationEnabled,
     rpcReady: workspaceRpcReady,
     platform,
-    formatMessage: intl.formatMessage,
-  });
-  // 闲时任务终态/等确认通知：仅桌面本地链路，main 进程按 status:taskId 去重多窗口重复。
-  useOffPeakTaskNotifications({
-    offPeakTaskService: services.offPeakTaskService,
-    platform,
-    enabled: Boolean(notificationEnabled && isDesktop),
     formatMessage: intl.formatMessage,
   });
   const lastHandledDraftSidePaneCloseRef = useRef({
@@ -369,8 +367,8 @@ export function App({
     workspaceAbsPath,
     workspaceIdentity,
   });
-  const theme = useZCodeStore((s) => s.theme);
-  const setTheme = useZCodeStore((s) => s.setTheme);
+  const theme = useNekodeStore((s) => s.theme);
+  const setTheme = useNekodeStore((s) => s.setTheme);
   const {
     isMacFullscreen,
     desktopWindowChromeState,
@@ -405,7 +403,7 @@ export function App({
     activeTaskId,
     workspaceRemoteSessionId,
     workspaceIdentity,
-    selectedProvider: workspaceShellZCodeState.selectedProvider,
+    selectedProvider: workspaceShellNekodeState.selectedProvider,
     intl,
   });
   const providerConfigFile = useWorkspaceProviderConfigFile(
@@ -699,8 +697,8 @@ export function App({
   const openFeedbackTickets = useFeedbackStore((state) => state.openTickets);
   const isLoggedIn = Boolean(user);
   const handleOpenFeedback = useCallback(() => {
-    void platform.openFeedback();
-  }, [platform]);
+    // Nekode：反馈通道已砍掉。
+  }, []);
 
   useEffect(() => {
     // 内置反馈中心合并了"提交反馈 / 我的反馈"两个 Tab，
@@ -718,7 +716,7 @@ export function App({
   }, [openFeedbackSubmit, openFeedbackTickets, platform]);
   const handleOpenCommunity = useCallback(() => platform.openCommunity(), [platform]);
   const handleOpenProductDocs = useCallback(() => {
-    platform.openExternal(ZCODE_PRODUCT_DOCS_URL);
+    platform.openExternal(NEKODE_PRODUCT_DOCS_URL);
   }, [platform]);
   const themeTarget = resolveTheme(theme) === "dark" ? "light" : "dark";
   const handleSwitchTheme = useCallback(() => {
@@ -744,7 +742,7 @@ export function App({
       targetWorkspacePurpose?: WorkspacePurpose,
       createSource?: import("@zcode/shared").SessionCreateSource,
     ) => {
-      const store = useZCodeSessionStore.getState();
+      const store = useNekodeSessionStore.getState();
       const resolvedTargetWorkspaceIdentity =
         targetWorkspaceIdentity ??
         tabs.filter(isWorkspaceTab).find((tab) => tab.workspacePath === targetWorkspacePath)
@@ -753,7 +751,7 @@ export function App({
         return;
       }
       const targetSelectedProvider = resolveWorkspaceSwitchDraftProvider({
-        currentSelectedProvider: workspaceShellZCodeState.selectedProvider,
+        currentSelectedProvider: workspaceShellNekodeState.selectedProvider,
         targetWorkspacePath,
         targetWorkspaceIdentity: resolvedTargetWorkspaceIdentity,
         workspaces: store.workspaces,
@@ -808,7 +806,7 @@ export function App({
       tabs,
       workspaceAbsPath,
       workspaceIdentity,
-      workspaceShellZCodeState.selectedProvider,
+      workspaceShellNekodeState.selectedProvider,
       webRemoteControlWorkspaceSwitcher,
     ],
   );
@@ -826,12 +824,6 @@ export function App({
   const testActions = useMemo<TestActions>(
     () => ({
       ...taskListE2EActions,
-      sendBotMessage: (message) => services.botsService.handleInboundMessage(message),
-      submitBotGroupInput: (params) => {
-        const submit = services.zcodeTaskService.submitBotGroupInput;
-        if (!submit) throw new Error("Task material admission unavailable");
-        return submit.call(services.zcodeTaskService, params);
-      },
       getTheme: () => theme,
       setTheme,
       getLocale: () => locale,
@@ -851,8 +843,6 @@ export function App({
     }),
     [
       locale,
-      services.botsService,
-      services.zcodeTaskService,
       services.zcodeAgentService,
       setLocale,
       theme,
@@ -862,10 +852,6 @@ export function App({
   );
   useTestActions(testActions);
   const [workspaceMainView, setWorkspaceMainView] = useState<WorkspaceMainView>("chat");
-  const [openAutomationId, setOpenAutomationId] = useState<string | null>(null);
-  const [openAutomationTab, setOpenAutomationTab] = useState<NonNullable<
-    AutomationsNavigationTarget["automationTab"]
-  > | null>(null);
   const [pluginStoreOpenVersion, setPluginStoreOpenVersion] = useState(0);
   const handleNavigateToTaskMain = useCallback(() => {
     setWorkspaceMainView("chat");
@@ -875,26 +861,20 @@ export function App({
     workspaceMainView,
     onExitSettings: handleNavigateToTaskMain,
   });
-  const handleNavigateToAutomationsMain = useCallback((target: AutomationsNavigationTarget) => {
-    setOpenAutomationId(target.automationId ?? null);
-    setOpenAutomationTab(target.automationTab ?? null);
-    setWorkspaceMainView("automations");
+  const handleNavigateToWorkflowsMain = useCallback(() => {
+    setWorkspaceMainView("workflows");
   }, []);
   const handleNavigateToPluginStoreMain = useCallback(() => {
     setPluginStoreOpenVersion((version) => version + 1);
     preserveNextSettingsExit();
     setWorkspaceMainView("plugin-store");
   }, [preserveNextSettingsExit]);
-  const handleOpenAutomationConsumed = useCallback(() => {
-    setOpenAutomationId(null);
-    setOpenAutomationTab(null);
-  }, []);
   // 中枢深链（「已保存」芯片 → 那个工作流的详情页）：中枢定位后由它回调清空。
   const [openWorkflow, setOpenWorkflow] = useState<SavedWorkflowsOpenTarget | null>(null);
   const handleOpenWorkflowConsumed = useCallback(() => setOpenWorkflow(null), []);
   const {
     handleSelectTask,
-    handleOpenAutomations,
+    handleOpenWorkflows,
     handleOpenPluginStore,
     handleTaskNavBack,
     handleTaskNavForward,
@@ -908,7 +888,7 @@ export function App({
     workspaceIdentity,
     activateTabByPath,
     onNavigateToTask: handleNavigateToTaskMain,
-    onNavigateToAutomations: handleNavigateToAutomationsMain,
+    onNavigateToWorkflows: handleNavigateToWorkflowsMain,
     onNavigateToPluginStore: handleNavigateToPluginStoreMain,
   });
   // 完成卡「已保存」芯片的落点（docs/dynamic-workflow/transcript-and-notifications.md「Saving the
@@ -930,9 +910,9 @@ export function App({
               }),
             },
       );
-      handleOpenAutomations(undefined, "workflow");
+      handleOpenWorkflows();
     },
-    [handleOpenAutomations],
+    [handleOpenWorkflows],
   );
   const handleOpenPluginStoreForScope = useCallback(
     (_target: PluginStoreOpenTarget = {}) => {
@@ -952,7 +932,7 @@ export function App({
   const handleSelectAdjacentConversation = useCallback(
     (direction: "previous" | "next") => {
       runVisibleWorkspaceCommand(() => {
-        const sessionState = useZCodeSessionStore.getState();
+        const sessionState = useNekodeSessionStore.getState();
         const workspaceState = sessionState.getWorkspaceState(workspaceAbsPath, workspaceIdentity);
         const fallbackTaskIds = getVisibleTaskMetas(workspaceState).map((task) => task.taskId);
         const taskQueryCacheState = useTaskQueryCacheStore.getState();
@@ -1171,23 +1151,17 @@ export function App({
         onSearchResultHighlightRequest={handleSearchResultHighlightRequest}
         onOpenCodeViewer={handleOpenCodeViewerIfWritable}
       />
-      {/* Bugfix: 反馈是应用级能力，必须固定走本机 base host；SSH session 连接中或断开时，
-          workspace-scoped services 会切成断连代理，不能让反馈提交跟随远程 session 失效。 */}
-      <FeedbackHost feedbackService={baseFeedbackService} platform={platform} />
       <PluginUiWorkspaceProvider onOpenSidePane={handleOpenPluginUi}>
         <WorkspaceShellLayout
           services={services}
           workspaceReadOnlyReason={workspaceReadOnlyReason}
           workspaceMainView={workspaceMainView}
           pluginStoreOpenVersion={pluginStoreOpenVersion}
-          openAutomationId={openAutomationId}
-          openAutomationTab={openAutomationTab}
           openWorkflow={openWorkflow}
           onOpenWorkflowConsumed={handleOpenWorkflowConsumed}
           onOpenSavedWorkflowInHub={handleOpenSavedWorkflowInHub}
           onWorkspaceMainViewChange={setWorkspaceMainView}
-          onOpenAutomationConsumed={handleOpenAutomationConsumed}
-          handleOpenAutomations={handleOpenAutomations}
+          handleOpenWorkflows={handleOpenWorkflows}
           handleOpenPluginStore={handleOpenPluginStoreForScope}
           onConnectRemote={onConnectRemote}
           onSelectRemoteProject={onSelectRemoteProject}
@@ -1223,7 +1197,7 @@ export function App({
           isDesktop={isDesktop}
           isMacDesktop={isMacDesktop}
           isWindowsDesktop={isWindowsDesktop}
-          workspaceShellZCodeState={workspaceShellZCodeState}
+          workspaceShellNekodeState={workspaceShellNekodeState}
           theme={theme}
           isMacFullscreen={isMacFullscreen}
           desktopWindowChromeState={desktopWindowChromeState}

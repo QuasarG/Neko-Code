@@ -406,7 +406,7 @@ export async function reconnectRemoteProjectHost(
   });
 }
 
-export async function listRemoteZCodeServerPids(config: SSHConnectionConfig): Promise<number[]> {
+export async function listRemoteNekodeServerPids(config: SSHConnectionConfig): Promise<number[]> {
   const result = await runSSHCommand(config, "ps -eo pid=,args=");
   if (result.code !== 0) {
     throw new Error(`读取远端 zcode-server PID 失败: ${result.stderr}`);
@@ -454,7 +454,7 @@ export async function stopOwnedSSHServer(
   beforePids: readonly number[],
   caseMarker: string,
 ): Promise<number> {
-  const currentPids = await listRemoteZCodeServerPids(config);
+  const currentPids = await listRemoteNekodeServerPids(config);
   const owned = currentPids.filter((pid) => !beforePids.includes(pid));
   if (owned.length !== 1) {
     throw new Error(
@@ -477,7 +477,7 @@ export async function stopOwnedSSHServer(
   await browser.waitUntil(
     async () => {
       const [daemons, cores] = await Promise.all([
-        listRemoteZCodeServerPids(config),
+        listRemoteNekodeServerPids(config),
         listRemoteServerCorePids(config),
       ]);
       return !daemons.includes(pid) && corePids.every((corePid) => !cores.includes(corePid));
@@ -544,7 +544,7 @@ export async function readRemoteCoreIdentity(
   state: string;
   generation: number;
 }> {
-  const statusResult = await runSSHCommand(config, 'cat "$HOME/.zcode/server/run/status.json"');
+  const statusResult = await runSSHCommand(config, 'cat "$HOME/.nekode/server/run/status.json"');
   if (statusResult.code !== 0) {
     throw new Error(`${caseMarker}: 读取远端 Core status 失败: ${statusResult.stderr}`);
   }

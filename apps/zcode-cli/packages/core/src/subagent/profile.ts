@@ -9,7 +9,6 @@ export type {
   AgentProfile,
   AgentPermissionMode,
   AgentProfileSource,
-  AgentMemoryScope,
   AgentProfileParseDiagnostic,
   AgentProfileLoadResult,
 } from "@zcode/shared";

@@ -2,7 +2,7 @@ import { createServiceLogger } from "@zcode/services/node";
 import { createHash } from "node:crypto";
 import { collectMobilePushEvents, type MobilePushEvent } from "@zcode/shared/web-remote-relay";
 import type { IDisposable } from "@zcode/rpc";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE, type IZCodeAgentService } from "@zcode/services";
+import { NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE, type INekodeAgentService } from "@zcode/services";
 import {
   PROTOCOL_V4_LIMITS,
   sessionsIndexTopic,
@@ -20,14 +20,14 @@ const MAX_STAGED_WIRES = 1_024;
 const MAX_STAGED_BYTES = 32 * 1024 * 1024;
 
 type SessionsIndexAgentService = Pick<
-  IZCodeAgentService,
+  INekodeAgentService,
   | "subscribeSessionsIndexV4"
   | "resyncSessionsIndexV4"
   | "unsubscribeSessionsIndexV4"
   | "onDynamicSessionsIndexFrame"
   | "onAgentRuntimeRestarted"
 > &
-  Partial<Pick<IZCodeAgentService, "onAgentRuntimeLifecycle">>;
+  Partial<Pick<INekodeAgentService, "onAgentRuntimeLifecycle">>;
 
 export interface WindowHostSessionsIndexObserver {
   start(): Promise<void>;
@@ -38,7 +38,7 @@ function isRuntimeUnavailableError(error: unknown): boolean {
   return (
     typeof error === "object" &&
     error !== null &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE
+    (error as { code?: unknown }).code === NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE
   );
 }
 

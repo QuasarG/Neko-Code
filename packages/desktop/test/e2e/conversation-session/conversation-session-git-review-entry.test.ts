@@ -54,7 +54,7 @@ describe("SP13：status panel Git Changes 打开变更审阅", () => {
     await selectV4TaskById(PROVIDER_READINESS_HISTORY_SESSION_ID);
     await waitForExpandedStatusPanel();
     // 通过真实文件 watcher 刷新；无需打开 Git pane，也不创建会话或调用模型。
-    const caseRoot = join(DEFAULT_WORKSPACE, ".zcode-e2e/conversation-session-git-review-entry");
+    const caseRoot = join(DEFAULT_WORKSPACE, ".nekode-e2e/conversation-session-git-review-entry");
     const largeText = "large-untracked.txt";
     await browser.electron.execute((electron) => {
       const state = globalThis as typeof globalThis & {

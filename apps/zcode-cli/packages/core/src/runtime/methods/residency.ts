@@ -27,8 +27,6 @@ export function hasResidencyBlockingWork(this: AgentRuntimeInternal): boolean {
     getOffPeakExecution(this)?.lifecycle.terminal === false ||
     this.hasActiveOrQueuedTurnWork() ||
     this.hasRunningBackgroundTasks() ||
-    this.residencyBlockingWorkCount > 0 ||
-    (this.memoryExtractionScheduler?.hasPendingWork() ?? false) ||
-    (this.memoryRecallPrefetch !== undefined && !this.memoryRecallPrefetch.settled)
+    this.residencyBlockingWorkCount > 0
   );
 }

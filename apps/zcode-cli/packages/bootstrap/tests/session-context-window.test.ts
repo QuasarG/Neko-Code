@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import { resolveSessionModelContextWindow } from "../src/zcode-protocol/workspace-model-runtime.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 
 describe("恢复容量身份边界", () => {
@@ -14,8 +14,8 @@ describe("恢复容量身份边界", () => {
     const record = {
       app: { runtime: { getSessionModelSelection }, getModelOption },
       restoredModelSelection: old,
-    } as unknown as ZCodeProtocolSessionRecord;
-    const context = {} as ZCodeProtocolAgentServerContext;
+    } as unknown as NekodeProtocolSessionRecord;
+    const context = {} as NekodeProtocolAgentServerContext;
     expect(resolveSessionModelContextWindow(context, record)).toBe(1_000_000);
     expect(getModelOption).toHaveBeenLastCalledWith(current);
     getSessionModelSelection.mockReturnValue(undefined);
@@ -33,9 +33,9 @@ describe("恢复容量身份边界", () => {
         runtime: { getSessionModelSelection: () => ({ providerId: "p", modelId: "m" }) },
         getModelOption: () => ({ contextWindow }),
       },
-    } as unknown as ZCodeProtocolSessionRecord;
+    } as unknown as NekodeProtocolSessionRecord;
     expect(
-      resolveSessionModelContextWindow({} as ZCodeProtocolAgentServerContext, record),
+      resolveSessionModelContextWindow({} as NekodeProtocolAgentServerContext, record),
     ).toBeUndefined();
   });
 });

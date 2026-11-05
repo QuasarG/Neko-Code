@@ -1,6 +1,6 @@
 import { PencilIcon } from "lucide-react";
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { getFileDisplayPath } from "@/lib/fileDisplay.js";
 import { ToolLayout } from "@/ToolCallBlocks/ToolLayout.js";
 import { buildEditCodeViewerSource } from "@/ToolCallBlocks/renderers/edit.js";
@@ -158,7 +158,7 @@ function ResponsiveFileChipList({
 
 export function ChangesGroupToolCallBlock(context: ToolCallBlockRenderContext) {
   const ToolCallBlock = context.nestedToolRenderer;
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const { toolCall, childToolCalls } = context.toolCallNode;
   const childSummaries = useMemo(
     () =>
@@ -276,7 +276,7 @@ export function ChangesGroupToolCallBlock(context: ToolCallBlockRenderContext) {
             onOpenCodeViewer={context.onOpenCodeViewer}
             onOpenFileLink={context.onOpenFileLink}
             onOpenBrowserUrl={context.onOpenBrowserUrl}
-            onOpenAutomationsMain={context.onOpenAutomationsMain}
+            onOpenWorkflowsMain={context.onOpenWorkflowsMain}
             onLoadFullToolCallFields={context.onLoadFullToolCallFields}
           />
         ))}
@@ -287,7 +287,7 @@ export function ChangesGroupToolCallBlock(context: ToolCallBlockRenderContext) {
       context.onOpenBrowserUrl,
       context.onOpenCodeViewer,
       context.onOpenFileLink,
-      context.onOpenAutomationsMain,
+      context.onOpenWorkflowsMain,
       context.onLoadFullToolCallFields,
       context.theme,
       context.codePreviewSettings,

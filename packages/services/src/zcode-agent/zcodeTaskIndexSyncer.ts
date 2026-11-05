@@ -3,19 +3,19 @@ import { isAuxiliarySessionKind } from "@zcode/shared";
 import { repairSubagentTaskIndex } from "#src/task-facts/repairSubagentTaskIndex.js";
 import {
   generateTraceId,
-  getZCodeUserVisibleMessages,
-  isZCodeGoalContinuationReminderText,
-  isZCodeModelOnlySyntheticUserMessage,
+  getNekodeUserVisibleMessages,
+  isNekodeGoalContinuationReminderText,
+  isNekodeModelOnlySyntheticUserMessage,
   resolveWorkspaceKey,
-  ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
-  type ZCodeTaskGoal,
-  type ZCodeTaskMode,
-  type ZCodeTaskMeta,
-  type ZCodeMessagePart,
-  type ZCodeSessionMode,
-  type ZCodeSessionStateSnapshot,
-  type ZCodeWorkspaceEvent,
-  type ZCodeWorkspaceTaskListChanged,
+  NEKODE_AGENT_PROVIDER_NOT_READY_CODE,
+  type NekodeTaskGoal,
+  type NekodeTaskMode,
+  type NekodeTaskMeta,
+  type NekodeMessagePart,
+  type NekodeSessionMode,
+  type NekodeSessionStateSnapshot,
+  type NekodeWorkspaceEvent,
+  type NekodeWorkspaceTaskListChanged,
 } from "@zcode/shared";
 import {
   PROTOCOL_V4_LIMITS,
@@ -36,13 +36,13 @@ import {
 import { Emitter, type Event, type IDisposable } from "@zcode/rpc";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import { TaskIndexRepo } from "#src/session/taskIndexRepo.js";
-import type { ZCodeWorkspaceEventSubscriptionParams } from "#src/session/zcodeTaskListTypes.js";
+import type { NekodeWorkspaceEventSubscriptionParams } from "#src/session/zcodeTaskListTypes.js";
 import type {
-  IZCodeAgentService,
-  ZCodeAgentSessionTarget,
-  ZCodeAgentWorkspaceTarget,
+  INekodeAgentService,
+  NekodeAgentSessionTarget,
+  NekodeAgentWorkspaceTarget,
 } from "./zcodeAgent.js";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
+import { NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
 import { formatTaskMetaModelSelectionFromSnapshot } from "./zcodeConfigOptions.js";
 
 import { createTaskFacts, type TaskFactMutation } from "#src/task-facts/index.js";
@@ -75,7 +75,7 @@ type TopicSubscribeReason =
 type TopicRetryKind = "provider-not-ready" | "transient";
 type TaskIndexTopicKind = "sessions-index" | "workspace-config";
 
-type WorkspaceEventInput = string | ZCodeWorkspaceEventSubscriptionParams;
+type WorkspaceEventInput = string | NekodeWorkspaceEventSubscriptionParams;
 
 interface WorkspaceBroadcastTarget {
   workspacePath: string;
@@ -83,32 +83,32 @@ interface WorkspaceBroadcastTarget {
   taskId?: string;
 }
 
-export interface ZCodeTaskIndexTerminalEvent {
-  target: ZCodeAgentSessionTarget;
+export interface NekodeTaskIndexTerminalEvent {
+  target: NekodeAgentSessionTarget;
   /** v4 phase 终态映射：completedSuccess/completedInterrupted → turn.completed；error → turn.failed。 */
   kind: "turn.completed" | "turn.failed";
 }
 
-export interface ZCodeTaskIndexReadyEvent {
-  target: ZCodeAgentSessionTarget;
+export interface NekodeTaskIndexReadyEvent {
+  target: NekodeAgentSessionTarget;
   /** v4 phase 终态映射：agent 收口后可接受下一条输入的 ready 边界。 */
   reason: "prompt_completed" | "prompt_failed";
 }
 
-export interface ZCodeTaskIndexSyncer {
+export interface NekodeTaskIndexSyncer {
   mutateSessionFacts(
-    target: ZCodeAgentSessionTarget,
+    target: NekodeAgentSessionTarget,
     intent: TaskFactMutation,
-  ): Promise<ZCodeTaskMeta | null>;
+  ): Promise<NekodeTaskMeta | null>;
 
   /**
    * 幂等地为指定 workspace 建立 v4 后台摄入订阅（sessions-index + workspace-config），
    * 把 CLI 权威投影的会话终态/标题/配置目录落到 task index sqlite 与 workspace 广播。
    * 同一 workspace 多次调用只会建立一次。
    */
-  ensureWorkspaceSubscription(target: ZCodeAgentWorkspaceTarget): void;
+  ensureWorkspaceSubscription(target: NekodeAgentWorkspaceTarget): void;
   /** session 维度的激活信号统一收敛为 workspace 级 v4 订阅；初始 snapshot 只静默补缺失行。 */
-  ensureSessionSubscription(target: ZCodeAgentSessionTarget): void;
+  ensureSessionSubscription(target: NekodeAgentSessionTarget): void;
   /**
    * 把一份 session snapshot 同步到 sqlite，并广播 workspace_task_list_changed。
    * desktop-continuous 路径上，zcodeSessionService 在 createSession/resumeSession/setModel
@@ -116,25 +116,25 @@ export interface ZCodeTaskIndexSyncer {
    * v4 命令 + sessions-index/workspace 事件），让 sqlite 拿到最新 title/updatedAt 并触发 UI 列表刷新。
    */
   syncSnapshotAndBroadcast(
-    snapshot: ZCodeSessionStateSnapshot,
+    snapshot: NekodeSessionStateSnapshot,
     options: {
       modelOverride?: string;
       thoughtLevelOverride?: string;
-      unreadSignal?: ZCodeWorkspaceTaskListChanged["unreadSignal"];
+      unreadSignal?: NekodeWorkspaceTaskListChanged["unreadSignal"];
       /**
        * 设计修正：必填。切模型（task_model_changed）/快照收敛（task_status_changed）
        * 这类变更不得落到 task_meta_changed——后者会被 UI 当成归属相关变更
        * 触发全局 membership 重拉和列表整刷。
        */
-      broadcastReason: ZCodeWorkspaceTaskListChanged["reason"] | null;
+      broadcastReason: NekodeWorkspaceTaskListChanged["reason"] | null;
     },
-  ): Promise<ZCodeTaskMeta>;
+  ): Promise<NekodeTaskMeta>;
   /**
    * 只更新 task index 中的模型记录，不广播历史 snapshot。
    * 发送前 resume 会关闭 snapshot 广播，避免旧终态覆盖本地 streaming UI，
    * 但仍需要把 sqlite 的 model 从已删除历史模型更新到本次实际使用的可用模型。
    */
-  syncTaskModel(target: ZCodeAgentSessionTarget, model: string): Promise<ZCodeTaskMeta | null>;
+  syncTaskModel(target: NekodeAgentSessionTarget, model: string): Promise<NekodeTaskMeta | null>;
   /**
    * 主动触发一次 workspace_task_list_changed 广播。
    * 给 adapter 用：archive / rename / pin / delete 等 task 元数据变更后仍要广播。
@@ -144,36 +144,36 @@ export interface ZCodeTaskIndexSyncer {
    */
   emitWorkspaceTaskListChanged(
     target: WorkspaceBroadcastTarget,
-    meta: ZCodeTaskMeta | undefined,
-    reason: ZCodeWorkspaceTaskListChanged["reason"],
-    options?: Pick<ZCodeWorkspaceTaskListChanged, "unreadSignal">,
+    meta: NekodeTaskMeta | undefined,
+    reason: NekodeWorkspaceTaskListChanged["reason"],
+    options?: Pick<NekodeWorkspaceTaskListChanged, "unreadSignal">,
   ): void;
   /**
    * 获取共享的 workspace emitter，给 adapter 用来 fire 非 task_list_changed 类事件
    * （如 workspace_config_options_update）。这样 adapter 和 syncer 共用同一 emitter，
    * 订阅者只需要订阅一次即可收到全部事件。
    */
-  getWorkspaceEmitter(workspace: WorkspaceEventInput): Emitter<ZCodeWorkspaceEvent>;
+  getWorkspaceEmitter(workspace: WorkspaceEventInput): Emitter<NekodeWorkspaceEvent>;
   /** 订阅 workspace 维度事件流。adapter.onDynamicWorkspaceEvent 直接转发到这里。 */
-  onDynamicWorkspaceEvent(workspace: WorkspaceEventInput): Event<ZCodeWorkspaceEvent>;
+  onDynamicWorkspaceEvent(workspace: WorkspaceEventInput): Event<NekodeWorkspaceEvent>;
   /**
    * 订阅 v4 sessions-index 观察到的会话 phase 终态迁移。
    * 这不是 UI stream，只给 host runtime command queue 等 services 内部状态收口使用。
    */
-  onSessionTerminalEvent: Event<ZCodeTaskIndexTerminalEvent>;
+  onSessionTerminalEvent: Event<NekodeTaskIndexTerminalEvent>;
   /**
    * 订阅会话收口后的 prompt ready 状态（phase 进入 completedSuccess/completedInterrupted/error）。
    * 手机 host command queue 只能以这个事件作为继续发送下一条的边界。
    */
-  onSessionReadyEvent: Event<ZCodeTaskIndexReadyEvent>;
+  onSessionReadyEvent: Event<NekodeTaskIndexReadyEvent>;
   /** 仅观察已经存在的订阅，不为自动归档创建 runtime 或第二份 phase 状态。 */
   activeTaskRefs(): Array<{ workspacePath: string; workspaceIdentity?: string; taskId: string }>;
   /** 释放所有 v4 订阅和 workspace emitter；不关闭注入的 taskIndexRepo。 */
   disposeAll(): void;
 }
 
-interface CreateZCodeTaskIndexSyncerOptions {
-  agentService: IZCodeAgentService;
+interface CreateNekodeTaskIndexSyncerOptions {
+  agentService: INekodeAgentService;
   taskIndexRepo: TaskIndexRepo;
 }
 
@@ -184,7 +184,7 @@ function isTerminalPhase(phase: SessionPhase): boolean {
 
 function resolveTerminalUnreadSignal(
   summary: Pick<SessionSummary, "phase" | "goalStatus">,
-): ZCodeWorkspaceTaskListChanged["unreadSignal"] {
+): NekodeWorkspaceTaskListChanged["unreadSignal"] {
   if (summary.phase === "error") {
     return "background_terminal";
   }
@@ -202,7 +202,7 @@ function resolveTerminalUnreadSignal(
 }
 
 interface WorkspaceIngestState {
-  target: ZCodeAgentWorkspaceTarget;
+  target: NekodeAgentWorkspaceTarget;
   /** 当前已 attach 的 Agent runtime generation；null = dormant。 */
   runtimeGeneration: number | null;
   /** sessions-index 订阅代际（帧过滤闸门；null = 订阅建立中）。 */
@@ -266,9 +266,9 @@ interface PendingTopicFrames<TFrame> {
   recoveryNeeded: boolean;
 }
 
-export function createZCodeTaskIndexSyncer(
-  options: CreateZCodeTaskIndexSyncerOptions,
-): ZCodeTaskIndexSyncer {
+export function createNekodeTaskIndexSyncer(
+  options: CreateNekodeTaskIndexSyncerOptions,
+): NekodeTaskIndexSyncer {
   const { agentService, taskIndexRepo } = options;
   // task index 的事件摄入从旧协议 shadow 订阅（session/subscribe +
   // session/event + state.updated）整体迁到 v4 帧——sessions-index topic 提供
@@ -279,9 +279,9 @@ export function createZCodeTaskIndexSyncer(
   // 之前 workspaceEmitters 私有在 adapter 里，syncer 写完 sqlite 没有广播渠道，
   // UI 永远收不到 workspace_task_list_changed。把 emitter 上提到 syncer，adapter 改为转发，
   // 让 adapter 路径和 desktop-continuous 路径共用同一份订阅，事件不再分裂。
-  const workspaceEmitters = new Map<string, Emitter<ZCodeWorkspaceEvent>>();
-  const terminalEventEmitter = new Emitter<ZCodeTaskIndexTerminalEvent>();
-  const readyEventEmitter = new Emitter<ZCodeTaskIndexReadyEvent>();
+  const workspaceEmitters = new Map<string, Emitter<NekodeWorkspaceEvent>>();
+  const terminalEventEmitter = new Emitter<NekodeTaskIndexTerminalEvent>();
+  const readyEventEmitter = new Emitter<NekodeTaskIndexReadyEvent>();
   let disposed = false;
 
   const indexTopicFor = (state: WorkspaceIngestState) =>
@@ -291,11 +291,11 @@ export function createZCodeTaskIndexSyncer(
   const isProviderNotReadyError = (error: unknown): boolean =>
     typeof error === "object" &&
     error !== null &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_PROVIDER_NOT_READY_CODE;
+    (error as { code?: unknown }).code === NEKODE_AGENT_PROVIDER_NOT_READY_CODE;
   const isRuntimeUnavailableError = (error: unknown): boolean =>
     typeof error === "object" &&
     error !== null &&
-    (error as { code?: unknown }).code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
+    (error as { code?: unknown }).code === NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
   const logTopicSubscribeFailure = (
     state: WorkspaceIngestState,
     topic: TaskIndexTopicKind,
@@ -426,7 +426,7 @@ export function createZCodeTaskIndexSyncer(
     if (configSubscriptionId) void unsubscribeConfig(state, configSubscriptionId);
   };
 
-  function getWorkspaceEmitter(workspace: WorkspaceEventInput): Emitter<ZCodeWorkspaceEvent> {
+  function getWorkspaceEmitter(workspace: WorkspaceEventInput): Emitter<NekodeWorkspaceEvent> {
     const key =
       typeof workspace === "string"
         ? workspace
@@ -436,7 +436,7 @@ export function createZCodeTaskIndexSyncer(
           });
     let emitter = workspaceEmitters.get(key);
     if (!emitter) {
-      emitter = new Emitter<ZCodeWorkspaceEvent>();
+      emitter = new Emitter<NekodeWorkspaceEvent>();
       workspaceEmitters.set(key, emitter);
     }
     return emitter;
@@ -444,9 +444,9 @@ export function createZCodeTaskIndexSyncer(
 
   function emitWorkspaceTaskListChanged(
     target: WorkspaceBroadcastTarget,
-    taskMeta: ZCodeTaskMeta | undefined,
-    reason: ZCodeWorkspaceTaskListChanged["reason"],
-    options?: Pick<ZCodeWorkspaceTaskListChanged, "unreadSignal">,
+    taskMeta: NekodeTaskMeta | undefined,
+    reason: NekodeWorkspaceTaskListChanged["reason"],
+    options?: Pick<NekodeWorkspaceTaskListChanged, "unreadSignal">,
   ): void {
     // 排查日志（左侧列表随输入框操作刷新）：确认哪些操作在发 task list 广播、reason 是什么。
     logger.debug(
@@ -468,10 +468,10 @@ export function createZCodeTaskIndexSyncer(
   }
 
   async function resyncTaskIndexRowFromAgent(
-    target: ZCodeAgentSessionTarget,
+    target: NekodeAgentSessionTarget,
     reason: string,
     options?: {
-      unreadSignal?: ZCodeWorkspaceTaskListChanged["unreadSignal"];
+      unreadSignal?: NekodeWorkspaceTaskListChanged["unreadSignal"];
     },
   ): Promise<void> {
     try {
@@ -503,9 +503,9 @@ export function createZCodeTaskIndexSyncer(
   }
 
   function sessionTargetFrom(
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
     sessionId: string,
-  ): ZCodeAgentSessionTarget {
+  ): NekodeAgentSessionTarget {
     return {
       workspacePath: workspace.workspacePath,
       workspaceIdentity: workspace.workspaceIdentity,
@@ -513,7 +513,7 @@ export function createZCodeTaskIndexSyncer(
     };
   }
 
-  function broadcastTargetFrom(target: ZCodeAgentSessionTarget): WorkspaceBroadcastTarget {
+  function broadcastTargetFrom(target: NekodeAgentSessionTarget): WorkspaceBroadcastTarget {
     return {
       workspacePath: target.workspacePath,
       workspaceIdentity: target.workspaceIdentity,
@@ -521,7 +521,7 @@ export function createZCodeTaskIndexSyncer(
     };
   }
 
-  function emitTerminalAndReady(target: ZCodeAgentSessionTarget, summary: SessionSummary): void {
+  function emitTerminalAndReady(target: NekodeAgentSessionTarget, summary: SessionSummary): void {
     const phase = summary.phase;
     const failed = phase === "error";
     // 顺序保持旧协议语义：先 turn 终态（收口当前 input），再 prompt ready（放行下一条）。
@@ -584,15 +584,15 @@ export function createZCodeTaskIndexSyncer(
     }
   }
 
-  const refreshSessionFacts = (target: ZCodeAgentSessionTarget) =>
+  const refreshSessionFacts = (target: NekodeAgentSessionTarget) =>
     taskFacts.refresh({ ...target, taskId: target.sessionId });
-  const mutateSessionFacts = (target: ZCodeAgentSessionTarget, intent: TaskFactMutation) =>
+  const mutateSessionFacts = (target: NekodeAgentSessionTarget, intent: TaskFactMutation) =>
     taskFacts.mutate({ ...target, taskId: target.sessionId }, intent);
   const mirrorSummary = taskFacts.ingest;
 
   /** phase 终态迁移 → sqlite status 收敛 + 广播 + 回源正文索引。 */
   function applyTerminalTransition(
-    target: ZCodeAgentSessionTarget,
+    target: NekodeAgentSessionTarget,
     summary: SessionSummary,
     options?: { captureRepoSnapshot?: boolean },
   ): void {
@@ -640,7 +640,7 @@ export function createZCodeTaskIndexSyncer(
   }
 
   /** 标题变化 → sqlite title patch；行缺失回源完整 snapshot（对齐旧 first_input 语义）。 */
-  function applyTitleChange(target: ZCodeAgentSessionTarget, summary: SessionSummary): void {
+  function applyTitleChange(target: NekodeAgentSessionTarget, summary: SessionSummary): void {
     void mirrorSummary(target, summary)
       .then((meta) => {
         if (meta) {
@@ -1148,13 +1148,13 @@ export function createZCodeTaskIndexSyncer(
         ? frame.payload.snapshot.config
         : frame.payload.deltas.at(-1)?.config;
     if (!config || config.configOptions.length === 0) {
-      // 空目录（无 live session 的订阅种子）不下发：下游 useZCodeConfig 收到空
+      // 空目录（无 live session 的订阅种子）不下发：下游 useNekodeConfig 收到空
       // configOptions 会把聊天工具栏的模型目录清掉。
       completeConfigRecoveryFrame(state, deliveryKind);
       return;
     }
-    // v4 载荷与 ZCodeConfigOption 结构对齐（shared 黄金测试背书），零映射直通，
-    // 下游 workspace_config_options_update 消费面（useZCodeConfig 等）不改。
+    // v4 载荷与 NekodeConfigOption 结构对齐（shared 黄金测试背书），零映射直通，
+    // 下游 workspace_config_options_update 消费面（useNekodeConfig 等）不改。
     getWorkspaceEmitter({
       workspacePath: state.target.workspacePath,
       workspaceIdentity: state.target.workspaceIdentity,
@@ -1622,7 +1622,7 @@ export function createZCodeTaskIndexSyncer(
         resubscribeWorkspaceAfterRuntimeRestart(event.workspaceKey),
       );
 
-  function ensureWorkspaceSubscription(target: ZCodeAgentWorkspaceTarget): void {
+  function ensureWorkspaceSubscription(target: NekodeAgentWorkspaceTarget): void {
     if (disposed) {
       return;
     }
@@ -1679,14 +1679,14 @@ export function createZCodeTaskIndexSyncer(
   }
 
   async function syncSnapshotAndBroadcast(
-    snapshot: ZCodeSessionStateSnapshot,
+    snapshot: NekodeSessionStateSnapshot,
     options: {
       modelOverride?: string;
       thoughtLevelOverride?: string;
-      unreadSignal?: ZCodeWorkspaceTaskListChanged["unreadSignal"];
-      broadcastReason: ZCodeWorkspaceTaskListChanged["reason"] | null;
+      unreadSignal?: NekodeWorkspaceTaskListChanged["unreadSignal"];
+      broadcastReason: NekodeWorkspaceTaskListChanged["reason"] | null;
     },
-  ): Promise<ZCodeTaskMeta> {
+  ): Promise<NekodeTaskMeta> {
     if (isAuxiliarySessionKind(snapshot.session.sessionKind))
       return {
         ...snapshot.session.workspace,
@@ -1739,9 +1739,9 @@ export function createZCodeTaskIndexSyncer(
   }
 
   async function syncTaskModel(
-    target: ZCodeAgentSessionTarget,
+    target: NekodeAgentSessionTarget,
     model: string,
-  ): Promise<ZCodeTaskMeta | null> {
+  ): Promise<NekodeTaskMeta | null> {
     const normalizedModel = model.trim();
     if (!normalizedModel) {
       return null;
@@ -1769,7 +1769,7 @@ export function createZCodeTaskIndexSyncer(
     },
     ensureWorkspaceSubscription,
 
-    ensureSessionSubscription(target: ZCodeAgentSessionTarget): void {
+    ensureSessionSubscription(target: NekodeAgentSessionTarget): void {
       if (!target.sessionId || !target.workspacePath) {
         return;
       }
@@ -1836,16 +1836,16 @@ export function createZCodeTaskIndexSyncer(
 }
 
 function buildPresentationFromSnapshot(
-  snapshot: ZCodeSessionStateSnapshot,
+  snapshot: NekodeSessionStateSnapshot,
   options?: {
     modelOverride?: string;
     thoughtLevelOverride?: string;
   },
-): Pick<ZCodeTaskMeta, "mode" | "model" | "thoughtLevel" | "lastError" | "target"> {
+): Pick<NekodeTaskMeta, "mode" | "model" | "thoughtLevel" | "lastError" | "target"> {
   const modelOverride = options?.modelOverride?.trim();
   const thoughtLevelOverride = options?.thoughtLevelOverride?.trim();
-  const meta: Pick<ZCodeTaskMeta, "mode" | "model" | "thoughtLevel" | "lastError" | "target"> = {
-    mode: fromZCodeMode(snapshot.session.mode),
+  const meta: Pick<NekodeTaskMeta, "mode" | "model" | "thoughtLevel" | "lastError" | "target"> = {
+    mode: fromNekodeMode(snapshot.session.mode),
     // 用户显式切模型或历史模型不可用时，session 操作已经带了新的可用模型。
     // 这类场景要同步覆盖 sqlite 的 task model，否则下次恢复仍会从已删除的历史模型起跳；
     // 普通历史快照仍走最近消息模型优先，避免被误污染的 settings.current 反向污染索引。
@@ -1872,7 +1872,7 @@ function buildPresentationFromSnapshot(
     // target 字段缺席表示本次 snapshot 未提供 goal 信息，不能覆盖旧索引；
     // null 才表示 DB 明确没有 goal，需要清空 task-index 中的目标。
     meta.target = snapshot.projection.target
-      ? fromZCodeGoal(snapshot.projection.target)
+      ? fromNekodeGoal(snapshot.projection.target)
       : snapshot.projection.target;
   }
   return meta;
@@ -1881,9 +1881,9 @@ function buildPresentationFromSnapshot(
 // Bugfix: createSession 刚返回时 snapshot 既没有真实 title 也没有 user message，
 // 把这种"空白会话"广播出去会让侧边栏先闪一个 "New session" 占位符。
 // 这里判断"是否已有用户可见内容"，没有就只写 sqlite 不广播，等真实 title 到了再广播。
-function hasUserVisibleContent(snapshot: ZCodeSessionStateSnapshot): boolean {
+function hasUserVisibleContent(snapshot: NekodeSessionStateSnapshot): boolean {
   const title = snapshot.session.title?.trim() ?? "";
-  if (title && !isZCodeGoalContinuationReminderText(title)) {
+  if (title && !isNekodeGoalContinuationReminderText(title)) {
     return true;
   }
   if (snapshot.projection.target?.objective.trim()) {
@@ -1891,7 +1891,7 @@ function hasUserVisibleContent(snapshot: ZCodeSessionStateSnapshot): boolean {
   }
   return snapshot.messages.some((message) => {
     if (message.info.role !== "user") return false;
-    if (isZCodeModelOnlySyntheticUserMessage(message)) return false;
+    if (isNekodeModelOnlySyntheticUserMessage(message)) return false;
     return message.parts.some((part) => part.type === "text" && part.text.trim().length > 0);
   });
 }
@@ -1901,16 +1901,16 @@ const TASK_SEARCH_TEXT_MAX_CHARS = 200_000;
 // 全局会话搜索只索引默认可见的聊天正文，不包含思考过程、tool 调用和 compaction 折叠区。
 // assistant 的 parts 可能既有历史正文又有 latest 正文，这里只取最后一段 text part，
 // 与 UI 默认折叠后展示的范围一致。
-function buildSearchableTextFromSnapshot(snapshot: ZCodeSessionStateSnapshot): string {
+function buildSearchableTextFromSnapshot(snapshot: NekodeSessionStateSnapshot): string {
   const parts: string[] = [];
   let total = 0;
   // /goal 自动续跑会把内部 system-reminder 作为 runtime user turn 持久化；
   // 这条内容是 model-only 输入，不是用户可见 query，不能写进侧边栏搜索正文。
-  for (const message of getZCodeUserVisibleMessages(snapshot.messages, {
+  for (const message of getNekodeUserVisibleMessages(snapshot.messages, {
     target: snapshot.projection.target,
   })) {
     const textParts = message.parts.filter(
-      (part): part is Extract<ZCodeMessagePart, { type: "text" }> => part.type === "text",
+      (part): part is Extract<NekodeMessagePart, { type: "text" }> => part.type === "text",
     );
     if (textParts.length === 0) {
       continue;
@@ -1935,13 +1935,13 @@ function buildSearchableTextFromSnapshot(snapshot: ZCodeSessionStateSnapshot): s
   return parts.join("\n").slice(0, TASK_SEARCH_TEXT_MAX_CHARS);
 }
 
-function fromZCodeMode(mode: ZCodeSessionMode): ZCodeTaskMode {
+function fromNekodeMode(mode: NekodeSessionMode): NekodeTaskMode {
   return mode === "build" ? "build" : mode;
 }
 
-function fromZCodeGoal(
-  goal: NonNullable<ZCodeSessionStateSnapshot["projection"]["target"]>,
-): ZCodeTaskGoal {
+function fromNekodeGoal(
+  goal: NonNullable<NekodeSessionStateSnapshot["projection"]["target"]>,
+): NekodeTaskGoal {
   return {
     sessionID: goal.sessionId,
     targetID: goal.targetId,

@@ -15,12 +15,14 @@ export interface SkillSummary {
   path: string;
   /**
    * 发现阶段命中的原始 SKILL.md 路径（未经 realpath 解析）。
-   * 软链导入的技能里 `path` 是 realpath 后的目标文件，`sourcePath` 才指向 `~/.zcode/skills/<name>` 下的链接本体，
+   * 软链导入的技能里 `path` 是 realpath 后的目标文件，`sourcePath` 才指向 `~/.nekode/skills/<name>` 下的链接本体，
    * 删除时必须用它才能只删链接、不动目标。普通技能与 `path` 相同。
    */
   sourcePath?: string;
   scope: SkillScope;
   enabled: boolean;
+  /** 分类分组（SKILL.md frontmatter 可选 category，≤24 字符）；未声明为 "other"。 */
+  category?: string;
   /** plugin scope 时为来源插件名；其它 scope 留空。 */
   pluginName?: string;
   /** plugin scope 时为来源插件完整 ID（name@marketplace）；旧 payload 可缺省。 */

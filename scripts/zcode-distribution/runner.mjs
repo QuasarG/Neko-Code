@@ -180,13 +180,13 @@ async function serve(options) {
     env: {
       ...process.env,
       PORT: String(port),
-      ZCODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([agentEntry, "app-server", "--stdio"]),
-      ZCODE_AGENT_SERVER_COMMAND: process.execPath,
-      ZCODE_SERVER_HOST: options.host,
-      ZCODE_SERVER_WORKSPACE: options.workspace,
-      ZCODE_WEB_STATIC_ROOT: webRoot,
+      NEKODE_AGENT_SERVER_ARGS_JSON: JSON.stringify([agentEntry, "app-server", "--stdio"]),
+      NEKODE_AGENT_SERVER_COMMAND: process.execPath,
+      NEKODE_SERVER_HOST: options.host,
+      NEKODE_SERVER_WORKSPACE: options.workspace,
+      NEKODE_WEB_STATIC_ROOT: webRoot,
       // 显式关闭 token 时必须清空继承值，否则 --no-token 仍会开启后端鉴权。
-      ZCODE_SERVER_AUTH_TOKEN: token,
+      NEKODE_SERVER_AUTH_TOKEN: token,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -209,7 +209,7 @@ async function serve(options) {
   });
 
   console.log("");
-  console.log("ZCode Web is running");
+  console.log("Nekode Web is running");
   console.log(`Local:   ${localUrl}`);
   if (options.host === "0.0.0.0" || options.host === "::") {
     for (const url of networkUrls(port, token)) {

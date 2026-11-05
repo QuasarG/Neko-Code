@@ -1,7 +1,7 @@
 import type { BrowserWindow, NativeImage } from "electron";
 import {
-  DEFAULT_ZCODE_ENDPOINT_ORIGIN,
-  buildZCodeEndpointUrls,
+  DEFAULT_NEKODE_ENDPOINT_ORIGIN,
+  buildNekodeEndpointUrls,
   type Locale,
 } from "@zcode/shared";
 
@@ -50,10 +50,10 @@ export function detectArchitectureMismatch(
 
 export function resolveArchitectureDownloadUrl(
   locale: Locale,
-  endpointOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+  endpointOrigin = DEFAULT_NEKODE_ENDPOINT_ORIGIN,
 ): string {
   // 与 changelog 等外链保持一致，按应用语言分流到官网下载页。
-  const origin = buildZCodeEndpointUrls(endpointOrigin).origin;
+  const origin = buildNekodeEndpointUrls(endpointOrigin).origin;
   return locale === "zh-CN" ? `${origin}/cn` : `${origin}/en`;
 }
 

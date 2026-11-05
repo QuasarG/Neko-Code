@@ -615,7 +615,7 @@ async function persistSession(
     // workspaceKey 查 provider registry 时就会落到另一个身份。持久化必须保留协议入口路径。
     const persistedWorkspacePath = this.config.workspacePath ?? directory;
     const title = titleFromInput(input);
-    const workspaceIdentity = this.config.memory?.workspaceIdentity?.trim();
+    const workspaceIdentity = this.config.workspaceIdentity?.trim();
     await this.sessionStore.createSession({
       id: this.sessionId,
       projectID: projectIdFromDirectory(directory),

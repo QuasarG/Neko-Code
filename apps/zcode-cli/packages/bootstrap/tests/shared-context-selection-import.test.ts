@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 import type { SessionStorePort } from "@zcode/contracts";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { createSessionRecordForV4, closeSession } from "../src/zcode-protocol/server-operations.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 
 describe("分享上下文导入与当前选择合同", () => {
@@ -13,14 +13,14 @@ describe("分享上下文导入与当前选择合同", () => {
         NonNullable<SessionStorePort["commitSharedContextImportBundle"]>
       >(async () => {});
       const resume = vi.fn(async () => undefined);
-      const server = new ZCodeProtocolAgentServer({
+      const server = new NekodeProtocolAgentServer({
         sessionStore: {
           commitSharedContextImportBundle,
           getSession: async () => null,
         } as unknown as SessionStorePort,
-        createZCodeApp: (options) => createFakeApp(options, { getModel: () => model, resume }),
+        createNekodeApp: (options) => createFakeApp(options, { getModel: () => model, resume }),
       });
-      const context = (server as unknown as { context: ZCodeProtocolAgentServerContext }).context;
+      const context = (server as unknown as { context: NekodeProtocolAgentServerContext }).context;
       const sessionId = "shared-context-model-test";
       try {
         await expect(

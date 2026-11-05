@@ -22,20 +22,17 @@ import type { TopicResourcePeers } from "@zcode/services/node";
 import { TOPIC_RESOURCE_RELAY_CHANNEL } from "@zcode/shared";
 import {
   ServiceCollection,
-  IZCodeAgentService,
-  createZCodeAgentConnectionScope,
-  IBotsService,
+  INekodeAgentService,
+  createNekodeAgentConnectionScope,
   IProviderProvisioningTargetService,
 } from "@zcode/services";
 import {
-  botProviders,
   formatLogPrefix,
   serverRemoteInfoOutputSchema,
   SERVER_REMOTE_PROTOCOL_VERSION,
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_COMPATIBILITY_MANIFEST,
-  ZCODE_VERSION,
-  type BotProvider,
+  NEKODE_RPC_HOST_CAPABILITY_HEADER,
+  NEKODE_COMPATIBILITY_MANIFEST,
+  NEKODE_VERSION,
   type ServerRemoteInfo,
   type ServerRemoteWorkspaceInfo,
 } from "@zcode/shared";
@@ -102,14 +99,14 @@ function setupChannelServer(
   const server = workspaceIdentityMapper
     ? new SourceServerWorkspaceIdentityChannelServer(loggedServer, workspaceIdentityMapper)
     : loggedServer;
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(INekodeAgentService);
   const reverseClient =
     clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
   const peer = reverseClient
     ? resourcePeers?.attach(reverseClient.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL))
     : undefined;
   const connectionScope = agentService
-    ? createZCodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
+    ? createNekodeAgentConnectionScope(peer ? peer.wrapAgent(agentService) : agentService, {
         connectionId: `server-ws-${randomUUID()}`,
         clientMode,
         role: clientMode === "desktop-continuous" ? "trusted-host-relay" : "terminal-client",
@@ -117,7 +114,7 @@ function setupChannelServer(
     : undefined;
   const overrides = new Map<string, unknown>();
   if (connectionScope) {
-    overrides.set(IZCodeAgentService.channelName, connectionScope.service);
+    overrides.set(INekodeAgentService.channelName, connectionScope.service);
   }
   // Provisioning 携带跨 Environment 凭据，只允许 Desktop trusted host 使用；普通 Web
   // remote/replayable 客户端即使知道频道名，也不能获得 target 写入接口。
@@ -162,7 +159,7 @@ function readTrimmedEnv(name: string): string | undefined {
 
 export function resolveHttpServerId(options: HttpServerOptions = {}): string {
   return (
-    options.serverId?.trim() || readTrimmedEnv("ZCODE_SERVER_ID") || hostname() || "zcode-server"
+    options.serverId?.trim() || readTrimmedEnv("NEKODE_SERVER_ID") || hostname() || "zcode-server"
   );
 }
 
@@ -170,7 +167,7 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
   if (options.workspaces) {
     return options.workspaces;
   }
-  const workspacePath = readTrimmedEnv("ZCODE_SERVER_WORKSPACE") || process.cwd();
+  const workspacePath = readTrimmedEnv("NEKODE_SERVER_WORKSPACE") || process.cwd();
   return [
     {
       path: workspacePath,
@@ -182,14 +179,14 @@ function resolveServerWorkspaces(options: HttpServerOptions): ServerRemoteWorksp
 function createServerInfo(options: HttpServerOptions): ServerRemoteInfo {
   return serverRemoteInfoOutputSchema.parse({
     serverId: resolveHttpServerId(options),
-    ...(options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME")
-      ? { name: options.name?.trim() || readTrimmedEnv("ZCODE_SERVER_NAME") }
+    ...(options.name?.trim() || readTrimmedEnv("NEKODE_SERVER_NAME")
+      ? { name: options.name?.trim() || readTrimmedEnv("NEKODE_SERVER_NAME") }
       : {}),
-    version: ZCODE_VERSION,
+    version: NEKODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
-    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("ZCODE_SERVER_TOKEN")),
+    authRequired: options.authRequired ?? Boolean(readTrimmedEnv("NEKODE_SERVER_TOKEN")),
     workspaces: resolveServerWorkspaces(options),
-    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
+    compatibility: NEKODE_COMPATIBILITY_MANIFEST,
     migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
     identity: { osUser: resolveServerOsUser(), hostname: hostname() },
     capabilities: {
@@ -394,60 +391,13 @@ export function createHttpServer(
     },
   }));
   app.use("/ws/host", async (c, next) => {
-    const capability = c.req.header(ZCODE_RPC_HOST_CAPABILITY_HEADER);
+    const capability = c.req.header(NEKODE_RPC_HOST_CAPABILITY_HEADER);
     if (!hostCapabilities.consume(capability)) {
       return c.json({ error: "Invalid or expired host capability" }, 401);
     }
     await next();
   });
   app.get("/ws/host", upgradeTrustedHostWebSocket);
-
-  const handleBotCallback = async (c: Context) => {
-    const provider = c.req.param("provider") as BotProvider;
-    if (!botProviders.includes(provider)) {
-      return c.json({ error: `Unsupported provider: ${provider}` }, 400);
-    }
-    if (provider !== "webhook") {
-      return c.json({ error: `Provider ${provider} does not support HTTP callbacks.` }, 400);
-    }
-    const botsService = services.getOptional(IBotsService);
-    if (!botsService) {
-      return c.json({ error: "Bots service is not available." }, 503);
-    }
-    const rawBodyText = await c.req.text().catch(() => "");
-    let rawBody: unknown = {};
-    if (rawBodyText) {
-      try {
-        rawBody = JSON.parse(rawBodyText) as unknown;
-      } catch {
-        rawBody = { payload: rawBodyText };
-      }
-    }
-    const webhookSecret = c.req.header("x-zcode-bot-secret");
-    const botId = c.req.param("botId");
-    const result = await botsService.handleProviderCallbackResponse(provider, {
-      ...(typeof rawBody === "object" && rawBody !== null ? rawBody : { payload: rawBody }),
-      rawBody: rawBodyText,
-      ...(botId ? { botId } : {}),
-      ...(webhookSecret ? { webhookSecret } : {}),
-    });
-    const responseBody = result.responseBody ?? { ok: result.ok, replies: result.replies };
-    if (result.status === 400) {
-      return c.json(responseBody, 400);
-    }
-    if (result.status === 401) {
-      return c.json(responseBody, 401);
-    }
-    if (result.status === 503) {
-      // Bugfix：Bot 业务失败必须把可重试状态透传给 HTTP provider；返回 200 会让
-      // webhook/网关误以为消息已消费，效果与提前提交 Telegram offset 相同。
-      return c.json(responseBody, 503);
-    }
-    return c.json(responseBody, 200);
-  };
-
-  app.post("/api/bots/:provider", handleBotCallback);
-  app.post("/api/bots/:provider/:botId", handleBotCallback);
 
   // Bug 原因：旧 `/api/connect-remote` + `/ws/remote/:id` 会在 Server 内另起临时 stdio
   // runtime，绕过 R3 的 Window Host → Source Server attachment 主链；两个入口必须一起不可达。

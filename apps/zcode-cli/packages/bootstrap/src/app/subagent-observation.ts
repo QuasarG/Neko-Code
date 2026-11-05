@@ -6,7 +6,7 @@ import {
   type SessionStorePort,
 } from "@zcode/contracts";
 import type { AgentRuntime } from "@zcode/core";
-import type { ZCodeSessionSubagentsResult } from "@zcode/shared";
+import type { NekodeSessionSubagentsResult } from "@zcode/shared";
 import { projectSessionTranscript, type SessionTranscriptMessage } from "../session-transcript.js";
 import {
   collectSubagentChildSessionIds,
@@ -33,7 +33,7 @@ export function createSubagentObservation(deps: ObservationDeps) {
   return {
     async readSubagents(
       input: { endedCursor?: string; endedLimit?: number } = {},
-    ): Promise<ZCodeSessionSubagentsResult> {
+    ): Promise<NekodeSessionSubagentsResult> {
       const eventStore = deps.runtime.getSessionEventStore();
       const parentSession = await deps.sessionStore.getSession(deps.sessionId);
       if (!parentSession)

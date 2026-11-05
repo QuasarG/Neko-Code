@@ -1,6 +1,6 @@
 import { formatJson } from "@zcode/core";
 import type { GlobalOptions, RunContext } from "@zcode/shared-types";
-import type { SetZCodePluginEnabledResult, ZCodePluginInstallData } from "@zcode/bootstrap";
+import type { SetNekodePluginEnabledResult, NekodePluginInstallData } from "@zcode/bootstrap";
 import {
   formatAvailablePluginJson,
   formatDiagnosticJson,
@@ -213,7 +213,7 @@ async function runPluginsUpdateCommand(
 function reportInstallOutcome(
   ctx: RunContext,
   options: GlobalOptions,
-  result: ZCodePluginInstallData,
+  result: NekodePluginInstallData,
   pluginId: string,
 ): number {
   const failed = hasErrors(result.diagnostics);
@@ -286,7 +286,7 @@ async function runPluginsDisableCommand(
   const base = baseOptions(deps);
   const listPlugins = await resolveDep(deps, "listPlugins");
   const setPluginEnabled = await resolveDep(deps, "setPluginEnabled");
-  const entries: Array<{ plugin: PluginListItem; result?: SetZCodePluginEnabledResult; error?: string }> = [];
+  const entries: Array<{ plugin: PluginListItem; result?: SetNekodePluginEnabledResult; error?: string }> = [];
   for (const plugin of listPlugins(base).plugins) {
     if (!plugin.enabled) continue;
     try {

@@ -7,7 +7,7 @@ import {
 const BUILTIN_PROMPT_COMMAND_PATTERN = /^\/([^\s]+)(?:\s+([\s\S]*))?$/;
 const INIT_COMMAND_NAME = "init";
 
-export interface ResolveZCodeBuiltinPromptCommandOptions {
+export interface ResolveNekodeBuiltinPromptCommandOptions {
   /**
    * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）。**只有显式 false 才挡下**
    * `/workflow`：TUI / headless 从不设置该字段，那里的功能始终开启。挡下时返回 undefined，
@@ -18,23 +18,23 @@ export interface ResolveZCodeBuiltinPromptCommandOptions {
   workingDirectory?: string;
 }
 
-export interface ResolvedZCodeBuiltinPromptCommand {
+export interface ResolvedNekodeBuiltinPromptCommand {
   /** 命中的内置命令名（`init` / `workflow`），调用方据此挂命令特有的副作用（如 onDemand 激活）。 */
   name: string;
   prompt: string;
 }
 
-export function resolveZCodeBuiltinPromptCommand(
+export function resolveNekodeBuiltinPromptCommand(
   input: string,
-  options: ResolveZCodeBuiltinPromptCommandOptions = {},
+  options: ResolveNekodeBuiltinPromptCommandOptions = {},
 ): string | undefined {
-  return resolveZCodeBuiltinPromptCommandInvocation(input, options)?.prompt;
+  return resolveNekodeBuiltinPromptCommandInvocation(input, options)?.prompt;
 }
 
-export function resolveZCodeBuiltinPromptCommandInvocation(
+export function resolveNekodeBuiltinPromptCommandInvocation(
   input: string,
-  options: ResolveZCodeBuiltinPromptCommandOptions = {},
-): ResolvedZCodeBuiltinPromptCommand | undefined {
+  options: ResolveNekodeBuiltinPromptCommandOptions = {},
+): ResolvedNekodeBuiltinPromptCommand | undefined {
   const invocation = parseBuiltinPromptCommandInvocation(input);
   if (!invocation) {
     return undefined;
@@ -92,25 +92,25 @@ function buildInitAgentsPrompt(params: {
     : "";
 
   return [
-    "You are running ZCode's built-in /init command.",
+    "You are running Nekode's built-in /init command.",
     "",
-    "Your task is to create or update a concise workspace instruction file for future ZCode agents.",
+    "Your task is to create or update a concise workspace instruction file for future Nekode agents.",
     "",
     "Target:",
     `- Workspace directory: ${params.workingDirectory}`,
     `- Instruction file: ${params.targetPath}`,
-    `- Existing hidden instruction candidates: ${join(params.workingDirectory, ".zcode", "AGENTS.md")} and ${join(params.workingDirectory, ".agents", "AGENTS.md")}`,
+    `- Existing hidden instruction candidates: ${join(params.workingDirectory, ".nekode", "AGENTS.md")} and ${join(params.workingDirectory, ".agents", "AGENTS.md")}`,
     "- File name must be exactly AGENTS.md.",
-    "- This command targets the current workspace only. Do not write ~/.zcode/AGENTS.md.",
+    "- This command targets the current workspace only. Do not write ~/.nekode/AGENTS.md.",
     additionalInstructions,
     "",
     "Process:",
-    "1. First check whether .zcode/AGENTS.md or .agents/AGENTS.md exists in the workspace. If either exists, tell the user they already have an instructions file, mention the path found, and stop without creating a new AGENTS.md.",
+    "1. First check whether .nekode/AGENTS.md or .agents/AGENTS.md exists in the workspace. If either exists, tell the user they already have an instructions file, mention the path found, and stop without creating a new AGENTS.md.",
     "2. Inspect the repository before writing. Prefer Read, Glob, Grep, and safe Bash commands such as ls, find, git status, and package-manager script inspection.",
     "3. If AGENTS.md already exists, read it first and update it with Edit instead of replacing it wholesale.",
     "4. If AGENTS.md does not exist, create it at the workspace root.",
     "5. Keep the file practical and short enough for future agents to read quickly.",
-    "6. Include only project-specific facts future ZCode agents would otherwise miss.",
+    "6. Include only project-specific facts future Nekode agents would otherwise miss.",
     "7. Ask the user only if a repository-specific decision cannot be inferred and would materially change the file.",
     "",
     "Recommended AGENTS.md content:",

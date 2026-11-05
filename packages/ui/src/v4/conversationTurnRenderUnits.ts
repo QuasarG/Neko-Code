@@ -212,7 +212,15 @@ function materializeDraftUnit(
       ? draft.orderedRows
       : draft.orderedRows.filter((row) => !isWorkflowLaunchUserInputRow(row));
   const visibleUserInputs = renderedRows.filter(isUserInputRow);
-  const visibleAssistantWorkRows = draft.assistantWorkRows.filter(isVisibleAssistantWorkRow);
+  // 注入行是“这一轮用户输入”的上下文：没有可见用户输入的草稿/空轮里，
+  // 单独渲染会飘在页面顶部远离输入框，直接裁掉。
+  const visibleAssistantWorkRows = draft.assistantWorkRows
+    .filter(isVisibleAssistantWorkRow)
+    .filter(
+      (row) =>
+        visibleUserInputs.length > 0 ||
+        !(row.kind === "timelineMarker" && row.marker.type === "contextInjection"),
+    );
   const visibleOrderedRows = renderedRows.filter(isVisibleConversationRow);
   const timelineOnly =
     visibleUserInputs.length === 0 &&

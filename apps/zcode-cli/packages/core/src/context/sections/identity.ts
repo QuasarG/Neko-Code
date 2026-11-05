@@ -12,14 +12,6 @@ const DEFAULT_AGENT_IDENTITY =
 const OUTPUT_STYLE_AGENT_IDENTITY =
   'You are an interactive agent that helps users according to your "Output Style", which describes how you should respond to user queries.';
 
-const SECURITY_NOTICE =
-  "IMPORTANT: Assist with authorized security testing, defensive security, CTF challenges, and educational contexts. Refuse requests for destructive techniques, DoS attacks, mass targeting, supply chain compromise, or detection evasion for malicious purposes. Dual-use security tools (C2 frameworks, credential testing, exploit development) require clear authorization context: pentesting engagements, CTF competitions, security research, or defensive use cases.";
-
-/** 安全 IMPORTANT 行：交互式身份与工作流子代理身份共用，逐字同一份。 */
-export function buildSecurityNotice(): string {
-  return SECURITY_NOTICE;
-}
-
 /**
  * `# Harness` 块：稳定运行时约束，不属于 output style 可替换的 coding instructions，
  * 也是工作流子代理身份（sections/workflow-actor.ts）逐字复用的那一段。
@@ -32,7 +24,6 @@ export function buildHarnessBlock(midConversationSystem = true): string {
     : "`<system-reminder>` tags in messages and tool results are injected by the harness, not the user.";
   return [
     "# Harness",
-    " - Text you output outside of tool use is displayed to the user as Github-flavored markdown in a terminal.",
     " - Tools run behind a user-selected permission mode; a denied call means the user declined it \u2014 adjust, don't retry verbatim.",
     ` - ${deliveryNotice} Hooks may intercept tool calls; treat hook output as user feedback.`,
     " - Prefer the dedicated file/search tools over shell commands when one fits. Independent tool calls can run in parallel in one response.",
@@ -46,7 +37,7 @@ function buildIdentityPrompt(
 ): string {
   const intro = outputStyle ? OUTPUT_STYLE_AGENT_IDENTITY : DEFAULT_AGENT_IDENTITY;
 
-  const identityLines = ["", intro, "", SECURITY_NOTICE].join("\n");
+  const identityLines = ["", intro].join("\n");
 
   return [identityLines, "", buildHarnessBlock(midConversationSystem)].join("\n");
 }

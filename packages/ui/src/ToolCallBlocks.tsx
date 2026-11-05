@@ -3,7 +3,7 @@ import { ToolPresentationCapabilitiesProvider } from "@/ToolCallBlocks/presentat
 import { memo, type ReactNode, useEffect, useMemo, useState } from "react";
 import { TID_CHAT_TOOL_CALL_BLOCK, testId } from "@zcode/shared/test-ids";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { mapToolStatus } from "@/lib/mapToolStatus.js";
 import { buildToolDisplayModel } from "@/lib/toolDisplay.js";
 import type { TaskChatToolCallTreeNode } from "@/lib/toolCallTree.js";
@@ -84,7 +84,7 @@ function ToolCallBlockComponent({
   onOpenCodeViewer,
   onOpenFileLink,
   onOpenBrowserUrl,
-  onOpenAutomationsMain,
+  onOpenWorkflowsMain,
   onOpenPlanDetail,
   pluginUi: providedPluginUi,
   onOpenWorkflowRun,
@@ -119,7 +119,7 @@ function ToolCallBlockComponent({
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
   onOpenBrowserUrl?: (url: string) => void;
-  onOpenAutomationsMain?: (automationId?: string) => void;
+  onOpenWorkflowsMain?: () => void;
   onOpenPlanDetail?: ToolCallBlockRenderContext["onOpenPlanDetail"];
   pluginUi?: ToolCallBlockRenderContext["pluginUi"];
   onOpenWorkflowRun?: ToolCallBlockRenderContext["onOpenWorkflowRun"];
@@ -160,7 +160,7 @@ function ToolCallBlockComponent({
   const inheritedPluginUi = PluginUi.usePluginUiToolBinding(toolCallNode.toolCall.toolId);
   const pluginUi = providedPluginUi ?? inheritedPluginUi;
   const { toolCall, childToolCalls } = toolCallNode;
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const toolEntranceAnimationKey = `${streamingEntranceKeyPrefix}:${toolCall.toolId}`;
   // tool 在流式对话中新出现时如果没有淡入，会和同一段文字的渐入节奏割裂。
@@ -259,7 +259,7 @@ function ToolCallBlockComponent({
               onOpenCodeViewer={toolPreviewCodeViewer}
               onOpenFileLink={onOpenFileLink}
               onOpenBrowserUrl={onOpenBrowserUrl}
-              onOpenAutomationsMain={onOpenAutomationsMain}
+              onOpenWorkflowsMain={onOpenWorkflowsMain}
               onOpenPlanDetail={onOpenPlanDetail}
               onOpenWorkflowRun={onOpenWorkflowRun}
               onLoadFullToolCallFields={onLoadFullToolCallFields}
@@ -277,7 +277,7 @@ function ToolCallBlockComponent({
       childToolCalls,
       depth,
       onLoadFullToolCallFields,
-      onOpenAutomationsMain,
+      onOpenWorkflowsMain,
       onOpenBrowserUrl,
       onOpenPlanDetail,
       onOpenFileLink,
@@ -319,7 +319,7 @@ function ToolCallBlockComponent({
       onOpenCodeViewer: toolPreviewCodeViewer,
       onOpenFileLink,
       onOpenBrowserUrl,
-      onOpenAutomationsMain,
+      onOpenWorkflowsMain,
       onOpenPlanDetail,
       pluginUi,
       // onOpenWorkflowRun 之前只被透传给子工具卡，从未进过 renderContext，
@@ -347,7 +347,7 @@ function ToolCallBlockComponent({
       errorText,
       isRunning,
       onLoadFullToolCallFields,
-      onOpenAutomationsMain,
+      onOpenWorkflowsMain,
       onOpenBrowserUrl,
       onOpenPlanDetail,
       pluginUi,

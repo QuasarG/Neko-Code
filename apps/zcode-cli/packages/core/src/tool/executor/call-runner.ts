@@ -533,7 +533,6 @@ async function executeToolCallImpl(
         artifactStore: deps.artifactStore,
         automationPort: deps.automationPort,
         offPeakPort: deps.offPeakPort,
-        topicResourcePort: deps.topicResourcePort,
         sessionStore: deps.sessionStore,
         sessionModePort: deps.sessionModePort,
         workflowPort: deps.workflowPort,
@@ -562,7 +561,8 @@ async function executeToolCallImpl(
         remoteSessionId: deps.remoteSessionId,
         clientMode: deps.clientMode,
         deliveryKind: deps.deliveryKind,
-        memoryRoot: deps.getMemoryRoot?.(),
+        nekoMemoryBooks: deps.getNekoMemoryBooks?.(),
+        wardrobeStore: deps.getWardrobeStore?.(),
         runtimeScope: deps.runtimeScope,
         providerVisibleToolNames: deps.registry
           .list()

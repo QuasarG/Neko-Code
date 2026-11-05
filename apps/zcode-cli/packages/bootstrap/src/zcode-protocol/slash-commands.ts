@@ -1,15 +1,15 @@
-import { BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES, type ZCodeSlashCommand } from "@zcode/shared";
+import { BUILTIN_NEKODE_SLASH_COMMAND_HELP_ENTRIES, type NekodeSlashCommand } from "@zcode/shared";
 import { BUILTIN_WORKFLOW_COMMAND_NAME } from "../builtin-workflow-command.js";
 import {
-  listZCodeCustomCommands,
-  type ListZCodeCustomCommandsOptions,
+  listNekodeCustomCommands,
+  type ListNekodeCustomCommandsOptions,
 } from "../custom-commands.js";
 import {
   APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES,
-  isReservedZCodeSlashCommandName,
+  isReservedNekodeSlashCommandName,
 } from "../slash-command-surface.js";
 
-export interface ListProtocolSlashCommandsOptions extends ListZCodeCustomCommandsOptions {
+export interface ListProtocolSlashCommandsOptions extends ListNekodeCustomCommandsOptions {
   /**
    * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）。**只有显式 false
    * 才剔除** 内置 `workflow`：CLI 自身的目录装配（TUI / 未参与灰度的调用方）缺席该字段，
@@ -20,7 +20,7 @@ export interface ListProtocolSlashCommandsOptions extends ListZCodeCustomCommand
 
 export async function listProtocolSlashCommands(
   options: ListProtocolSlashCommandsOptions = {},
-): Promise<ZCodeSlashCommand[]> {
+): Promise<NekodeSlashCommand[]> {
   // 灰度关闭：composer 的加号菜单与 `/` 面板都只读这份目录，剔除即两个入口一起消失（DWG-03）。
   // `workflow` 是内置命令且是保留名，用户/插件的同名自定义命令在下面的 reserved 过滤里一并消失，
   // 不会在门关着时借自定义命令的身份漏回目录。
@@ -28,9 +28,9 @@ export async function listProtocolSlashCommands(
     (command) =>
       options.dynamicWorkflowEnabled !== false || command.name !== BUILTIN_WORKFLOW_COMMAND_NAME,
   );
-  let customCommands: Awaited<ReturnType<typeof listZCodeCustomCommands>>["commands"] = [];
+  let customCommands: Awaited<ReturnType<typeof listNekodeCustomCommands>>["commands"] = [];
   try {
-    const outcome = await listZCodeCustomCommands(options);
+    const outcome = await listNekodeCustomCommands(options);
     customCommands = outcome.commands;
   } catch {
     // 自定义命令发现失败不应阻断 session snapshot；保留可执行的内置协议命令。
@@ -41,7 +41,7 @@ export async function listProtocolSlashCommands(
     ...builtins,
     ...customCommands
       .filter((command) => !command.disableNonInteractive)
-      .filter((command) => !isReservedZCodeSlashCommandName(command.name))
+      .filter((command) => !isReservedNekodeSlashCommandName(command.name))
       .map((command) => ({
         description: command.description,
         inputHint: `/${command.name}${command.argumentHint ? ` ${command.argumentHint}` : ""}`,
@@ -52,9 +52,9 @@ export async function listProtocolSlashCommands(
 }
 
 /** App `/` 面板按本目录顺序展示；内置段的顺序由 APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES 决定。 */
-function listAppProtocolBuiltinSlashCommands(): ZCodeSlashCommand[] {
+function listAppProtocolBuiltinSlashCommands(): NekodeSlashCommand[] {
   const sharedBuiltins = APP_PROTOCOL_VISIBLE_BUILTIN_SLASH_COMMAND_NAMES.flatMap((name) => {
-    const command = BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES.find((entry) => entry.name === name);
+    const command = BUILTIN_NEKODE_SLASH_COMMAND_HELP_ENTRIES.find((entry) => entry.name === name);
     if (!command) return [];
     return [
       {

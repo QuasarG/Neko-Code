@@ -8,7 +8,7 @@ import {
   type V4SessionDataPurgeResult,
 } from "@zcode/shared/zcode-protocol-v4";
 import { createSessionResidentPoolHost, deactivateSessionRecord } from "../session-residency.js";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "../server-types.js";
+import { parseParams, type NekodeProtocolAgentServerContext } from "../server-types.js";
 import type { SessionDataHost } from "./contract.js";
 
 export type { SessionDataHost } from "./contract.js";
@@ -127,7 +127,7 @@ export async function purgeSessionDataWith(
   return result;
 }
 
-function hostFromContext(context: ZCodeProtocolAgentServerContext): SessionDataHost {
+function hostFromContext(context: NekodeProtocolAgentServerContext): SessionDataHost {
   const store = context.deps.sessionStore;
   const files = context.deps.sessionDataFiles;
   if (!store?.listOwnedSessionTrees || !store.listArtifactReferrers || !store.purgeSessions || !files)
@@ -155,14 +155,14 @@ function hostFromContext(context: ZCodeProtocolAgentServerContext): SessionDataH
 }
 
 export async function measureSessionData(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ): Promise<V4SessionDataMeasureResult> {
   return measureSessionDataWith(hostFromContext(context), parseParams(v4SessionDataParamsSchema, rawParams));
 }
 
 export async function purgeSessionData(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ): Promise<V4SessionDataPurgeResult> {
   const params = parseParams(v4SessionDataParamsSchema, rawParams);

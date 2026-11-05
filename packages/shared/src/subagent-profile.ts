@@ -3,7 +3,6 @@ import { modelSelectionSchema, type ModelSelection } from "./model-selection.js"
 import type { AgentPermissionMode } from "./subagents-types.js";
 
 export type AgentProfileSource = "built-in" | "project" | "user";
-export type AgentMemoryScope = "user" | "project" | "local";
 
 export interface AgentProfile {
   background?: boolean;
@@ -13,7 +12,6 @@ export interface AgentProfile {
   injectAgentsMd?: boolean;
   maxTurns?: number;
   mcpServers?: readonly string[];
-  memory?: AgentMemoryScope;
   modelSelection?: ModelSelection;
   name: string;
   path?: string;
@@ -52,7 +50,6 @@ export const agentProfileSchema = z
     permissionMode: z
       .enum(["acceptEdits", "auto", "bypassPermissions", "default", "dontAsk", "plan"])
       .optional(),
-    memory: z.enum(["user", "project", "local"]).optional(),
     maxTurns: z.number().int().positive().optional(),
     tools: z.array(z.string()).readonly().optional(),
     disallowedTools: z.array(z.string()).readonly().optional(),

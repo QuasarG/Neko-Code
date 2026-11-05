@@ -67,6 +67,10 @@ import {
 } from "./tool-perf.js";
 import { applyBashReadFileStateEffects } from "./bash-read-file-state.js";
 import {
+  NEKO_MEMORY_SHELL_REFUSAL_MESSAGE,
+  isNekoMemoryShellWrite,
+} from "./neko-memory-guard.js";
+import {
   prepareBashPermissionMatcherForCommand,
   isBashReadOnlyCommand,
   isRuntimeReadOnlyBashCommand,
@@ -177,6 +181,19 @@ async function executeBashHandler(
     const commandTelemetry = startBashCommandTelemetry(parsed, context);
     commandTelemetry?.finishCompleted();
     return emptyBashOutput(parsed);
+  }
+
+  // Neko Memory v2：记忆书只能经 Edit/Write 走预算闸门；重定向、sed -i、mv 等
+  // shell 写法会绕过预算与投递纪律，命令同时含记忆根与写特征时整条拒绝。
+  if (context.nekoMemoryBooks && isNekoMemoryShellWrite(context.nekoMemoryBooks, parsed.command)) {
+    throw createCoreError(CoreErrorType.ToolExecutionFailed, NEKO_MEMORY_SHELL_REFUSAL_MESSAGE, {
+      context: {
+        code: "bash_neko_memory_write_refused",
+        toolCallId: context.toolCallId,
+        toolName: "Bash",
+      },
+      recoverable: true,
+    });
   }
 
   const request = createExecutionRequest(parsed, context, timeoutPolicy);

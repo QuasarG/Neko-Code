@@ -31,7 +31,7 @@ import {
   waitForV4TimelineContaining,
 } from "../helpers/v4-conversation.js";
 
-const CASE_ROOT = join(DEFAULT_WORKSPACE, ".zcode-e2e", "conversation-session-v4-video-preview");
+const CASE_ROOT = join(DEFAULT_WORKSPACE, ".nekode-e2e", "conversation-session-v4-video-preview");
 const PLAYABLE_VIDEO_FILENAME = "e2e-composer-preview.mp4";
 const GALLERY_IMAGE_FILENAME = "e2e-gallery-image.png";
 const UNSUPPORTED_VIDEO_FILENAME = "e2e-unsupported.mov";

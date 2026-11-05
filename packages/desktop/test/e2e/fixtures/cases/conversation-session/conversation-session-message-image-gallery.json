@@ -8,7 +8,7 @@
   ],
   "fileFixtures": [
     {
-      "path": ".zcode-e2e/message-image-gallery/*.svg",
+      "path": ".nekode-e2e/message-image-gallery/*.svg",
       "source": "created-by-spec",
       "description": "MIG01-MIG05/MIG07 在 Agent workspace 写入 4 张不同颜色的 1200x800 SVG，验证本地 fileService 加载、分组、导航和缩放。"
     },

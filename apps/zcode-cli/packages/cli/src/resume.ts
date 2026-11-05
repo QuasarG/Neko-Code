@@ -1,4 +1,4 @@
-import type { ZCodeAppOptions } from "@zcode/bootstrap";
+import type { NekodeAppOptions } from "@zcode/bootstrap";
 import type { CliEnv } from "./env.js";
 import { loadBootstrapModule } from "./bootstrap-loader.js";
 import type { CliResumeRequest, RunDependencies } from "./cli-types.js";
@@ -8,9 +8,9 @@ export const resolveResumeSession = async (
   workingDirectory: string,
   env: CliEnv,
   deps: RunDependencies,
-): Promise<ZCodeAppOptions["sessionId"] | undefined> => {
+): Promise<NekodeAppOptions["sessionId"] | undefined> => {
   if (request.resumeSessionId) {
-    return request.resumeSessionId as ZCodeAppOptions["sessionId"];
+    return request.resumeSessionId as NekodeAppOptions["sessionId"];
   }
 
   if (!request.continueSession) {

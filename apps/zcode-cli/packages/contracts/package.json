@@ -54,6 +54,14 @@
       "types": "./dist/skills/index.d.ts",
       "import": "./dist/skills/index.js"
     },
+    "./neko-memory": {
+      "types": "./dist/neko-memory/index.d.ts",
+      "import": "./dist/neko-memory/index.js"
+    },
+    "./wardrobe": {
+      "types": "./dist/wardrobe/index.d.ts",
+      "import": "./dist/wardrobe/index.js"
+    },
     "./commands": {
       "types": "./dist/commands/index.d.ts",
       "import": "./dist/commands/index.js"

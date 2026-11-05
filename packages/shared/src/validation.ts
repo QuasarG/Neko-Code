@@ -46,7 +46,7 @@ import {
   taskStreamMirrorTargetSchema,
 } from "./task-realtime-core.js";
 import { wslUserSchema } from "./wslUserValidation.js";
-import { legacyZCodeProviderSchema } from "./zcode-agent-policy.js";
+import { legacyNekodeProviderSchema } from "./zcode-agent-policy.js";
 import { errorAttributionSchema } from "./zcode-protocol-v4/snapshot.js";
 import {
   zcodeMcpResourceSamplesSchema,
@@ -928,7 +928,7 @@ export const hostOffPeakRunMessageSchema = z.object({
   hostId: nonEmptyStringSchema.optional(),
   additionalDirectories: z.array(nonEmptyStringSchema).max(256).optional(),
   prompt: nonEmptyStringSchema,
-  // 权限四档映射现有 ZCodeTaskMode；与 cron-run 的 mode 同样按宽松 string 传输
+  // 权限四档映射现有 NekodeTaskMode；与 cron-run 的 mode 同样按宽松 string 传输
   permissionMode: nonEmptyStringSchema,
   modelSelection: modelSelectionSchema,
   conversationId: z.string().optional(),
@@ -1958,7 +1958,7 @@ export const zcodeTaskMetaSchema = z.object({
   thoughtLevel: nonEmptyStringSchema.optional(),
   runtimeEpoch: z.number().int().nonnegative().optional(),
   // meta 直接解析自 tasks-index/旧 session 文件；历史 provider 值在此归一为 glm。
-  provider: legacyZCodeProviderSchema.optional(),
+  provider: legacyNekodeProviderSchema.optional(),
   migrationSource: zcodeTaskMigrationSourceSchema.optional(),
   forkedFromTaskId: nonEmptyStringSchema.optional(),
   // cron automation 身份：随 meta_json 一起持久化（单一来源），同时在写入时投影到 tasks 表
@@ -2015,7 +2015,7 @@ export const zcodeTaskSessionBindingStateSchema = z.enum([
 
 export const zcodeTaskSessionBindingSchema = z.object({
   // 绑定状态由 services 从持久化数据投影；旧绑定残留的历史 provider 值在此归一为 glm。
-  provider: legacyZCodeProviderSchema,
+  provider: legacyNekodeProviderSchema,
   sessionId: nonEmptyStringSchema,
   // 绑定锚点需要支持空 task 的 -1，所以这里不能套 nonnegative。
   lastSyncedTurnIndex: z.number().int(),

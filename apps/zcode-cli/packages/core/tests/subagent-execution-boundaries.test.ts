@@ -72,7 +72,10 @@ describe("subagent definitions at execution boundaries", () => {
       await scenario.waitCompleted(terminal.agentId, 2);
       assertProfile(scenario.children.at(-1)!, next());
       expect(scenario.children.at(-1)!.sessionId).toBe(terminal.childSessionId);
-      expect(listing(scenario.parents.at(-1)!)).toEqual(before);
+      // listing 随 system prompt 每轮重建，成功读取新配置后反映新的 tools。
+      expect(JSON.stringify(listing(scenario.parents.at(-1)!))).toContain(
+        "- reviewer: Review (Tools: Grep)",
+      );
     } finally {
       blocked.resolve();
       scenario.runtime.beginShutdown();

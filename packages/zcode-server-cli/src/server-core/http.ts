@@ -20,9 +20,9 @@ import {
   type CancellationToken,
 } from "@zcode/rpc";
 import {
-  createZCodeAgentConnectionScope,
+  createNekodeAgentConnectionScope,
   IProviderProvisioningTargetService,
-  IZCodeAgentService,
+  INekodeAgentService,
   IConversationShareService,
   ServiceCollection,
 } from "@zcode/services";
@@ -36,9 +36,9 @@ import {
   SERVER_REMOTE_PROTOCOL_VERSION,
   TOPIC_RESOURCE_RELAY_CHANNEL,
   serverRemoteInfoOutputSchema,
-  ZCODE_COMPATIBILITY_MANIFEST,
-  ZCODE_RPC_HOST_CAPABILITY_HEADER,
-  ZCODE_VERSION,
+  NEKODE_COMPATIBILITY_MANIFEST,
+  NEKODE_RPC_HOST_CAPABILITY_HEADER,
+  NEKODE_VERSION,
   type ServerRemoteInfo,
 } from "@zcode/shared";
 import { createHostCapabilityStore, type HostCapabilityStore } from "./hostCapability.js";
@@ -117,7 +117,7 @@ function exposeWebSocket(
   const server = workspaceIdentityMapper
     ? new SourceServerWorkspaceIdentityChannelServer(loggedServer, workspaceIdentityMapper)
     : loggedServer;
-  const agentService = services.getOptional(IZCodeAgentService);
+  const agentService = services.getOptional(INekodeAgentService);
   const reverseClient =
     clientMode === "desktop-continuous" && resourcePeers ? new ChannelClient(protocol) : undefined;
   const rawResourceChannel = reverseClient?.getChannel(TOPIC_RESOURCE_RELAY_CHANNEL);
@@ -152,14 +152,14 @@ function exposeWebSocket(
         : ("terminal-client" as const),
   };
   const scope = agentService
-    ? createZCodeAgentConnectionScope(
+    ? createNekodeAgentConnectionScope(
         peer ? peer.wrapAgent(agentService) : agentService,
         connectionContext,
       )
     : undefined;
   const overrides = new Map<string, unknown>();
   if (scope) {
-    overrides.set(IZCodeAgentService.channelName, scope.service);
+    overrides.set(INekodeAgentService.channelName, scope.service);
   }
   const shareService = services.getOptional(IConversationShareService);
   if (shareService) {
@@ -220,11 +220,11 @@ export async function createCoreHttpServer(
   const ingressToken = options.ingressToken?.trim();
   const info: ServerRemoteInfo = serverRemoteInfoOutputSchema.parse({
     serverId: options.serverId ?? hostname() ?? "zcode-server",
-    version: ZCODE_VERSION,
+    version: NEKODE_VERSION,
     protocolVersion: SERVER_REMOTE_PROTOCOL_VERSION,
     authRequired: Boolean(ingressToken),
     workspaces: [],
-    compatibility: ZCODE_COMPATIBILITY_MANIFEST,
+    compatibility: NEKODE_COMPATIBILITY_MANIFEST,
     migration: { failedPathCount: options.migrationFailedPathCount ?? 0 },
     identity: { osUser: resolveServerOsUser(), hostname: hostname() },
     capabilities: {
@@ -285,7 +285,7 @@ export async function createCoreHttpServer(
     })),
   );
   app.use("/ws/host", async (context, next) => {
-    const capability = context.req.header(ZCODE_RPC_HOST_CAPABILITY_HEADER);
+    const capability = context.req.header(NEKODE_RPC_HOST_CAPABILITY_HEADER);
     if (!capabilities.consume(capability)) {
       return context.json({ error: "Invalid or expired host capability" }, 401);
     }

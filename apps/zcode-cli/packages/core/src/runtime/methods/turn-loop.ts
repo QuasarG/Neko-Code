@@ -1,12 +1,10 @@
 import {
   appendRequestAnnouncements,
   appendRuntimeContextAnnouncements,
-  appendRuntimeSkillsAnnouncement,
   persistAnnouncements,
 } from "./context-refresh.js";
 import { getTurnTools } from "./turn-tool-visibility.js";
 import { refreshOffPeakTurnAfterTakeover } from "../off-peak/turn.js";
-import { appendRuntimeAgentListing } from "../helpers/agent-listing.js";
 import { beginLocalTurnPreparation } from "@zcode/contracts";
 import { buildToolSearchAnnouncement } from "../../tool/search/exposure.js";
 import {
@@ -46,9 +44,8 @@ import {
   recordCompactSuccess,
 } from "./turn-loop-state.js";
 import type { RegularTurnLoopState } from "./turn-loop-state.js";
-import { consumeSettledProjectMemoryRecall } from "../helpers/project-memory-recall.js";
-import { consumePendingProjectMemoryUpdate } from "../helpers/project-memory-dream.js";
-import { ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH } from "../../memory/project-memory-retrieval-branch.js";
+import { appendNekoMemoryAttachments } from "../helpers/neko-memory-turn.js";
+import { appendWardrobeAttachment } from "../helpers/wardrobe-turn.js";
 import {
   appendTurnRequestEntries,
   commitTurnRequestEntries,
@@ -108,16 +105,6 @@ export async function runRegularTurnLoop(
       if (!endsWithNewTurnInput(state.turnRequestState.entries)) {
         await collectInputAttachments(this, state, tools);
       }
-    }
-
-    if (state.completedRealToolResultBatch && !outputTokenRecoveryActive) {
-      state.completedRealToolResultBatch = false;
-      // memory prefetch 排在输入附件之后。
-      const recallEntry = consumeSettledProjectMemoryRecall(
-        this,
-        ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH,
-      );
-      appendTurnRequestEntries(state.turnRequestState, recallEntry ? [recallEntry] : []);
     }
 
     const compactPhase =
@@ -267,10 +254,8 @@ async function collectInputAttachments(
     state.turnTraceContext,
     state.turnAbortSignal,
   );
-  // ToolSearch 公告（deferred tools 增量）在模型之后、agent listing 之前。
+  // ToolSearch 公告（deferred tools 增量）；agent listing / skills 已随 system prompt 下发。
   await appendToolSearchAnnouncement(runtime, state, tools);
-  await appendRuntimeAgentListing(runtime, state.turnRequestState, tools, state.turnTraceContext);
-  await appendRuntimeSkillsAnnouncement(runtime, state.turnRequestState, state.turnTraceContext);
   // 退出提醒由历史推导（最近的 plan 提醒之后没有退出提醒），内存标记只是额外触发。
   // 修复原因：只看内存标记时，冷恢复后标记丢失，计划模式的退出提醒不会发出。
   if (
@@ -335,28 +320,18 @@ async function collectInputAttachments(
   // output_style 每次收集都产出，不去重。修复原因：只在首步发且不落 session 时，
   // 工具批次后的请求缺少它，resume 后的前缀也会变化。
   const outputStyleReminderBody = buildRuntimeOutputStyleReminderBody(state.turnOutputStyle);
-  // Dream 可能在同一 turn 的首个模型请求期间完成；每次收集都检查，把一次性更新放进紧随其后的请求。
-  // 修复原因：作为只属于单次请求的 entry 时，后续请求缺少它，同一会话内的请求前缀因此变化。
-  const pendingMemoryUpdate = runtime.pendingMemoryUpdate;
-  const memoryUpdate = consumePendingProjectMemoryUpdate(runtime);
-  try {
-    await persistAnnouncements(
-      runtime,
-      state.turnRequestState,
-      [
-        ...(outputStyleReminderBody
-          ? [systemReminderAttachmentEntry("output_style", outputStyleReminderBody)]
-          : []),
-        ...(memoryUpdate ? [memoryUpdate] : []),
-      ],
-      state.turnTraceContext,
-    );
-  } catch (error) {
-    // 修复原因：更新先取出再写库，写库失败时这条一次性更新会永久丢失。
-    // 放回去由下一次收集再发；期间 Dream 产生了更新的版本时保留新的。
-    runtime.pendingMemoryUpdate ??= pendingMemoryUpdate;
-    throw error;
-  }
+  await persistAnnouncements(
+    runtime,
+    state.turnRequestState,
+    outputStyleReminderBody
+      ? [systemReminderAttachmentEntry("output_style", outputStyleReminderBody)]
+      : [],
+    state.turnTraceContext,
+  );
+  // Neko 记忆投递排在最后：用户消息已持久化，回执/快照可以安全提交。
+  await appendNekoMemoryAttachments(runtime, state, state.turnTraceContext);
+  // 衣橱注入紧邻记忆附件收集：同一真实用户轮、同一条持久化纪律。
+  await appendWardrobeAttachment(runtime, state, state.turnTraceContext);
 }
 
 async function appendToolSearchAnnouncement(

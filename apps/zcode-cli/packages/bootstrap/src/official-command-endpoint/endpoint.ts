@@ -1,4 +1,4 @@
-/* 官方插件命令进程的本地代理端点（ZCode Sites 技术方案 5.8）。
+/* 官方插件命令进程的本地代理端点（Nekode Sites 技术方案 5.8）。
    CLI 不持有任何登录凭证：它把请求发到这里，端点按 session token 认出 session，
    向 host 现取官方身份头补上，再转发给 zcode-server，响应原样返回。
    凭证只在本进程内存里用于这一次转发，不缓存、不落盘、不进 env、不进日志。
@@ -10,8 +10,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Readable } from "node:stream";
 import {
-  ZCODE_OFFICIAL_ENDPOINT_ENV_KEY,
-  ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
+  NEKODE_OFFICIAL_ENDPOINT_ENV_KEY,
+  NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY,
 } from "@zcode/shared";
 import type {
   ExecutionPort,
@@ -102,7 +102,7 @@ export function createOfficialCommandEndpoint(
       if (!res.writableFinished) abort.abort();
     });
 
-    const origin = options.resolveZCodeApiOrigin();
+    const origin = options.resolveNekodeApiOrigin();
     // host 按 workspace 把请求路由到本 CLI 拥有的工作区；共享 CLI 的进程 cwd 不是任何工作区，
     // 曾因此被 host 拒绝并误报为未登录。必须用发起命令的会话自己的 workspace。
     const workspace = workspaceBySession.get(sessionId)!;
@@ -138,7 +138,7 @@ export function createOfficialCommandEndpoint(
       if (typeof value === "string") headers.set(name, value);
     }
     for (const [name, value] of Object.entries(auth.headers)) headers.set(name, value);
-    if (options.appVersion) headers.set("X-ZCode-App-Version", options.appVersion);
+    if (options.appVersion) headers.set("X-Nekode-App-Version", options.appVersion);
 
     const method = (req.method ?? "GET").toUpperCase();
     const hasBody = method !== "GET" && method !== "HEAD";
@@ -195,8 +195,8 @@ export function createOfficialCommandEndpoint(
         sessionByToken.set(token, sessionId);
       }
       return {
-        [ZCODE_OFFICIAL_ENDPOINT_ENV_KEY]: address,
-        [ZCODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]: token,
+        [NEKODE_OFFICIAL_ENDPOINT_ENV_KEY]: address,
+        [NEKODE_OFFICIAL_ENDPOINT_TOKEN_ENV_KEY]: token,
       };
     },
     async close() {

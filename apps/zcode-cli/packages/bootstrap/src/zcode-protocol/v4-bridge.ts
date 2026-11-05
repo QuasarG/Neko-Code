@@ -16,8 +16,8 @@ import { readBackgroundBashOutputFromOwner } from "./background-work-owner.js";
 import {
   isConversationRealUserTurnStarter,
   parseRemoteWorkspaceIdentity,
-  type ZCodeSessionContextUsage,
-  type ZCodeWorkspaceRef,
+  type NekodeSessionContextUsage,
+  type NekodeWorkspaceRef,
 } from "@zcode/shared";
 import { createExternalTurnFaultError, normalizeGenUiInput } from "@zcode/core";
 import {
@@ -114,8 +114,8 @@ import {
   readSessionContextUsage,
 } from "./server-operations.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "./server-types.js";
 import { createProtocolLogger } from "./server-types.js";
 
@@ -128,7 +128,7 @@ function normalizeStoredTitleSource(
 }
 
 function sessionUsageSeedFromRuntimeContextUsage(
-  contextUsage: ZCodeSessionContextUsage | undefined,
+  contextUsage: NekodeSessionContextUsage | undefined,
   contextWindowOverride?: number,
 ): SessionUsageSeed | null {
   if (!contextUsage || contextUsage.used <= 0) {
@@ -161,7 +161,7 @@ function stableForkMode(value: string, fallback: CollaborationMode): Collaborati
 }
 
 async function readConversationFileChanges(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   sessionId: string,
   messageIds: readonly string[],
   targetTurnId?: TurnId | null,
@@ -188,9 +188,9 @@ async function readConversationFileChanges(
  * 事件 id / traceId 照 transcript hydration 的合成事件；sequenceNumber 由 cold merge 统一重排。
  */
 async function replayDynamicWorkflowRunEvents(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   memoryEvents: readonly SessionEvent[],
 ): Promise<SessionEvent[]> {
   if (context.sessions.get(sessionId) !== record) return [];
@@ -226,9 +226,9 @@ async function replayDynamicWorkflowRunEvents(
 }
 
 async function resolveConversationBackingRecord(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
-): Promise<ZCodeProtocolSessionRecord | undefined> {
+): Promise<NekodeProtocolSessionRecord | undefined> {
   const direct = context.sessions.get(sessionId);
   if (direct) return direct;
 
@@ -242,7 +242,7 @@ async function resolveConversationBackingRecord(
 }
 
 async function previewConversationFileRewind(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   messageIds: readonly string[],
   targetTurnId?: TurnId | null,
 ): Promise<V4ConversationFileRewindPreviewResult> {
@@ -255,7 +255,6 @@ async function previewConversationFileRewind(
 interface InputCommandForAdmission {
   inputOrigin?: "desktop" | "mobile";
   conversationQuotes?: import("@zcode/contracts").TurnInputIntentMetadata["conversationQuotes"];
-  botGroupSource?: ConversationInputIntent["botGroupSource"];
   kind: ConversationInputIntent["kind"];
   text: string;
   attachments: readonly AttachmentRef[];
@@ -340,7 +339,6 @@ export function resolveInputCommandForAdmission(
       highspeedMeta?: ConversationInputIntent["highspeed"];
       inputOrigin?: "desktop" | "mobile";
       conversationQuotes?: import("@zcode/contracts").TurnInputIntentMetadata["conversationQuotes"];
-      botGroupSource?: ConversationInputIntent["botGroupSource"];
     };
     return {
       kind: envelope.type,
@@ -352,7 +350,6 @@ export function resolveInputCommandForAdmission(
       ...(payload.highspeedMeta ? { highspeed: payload.highspeedMeta } : {}),
       ...(payload.inputOrigin ? { inputOrigin: payload.inputOrigin } : {}),
       ...(payload.conversationQuotes ? { conversationQuotes: payload.conversationQuotes } : {}),
-      ...(payload.botGroupSource ? { botGroupSource: payload.botGroupSource } : {}),
     };
   }
   if (envelope.type === "compact") {
@@ -382,7 +379,6 @@ export function resolveInputCommandForAdmission(
     ...((payload.conversationQuotes ?? canonical.intent.conversationQuotes)
       ? { conversationQuotes: payload.conversationQuotes ?? canonical.intent.conversationQuotes }
       : {}),
-    ...(canonical.intent.botGroupSource ? { botGroupSource: canonical.intent.botGroupSource } : {}),
     text:
       envelope.type === "editUserQuery"
         ? (payload.newText ?? canonical.intent.text)
@@ -440,7 +436,6 @@ function buildForkInitialInput(
     kind: input.kind,
     ...(input.inputOrigin ? { inputOrigin: input.inputOrigin } : {}),
     ...(input.conversationQuotes ? { conversationQuotes: input.conversationQuotes } : {}),
-    ...(input.botGroupSource ? { botGroupSource: input.botGroupSource } : {}),
     text: input.text,
     ...(input.genUiContext !== undefined ? { genUiContext: input.genUiContext } : {}),
     attachments: input.attachments,
@@ -473,7 +468,7 @@ function buildForkInitialInput(
 }
 
 async function recordForkStartFailureBestEffort(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
   command: Pick<CommandEnvelope, "commandId">,
   error: unknown,
@@ -558,8 +553,8 @@ async function recordForkStartFailureBestEffort(
  * 该阶段失败必须留下可重试事实与 warning，但不能把 durable accepted child 反转成 failed。
  */
 export async function registerCommittedForkBestEffort(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   fork: Parameters<typeof registerForkedSession>[2],
   options: Parameters<typeof registerForkedSession>[3] & { commandId: string },
   register: typeof registerForkedSession = registerForkedSession,
@@ -669,7 +664,7 @@ export function persistHighspeedTimingOnTurnTerminal(
 }
 
 export function createConversationV4Gateway(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
 ): ConversationV4Gateway {
   const log = createProtocolLogger(context.deps)?.child({
     module: "bootstrap.zcode_protocol_v4_gateway",
@@ -699,7 +694,7 @@ export function createConversationV4Gateway(
   // Highspeed 执行材料含临时凭据：只按 session/sourceCommandId 驻留内存，绝不进入
   // TurnSteerQueued、snapshot 或 transcript。CLI 重启后缺失时队列提升自动走原模型。
   const queuedTurnExecutions = new Map<string, Map<string, V4QueuedTurnExecution>>();
-  const autoDrainV4QueueIfReady = async (record: ZCodeProtocolSessionRecord): Promise<void> => {
+  const autoDrainV4QueueIfReady = async (record: NekodeProtocolSessionRecord): Promise<void> => {
     const head = context.v4Gateway?.getQueueHead(record.app.sessionId);
     if (!head) {
       // 外层恢复 FIFO 已消费到空；guide 仍只由 core tool-batch 边界行内消费。
@@ -773,7 +768,7 @@ export function createConversationV4Gateway(
       });
     }
   };
-  const scheduleAutoDrainRetry = (record: ZCodeProtocolSessionRecord): void => {
+  const scheduleAutoDrainRetry = (record: NekodeProtocolSessionRecord): void => {
     const sessionId = record.app.sessionId;
     if (autoDrainRetryTimers.has(sessionId)) return;
     const timer = setTimeout(() => {
@@ -879,7 +874,6 @@ export function createConversationV4Gateway(
       const conversationInputIntent = conversationInputIntentSchema.parse({
         ...(input.inputOrigin ? { inputOrigin: input.inputOrigin } : {}),
         ...(input.conversationQuotes ? { conversationQuotes: input.conversationQuotes } : {}),
-        ...(input.botGroupSource ? { botGroupSource: input.botGroupSource } : {}),
         sourceCommandId: envelope.commandId,
         queueItemId: admission.queueItemId,
         clientId: envelope.clientId || "cli",
@@ -1212,7 +1206,7 @@ export function createConversationV4Gateway(
     },
     // ── 过渡钩子（死期 = M5 波次 2）──────────────────────────────
     ensureModelReady: (record) =>
-      ensureSessionModelAvailableForNextTurn(context, record as ZCodeProtocolSessionRecord),
+      ensureSessionModelAvailableForNextTurn(context, record as NekodeProtocolSessionRecord),
     // 切模型前确认目标 Provider 已存在于当前 Environment Registry。普通模型命令只提交
     // Selection；Provider 事实始终由 Worker 自己的 Registry 解释。
     ensureProviderAvailable: async (sessionId, providerId) => {
@@ -1224,8 +1218,8 @@ export function createConversationV4Gateway(
       return { available: true };
     },
     afterLegacyStateMutation: async (record, reason) => {
-      await afterStateMutation(context, record as ZCodeProtocolSessionRecord, reason);
-      await autoDrainV4QueueIfReady(record as ZCodeProtocolSessionRecord);
+      await afterStateMutation(context, record as NekodeProtocolSessionRecord, reason);
+      await autoDrainV4QueueIfReady(record as NekodeProtocolSessionRecord);
     },
     // deleteSession 的执行面：先由 CLI 持久化软删除事实，再内联旧 closeSession op 的
     // 4 步释放运行实例（不 import 旧 op；随波次 2 会话注册表归 v4 后收编）。
@@ -1664,7 +1658,7 @@ export function createConversationV4Gateway(
     resumePersistedSession: async (
       sessionId,
       resumeThoughtLevel,
-      workspace?: ZCodeWorkspaceRef,
+      workspace?: NekodeWorkspaceRef,
       additionalDirectories?: string[],
       persistedMessages?: MessageWithParts[],
     ) => {
@@ -1693,7 +1687,7 @@ export function createConversationV4Gateway(
       } catch (error) {
         if (!(error instanceof SessionLifecycleError) || error.code !== "sessionNotFound")
           throw error;
-        context.logger?.warn("ZCode Protocol v4 cold resume has no persisted session", {
+        context.logger?.warn("Nekode Protocol v4 cold resume has no persisted session", {
           activeSessionCount: context.sessions.size,
           event: "zcode_protocol.v4.resume_persisted_missing",
           module: "bootstrap.zcode_protocol",
@@ -2149,7 +2143,7 @@ export function createConversationV4Gateway(
       };
     },
     onError: (scope, error, errorContext) =>
-      context.logger?.warn("ZCode Protocol v4 gateway error", {
+      context.logger?.warn("Nekode Protocol v4 gateway error", {
         ...errorContext,
         error: error instanceof Error ? error.message : String(error),
         event: "zcode_protocol.v4.gateway_error",

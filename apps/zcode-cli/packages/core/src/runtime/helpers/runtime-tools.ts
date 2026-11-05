@@ -20,7 +20,7 @@ import {
   resolveRuntimeDynamicWorkflowToolsIncluded,
 } from "./tool-allowlist.js";
 import { isStaleBranchRuntimeTaskEvent } from "../methods/runtime-command-generation.js";
-import { resolveEnabledProjectMemoryRoot } from "./project-memory.js";
+import { isMainMemoryTaskType } from "./project-memory.js";
 import { sessionHasLoadedSkill } from "../../agent/loaded-skills.js";
 
 const DEFAULT_SUBAGENT_BACKGROUND_BASH_MAX_MS = 3_600_000;
@@ -73,9 +73,15 @@ function registerRuntimeBuiltInTools(runtime: AgentRuntimeInternal, deps: AgentR
     // 取值收在 tool-allowlist.ts，与分支刷新那个入口共用同一个推导。
     includeDynamicWorkflow: resolveRuntimeDynamicWorkflowToolsIncluded(runtime),
     // 修复原因：browserControlPort 只是宿主能力，不应隐式暴露高权限 node_repl。
-    // node_repl/browser-use 由 ZCode 官方 browser-use 插件启停推导出的 runtimeFeatures 控制。
+    // node_repl/browser-use 由 Nekode 官方 browser-use 插件启停推导出的 runtimeFeatures 控制。
     includeNodeRepl: nodeReplEnabled,
     includeBrowserUse: browserUseEnabled,
+    // wardrobe 工具以 wardrobeStore 存在为门；子代理与工作流子会话不构造
+    // 衣橱端口，因此没有换装面。记忆面已改走通用 Read/Edit/Write，不再有独立工具。
+    includeWardrobe:
+      runtime.wardrobeStore !== undefined &&
+      runtime.config.subagentContext === undefined &&
+      isMainMemoryTaskType(runtime.config.taskType),
     embeddedSearchEnabled: resolveRuntimeEmbeddedSearchEnabled(runtime),
     allowedTools: resolveBuiltInToolAllowlist(runtime.config),
     // workflow_child 的结构性禁用（CreateWorkflow/SaveWorkflow 因 alwaysAsk 隐形挂起；
@@ -189,7 +195,6 @@ function createRuntimeToolExecutor(
     artifactStore: deps.artifactStore,
     automationPort: deps.automationPort,
     offPeakPort: deps.offPeakPort,
-    topicResourcePort: deps.topicResourcePort,
     sessionStore: deps.sessionStore,
     sessionModePort: createRuntimeSessionModePort(runtime),
     workflowPort: deps.workflowPort,
@@ -223,8 +228,9 @@ function createRuntimeToolExecutor(
     remoteSessionId: runtime.config.remoteSessionId,
     clientMode: runtime.config.clientMode,
     deliveryKind: runtime.config.deliveryKind,
-    getMemoryRoot: () =>
-      deps.memoryRoot ?? resolveEnabledProjectMemoryRoot(runtime.config, runtime.workspaceRoot),
+    getNekoMemoryBooks: () => runtime.nekoMemoryBooks,
+    // wardrobe 工具的全部动作走这个端口；与 includeWardrobe 注册门同一来源。
+    getWardrobeStore: () => runtime.wardrobeStore,
     runtimeScope: runtime.config.taskType === "subagent_child" ? "subagent" : "main",
     permissionTimeoutMs: runtime.config.permissionTimeoutMs,
     sessionId: runtime.sessionId,

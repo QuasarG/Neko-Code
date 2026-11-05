@@ -5,8 +5,8 @@ import {
   type OAuthProviderId,
   type ProviderFamilyDomain,
   type ProjectAccessTokenMaterial,
-  type ZCodeAccountAccess,
-  type ZCodeProviderAccountAccess,
+  type NekodeAccountAccess,
+  type NekodeProviderAccountAccess,
   ZAI_PROVIDER_ID,
 } from "@zcode/shared";
 
@@ -21,7 +21,7 @@ export interface AccountRequestAuthMaterial {
 export interface AccountRequestAuthInput {
   providerId: string;
   modelId?: string;
-  accountAccess: ZCodeProviderAccountAccess | ZCodeAccountAccess;
+  accountAccess: NekodeProviderAccountAccess | NekodeAccountAccess;
   expectedAccountScope?: string;
   rejectedProjectTokenFingerprint?: string;
   reason: RequestVerificationReason | "off-peak" | "usage";
@@ -29,7 +29,7 @@ export interface AccountRequestAuthInput {
 
 export interface AccountAccessIdentityInput {
   providerId: string;
-  accountAccess: ZCodeProviderAccountAccess | ZCodeAccountAccess;
+  accountAccess: NekodeProviderAccountAccess | NekodeAccountAccess;
 }
 
 export class AccountRequestCredentialUnavailableError extends Error {
@@ -40,15 +40,15 @@ export class AccountRequestCredentialUnavailableError extends Error {
 }
 
 export interface AccountRequestAuthResolver {
-  resolveAccessCurrent(access: ZCodeProviderAccountAccess): Promise<ZCodeAccountAccess | null>;
+  resolveAccessCurrent(access: NekodeProviderAccountAccess): Promise<NekodeAccountAccess | null>;
   resolveCurrent(input: AccountRequestAuthInput): Promise<AccountRequestAuthMaterial>;
   assertCurrent(input: AccountAccessIdentityInput): Promise<void>;
 }
 
 interface AccountProviderRequestAuthServiceOptions {
   resolveCurrentAccountAccess(
-    access: ZCodeProviderAccountAccess,
-  ): Promise<ZCodeAccountAccess | null>;
+    access: NekodeProviderAccountAccess,
+  ): Promise<NekodeAccountAccess | null>;
   loadOAuthTokenSet(providerId: OAuthProviderId): Promise<{
     accessToken?: string | null;
     zcodeJwtToken?: string | null;
@@ -59,7 +59,7 @@ interface AccountProviderRequestAuthServiceOptions {
     rejectedProjectTokenFingerprint?: string,
   ): Promise<ProjectAccessTokenMaterial | null>;
   resolveTeamPlanMaterial(
-    access: Extract<ZCodeAccountAccess, { planKind: "team-coding-plan" }>,
+    access: Extract<NekodeAccountAccess, { planKind: "team-coding-plan" }>,
     rejectedProjectTokenFingerprint?: string,
   ): Promise<ProjectAccessTokenMaterial | null>;
 }
@@ -71,7 +71,7 @@ class AccountProviderRequestAuthService implements AccountRequestAuthResolver {
     this.#options = options;
   }
 
-  resolveAccessCurrent(access: ZCodeProviderAccountAccess): Promise<ZCodeAccountAccess | null> {
+  resolveAccessCurrent(access: NekodeProviderAccountAccess): Promise<NekodeAccountAccess | null> {
     return this.#options.resolveCurrentAccountAccess(access);
   }
 
@@ -115,7 +115,7 @@ class AccountProviderRequestAuthService implements AccountRequestAuthResolver {
     };
   }
 
-  async #scope(access: ZCodeAccountAccess): Promise<string> {
+  async #scope(access: NekodeAccountAccess): Promise<string> {
     const login = await this.#options.loadOAuthTokenSet(resolveOAuthProviderId(access.family));
     if (!login?.accessToken?.trim())
       throw new AccountRequestCredentialUnavailableError(access.family);
@@ -141,8 +141,8 @@ class AccountProviderRequestAuthService implements AccountRequestAuthResolver {
   }
 
   #resolveAccess(
-    access: ZCodeProviderAccountAccess | ZCodeAccountAccess,
-  ): Promise<ZCodeAccountAccess | null> {
+    access: NekodeProviderAccountAccess | NekodeAccountAccess,
+  ): Promise<NekodeAccountAccess | null> {
     return "mode" in access
       ? this.#options.resolveCurrentAccountAccess(access)
       : Promise.resolve(access);

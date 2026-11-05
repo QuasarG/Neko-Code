@@ -1,34 +1,33 @@
-/* oxlint-disable eslint(max-lines) -- ZCode Agent store 类型和默认状态集中导出，避免切片间重复定义共享结构。 */
+/* oxlint-disable eslint(max-lines) -- Nekode Agent store 类型和默认状态集中导出，避免切片间重复定义共享结构。 */
 /**
- * ZCode Session Store 类型定义、接口、常量与默认值工厂
+ * Nekode Session Store 类型定义、接口、常量与默认值工厂
  *
  * 从 zcodeSessionStore.ts 拆分出来，供 store 本体和 selectors / navigation 等子模块共享。
  */
 import {
   buildNativeSupplierKey,
-  ZCODE_AGENT_PROVIDER,
-  type ZCodeApiRetryStatus,
+  NEKODE_AGENT_PROVIDER,
+  type NekodeApiRetryStatus,
   type ModelSelectionGhostReason,
   type ModelSelectionResolution,
-  type ZCodeWorkspaceInitStatus,
-  type ZCodeTaskRuntimeStatus,
-  type ZCodeProvider,
-  type ZCodeTaskMeta,
-  type ZCodeContextCacheUsage,
-  type ZCodeConfigOption,
-  type ZCodeSlashCommand,
-  type ZCodePermissionRequest,
-  type ZCodeElicitationRequest,
-  type ZCodeBackgroundTaskControlItem,
-  type ZCodeSessionActiveTurnKind,
-  type ZCodeContextUsageBreakdownItem,
+  type NekodeWorkspaceInitStatus,
+  type NekodeTaskRuntimeStatus,
+  type NekodeProvider,
+  type NekodeTaskMeta,
+  type NekodeContextCacheUsage,
+  type NekodeConfigOption,
+  type NekodeSlashCommand,
+  type NekodePermissionRequest,
+  type NekodeElicitationRequest,
+  type NekodeBackgroundTaskControlItem,
+  type NekodeSessionActiveTurnKind,
+  type NekodeContextUsageBreakdownItem,
   type InputId,
   type SessionCreateSource,
 } from "@zcode/shared";
 import type { SessionConfigState, SubmissionMode } from "@zcode/shared/zcode-protocol-v4";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { NekodeUiError } from "@/lib/zcodeUiError.js";
 import type {
-  AutomationsNavigationTab,
   TaskNavigationHistory,
   WorkspaceNavEntry,
 } from "@/lib/taskNavigationHistory.js";
@@ -39,30 +38,30 @@ import type { MentionCategory, MentionItemData } from "@/mentions/mentionTypes.j
 // ────────────────────────────────────────────
 
 export interface WorkspaceInitState {
-  status: ZCodeWorkspaceInitStatus;
+  status: NekodeWorkspaceInitStatus;
   error: string | null;
   attempts: number;
 }
 
 export interface TaskRuntimeState {
-  status: ZCodeTaskRuntimeStatus;
+  status: NekodeTaskRuntimeStatus;
   error: string | null;
-  /** 该 task 当前运行态绑定的 ZCode Agent 进程 provider，用于 workspace 级进程重建 busy lock。 */
-  provider?: ZCodeProvider;
+  /** 该 task 当前运行态绑定的 Nekode Agent 进程 provider，用于 workspace 级进程重建 busy lock。 */
+  provider?: NekodeProvider;
   /** 当前模型上下文窗口容量；模型状态事件只更新这里，不覆盖真实 usage.used。 */
   contextWindow: number | null;
   usage: TaskUsageState | null;
-  apiRetry: ZCodeApiRetryStatus | null;
+  apiRetry: NekodeApiRetryStatus | null;
   /** Agent 明确上报的后台任务控制项；host 运行期状态，不落盘持久化。 */
-  backgroundTaskControls: ZCodeBackgroundTaskControlItem[];
+  backgroundTaskControls: NekodeBackgroundTaskControlItem[];
   /** 当前 session active turn 的类型；用于区分普通生成和 compact 维护态。 */
-  activeTurnKind?: ZCodeSessionActiveTurnKind;
+  activeTurnKind?: NekodeSessionActiveTurnKind;
   activeInputId?: InputId;
   activeInputOwnerClientId?: string;
 }
 
 export interface DraftRuntimeState {
-  status: ZCodeTaskRuntimeStatus;
+  status: NekodeTaskRuntimeStatus;
   error: string | null;
 }
 
@@ -74,9 +73,9 @@ export interface TaskUsageState {
   /** Agent 上报的累计费用 */
   cost?: { amount: number; currency: string } | null;
   /** Agent/app 协议返回的当前主轮缓存命中信息。 */
-  cache?: ZCodeContextCacheUsage;
+  cache?: NekodeContextCacheUsage;
   /** Agent 按来源估算的上下文字符量，只用于 context usage 弹窗比例展示。 */
-  breakdown?: ZCodeContextUsageBreakdownItem[];
+  breakdown?: NekodeContextUsageBreakdownItem[];
 }
 
 export interface ElicitationAnswerDraft {
@@ -95,12 +94,12 @@ export interface ElicitationFormDraft {
  * 展示态的写入方已随旧协议链路删除，读侧由 v4 conversation 投影承接。
  */
 export interface TaskUiState {
-  permissionRequest: ZCodePermissionRequest | null;
-  pendingPermissionRequests: ZCodePermissionRequest[];
-  elicitationRequest: ZCodeElicitationRequest | null;
-  pendingElicitationRequests: ZCodeElicitationRequest[];
+  permissionRequest: NekodePermissionRequest | null;
+  pendingPermissionRequests: NekodePermissionRequest[];
+  elicitationRequest: NekodeElicitationRequest | null;
+  pendingElicitationRequests: NekodeElicitationRequest[];
   elicitationFormDraftsByRequestId: Record<string, ElicitationFormDraft>;
-  error: ZCodeUiError | null;
+  error: NekodeUiError | null;
 }
 
 export type ModelSwitchStage =
@@ -145,15 +144,15 @@ export interface ComposerInitialization {
   config: ComposerInitialConfig;
 }
 
-export interface WorkspaceZCodeUIState {
+export interface WorkspaceNekodeUIState {
   /** 首次分享导入的导航参数；接收、换任务或新建后结束，不持久化。 */
   composerInitialization?: ComposerInitialization;
   /** 当前 workspace 激活中的 task */
   activeTaskId: string | null;
   /**
-   * ZCode Agent 的 workspace 初始化状态。
+   * Nekode Agent 的 workspace 初始化状态。
    *
-   * 单 ZCode Agent 迁移后继续按 provider 分桶会保留多份已经不会再被真实运行时更新的旧状态，
+   * 单 Nekode Agent 迁移后继续按 provider 分桶会保留多份已经不会再被真实运行时更新的旧状态，
    * UI 在 task / draft / remote identity 切换时容易读到历史 provider 的 ready/failed。这里把状态收敛成
    * workspace 单一事实源，provider 参数只作为旧调用兼容输入。
    */
@@ -174,7 +173,7 @@ export interface WorkspaceZCodeUIState {
   timelineBottomRequestVersion: number;
   timelineBottomRequest: TimelineBottomRequest | null;
   /** 草稿态错误需要跨页面保留，避免切走再回来后提示被本地 state 一起卸载 */
-  draftError: ZCodeUiError | null;
+  draftError: NekodeUiError | null;
   /** 模型切换中的并发保护 requestId；只允许最新请求落库 */
   modelSwitchRequestId: string | null;
   /** 模型切换是否进行中（用于禁发和工具栏 loading） */
@@ -185,39 +184,39 @@ export interface WorkspaceZCodeUIState {
   taskRuntimeByTaskId: Record<string, TaskRuntimeState>;
   /** 每个 task 自己的临时 UI 态，避免切换任务后丢失计划面板和权限弹窗 */
   taskUiByTaskId: Record<string, TaskUiState>;
-  taskConfigOptionsByTaskId: Record<string, ZCodeConfigOption[]>;
+  taskConfigOptionsByTaskId: Record<string, NekodeConfigOption[]>;
   taskConfigOptionsStatusByTaskId: Record<string, ConfigOptionsStatus>;
   /** task 未读状态的兼容缓存；真实未读状态以 task meta.unreadAt 为准 */
   taskUnreadByTaskId: Record<string, boolean>;
   /** 任务列表的乐观元数据，解决新 task 落盘前左侧列表显示慢半拍的问题 */
-  optimisticTaskListByTaskId: Record<string, ZCodeTaskMeta>;
+  optimisticTaskListByTaskId: Record<string, NekodeTaskMeta>;
   draftCreateSource: SessionCreateSource;
-  /** 当前 workspace 选中的 ZCode Agent provider */
-  selectedProvider: ZCodeProvider;
+  /** 当前 workspace 选中的 Nekode Agent provider */
+  selectedProvider: NekodeProvider;
   /** 当前模型供应商选中键（native/custom/ghost） */
   selectedSupplierKey: string;
   /** 当前供应商是否为 ghost 态 */
   isGhostSupplier: boolean;
   /** 当前 ghost 态来源 */
   supplierMismatchReason: ModelSelectionGhostReason | null;
-  /** ZCode Agent configOptions（模型、模式、思考级别等） */
-  configOptions: ZCodeConfigOption[] | null;
+  /** Nekode Agent configOptions（模型、模式、思考级别等） */
+  configOptions: NekodeConfigOption[] | null;
   /** configOptions 加载状态 */
   configOptionsStatus: ConfigOptionsStatus;
   /** 可用的 slash commands */
-  slashCommands: ZCodeSlashCommand[];
+  slashCommands: NekodeSlashCommand[];
   /** 任务列表版本号，每次创建/删除任务时自增，驱动 TaskList 刷新 */
   taskListVersion: number;
   /** 缓存已拉取的任务列表，避免组件 remount 时闪烁 */
-  taskListCache: ZCodeTaskMeta[] | null;
+  taskListCache: NekodeTaskMeta[] | null;
   /** 新建草稿时递增，驱动输入框在切到草稿态后主动聚焦 */
   draftFocusVersion: number;
 }
 
-export interface ZCodeSessionStoreState {
+export interface NekodeSessionStoreState {
   /** 按 workspace 维护聊天相关 UI 状态 */
-  workspaces: Record<string, WorkspaceZCodeUIState>;
-  getWorkspaceState: (workspacePath: string, workspaceIdentity?: string) => WorkspaceZCodeUIState;
+  workspaces: Record<string, WorkspaceNekodeUIState>;
+  getWorkspaceState: (workspacePath: string, workspaceIdentity?: string) => WorkspaceNekodeUIState;
 
   setActiveTaskId: (
     workspacePath: string,
@@ -256,7 +255,7 @@ export interface ZCodeSessionStoreState {
   clearDraftTaskGroup: (workspacePath: string, workspaceIdentity?: string) => void;
   startDraft: (
     workspacePath: string,
-    provider?: ZCodeProvider,
+    provider?: NekodeProvider,
     workspaceIdentity?: string,
     options?: {
       projectId?: string | null;
@@ -266,7 +265,7 @@ export interface ZCodeSessionStoreState {
   ) => void;
   bindRuntimeProvider: (
     workspacePath: string,
-    provider: ZCodeProvider,
+    provider: NekodeProvider,
     workspaceIdentity?: string,
   ) => void;
   setModelSelectionResolution: (
@@ -279,7 +278,7 @@ export interface ZCodeSessionStoreState {
   ) => void;
   setWorkspaceInitState: (
     workspacePath: string,
-    status: ZCodeWorkspaceInitStatus,
+    status: NekodeWorkspaceInitStatus,
     error?: string | null,
     workspaceIdentity?: string,
   ) => void;
@@ -290,17 +289,17 @@ export interface ZCodeSessionStoreState {
   ) => void;
   setTaskState: (
     workspacePath: string,
-    status: ZCodeTaskRuntimeStatus,
+    status: NekodeTaskRuntimeStatus,
     error?: string | null,
     workspaceIdentity?: string,
   ) => void;
   setTaskRuntimeState: (
     workspacePath: string,
     taskId: string,
-    status: ZCodeTaskRuntimeStatus,
+    status: NekodeTaskRuntimeStatus,
     error?: string | null,
     workspaceIdentity?: string,
-    provider?: ZCodeProvider,
+    provider?: NekodeProvider,
   ) => void;
   setTaskUsage: (
     workspacePath: string,
@@ -317,13 +316,13 @@ export interface ZCodeSessionStoreState {
   setTaskApiRetryStatus: (
     workspacePath: string,
     taskId: string,
-    apiRetry: ZCodeApiRetryStatus | null,
+    apiRetry: NekodeApiRetryStatus | null,
     workspaceIdentity?: string,
   ) => void;
   setTaskPermissionRequest: (
     workspacePath: string,
     taskId: string,
-    request: ZCodePermissionRequest | null,
+    request: NekodePermissionRequest | null,
     workspaceIdentity?: string,
   ) => void;
   removeTaskPermissionRequest: (
@@ -335,7 +334,7 @@ export interface ZCodeSessionStoreState {
   setTaskElicitationRequest: (
     workspacePath: string,
     taskId: string,
-    request: ZCodeElicitationRequest | null,
+    request: NekodeElicitationRequest | null,
     workspaceIdentity?: string,
   ) => void;
   removeTaskElicitationRequest: (
@@ -360,12 +359,12 @@ export interface ZCodeSessionStoreState {
   setTaskError: (
     workspacePath: string,
     taskId: string,
-    error: ZCodeUiError | null,
+    error: NekodeUiError | null,
     workspaceIdentity?: string,
   ) => void;
   setDraftError: (
     workspacePath: string,
-    error: ZCodeUiError | null,
+    error: NekodeUiError | null,
     workspaceIdentity?: string,
   ) => void;
   startModelSwitch: (
@@ -385,22 +384,22 @@ export interface ZCodeSessionStoreState {
   setTaskConfigOptions: (
     workspacePath: string,
     taskId: string,
-    options: ZCodeConfigOption[],
+    options: NekodeConfigOption[],
     workspaceIdentity?: string,
     status?: ConfigOptionsStatus,
   ) => void;
   initializeBackgroundTaskRuntime: (
     workspacePath: string,
     params: {
-      task: ZCodeTaskMeta;
-      provider: ZCodeProvider;
+      task: NekodeTaskMeta;
+      provider: NekodeProvider;
       activeInputId: InputId;
       workspaceIdentity?: string;
     },
   ) => void;
   upsertOptimisticTaskListItem: (
     workspacePath: string,
-    task: ZCodeTaskMeta,
+    task: NekodeTaskMeta,
     workspaceIdentity?: string,
   ) => void;
   removeOptimisticTaskListItem: (
@@ -413,7 +412,7 @@ export interface ZCodeSessionStoreState {
 
   setConfigOptions: (
     workspacePath: string,
-    options: ZCodeConfigOption[],
+    options: NekodeConfigOption[],
     workspaceIdentity?: string,
   ) => void;
   setConfigOptionsStatus: (
@@ -423,7 +422,7 @@ export interface ZCodeSessionStoreState {
   ) => void;
   setSlashCommands: (
     workspacePath: string,
-    commands: ZCodeSlashCommand[],
+    commands: NekodeSlashCommand[],
     workspaceIdentity?: string,
   ) => void;
   setCurrentModeId: (
@@ -436,7 +435,7 @@ export interface ZCodeSessionStoreState {
   /** 更新已拉取的任务列表缓存 */
   setTaskListCache: (
     workspacePath: string,
-    tasks: ZCodeTaskMeta[],
+    tasks: NekodeTaskMeta[],
     workspaceIdentity?: string,
   ) => void;
   /** 更新 task 的未读提示，控制左侧蓝点显示 */
@@ -447,15 +446,10 @@ export interface ZCodeSessionStoreState {
     workspaceIdentity?: string,
   ) => void;
 
-  /** workspace 导航历史（全局、跨 workspace，包含 task 与 Automations） */
+  /** workspace 导航历史（全局、跨 workspace，包含 task、工作流与插件市场） */
   taskNavHistory: TaskNavigationHistory;
-  /** 记录 Automations 主视图或详情导航。 */
-  taskNavPushAutomations: (
-    workspacePath: string,
-    workspaceIdentity?: string,
-    automationId?: string,
-    automationTab?: AutomationsNavigationTab,
-  ) => void;
+  /** 记录「工作流」主视图导航。 */
+  taskNavPushWorkflows: (workspacePath: string, workspaceIdentity?: string) => void;
   /** 记录插件市场主视图导航。 */
   taskNavPushPluginStore: (workspacePath: string, workspaceIdentity?: string) => void;
   /** 后退，返回目标 entry；到头了返回 null */
@@ -476,7 +470,7 @@ export const DEFAULT_WORKSPACE_INIT_STATE: WorkspaceInitState = {
   attempts: 0,
 };
 
-export const FALLBACK_PROVIDER: ZCodeProvider = ZCODE_AGENT_PROVIDER;
+export const FALLBACK_PROVIDER: NekodeProvider = NEKODE_AGENT_PROVIDER;
 
 export const DEFAULT_TASK_UI_STATE: TaskUiState = {
   permissionRequest: null,
@@ -505,8 +499,8 @@ export const DEFAULT_TASK_RUNTIME_STATE: TaskRuntimeState = {
 // ────────────────────────────────────────────
 
 export function createDefaultWorkspaceState(
-  selectedProvider: ZCodeProvider,
-): WorkspaceZCodeUIState {
+  selectedProvider: NekodeProvider,
+): WorkspaceNekodeUIState {
   return {
     activeTaskId: null,
     workspaceInit: { ...DEFAULT_WORKSPACE_INIT_STATE },
@@ -542,8 +536,8 @@ export function createDefaultWorkspaceState(
 
 const DEFAULT_WORKSPACE_STATE = createDefaultWorkspaceState(FALLBACK_PROVIDER);
 
-export function getDefaultWorkspaceState(): WorkspaceZCodeUIState {
-  // 单 ZCode Agent 迁移后默认 provider 必须收敛到 glm。
+export function getDefaultWorkspaceState(): WorkspaceNekodeUIState {
+  // 单 Nekode Agent 迁移后默认 provider 必须收敛到 glm。
   // 这里返回稳定引用，避免未写入 workspace bucket 的连续 selector 读取产生不同快照。
   return DEFAULT_WORKSPACE_STATE;
 }

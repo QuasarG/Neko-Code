@@ -91,11 +91,11 @@ interface Copy {
   unavailableTitle: string;
   unavailableDescription: string;
   retry: string;
-  continueInZCode: string;
+  continueInNekode: string;
   switchToDarkTheme: string;
   switchToLightTheme: string;
   continueHelp: string;
-  downloadZCode: string;
+  downloadNekode: string;
   retryOpen: string;
   /** 结果物计数；{count} 占位。中文无复数，英文分单复数。 */
   artifactCountOne: string;
@@ -103,11 +103,11 @@ interface Copy {
 }
 
 // 站点首页本身就是下载入口，没有 /download 这个 path（单独的下载链接会 404）。
-const ZCODE_DOWNLOAD_URL = "https://zcode.z.ai";
+const NEKODE_DOWNLOAD_URL = "https://zcode.z.ai";
 
 const COPY: Record<ConversationShareLandingLocale, Copy> = {
   "zh-CN": {
-    brand: "ZCode 会话分享",
+    brand: "Nekode 会话分享",
     loading: "正在加载分享内容",
     loadingDescription: "请稍候，我们正在验证分享链接。",
     loginTitle: "登录后查看分享",
@@ -138,22 +138,22 @@ const COPY: Record<ConversationShareLandingLocale, Copy> = {
     networkDescription: "请检查网络后重试。",
     invalidTitle: "无法读取分享内容",
     invalidDescription: "分享服务返回了无法识别的数据，请提供错误详情。",
-    outdatedTitle: "需要更新 ZCode",
-    outdatedDescription: "这个分享由更新版本的 ZCode 创建，请升级后再查看。",
+    outdatedTitle: "需要更新 Nekode",
+    outdatedDescription: "这个分享由更新版本的 Nekode 创建，请升级后再查看。",
     unavailableTitle: "分享不可访问",
     unavailableDescription: "当前账号没有权限，或者分享内容已不存在。",
     retry: "重试",
-    continueInZCode: "去 ZCode 继续",
+    continueInNekode: "去 Nekode 继续",
     switchToDarkTheme: "切换到深色主题",
     switchToLightTheme: "切换到浅色主题",
-    continueHelp: "如果没有自动打开 ZCode，请先下载客户端，或再次尝试打开。",
-    downloadZCode: "下载 ZCode",
+    continueHelp: "如果没有自动打开 Nekode，请先下载客户端，或再次尝试打开。",
+    downloadNekode: "下载 Nekode",
     artifactCountOne: "{count} 个结果物",
     artifactCountOther: "{count} 个结果物",
     retryOpen: "再次打开",
   },
   "en-US": {
-    brand: "ZCode Conversation Share",
+    brand: "Nekode Conversation Share",
     loading: "Loading shared conversation",
     loadingDescription: "Please wait while we verify this share link.",
     loginTitle: "Sign in to view this share",
@@ -186,18 +186,18 @@ const COPY: Record<ConversationShareLandingLocale, Copy> = {
     invalidTitle: "Unable to read shared content",
     invalidDescription:
       "The sharing service returned unrecognized data. Provide the error details.",
-    outdatedTitle: "Update ZCode to continue",
+    outdatedTitle: "Update Nekode to continue",
     outdatedDescription:
-      "This share was created by a newer version of ZCode. Please update to view it.",
+      "This share was created by a newer version of Nekode. Please update to view it.",
     unavailableTitle: "Share unavailable",
     unavailableDescription:
       "This account is not allowed to view the share, or it no longer exists.",
     retry: "Try again",
-    continueInZCode: "Continue in ZCode",
+    continueInNekode: "Continue in Nekode",
     switchToDarkTheme: "Switch to dark theme",
     switchToLightTheme: "Switch to light theme",
-    continueHelp: "If ZCode did not open, download the app or try opening it again.",
-    downloadZCode: "Download ZCode",
+    continueHelp: "If Nekode did not open, download the app or try opening it again.",
+    downloadNekode: "Download Nekode",
     artifactCountOne: "{count} artifact",
     artifactCountOther: "{count} artifacts",
     retryOpen: "Try again",
@@ -442,9 +442,9 @@ export function ConversationShareLandingPage({
                   ref={brandRef}
                   data-share-brand="true"
                   className="shrink-0 text-ui-lg font-semibold text-foreground"
-                  aria-label="ZCode"
+                  aria-label="Nekode"
                 >
-                  ZCode
+                  Nekode
                 </div>
                 <h1
                   ref={titleRef}
@@ -485,12 +485,12 @@ export function ConversationShareLandingPage({
                             : SHARE_CONTINUE_LINK_CLASS
                         }
                         href={importLink}
-                        aria-label={copy.continueInZCode}
-                        title={copy.continueInZCode}
+                        aria-label={copy.continueInNekode}
+                        title={copy.continueInNekode}
                         onClick={handleContinue}
                       >
                         <span className={headerView.continueCompact ? "sr-only" : "truncate"}>
-                          {copy.continueInZCode}
+                          {copy.continueInNekode}
                         </span>
                         <ArrowUpRightIcon
                           className={
@@ -515,7 +515,7 @@ export function ConversationShareLandingPage({
                     </span>
                     {importLink ? (
                       <span className={SHARE_CONTINUE_MEASURE_CLASS}>
-                        <span>{copy.continueInZCode}</span>
+                        <span>{copy.continueInNekode}</span>
                         <ArrowUpRightIcon
                           className="size-4 shrink-0 sm:size-5"
                           aria-hidden="true"
@@ -576,8 +576,8 @@ export function ConversationShareLandingPage({
               >
                 {copy.retryOpen}
               </a>
-              <a className="text-brand underline underline-offset-2" href={ZCODE_DOWNLOAD_URL}>
-                {copy.downloadZCode}
+              <a className="text-brand underline underline-offset-2" href={NEKODE_DOWNLOAD_URL}>
+                {copy.downloadNekode}
               </a>
             </div>
           </ShareContentInset>
@@ -603,7 +603,7 @@ export function ConversationShareLandingPage({
                 href={importLink}
                 onClick={handleContinue}
               >
-                <span className="truncate">{copy.continueInZCode}</span>
+                <span className="truncate">{copy.continueInNekode}</span>
                 <ArrowUpRightIcon className="size-4 shrink-0 sm:size-5" aria-hidden="true" />
               </a>
             </div>
@@ -740,7 +740,7 @@ export function ConversationShareLandingStatus({
             {isNotFound ? (
               <a
                 className="rounded-md bg-primary px-4 py-2 text-ui-base text-primary-foreground"
-                href={ZCODE_DOWNLOAD_URL}
+                href={NEKODE_DOWNLOAD_URL}
               >
                 {copy.backToHome}
               </a>

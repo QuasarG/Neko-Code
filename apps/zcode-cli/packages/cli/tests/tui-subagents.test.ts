@@ -9,8 +9,8 @@ import {
   SessionEventType,
   type SessionEvent,
 } from "@zcode/contracts";
-import type { ZCodeSessionSubagentsResult } from "@zcode/shared";
-import { getZCodeCopy } from "@zcode/i18n";
+import type { NekodeSessionSubagentsResult } from "@zcode/shared";
+import { getNekodeCopy } from "@zcode/i18n";
 import { runTuiWithRenderer } from "../../tui/src/tui.js";
 import {
   applyMainSessionEvent,
@@ -38,7 +38,7 @@ const stream = (delta: string, sequenceNumber: number, sessionId = child) =>
     { kind: "text_delta", assistantMessageId: "answer", delta },
     sequenceNumber,
   );
-const directory: ZCodeSessionSubagentsResult = {
+const directory: NekodeSessionSubagentsResult = {
   revision: 1,
   childSessionIds: [child, child2],
   running: [child, child2].map((id, index) => ({
@@ -66,7 +66,7 @@ const snapshot = (sessionId = child): TuiSubagentTranscriptSnapshot => ({
 test("main admission rejects raw child events and parent-ID tool mirrors before any state changes", () => {
   let mutations = 0;
   const handlers = new Proxy(
-    { copy: getZCodeCopy("en-US").tui, getMainSessionId: () => parent },
+    { copy: getNekodeCopy("en-US").tui, getMainSessionId: () => parent },
     {
       get(target, property) {
         return property in target

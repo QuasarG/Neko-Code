@@ -17,10 +17,7 @@ type EnvRecord = Record<string, string | undefined>;
 
 const TELEMETRY_STATE_LOCK_STALE_MS = 5 * 60_000;
 const TELEMETRY_ID_PATTERN = /^[A-Za-z0-9._:-]{1,128}$/u;
-const BUILD_COMMIT_PATTERN = /^[0-9a-f]{7,64}$/iu;
 const pendingStandaloneDeviceMidByStateFile = new Map<string, Promise<string | undefined>>();
-let preparedOwner: AgentTelemetryRuntimeOwner | undefined;
-let preparingOwner: Promise<AgentTelemetryRuntimeOwner | undefined> | undefined;
 const noopExecution = new NoopAgentExecutionTelemetry();
 
 export interface CreateModelTelemetryOptions {
@@ -39,8 +36,8 @@ export interface ModelTelemetryBootstrap {
 export function createModelTelemetry(
   options: CreateModelTelemetryOptions = {},
 ): ModelTelemetryBootstrap {
-  // 显式注入优先，Endpoint 永远不能覆盖宿主提供的进程级 Owner。
-  const owner = options.owner ?? preparedOwner;
+  // 显式注入优先。OTel 导出已停用，宿主不再从环境变量创建进程级 Owner。
+  const owner = options.owner;
   if (!owner) {
     return {
       agentExecution: noopExecution,
@@ -114,101 +111,24 @@ export function parseOtlpHeaders(value: string | undefined): Record<string, stri
 }
 
 /**
- * 在 CLI 的异步启动边界准备身份并动态加载 OTel SDK。同步 App 工厂只借用已准备好的
- * 进程级 Owner；disabled 路径不会 import SDK/Exporter。
+ * 只解析本地设备身份。OpenTelemetry 导出已停用，本函数不会再创建 Exporter 或进程级 Owner。
  */
 export async function prepareModelTelemetryEnv(
   env: EnvRecord,
-  options: PrepareModelTelemetryOptions = {},
+  _options: PrepareModelTelemetryOptions = {},
 ): Promise<EnvRecord> {
-  if (!resolveOtlpTraceEndpoint(env) || isExplicitlyDisabled(env.ZCODE_MODEL_TELEMETRY_ENABLED)) {
-    return env;
-  }
-  const existingInstallationId = normalizeTelemetryDeviceMid(env.ZCODE_TELEMETRY_DEVICE_MID);
+  const existingInstallationId = normalizeTelemetryDeviceMid(env.NEKODE_TELEMETRY_DEVICE_MID);
   const installationId =
-    existingInstallationId ?? (await resolveStandaloneDeviceMid(env.ZCODE_HOME?.trim()));
-  const preparedEnv = installationId ? { ...env, ZCODE_TELEMETRY_DEVICE_MID: installationId } : env;
-
-  if (!preparingOwner && !preparedOwner) {
-    preparingOwner = createPreparedOwner(preparedEnv, options);
-  }
-  preparedOwner = await preparingOwner;
-  return preparedEnv;
+    existingInstallationId ?? (await resolveStandaloneDeviceMid(env.NEKODE_HOME?.trim()));
+  return installationId ? { ...env, NEKODE_TELEMETRY_DEVICE_MID: installationId } : env;
 }
 
 export async function shutdownPreparedModelTelemetry(): Promise<void> {
-  const owner = preparedOwner ?? (await preparingOwner);
-  preparedOwner = undefined;
-  preparingOwner = undefined;
-  await owner?.shutdown({ timeoutMs: 1_500 });
+  // OTel 导出已停用，进程内没有需要关闭的 Owner。
 }
 
-export function updatePreparedTelemetryIdentity(snapshot: TelemetryIdentitySnapshot): void {
-  preparedOwner?.updateIdentity(snapshot);
-}
-
-async function createPreparedOwner(
-  env: EnvRecord,
-  options: PrepareModelTelemetryOptions,
-): Promise<AgentTelemetryRuntimeOwner | undefined> {
-  const endpoint = resolveOtlpTraceEndpoint(env);
-  if (!endpoint) return undefined;
-  const metricEndpoint = resolveOtlpMetricEndpoint(env);
-  const identity = resolveTelemetryIdentity(env);
-  const resource: TelemetryResourceContext = {
-    buildCommitId: normalizeBuildCommitId(options.buildCommitId ?? env.ZCODE_BUILD_COMMIT_ID),
-    cliVersion: normalizeVersion(options.cliVersion),
-    deploymentEnvironment:
-      env.ZCODE_ENV ??
-      env.ZCODE_RUNTIME_ENV ??
-      resourceAttributesFromEnv(env)["deployment.environment.name"],
-    installationId: normalizeTelemetryDeviceMid(env.ZCODE_TELEMETRY_DEVICE_MID),
-    productVersion: normalizeVersion(options.productVersion ?? env.ZCODE_APP_VERSION),
-    runtimeDistribution:
-      options.runtimeDistribution ??
-      resolveRuntimeDistribution(env.ZCODE_TELEMETRY_RUNTIME_DISTRIBUTION),
-    runtimeSurface:
-      options.runtimeSurface ?? resolveRuntimeSurface(env.ZCODE_TELEMETRY_RUNTIME_SURFACE),
-    serviceInstanceId: randomUUID(),
-    serviceName: env.OTEL_SERVICE_NAME?.trim() || "zcode-cli-agent",
-  };
-  try {
-    const { createOwnedAgentTelemetryRuntime } = await import("./otlp-exporter.js");
-    return createOwnedAgentTelemetryRuntime({
-      endpoint,
-      headers: parseOtlpHeaders(
-        env.OTEL_EXPORTER_OTLP_TRACES_HEADERS ?? env.OTEL_EXPORTER_OTLP_HEADERS,
-      ),
-      identity,
-      metricEndpoint,
-      metricHeaders: parseOtlpHeaders(
-        env.OTEL_EXPORTER_OTLP_METRICS_HEADERS ?? env.OTEL_EXPORTER_OTLP_HEADERS,
-      ),
-      onWarning: options.onWarning,
-      resource,
-    });
-  } catch (error) {
-    options.onWarning?.("Agent telemetry runtime initialization failed", {
-      errorType: error instanceof Error ? error.name : typeof error,
-    });
-    return undefined;
-  }
-}
-
-function resolveTelemetryIdentity(env: EnvRecord): TelemetryIdentitySnapshot {
-  const userSubjectId = normalizeTelemetryId(env.ZCODE_TELEMETRY_USER_SUBJECT_ID);
-  const configuredState = env.ZCODE_TELEMETRY_IDENTITY_STATE?.trim();
-  const identityState =
-    configuredState === "authenticated" ||
-    configuredState === "anonymous" ||
-    configuredState === "unknown"
-      ? configuredState
-      : userSubjectId
-        ? "authenticated"
-        : normalizeTelemetryDeviceMid(env.ZCODE_TELEMETRY_DEVICE_MID)
-          ? "anonymous"
-          : "unknown";
-  return { identityState, ...(userSubjectId ? { userSubjectId } : {}) };
+export function updatePreparedTelemetryIdentity(_snapshot: TelemetryIdentitySnapshot): void {
+  // OTel 导出已停用，不存在需要更新身份的 Owner。
 }
 
 export function normalizeTelemetryDeviceMid(value: string | undefined): string | undefined {
@@ -225,7 +145,7 @@ async function resolveStandaloneDeviceMid(
 ): Promise<string | undefined> {
   const stateFile = zcodeHome
     ? join(zcodeHome, "v2", "telemetry-state.json")
-    : join(homedir(), ".zcode", "v2", "telemetry-state.json");
+    : join(homedir(), ".nekode", "v2", "telemetry-state.json");
   const pending = pendingStandaloneDeviceMidByStateFile.get(stateFile);
   if (pending) return pending;
   const resolution = resolveStandaloneDeviceMidFromFile(stateFile);
@@ -351,55 +271,6 @@ function deviceMidFromState(state: Record<string, unknown>): string | undefined 
     : undefined;
 }
 
-function resolveRuntimeSurface(value: string | undefined): ModelApiRuntimeSurface {
-  switch (value?.trim()) {
-    case "standalone_cli":
-    case "desktop_local_host":
-    case "remote_workspace_host":
-      return value.trim() as ModelApiRuntimeSurface;
-    default:
-      return "standalone_cli";
-  }
-}
-
-function resolveRuntimeDistribution(
-  value: string | undefined,
-): TelemetryResourceContext["runtimeDistribution"] {
-  switch (value?.trim()) {
-    case "source":
-    case "development_bundle":
-    case "packaged":
-    case "unknown":
-      return value.trim() as TelemetryResourceContext["runtimeDistribution"];
-    default:
-      return "unknown";
-  }
-}
-
-function normalizeVersion(value: string | undefined): string | undefined {
-  const normalized = value?.trim();
-  return normalized && /^[0-9A-Za-z][0-9A-Za-z.+_-]{0,63}$/u.test(normalized)
-    ? normalized
-    : undefined;
-}
-
-function normalizeBuildCommitId(value: string | undefined): string | undefined {
-  const normalized = value?.trim();
-  return normalized && BUILD_COMMIT_PATTERN.test(normalized) ? normalized.toLowerCase() : undefined;
-}
-
-function resourceAttributesFromEnv(env: EnvRecord): Record<string, string> {
-  const result: Record<string, string> = {};
-  for (const item of env.OTEL_RESOURCE_ATTRIBUTES?.split(",") ?? []) {
-    const separator = item.indexOf("=");
-    if (separator <= 0) continue;
-    result[safeDecode(item.slice(0, separator).trim())] = safeDecode(
-      item.slice(separator + 1).trim(),
-    );
-  }
-  return result;
-}
-
 function validHttpUrl(value: string): string | undefined {
   try {
     const parsed = new URL(value);
@@ -409,10 +280,6 @@ function validHttpUrl(value: string): string | undefined {
   } catch {
     return undefined;
   }
-}
-
-function isExplicitlyDisabled(value: string | undefined): boolean {
-  return ["0", "false", "off", "disabled"].includes(value?.trim().toLowerCase() ?? "");
 }
 
 function safeDecode(value: string): string {

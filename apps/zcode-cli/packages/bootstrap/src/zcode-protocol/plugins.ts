@@ -13,49 +13,50 @@ import {
   zcodePluginsValidateParamsSchema,
   zcodePluginsDescribeParamsSchema,
   zcodePluginsRestoreBuiltinParamsSchema,
-  type ZCodeAvailablePluginSummary,
-  type ZCodeInstalledPluginSummary,
-  type ZCodePluginComponentGroup,
-  type ZCodePluginDiagnostic,
-  type ZCodePluginInfo,
-  type ZCodePluginMarketplaceSummary,
-  type ZCodePluginsConfigureResult,
-  type ZCodePluginsDescribeResult,
-  type ZCodePluginsInstallResult,
-  type ZCodePluginsListResult,
-  type ZCodePluginsMarketplaceMutationResult,
-  type ZCodePluginsOverviewResult,
-  type ZCodePluginsRestoreBuiltinResult,
-  type ZCodePluginsSetEnabledResult,
-  type ZCodePluginsUninstallResult,
-  type ZCodePluginsValidateResult,
+  type NekodeAvailablePluginSummary,
+  type NekodeInstalledPluginSummary,
+  type NekodePluginComponentGroup,
+  type NekodePluginDiagnostic,
+  type NekodePluginInfo,
+  type NekodePluginMarketplaceSummary,
+  type NekodePluginsConfigureResult,
+  type NekodePluginsDescribeResult,
+  type NekodePluginsInstallResult,
+  type NekodePluginsListResult,
+  type NekodePluginsMarketplaceMutationResult,
+  type NekodePluginsOverviewResult,
+  type NekodePluginsRestoreBuiltinResult,
+  type NekodePluginsSetEnabledResult,
+  type NekodePluginsUninstallResult,
+  type NekodePluginsValidateResult,
 } from "@zcode/shared";
+import { guardNekodeRoot } from "@zcode/shared/node";
 import type { PluginDiagnostic, PluginMetadata } from "@zcode/contracts";
 import {
-  addZCodePluginMarketplace,
-  configureZCodePlugin,
-  describeZCodePlugin,
+  addNekodePluginMarketplace,
+  configureNekodePlugin,
+  describeNekodePlugin,
   enrichCachedClaudeMarketplaceIconsForOverview,
-  getZCodePluginsOverview,
-  installZCodeMarketplacePlugin,
-  removeZCodePluginMarketplace,
-  resolveZCodePlugins,
-  resetZCodePluginConfig,
+  getNekodePluginsOverview,
+  installNekodeMarketplacePlugin,
+  removeNekodePluginMarketplace,
+  resolveNekodePlugins,
+  resetNekodePluginConfig,
   restoreBuiltinPlugin as restoreBuiltinPluginCore,
-  setZCodePluginEnabled,
-  uninstallZCodeMarketplacePlugin,
-  updateZCodePluginMarketplace,
-  validateZCodePlugin,
+  setNekodePluginEnabled,
+  uninstallNekodeMarketplacePlugin,
+  updateNekodePluginMarketplace,
+  validateNekodePlugin,
 } from "../plugins.js";
 import { listInstalledPluginRecords } from "@zcode/adapters/plugins";
 import { withPluginStorageLock } from "../lib/plugin-storage-lock.js";
 import { getCliStorageRoot, getPluginStorageRoot } from "../app/paths.js";
 import { resolveOfficialPluginHostMcpServerNames } from "../app/official-plugin-definitions.js";
 import { createConfig, resolvePath, type ConfigResult } from "@zcode/adapters/config";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "./server-types.js";
+import { parseParams, type NekodeProtocolAgentServerContext } from "./server-types.js";
 
-// 把 CLI 的 PluginMetadata 投影成协议可序列化的 ZCodePluginInfo (只保留 UI 需要的字段)。
-function toPluginInfo(plugin: PluginMetadata, configResult?: ConfigResult): ZCodePluginInfo {
+// 把 CLI 的 PluginMetadata 投影成协议可序列化的 NekodePluginInfo (只保留 UI 需要的字段)。
+function toPluginInfo(plugin: PluginMetadata, configResult?: ConfigResult): NekodePluginInfo {
   const hostMcpServerNames = resolveOfficialPluginHostMcpServerNames(plugin.id);
   const configuredOptions = Object.fromEntries(
     Object.entries(plugin.configuredOptions ?? {}).filter(
@@ -133,7 +134,7 @@ function resolveInlinePluginRootSource(
 }
 
 function createPluginConfigView(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   workspacePath: string,
   configScope: "user" | "workspace" | undefined,
 ): ConfigResult {
@@ -150,7 +151,7 @@ function createPluginConfigView(
 function createMissingConfiguredPluginInfos(
   configResult: ConfigResult,
   discoveredPluginIds: ReadonlySet<string>,
-): ZCodePluginInfo[] {
+): NekodePluginInfo[] {
   const configuredPluginIds = new Set([
     ...Object.keys(configResult.config.plugins.enabledPlugins),
     ...Object.keys(configResult.config.plugins.options),
@@ -199,7 +200,7 @@ export function normalizePluginRootForComparison(
     : resolvedRoot;
 }
 
-function toPluginDiagnostic(diagnostic: PluginDiagnostic): ZCodePluginDiagnostic {
+function toPluginDiagnostic(diagnostic: PluginDiagnostic): NekodePluginDiagnostic {
   return {
     code: diagnostic.code,
     message: diagnostic.message,
@@ -209,16 +210,16 @@ function toPluginDiagnostic(diagnostic: PluginDiagnostic): ZCodePluginDiagnostic
 }
 
 export async function listPlugins(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsListResult> {
+): Promise<NekodePluginsListResult> {
   const params = parseParams(zcodePluginsListParamsSchema, rawParams);
   const configResult = createPluginConfigView(
     context,
     params.workspace.workspacePath,
     params.configScope,
   );
-  const outcome = resolveZCodePlugins({
+  const outcome = resolveNekodePlugins({
     configResult,
     logger: context.logger,
     workingDirectory: params.workspace.workspacePath,
@@ -239,13 +240,13 @@ export async function listPlugins(
 }
 
 export async function setPluginEnabled(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
-): Promise<ZCodePluginsSetEnabledResult> {
+): Promise<NekodePluginsSetEnabledResult> {
   const params = parseParams(zcodePluginsSetEnabledParamsSchema, rawParams);
   abortSignal?.throwIfAborted();
-  const result = await setZCodePluginEnabled({
+  const result = await setNekodePluginEnabled({
     enabled: params.enabled,
     logger: context.logger,
     plugin: params.pluginId,
@@ -264,15 +265,15 @@ export async function setPluginEnabled(
 }
 
 export async function getPluginsOverview(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsOverviewResult> {
+): Promise<NekodePluginsOverviewResult> {
   const params = parseParams(zcodePluginsOverviewParamsSchema, rawParams);
   enrichCachedClaudeMarketplaceIconsForOverview({
     logger: context.logger,
     workingDirectory: params.workspace.workspacePath,
   });
-  const overview = getZCodePluginsOverview({
+  const overview = getNekodePluginsOverview({
     configResult: createPluginConfigView(
       context,
       params.workspace.workspacePath,
@@ -292,14 +293,14 @@ export async function getPluginsOverview(
 }
 
 export async function addPluginMarketplace(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<NekodePluginsMarketplaceMutationResult> {
   const params = parseParams(zcodePluginsMarketplaceAddParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   const marketplace = await withPluginStorageLock(pluginStorageRoot, async () =>
-    addZCodePluginMarketplace({
+    addNekodePluginMarketplace({
       abortSignal,
       dryRun: params.dryRun,
       logger: context.logger,
@@ -311,13 +312,13 @@ export async function addPluginMarketplace(
 }
 
 export async function removePluginMarketplace(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<NekodePluginsMarketplaceMutationResult> {
   const params = parseParams(zcodePluginsMarketplaceRemoveParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   await withPluginStorageLock(pluginStorageRoot, async () =>
-    removeZCodePluginMarketplace({
+    removeNekodePluginMarketplace({
       logger: context.logger,
       marketplace: params.marketplace,
       workingDirectory: params.workspace.workspacePath,
@@ -327,14 +328,14 @@ export async function removePluginMarketplace(
 }
 
 export async function updatePluginMarketplace(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<NekodePluginsMarketplaceMutationResult> {
   const params = parseParams(zcodePluginsMarketplaceUpdateParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   const result = await withPluginStorageLock(pluginStorageRoot, async () =>
-    updateZCodePluginMarketplace({
+    updateNekodePluginMarketplace({
       abortSignal,
       logger: context.logger,
       marketplace: params.marketplace,
@@ -348,14 +349,14 @@ export async function updatePluginMarketplace(
 }
 
 export async function installPlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
-): Promise<ZCodePluginsInstallResult> {
+): Promise<NekodePluginsInstallResult> {
   const params = parseParams(zcodePluginsInstallParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   const result = await withPluginStorageLock(pluginStorageRoot, async () =>
-    installZCodeMarketplacePlugin({
+    installNekodeMarketplacePlugin({
       abortSignal,
       dryRun: params.dryRun,
       logger: context.logger,
@@ -373,11 +374,11 @@ export async function installPlugin(
 }
 
 export async function uninstallPlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsUninstallResult> {
+): Promise<NekodePluginsUninstallResult> {
   const params = parseParams(zcodePluginsUninstallParamsSchema, rawParams);
-  const removed = await uninstallZCodeMarketplacePlugin({
+  const removed = await uninstallNekodeMarketplacePlugin({
     logger: context.logger,
     marketplace: params.marketplace,
     pluginId: params.pluginId,
@@ -392,9 +393,9 @@ export async function uninstallPlugin(
 }
 
 export async function updatePlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsInstallResult> {
+): Promise<NekodePluginsInstallResult> {
   const params = parseParams(zcodePluginsUpdateParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   const installed = listInstalledPluginRecords(pluginStorageRoot).filter((record) => {
@@ -405,15 +406,15 @@ export async function updatePlugin(
   // 与 uninstall 一样把整个重装循环串行化到同一 storageRoot 的 in-process 锁里，
   // 避免并发 update/install 交错读改写 installed_plugins.json / cache。
   return withPluginStorageLock(pluginStorageRoot, async () => {
-    const installedPlugins: ZCodeInstalledPluginSummary[] = [];
+    const installedPlugins: NekodeInstalledPluginSummary[] = [];
     const dependencyClosure: string[] = [];
-    // 聚合每条记录重装产生的诊断：installZCodeMarketplacePlugin 失败时不抛错，而是返回
+    // 聚合每条记录重装产生的诊断：installNekodeMarketplacePlugin 失败时不抛错，而是返回
     // CLI 形态的 PluginDiagnostic（见其错误分支的 toMarketplaceInstallDiagnostic），
-    // 这里逐条经协议侧 toPluginDiagnostic 投影成 ZCodePluginDiagnostic 回传，
+    // 这里逐条经协议侧 toPluginDiagnostic 投影成 NekodePluginDiagnostic 回传，
     // 让失败的重装显式暴露，而不是静默"成功"。
-    const diagnostics: ZCodePluginDiagnostic[] = [];
+    const diagnostics: NekodePluginDiagnostic[] = [];
     for (const record of installed) {
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         logger: context.logger,
         marketplace: record.marketplace,
         pluginName: record.name,
@@ -431,9 +432,9 @@ export async function updatePlugin(
 // 恢复一个被抑制（"卸载"）的内置插件：清除 suppressedBuiltins 标记并立即重新 seed。
 // bootstrap 侧的同名函数被别名为 restoreBuiltinPluginCore，避免与本协议处理器重名。
 export async function restoreBuiltinPlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsRestoreBuiltinResult> {
+): Promise<NekodePluginsRestoreBuiltinResult> {
   const params = parseParams(zcodePluginsRestoreBuiltinParamsSchema, rawParams);
   await restoreBuiltinPluginCore({
     logger: context.logger,
@@ -444,11 +445,11 @@ export async function restoreBuiltinPlugin(
 }
 
 export async function configurePlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsConfigureResult> {
+): Promise<NekodePluginsConfigureResult> {
   const params = parseParams(zcodePluginsConfigureParamsSchema, rawParams);
-  await configureZCodePlugin({
+  await configureNekodePlugin({
     clearOptionKeys: params.clearOptionKeys,
     dryRun: params.dryRun,
     logger: context.logger,
@@ -461,11 +462,11 @@ export async function configurePlugin(
 }
 
 export async function resetPluginConfig(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsConfigureResult> {
+): Promise<NekodePluginsConfigureResult> {
   const params = parseParams(zcodePluginsResetConfigParamsSchema, rawParams);
-  await resetZCodePluginConfig({
+  await resetNekodePluginConfig({
     logger: context.logger,
     pluginId: params.pluginId,
     scope: params.scope,
@@ -475,13 +476,13 @@ export async function resetPluginConfig(
 }
 
 export async function validatePlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsValidateResult> {
+): Promise<NekodePluginsValidateResult> {
   const params = parseParams(zcodePluginsValidateParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   const diagnostics = await withPluginStorageLock(pluginStorageRoot, async () =>
-    validateZCodePlugin({
+    validateNekodePlugin({
       logger: context.logger,
       marketplace: params.marketplace,
       pluginName: params.pluginName,
@@ -501,20 +502,20 @@ export async function validatePlugin(
 }
 
 export async function describePlugin(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsDescribeResult> {
+): Promise<NekodePluginsDescribeResult> {
   const params = parseParams(zcodePluginsDescribeParamsSchema, rawParams);
   const pluginStorageRoot = resolvePluginStorageRoot(params.workspace.workspacePath);
   // 已安装目录、已缓存 manifest 与临时 source 解析都不持锁；只有懒加载 manifest 写入进锁。
-  const result = await describeZCodePlugin({
+  const result = await describeNekodePlugin({
     logger: context.logger,
     marketplace: params.marketplace,
     pluginName: params.pluginName,
     withWriteLock: (write) => withPluginStorageLock(pluginStorageRoot, write),
     workingDirectory: params.workspace.workspacePath,
   });
-  const components: ZCodePluginComponentGroup[] = result.components.map((group) => ({
+  const components: NekodePluginComponentGroup[] = result.components.map((group) => ({
     kind: group.kind,
     items: group.items.map((item) => ({
       name: item.name,
@@ -538,8 +539,8 @@ function toMarketplaceSummary(input: {
   pluginCount: number;
   isOfficial?: boolean;
   featured?: string[];
-  refreshFailure?: ZCodePluginMarketplaceSummary["refreshFailure"];
-}): ZCodePluginMarketplaceSummary {
+  refreshFailure?: NekodePluginMarketplaceSummary["refreshFailure"];
+}): NekodePluginMarketplaceSummary {
   return {
     id: input.id,
     name: input.name,
@@ -561,8 +562,8 @@ function toAvailablePluginSummary(input: {
   version?: string;
   installed: boolean;
   componentTypes?: string[];
-  listing?: ZCodeAvailablePluginSummary["listing"];
-}): ZCodeAvailablePluginSummary {
+  listing?: NekodeAvailablePluginSummary["listing"];
+}): NekodeAvailablePluginSummary {
   return {
     id: input.id,
     name: input.name,
@@ -586,11 +587,11 @@ function toInstalledPluginSummary(input: {
   installPath?: string;
   installedAt?: string;
   componentTypes?: string[];
-  hookDetails?: ZCodeInstalledPluginSummary["hookDetails"];
+  hookDetails?: NekodeInstalledPluginSummary["hookDetails"];
   updateStatus?: "none" | "update-available" | "version-changed";
   latestVersion?: string;
-  listing?: ZCodeInstalledPluginSummary["listing"];
-}): ZCodeInstalledPluginSummary {
+  listing?: NekodeInstalledPluginSummary["listing"];
+}): NekodeInstalledPluginSummary {
   return {
     id: input.id,
     name: input.name,
@@ -611,6 +612,6 @@ function toInstalledPluginSummary(input: {
 
 function resolvePluginStorageRoot(workingDirectory: string): string {
   const config = createConfig({ workingDirectory });
-  const storageRoot = resolvePath(config.config.storage.dir);
+  const storageRoot = guardNekodeRoot(resolvePath(config.config.storage.dir));
   return getPluginStorageRoot(getCliStorageRoot(storageRoot));
 }

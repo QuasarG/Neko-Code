@@ -8,7 +8,7 @@ import {
   SESSION_ENTRY_DYNAMIC_WORKFLOW_ACTIVATION,
   type ModelRequest,
 } from "@zcode/contracts";
-import { createRegistryBackedTestApp as createZCodeApp } from "./helpers/registry-backed-test-app.js";
+import { createRegistryBackedTestApp as createNekodeApp } from "./helpers/registry-backed-test-app.js";
 
 // DWG-09 的装配层一半（docs/dynamic-workflow/launch.md「On demand: activation」）：`/workflow` 的展开处
 // （create-app.ts 的 builtin prompt resolver）就是激活点，先于 executeTurn，所以敲命令那一轮的首个模型
@@ -21,7 +21,7 @@ function toolNames(request: ModelRequest | undefined): string[] {
 async function withApp(
   runtimeConfig: Record<string, unknown>,
   run: (input: {
-    app: Awaited<ReturnType<typeof createZCodeApp>>;
+    app: Awaited<ReturnType<typeof createNekodeApp>>;
     requests: ModelRequest[];
     sessionStore: Awaited<ReturnType<typeof createSqliteSessionStore>>;
   }) => Promise<void>,
@@ -30,7 +30,7 @@ async function withApp(
   const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
   const requests: ModelRequest[] = [];
   try {
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       modelExecutor: {
         async generateText(request) {

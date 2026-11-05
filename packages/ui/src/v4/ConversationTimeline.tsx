@@ -1,4 +1,3 @@
-import { useBotTopicPreparations } from "@/v4/BotTopicPreparation.js";
 /* oxlint-disable eslint(max-lines) -- ConversationTimeline 集中承载虚拟滚动、滚动锚定、loadOlder 与 find 高亮协调；拆散会让同一滚动状态跨文件传递。 */
 import {
   Component,
@@ -32,7 +31,7 @@ import type {
 import { cn } from "@/components/lib/utils.js";
 import { runUserAction } from "@/lib/userActionTelemetry.js";
 import { Button } from "@/components/ui/button.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { logger } from "@/logger.js";
 import { ConversationTurnGroup } from "@/v4/ConversationTurnGroup.js";
 import {
@@ -51,7 +50,6 @@ import {
   isSameConversationLatestTurnSummary,
   resolveConversationLatestTurnSummary,
   splitConversationTimelineLiveTail,
-  withTopicPreparationUnits,
   type ConversationLatestTurnSummary,
 } from "@/v4/conversationTimelineLiveTail.js";
 import { armHighspeedFooterExpiryClock } from "@/highspeed/highspeedFooterExpiryClock.js";
@@ -422,7 +420,7 @@ function ConversationTimelineImpl({
   selectionActions,
   hideTurnNavigator = false,
 }: ConversationTimelineProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const scrollRef = useRef<HTMLDivElement>(null);
   const headerSlotRef = useRef<HTMLDivElement>(null);
   // headerSlot 高度参与虚拟窗口换算（scrollMargin），必须随内容与宽度变化实时跟进，
@@ -474,27 +472,14 @@ function ConversationTimelineImpl({
     [pluginUiDerivation, pluginUiPins],
   );
   const selectRenderUnits = useMemo(() => createConversationTurnRenderUnitsSelector(), []);
-  const topicPreparations = useBotTopicPreparations();
   const renderUnits = useMemo(
     () =>
-      withTopicPreparationUnits(
-        selectRenderUnits(rowsPartition, {
-          nowMs: liveNowMs,
-          sessionPhase,
-          pluginUiPinResolver,
-        }),
-        rows,
-        topicPreparations,
-      ),
-    [
-      liveNowMs,
-      pluginUiPinResolver,
-      rows,
-      rowsPartition,
-      sessionPhase,
-      topicPreparations,
-      selectRenderUnits,
-    ],
+      selectRenderUnits(rowsPartition, {
+        nowMs: liveNowMs,
+        sessionPhase,
+        pluginUiPinResolver,
+      }),
+    [liveNowMs, pluginUiPinResolver, rowsPartition, sessionPhase, selectRenderUnits],
   );
   const renderUnitCount = renderUnits.history.length + renderUnits.tail.length;
   const { virtualizedUnits, liveUnit, liveUnitIndex } = useMemo(

@@ -6,7 +6,7 @@ export interface ProviderEndpointRoutingFactoryOptions {
   appVersion?: string;
   httpClient: HttpClientPort;
   logger?: Logger;
-  readZCodeJwt?: () => Promise<string | null>;
+  readNekodeJwt?: () => Promise<string | null>;
   sourceHeaders?: () =>
     | Promise<Readonly<Record<string, string>>>
     | Readonly<Record<string, string>>;

@@ -604,33 +604,7 @@ describe("ProductProjection 黄金测试（L1）", () => {
     expect(rows.find((row) => row.kind === "toolCall")?.assistantResponseId).toBe("assistant-cua");
   });
 
-  it("preserves topic originals and attachment ownership when replaying accepted turn events", () => {
-    const source = {
-      provider: "feishu",
-      botId: "bot",
-      chatId: "group",
-      threadId: "topic",
-      senderId: "b",
-      senderName: "Bob",
-      messageId: "second",
-      messages: [
-        {
-          messageId: "first",
-          senderId: "a",
-          senderName: "Alice",
-          text: "First",
-          attachmentIndexes: [0],
-          conversationQuotes: [{ text: "Root", senderName: "Root author" }],
-        },
-        {
-          messageId: "second",
-          senderId: "b",
-          senderName: "Bob",
-          text: "Second",
-          attachmentIndexes: [1],
-        },
-      ],
-    };
+  it("preserves attachment ownership when replaying accepted turn events", () => {
     const log = new EventLog();
     log.push(SessionEventType.SessionCreated, { mode: "default", contextWindow: 200_000 });
     log.push(
@@ -648,7 +622,6 @@ describe("ProductProjection 黄金测试（L1）", () => {
           admittedAt: 10,
           requestedDelivery: "startNow",
           admittedDelivery: "startNow",
-          botGroupSource: source,
           attachmentRefs: [
             { ref: "artifact://first", fileName: "first.txt", mime: "text/plain", bytes: 1 },
             { ref: "artifact://second", fileName: "second.txt", mime: "text/plain", bytes: 1 },
@@ -663,7 +636,6 @@ describe("ProductProjection 黄金测试（L1）", () => {
     }));
     const snapshot = conversationSnapshotSchema.parse(runAll(restored).projection.getSnapshot());
     expect(snapshot.rows.window.find((row) => row.kind === "userInput")).toMatchObject({
-      botGroupSource: source,
       attachments: [{ ref: "artifact://first" }, { ref: "artifact://second" }],
     });
   });
@@ -2022,7 +1994,7 @@ describe("ProductProjection 黄金测试（L1）", () => {
           {
             name: "nightly-sync",
             scope: "project",
-            path: ".zcode/workflows/nightly-sync.dwf.ts",
+            path: ".nekode/workflows/nightly-sync.dwf.ts",
             argNames: ["question"],
           },
         ],
@@ -6639,14 +6611,6 @@ describe("fork / modelChange marker", () => {
         queueLength: 1,
         targetTurnId: "t1",
         intent: {
-          botGroupSource: {
-            provider: "feishu",
-            botId: "bot",
-            chatId: "group",
-            senderId: "member",
-            senderName: "Member",
-            messageId: "message",
-          },
           sourceCommandId: "command-q1",
           queueItemId: "q1",
           clientId: "mobile-client",
@@ -6695,7 +6659,6 @@ describe("fork / modelChange marker", () => {
     expect(items[0]).toMatchObject({
       text: "第一条改",
       automationId: "automation-queued",
-      botGroupSource: { senderId: "member", chatId: "group" },
       sourceCommandId: "command-q1",
       clientId: "mobile-client",
       attachments: [{ ref: "artifact://q1" }],
@@ -8700,7 +8663,7 @@ describe("Desktop Hook invocation projection", () => {
   const descriptor = {
     clientVisible: true as const,
     sourceKind: "user" as const,
-    sourcePath: "/Users/example/.zcode/cli/config.json",
+    sourcePath: "/Users/example/.nekode/cli/config.json",
     executionType: "process" as const,
     executionMode: "foreground" as const,
     commandDisplay: "node hooks/check.mjs",
@@ -9478,8 +9441,8 @@ describe("Desktop Hook invocation projection", () => {
       deadlineAt: 1_700_000_601_000,
       sourceFiles: [
         {
-          path: "/workspace/.zcode/config.json",
-          displayPath: ".zcode/config.json",
+          path: "/workspace/.nekode/config.json",
+          displayPath: ".nekode/config.json",
           editable: true,
         },
       ],
@@ -9492,7 +9455,7 @@ describe("Desktop Hook invocation projection", () => {
           type: "command",
           displayName: "SessionStart · startup",
           displayCommand: "echo project",
-          sourcePath: ".zcode/config.json",
+          sourcePath: ".nekode/config.json",
           resolvedTimeoutMs: 60_000,
           resolvedMaxOutputBytes: 32_768,
           executionMode: "foreground",
@@ -10489,7 +10452,7 @@ describe("workflow-direct-launch 启动轮投影", () => {
     toolCallId: "launch-abc",
     name: "deep-research",
     scope: "global" as const,
-    path: "/home/u/.zcode/workflows/deep-research.ts",
+    path: "/home/u/.nekode/workflows/deep-research.ts",
     args: { topic: "adaptive concurrency" },
     description: "Deep-dive a topic",
   };

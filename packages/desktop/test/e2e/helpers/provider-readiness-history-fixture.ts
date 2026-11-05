@@ -68,13 +68,13 @@ export async function seedProviderReadinessHistoryFixture(
       ...process.env,
       HOME: options.e2eHomeDir,
       USERPROFILE: options.e2eHomeDir,
-      ZCODE_DATA_BASE_DIR: options.e2eHomeDir,
+      NEKODE_DATA_BASE_DIR: options.e2eHomeDir,
     },
     timeout: 30_000,
     windowsHide: true,
   });
 
-  const databasePath = join(options.e2eHomeDir, ".zcode", "cli", "db", "db.sqlite");
+  const databasePath = join(options.e2eHomeDir, ".nekode", "cli", "db", "db.sqlite");
   if (!existsSync(databasePath)) {
     throw new Error(`provider readiness history fixture 没有初始化 CLI DB: ${databasePath}`);
   }
@@ -211,7 +211,7 @@ function writeTaskIndex(
   timestamps: ProviderReadinessHistoryTimestamps,
   history: ProviderReadinessHistoryFixture,
 ): void {
-  const appConfigDir = join(options.e2eHomeDir, ".zcode", "v2");
+  const appConfigDir = join(options.e2eHomeDir, ".nekode", "v2");
   mkdirSync(appConfigDir, { recursive: true });
   const database = new DatabaseSync(join(appConfigDir, "tasks-index.sqlite"));
   const meta = {

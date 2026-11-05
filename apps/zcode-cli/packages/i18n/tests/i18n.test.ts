@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   DEFAULT_LOCALE,
   detectLocale,
-  getZCodeCopy,
+  getNekodeCopy,
   isUiLocale,
   resolveLocale,
   SUPPORTED_LOCALES,
-  type ZCodeCopy,
+  type NekodeCopy,
 } from "../src/index.js";
 
 describe("i18n catalog", () => {
@@ -16,7 +16,7 @@ describe("i18n catalog", () => {
     expect(resolveLocale("auto", "zh_Hans_CN")).toBe("zh-CN");
     expect(resolveLocale("auto", "en-GB")).toBe("en-US");
     expect(resolveLocale("fr-FR")).toBe("en-US");
-    expect(getZCodeCopy("auto", "zh_CN.UTF-8").locale).toBe("zh-CN");
+    expect(getNekodeCopy("auto", "zh_CN.UTF-8").locale).toBe("zh-CN");
   });
 
   it("detects supported locales from adapter-provided OS hints", () => {
@@ -36,10 +36,10 @@ describe("i18n catalog", () => {
 
   it("keeps all locale catalogs shape-compatible", () => {
     const [firstLocale, ...rest] = SUPPORTED_LOCALES;
-    const baseShape = catalogShape(getZCodeCopy(firstLocale));
+    const baseShape = catalogShape(getNekodeCopy(firstLocale));
 
     for (const locale of rest) {
-      expect(catalogShape(getZCodeCopy(locale))).toEqual(baseShape);
+      expect(catalogShape(getNekodeCopy(locale))).toEqual(baseShape);
     }
   });
 });
@@ -58,4 +58,4 @@ function catalogShape(value: unknown): unknown {
   return typeof value;
 }
 
-void ({} satisfies Partial<ZCodeCopy>);
+void ({} satisfies Partial<NekodeCopy>);

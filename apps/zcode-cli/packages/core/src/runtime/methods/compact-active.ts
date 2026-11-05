@@ -6,7 +6,6 @@ import {
   shouldUseMidConversationSystem,
 } from "../helpers/runtime-provider-request-messages.js";
 import { collectDiscoveredTools, compactDiscoveryMetadata } from "../../tool/search/history.js";
-import { collectRuntimeAgentListing } from "../helpers/agent-listing.js";
 import {
   CompactPhase,
   CompactReason,
@@ -56,8 +55,6 @@ import {
 } from "../helpers/index.js";
 import {
   buildCompactLeadingAnnouncements,
-  collectSkillsListing,
-  resolveSessionContextAnnouncement,
   restateContextAfterCompact,
 } from "./context-refresh.js";
 import type { CompactTimelineContext, RuntimeModelTextResult } from "../types.js";
@@ -81,7 +78,6 @@ import { runCompactSummaryModelRequest } from "./compact-summary-model-request.j
 import { resolveNormalRequestMaxOutputTokens } from "./model-token-limits.js";
 import { createRefreshRuntimeHeadersBeforeModelAttempt } from "./model-runtime-headers.js";
 import { recordModelUsageFact } from "./usage-observability.js";
-import { resetProjectMemoryRecall } from "../helpers/project-memory-recall.js";
 import { createRuntimeModel } from "./runtime-model.js";
 import {
   filterOutputTokenContinuationEntries,
@@ -548,27 +544,11 @@ async function compactActiveConversationImpl(
         },
         preCompactDiscoveredTools,
       );
-      const agentListingEntry = collectRuntimeAgentListing(
-        this,
-        preservedEntries,
-        options.agentListingTools ?? this.getTools(options.model ?? compactModel),
-      );
-      const skillsListingEntry = collectSkillsListing(this, preservedEntries);
-      // 保留段非空时，请求前公告放在 summary 之前（去掉保留段已有的来源），Git 按当前目录重读；
-      // 保留段为空时由下一次请求的请求前公告追加在末尾，Git 也在那时读取。
+      // 保留段非空时，请求前公告放在 summary 之前（去掉保留段已有的来源）；
+      // 保留段为空时由下一次请求的请求前公告追加在末尾。
       const leadingReminderEntries =
         preservedEntries.length > 0
-          ? buildCompactLeadingAnnouncements(
-              this,
-              preservedEntries,
-              await resolveSessionContextAnnouncement(
-                this,
-                preservedEntries,
-                "compaction",
-                modelTraceContext,
-                options.abortSignal,
-              ),
-            )
+          ? buildCompactLeadingAnnouncements(this, preservedEntries)
           : [];
       // 计划模式下 compaction 重发完整的 plan 提醒。
       // 修复原因：输入附件与 auto/reactive compaction 在同一次循环中，且先于 compaction 收集；
@@ -577,9 +557,8 @@ async function compactActiveConversationImpl(
       const planModeReminderBody = hasFullRuntimeModeReminder(preservedEntries)
         ? null
         : buildRuntimeModeReminderBody([], this.getMode(), this.getPlanEnabled());
-      // compaction 附件顺序：文件恢复 → plan 文件 → plan 提醒 → ToolSearch 公告
-      // → agent listing → skill 列表 → 环境 → 模型 → 输出风格。
-      // 修复原因：agent listing 排在文件恢复之前，顺序错误。
+      // compaction 附件顺序：文件恢复 → plan 文件 → plan 提醒 → ToolSearch 公告 → 输出风格。
+      // agent listing / skills / 环境 / 模型已随 system prompt 下发，不再重复。
       const postCompactReminderEntries = [
         ...fileRestore.entries,
         ...(planFileReferenceEntry ? [planFileReferenceEntry] : []),
@@ -587,8 +566,6 @@ async function compactActiveConversationImpl(
           ? [systemReminderAttachmentEntry("runtime_mode", planModeReminderBody)]
           : []),
         ...(toolAnnouncement ? [toolAnnouncement] : []),
-        ...(agentListingEntry ? [agentListingEntry] : []),
-        ...(skillsListingEntry ? [skillsListingEntry] : []),
         ...restateContextAfterCompact(this, activeEntries, preservedEntries),
       ];
 
@@ -683,6 +660,10 @@ async function compactActiveConversationImpl(
       );
       await this.appendEvent(compactBoundaryEvent, turnTraceContext);
       events.push(compactBoundaryEvent);
+      // 压缩边界已提交：无条件清空本会话的记忆/衣橱投递快照。压缩后的下一次
+      // query 等同第一次 query——直接重新注入最新全量记忆，不依赖旧注入在
+      // 可见历史里的存留（spec neko-memory-v2 §5.4）。
+      this.nekoMemoryBooks?.state.clearSessionBookSnapshots(this.sessionId);
 
       const compactCompletedPayload = this.buildCompactTimelinePayload(compactTimeline, {
         ...(maxAttempts > 1 ? { attempt, maxAttempts } : {}),
@@ -714,7 +695,6 @@ async function compactActiveConversationImpl(
           : recordablePostCompactEntries,
       );
       replaceReadFileStateAfterCompact(this.readFileState, fileRestore.readFileStateEntries);
-      resetProjectMemoryRecall(this);
 
       return {
         displayText: "Compacted",

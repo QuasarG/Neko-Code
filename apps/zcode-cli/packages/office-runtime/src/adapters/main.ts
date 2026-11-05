@@ -15,7 +15,7 @@ export async function main(): Promise<void> {
     cMapUrl: `${join(assetRoot, "pdfjs/cmaps")}/`,
     standardFontDataUrl: `${join(assetRoot, "pdfjs/standard_fonts")}/`,
   };
-  const workspace = process.env.ZCODE_WORKSPACE_ROOT || process.cwd();
+  const workspace = process.env.NEKODE_WORKSPACE_ROOT || process.cwd();
 
   const owner = createDocumentOwner({
     files: createWorkspaceFiles(workspace),

@@ -1,5 +1,5 @@
 import { type ReactNode, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import {
   EMPTY_SCROLL_MASK_STATE,
   getVerticalScrollMaskStyle,
@@ -124,7 +124,7 @@ function CuaGroupChildren({
               onOpenCodeViewer={context.onOpenCodeViewer}
               onOpenFileLink={context.onOpenFileLink}
               onOpenBrowserUrl={context.onOpenBrowserUrl}
-              onOpenAutomationsMain={context.onOpenAutomationsMain}
+              onOpenWorkflowsMain={context.onOpenWorkflowsMain}
               onLoadFullToolCallFields={context.onLoadFullToolCallFields}
             />
           ) : event.kind === "assistantMessage" ? (
@@ -152,7 +152,7 @@ function CuaGroupChildren({
 }
 
 export function CuaGroupToolCallBlock(context: CuaGroupRenderProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const { toolCall, childToolCalls } = context.toolCallNode;
   const events: readonly ConversationCuaGroupEvent[] =
     context.events ??

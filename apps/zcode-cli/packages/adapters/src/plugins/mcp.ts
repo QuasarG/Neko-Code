@@ -9,11 +9,11 @@ import type {
   PluginManifest,
   PluginOptionValues,
 } from "@zcode/contracts";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
-import { ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { NEKODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
 import type { LoadedPlugin } from "./types.js";
 import { isNotFoundError, isPluginOptionValue, isRecord, resolveInside } from "./helpers.js";
-import { buildOfficialProvenance, parseZCodeOfficialAuth } from "./mcp-official-auth.js";
+import { buildOfficialProvenance, parseNekodeOfficialAuth } from "./mcp-official-auth.js";
 
 const SUPPORTED_MCP_TYPES = new Set(["stdio", "http", "sse"]);
 const TEMPLATE_PATTERN = /\$\{([^}]+)\}/g;
@@ -183,7 +183,7 @@ function resolveMcpServerConfig(
   if (!SUPPORTED_MCP_TYPES.has(type)) throw new Error(`Unsupported MCP transport: ${type}`);
   // 修复原因：各 transport 分别重建配置曾漏传 alwaysLoad，导致插件常驻工具被延迟。
   // 通用字段只在此解析；source 按 marketplace 归类，兼容 source 为 cache 的官方 CDN 插件。
-  const official = context.loaded.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE;
+  const official = context.loaded.marketplace === NEKODE_OFFICIAL_PLUGIN_MARKETPLACE;
   const baseConfig: McpServerConfigBase = {
     alwaysLoad: typeof server.alwaysLoad === "boolean" ? server.alwaysLoad : undefined,
     enabled: typeof server.enabled === "boolean" ? server.enabled : undefined,
@@ -201,7 +201,7 @@ function resolveMcpServerConfig(
   //
   // stdio 之所以能放开：请求由插件进程自己发出，身份头随每条出站协议消息的 _meta 下发
   // （见 adapters/src/mcp/index.ts）。sse 没有对应通道，继续拒绝。
-  const officialAuth = parseZCodeOfficialAuth(server.auth, identity.mcpKey);
+  const officialAuth = parseNekodeOfficialAuth(server.auth, identity.mcpKey);
   if (officialAuth && type !== "http" && type !== "stdio") {
     throw new Error(
       `MCP server ${identity.mcpKey}: ${officialAuth.type} auth requires type "http" or "stdio", got "${type}"`,
@@ -219,9 +219,9 @@ function resolveMcpServerConfig(
     const env = resolveStringRecord(
       {
         CLAUDE_PROJECT_DIR: context.workingDirectory,
-        ZCODE_PLUGIN_DATA: context.dataPath,
-        ZCODE_PLUGIN_ROOT: context.loaded.rootPath,
-        ZCODE_PROJECT_DIR: context.workingDirectory,
+        NEKODE_PLUGIN_DATA: context.dataPath,
+        NEKODE_PLUGIN_ROOT: context.loaded.rootPath,
+        NEKODE_PROJECT_DIR: context.workingDirectory,
         CLAUDE_PLUGIN_DATA: context.dataPath,
         CLAUDE_PLUGIN_ROOT: context.loaded.rootPath,
         ...(isRecord(server.env) ? server.env : {}),
@@ -232,7 +232,7 @@ function resolveMcpServerConfig(
     // 插件 manifest 可自定义 env，但插件身份必须由 resolver 权威写入（loaded.id 来自本地 plugin
     // registry，不是可序列化配置），不能让第三方伪造 official zcode-cua 身份后获得只应定向注入给
     // 内置插件的 broker 凭据。manifest env spread 之后覆写，确保 user/manifest 无法覆盖。
-    env[ZCODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
+    env[NEKODE_PLUGIN_ID_ENV_KEY] = context.loaded.id;
     return {
       ...baseConfig,
       type: "stdio",
@@ -393,22 +393,22 @@ function resolveTemplate(
   return value.replace(TEMPLATE_PATTERN, (match, name: string) => {
     switch (name) {
       case "CLAUDE_PLUGIN_ROOT":
-      case "ZCODE_PLUGIN_ROOT":
+      case "NEKODE_PLUGIN_ROOT":
         return context.loaded.rootPath;
       case "CLAUDE_PLUGIN_DATA":
-      case "ZCODE_PLUGIN_DATA":
+      case "NEKODE_PLUGIN_DATA":
         return context.dataPath;
       case "CLAUDE_PROJECT_DIR":
-      case "ZCODE_PROJECT_DIR":
+      case "NEKODE_PROJECT_DIR":
         return context.workingDirectory;
       case "CLAUDE_CODE_SESSION_ID":
       case "CLAUDE_SESSION_ID":
-      case "ZCODE_SESSION_ID":
+      case "NEKODE_SESSION_ID":
         throw new PluginVariableError(
           `Plugin variable requires a runtime session context: ${name}`,
         );
       case "CLAUDE_SKILL_DIR":
-      case "ZCODE_SKILL_DIR":
+      case "NEKODE_SKILL_DIR":
         throw new PluginVariableError(`Plugin variable requires a skill context: ${name}`);
       default:
         break;
@@ -430,7 +430,7 @@ function resolveTemplate(
       }
       return String(configValue);
     }
-    if (name.startsWith("ZCODE_")) {
+    if (name.startsWith("NEKODE_")) {
       const envValue = context.env[name];
       if (envValue === undefined)
         throw new PluginVariableError(`Missing environment variable: ${name}`);

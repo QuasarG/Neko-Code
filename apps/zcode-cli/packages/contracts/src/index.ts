@@ -28,7 +28,6 @@ export * from "./interfaces/dynamic-workflow-snippet.port.js";
 export * from "./interfaces/model-catalog.port.js";
 export * from "./interfaces/automation.port.js";
 export * from "./interfaces/off-peak.port.js";
-export * from "./interfaces/topic-resource.port.js";
 export * from "./interfaces/mcp.port.js";
 
 export * from "./interfaces/runtime-input-presentation.js";
@@ -65,6 +64,12 @@ export * from "./hooks/index.js";
 
 // Skills
 export * from "./skills/index.js";
+
+// Neko memory v2 (six fixed markdown books)
+export * from "./neko-memory/index.js";
+
+// Wardrobe (global outfit state)
+export * from "./wardrobe/index.js";
 
 // Custom Commands
 export * from "./commands/index.js";

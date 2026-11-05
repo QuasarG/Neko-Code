@@ -12,8 +12,8 @@ import {
   type ProviderId,
 } from "@zcode/provider";
 import {
-  NodeZCodeBuiltinProviderConfigSource,
-  type ZCodeBuiltinProviderConfigSnapshot,
+  NodeNekodeBuiltinProviderConfigSource,
+  type NekodeBuiltinProviderConfigSnapshot,
 } from "@zcode/provider-node";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ApiProviderModelRuntime } from "../src/app/provider-registry-model-runtime.js";
@@ -21,11 +21,11 @@ import { ApiProviderModelRuntime } from "../src/app/provider-registry-model-runt
 const zcodeBuiltinProviderConfigFilePath = fileURLToPath(
   new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
 );
-const source = new NodeZCodeBuiltinProviderConfigSource({
+const source = new NodeNekodeBuiltinProviderConfigSource({
   bundledFilePath: zcodeBuiltinProviderConfigFilePath,
   watch: false,
 });
-let zcodeBuiltin: ZCodeBuiltinProviderConfigSnapshot;
+let zcodeBuiltin: NekodeBuiltinProviderConfigSnapshot;
 
 beforeAll(async () => {
   zcodeBuiltin = await source.read();
@@ -33,7 +33,7 @@ beforeAll(async () => {
 
 afterAll(() => source.dispose());
 
-describe("真实 ZCode Built-in Config 到 Active Model", () => {
+describe("真实 Nekode Built-in Config 到 Active Model", () => {
   it("API Key Personal Overlay 经 Registry 原样装配到 Adapter", () => {
     const providerId = "zai-api";
     const modelId = "glm-5.3";

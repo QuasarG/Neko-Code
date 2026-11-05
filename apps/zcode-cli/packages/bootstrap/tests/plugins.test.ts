@@ -7,7 +7,7 @@ import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createConfig } from "@zcode/adapters/config";
 import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "@zcode/shared";
-import { ZCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
+import { NEKODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
 import type { Logger } from "@zcode/contracts";
 import { describe, expect, it, vi } from "vitest";
 import { resolveStartupPlugins } from "../src/app/startup-marks.js";
@@ -20,22 +20,22 @@ import {
   OFFICIAL_PLUGIN_DEFINITIONS,
 } from "../src/app/official-plugin-definitions.js";
 import { createPluginFacadeForApp } from "../src/app/plugin-facade.js";
-import type { ZCodeAppOptions } from "../src/app/types.js";
+import type { NekodeAppOptions } from "../src/app/types.js";
 import {
-  configureZCodePlugin,
-  describeZCodePlugin,
+  configureNekodePlugin,
+  describeNekodePlugin,
   enrichCachedClaudeMarketplaceIconsForOverview,
-  getZCodePluginsOverview,
-  installZCodeMarketplacePlugin,
-  listZCodePlugins,
-  resolveZCodePlugins,
-  resetZCodePluginConfig,
+  getNekodePluginsOverview,
+  installNekodeMarketplacePlugin,
+  listNekodePlugins,
+  resolveNekodePlugins,
+  resetNekodePluginConfig,
   resolveMarketplaceRefreshTargetIds,
   restoreBuiltinPlugin,
-  setZCodePluginEnabled,
-  uninstallZCodeMarketplacePlugin,
-  updateZCodePluginMarketplace,
-  validateZCodePlugin,
+  setNekodePluginEnabled,
+  uninstallNekodeMarketplacePlugin,
+  updateNekodePluginMarketplace,
+  validateNekodePlugin,
   isWorkspacePluginConfigPath,
 } from "../src/plugins.js";
 import { StartupTimer } from "../src/startup-logging.js";
@@ -67,7 +67,7 @@ const ANDROID_EMULATOR_MCP_ID = "plugin:android-emulator:android-emulator";
 const BROWSER_USE_PLUGIN_ID = "browser-use@zcode-plugins-official";
 const DOCUMENTS_PLUGIN_ID = "documents@zcode-plugins-official";
 const RESTORE_LEGACY_SESSIONS_PLUGIN_ID = "restore-legacy-sessions@zcode-plugins-official";
-const SKILL_CREATOR_PLUGIN_ID = "skill-creator@zcode-plugins-official";
+const BUILTIN_PLUGIN_ID = "zcode-guide@zcode-plugins-official";
 
 function createNoopStartupTimer(): StartupTimer {
   const noop = () => {};
@@ -98,11 +98,11 @@ const OFFICIAL_RESTORE_LEGACY_SESSIONS_PLUGIN_CACHE_PATH = join(
   "restore-legacy-sessions",
   "0.1.0",
 );
-const OFFICIAL_SKILL_CREATOR_PLUGIN_CACHE_PATH = join(
+const OFFICIAL_BUILTIN_PLUGIN_CACHE_PATH = join(
   "cache",
   "zcode-plugins-official",
-  "skill-creator",
-  "0.1.0",
+  "zcode-guide",
+  "0.3.0",
 );
 const BUNDLED_PLUGIN_DIST_PATH = fileURLToPath(
   new URL("../../ios-simulator-plugin/dist/mcp/server.js", import.meta.url),
@@ -111,7 +111,7 @@ const BUNDLED_ANDROID_PLUGIN_DIST_PATH = fileURLToPath(
   new URL("../../android-emulator-plugin/dist/mcp/server.js", import.meta.url),
 );
 
-describe("ZCode plugins", () => {
+describe("Nekode plugins", () => {
   it("starts cached Claude icon migration without blocking overview callers", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-icon-migration-"));
     const pluginStorageRoot = join(root, "plugins");
@@ -233,7 +233,7 @@ describe("ZCode plugins", () => {
           plugins: { enabledPlugins: { "documents@zcode-plugins-official": false } },
         }),
       );
-      const outcome = resolveZCodePlugins({
+      const outcome = resolveNekodePlugins({
         env: {},
         pluginStorageRoot: join(root, "plugins"),
         userConfigPath,
@@ -275,7 +275,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const outcome = listZCodePlugins({
+      const outcome = listNekodePlugins({
         env: {},
         pluginStorageRoot,
         skipUserConfig: true,
@@ -301,13 +301,13 @@ describe("ZCode plugins", () => {
 
       // First seed normally so the cache dir exists.
       resolveOfficialPluginRoots({ storageRoot: pluginStorageRoot });
-      const seededDir = join(pluginStorageRoot, OFFICIAL_SKILL_CREATOR_PLUGIN_CACHE_PATH);
+      const seededDir = join(pluginStorageRoot, OFFICIAL_BUILTIN_PLUGIN_CACHE_PATH);
       await stat(seededDir); // exists
 
       // Now suppress it and re-resolve.
       resolveOfficialPluginRoots({
         storageRoot: pluginStorageRoot,
-        suppressedBuiltins: new Set([SKILL_CREATOR_PLUGIN_ID]),
+        suppressedBuiltins: new Set([BUILTIN_PLUGIN_ID]),
       });
 
       // 卸载只改变 Runtime 抑制态；Catalog 和不可变 cache 仍供详情页读取。
@@ -321,7 +321,7 @@ describe("ZCode plugins", () => {
         ),
       );
       expect(
-        manifest.plugins.find((p: { name: string }) => p.name === "skill-creator"),
+        manifest.plugins.find((p: { name: string }) => p.name === "zcode-guide"),
       ).toMatchObject({
         source: "filesystem",
       });
@@ -362,7 +362,7 @@ describe("ZCode plugins", () => {
       );
       await writeTestFile(join(pluginRoot, "skills", "demo", "SKILL.md"), "# demo");
 
-      await installZCodeMarketplacePlugin({
+      await installNekodeMarketplacePlugin({
         marketplace: "lazy-market",
         pluginName: "demo",
         pluginStorageRoot,
@@ -387,7 +387,7 @@ describe("ZCode plugins", () => {
       }
       await writeFile(manifestPath, JSON.stringify(manifest));
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath: configPath,
         workingDirectory: root,
@@ -460,7 +460,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath: configPath,
         workingDirectory: root,
@@ -528,7 +528,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath: configPath,
         workingDirectory: root,
@@ -552,17 +552,17 @@ describe("ZCode plugins", () => {
         JSON.stringify({
           plugins: {
             enabled: true,
-            suppressedBuiltins: [SKILL_CREATOR_PLUGIN_ID],
+            suppressedBuiltins: [BUILTIN_PLUGIN_ID],
           },
         }),
       );
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      expect(overview.restorableBuiltins.map((p) => p.id)).toContain(SKILL_CREATOR_PLUGIN_ID);
+      expect(overview.restorableBuiltins.map((p) => p.id)).toContain(BUILTIN_PLUGIN_ID);
     } finally {
       await rm(root, { force: true, recursive: true });
     }
@@ -579,7 +579,7 @@ describe("ZCode plugins", () => {
         userConfigPath,
         JSON.stringify({ plugins: { enabled: true, suppressedBuiltins: [documentsId] } }),
       );
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
@@ -596,12 +596,12 @@ describe("ZCode plugins", () => {
     }
   });
 
-  it("includes the merged ZCode official marketplace and Claude marketplace for empty storage", async () => {
+  it("includes the merged Nekode official marketplace and Claude marketplace for empty storage", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-default-marketplace-"));
 
     try {
       const pluginStorageRoot = join(root, "plugins");
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot,
         skipUserConfig: true,
@@ -614,7 +614,7 @@ describe("ZCode plugins", () => {
             id: "zcode-plugins-official",
             isOfficial: true,
             name: "zcode-plugins-official",
-            pluginCount: 15,
+            pluginCount: 14,
             source: {
               source: "url",
               url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
@@ -702,7 +702,7 @@ describe("ZCode plugins", () => {
       await writeTestFile(join(pluginRoot, "agents", "judge.md"), "---\nname: judge\n---\n");
 
       const configPath = join(root, "config.json");
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "lazy-market",
         pluginName: "hello",
         pluginStorageRoot,
@@ -718,7 +718,7 @@ describe("ZCode plugins", () => {
         // 安装即默认启用：新装插件应直接 enabled，无需再手动开。
         enabled: true,
       });
-      const overview = await getZCodePluginsOverview({
+      const overview = await getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath: configPath,
         workingDirectory: root,
@@ -802,7 +802,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "zip-lazy-market",
         pluginName: "hello-zip",
         pluginStorageRoot,
@@ -825,7 +825,7 @@ describe("ZCode plugins", () => {
         existsSync(join(result.installedPlugins[0]?.installPath ?? "", "agents", "judge.md")),
       ).toBe(true);
 
-      const overviewResult = getZCodePluginsOverview({
+      const overviewResult = getNekodePluginsOverview({
         pluginStorageRoot,
         userConfigPath: configPath,
         workingDirectory: root,
@@ -880,7 +880,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "lazy-market",
         pluginName: "hello",
         pluginStorageRoot,
@@ -932,7 +932,7 @@ describe("ZCode plugins", () => {
       );
       await writeTestFile(join(pluginRoot, "skills", "hello", "SKILL.md"), "# hello");
 
-      const installed = await installZCodeMarketplacePlugin({
+      const installed = await installNekodeMarketplacePlugin({
         marketplace: "lazy-market",
         pluginName: "hello",
         pluginStorageRoot,
@@ -959,7 +959,7 @@ describe("ZCode plugins", () => {
       await mkdir(dataDir, { recursive: true });
       await writeTestFile(join(dataDir, "generated-commands", "demo.md"), "# demo");
 
-      const removed = await uninstallZCodeMarketplacePlugin({
+      const removed = await uninstallNekodeMarketplacePlugin({
         pluginId: "hello@lazy-market",
         pluginStorageRoot,
         userConfigPath: configPath,
@@ -1037,7 +1037,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const removed = await uninstallZCodeMarketplacePlugin({
+      const removed = await uninstallNekodeMarketplacePlugin({
         pluginId,
         pluginStorageRoot,
         userConfigPath,
@@ -1100,7 +1100,7 @@ describe("ZCode plugins", () => {
         JSON.stringify({ plugins: { suppressedBuiltins: [pluginId] } }),
       );
 
-      await uninstallZCodeMarketplacePlugin({
+      await uninstallNekodeMarketplacePlugin({
         pluginId,
         pluginStorageRoot,
         userConfigPath,
@@ -1129,45 +1129,45 @@ describe("ZCode plugins", () => {
         JSON.stringify({
           plugins: {
             enabled: true,
-            enabledPlugins: { [SKILL_CREATOR_PLUGIN_ID]: true },
-            options: { [SKILL_CREATOR_PLUGIN_ID]: { foo: "bar" } },
+            enabledPlugins: { [BUILTIN_PLUGIN_ID]: true },
+            options: { [BUILTIN_PLUGIN_ID]: { foo: "bar" } },
           },
         }),
       );
 
       // Seed first so its cache exists.
-      resolveZCodePlugins({
+      resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      const cacheDir = join(pluginStorageRoot, OFFICIAL_SKILL_CREATOR_PLUGIN_CACHE_PATH);
+      const cacheDir = join(pluginStorageRoot, OFFICIAL_BUILTIN_PLUGIN_CACHE_PATH);
       await stat(cacheDir);
 
-      const removed = await uninstallZCodeMarketplacePlugin({
-        pluginId: SKILL_CREATOR_PLUGIN_ID,
+      const removed = await uninstallNekodeMarketplacePlugin({
+        pluginId: BUILTIN_PLUGIN_ID,
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      expect(removed?.id).toBe(SKILL_CREATOR_PLUGIN_ID);
+      expect(removed?.id).toBe(BUILTIN_PLUGIN_ID);
 
       const config = JSON.parse(await readFile(userConfigPath, "utf8"));
-      expect(config.plugins.suppressedBuiltins).toContain(SKILL_CREATOR_PLUGIN_ID);
-      expect(config.plugins.enabledPlugins?.[SKILL_CREATOR_PLUGIN_ID]).toBeUndefined();
-      expect(config.plugins.options?.[SKILL_CREATOR_PLUGIN_ID]).toBeUndefined();
+      expect(config.plugins.suppressedBuiltins).toContain(BUILTIN_PLUGIN_ID);
+      expect(config.plugins.enabledPlugins?.[BUILTIN_PLUGIN_ID]).toBeUndefined();
+      expect(config.plugins.options?.[BUILTIN_PLUGIN_ID]).toBeUndefined();
 
       // Re-resolve: Runtime stays gone, but Catalog/cache remain readable for detail/restore.
-      const outcome = resolveZCodePlugins({
+      const outcome = resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      expect(outcome.plugins.find((p) => p.id === SKILL_CREATOR_PLUGIN_ID)).toBeUndefined();
+      expect(outcome.plugins.find((p) => p.id === BUILTIN_PLUGIN_ID)).toBeUndefined();
       await expect(stat(cacheDir)).resolves.toBeDefined();
 
-      const detail = await describeZCodePlugin({
-        pluginName: "skill-creator",
+      const detail = await describeNekodePlugin({
+        pluginName: "zcode-guide",
         marketplace: "zcode-plugins-official",
         pluginStorageRoot,
         userConfigPath,
@@ -1180,8 +1180,8 @@ describe("ZCode plugins", () => {
 
       // Double-uninstall is idempotent: an already-suppressed built-in is not resolved,
       // so it falls through to the marketplace path and returns null without throwing.
-      const second = await uninstallZCodeMarketplacePlugin({
-        pluginId: SKILL_CREATOR_PLUGIN_ID,
+      const second = await uninstallNekodeMarketplacePlugin({
+        pluginId: BUILTIN_PLUGIN_ID,
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
@@ -1210,19 +1210,19 @@ describe("ZCode plugins", () => {
       });
       const facade = createPluginFacadeForApp({
         configResult,
-        options: { env: {}, pluginStorageRoot } as ZCodeAppOptions,
+        options: { env: {}, pluginStorageRoot } as NekodeAppOptions,
         workingDirectory: root,
       });
 
       const before = await facade.listPlugins();
-      expect(before.plugins.find((item) => item.id === SKILL_CREATOR_PLUGIN_ID)).toBeDefined();
+      expect(before.plugins.find((item) => item.id === BUILTIN_PLUGIN_ID)).toBeDefined();
 
-      const { removed } = await facade.uninstallPlugin(SKILL_CREATOR_PLUGIN_ID);
-      expect(removed?.id).toBe(SKILL_CREATOR_PLUGIN_ID);
+      const { removed } = await facade.uninstallPlugin(BUILTIN_PLUGIN_ID);
+      expect(removed?.id).toBe(BUILTIN_PLUGIN_ID);
 
       // Same facade instance, subsequent list must not re-surface the uninstalled built-in.
       const after = await facade.listPlugins();
-      expect(after.plugins.find((item) => item.id === SKILL_CREATOR_PLUGIN_ID)).toBeUndefined();
+      expect(after.plugins.find((item) => item.id === BUILTIN_PLUGIN_ID)).toBeUndefined();
     } finally {
       await rm(root, { force: true, recursive: true });
     }
@@ -1239,35 +1239,35 @@ describe("ZCode plugins", () => {
         JSON.stringify({
           plugins: {
             enabled: true,
-            suppressedBuiltins: [SKILL_CREATOR_PLUGIN_ID],
+            suppressedBuiltins: [BUILTIN_PLUGIN_ID],
           },
         }),
       );
 
       // Suppressed: not present.
-      let outcome = resolveZCodePlugins({
+      let outcome = resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      expect(outcome.plugins.find((p) => p.id === SKILL_CREATOR_PLUGIN_ID)).toBeUndefined();
+      expect(outcome.plugins.find((p) => p.id === BUILTIN_PLUGIN_ID)).toBeUndefined();
 
       await restoreBuiltinPlugin({
-        pluginId: SKILL_CREATOR_PLUGIN_ID,
+        pluginId: BUILTIN_PLUGIN_ID,
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
 
       const config = JSON.parse(await readFile(userConfigPath, "utf8"));
-      expect(config.plugins.suppressedBuiltins ?? []).not.toContain(SKILL_CREATOR_PLUGIN_ID);
+      expect(config.plugins.suppressedBuiltins ?? []).not.toContain(BUILTIN_PLUGIN_ID);
 
-      outcome = resolveZCodePlugins({
+      outcome = resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      expect(outcome.plugins.find((p) => p.id === SKILL_CREATOR_PLUGIN_ID)).toBeDefined();
+      expect(outcome.plugins.find((p) => p.id === BUILTIN_PLUGIN_ID)).toBeDefined();
     } finally {
       await rm(root, { force: true, recursive: true });
     }
@@ -1284,31 +1284,31 @@ describe("ZCode plugins", () => {
         JSON.stringify({
           plugins: {
             enabled: true,
-            suppressedBuiltins: [SKILL_CREATOR_PLUGIN_ID],
+            suppressedBuiltins: [BUILTIN_PLUGIN_ID],
           },
         }),
       );
 
       // 先写入完整 Catalog/cache，模拟详情页仍可见但 Runtime 被抑制的状态。
-      resolveZCodePlugins({
+      resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
 
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "zcode-plugins-official",
-        pluginName: "skill-creator",
+        pluginName: "zcode-guide",
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
 
       expect(result.diagnostics).toEqual([]);
-      expect(result.installedPlugins.map((plugin) => plugin.id)).toEqual([SKILL_CREATOR_PLUGIN_ID]);
+      expect(result.installedPlugins.map((plugin) => plugin.id)).toEqual([BUILTIN_PLUGIN_ID]);
       expect(existsSync(join(pluginStorageRoot, "installed_plugins.json"))).toBe(false);
       expect(JSON.parse(await readFile(userConfigPath, "utf8"))).not.toMatchObject({
-        plugins: { suppressedBuiltins: [SKILL_CREATOR_PLUGIN_ID] },
+        plugins: { suppressedBuiltins: [BUILTIN_PLUGIN_ID] },
       });
     } finally {
       await rm(root, { force: true, recursive: true });
@@ -1348,7 +1348,7 @@ describe("ZCode plugins", () => {
         "# Document Skills\n",
       );
 
-      resolveZCodePlugins({
+      resolveNekodePlugins({
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
@@ -1368,7 +1368,7 @@ describe("ZCode plugins", () => {
       entry!.version = "1.0.0";
       await writeFile(manifestPath, JSON.stringify(manifest));
 
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "zcode-plugins-official",
         pluginName: "documents",
         pluginStorageRoot,
@@ -1392,7 +1392,7 @@ describe("ZCode plugins", () => {
     const pluginStorageRoot = join(root, "plugins");
 
     try {
-      const removed = await uninstallZCodeMarketplacePlugin({
+      const removed = await uninstallNekodeMarketplacePlugin({
         pluginId: "missing@lazy-market",
         pluginStorageRoot,
         skipUserConfig: true,
@@ -1422,7 +1422,7 @@ describe("ZCode plugins", () => {
         },
       ]);
 
-      const diagnostics = await validateZCodePlugin({
+      const diagnostics = await validateNekodePlugin({
         marketplace: "offline-market",
         pluginName: "hello",
         pluginStorageRoot,
@@ -1469,12 +1469,12 @@ describe("ZCode plugins", () => {
         },
       ]);
 
-      const update = await updateZCodePluginMarketplace({
+      const update = await updateNekodePluginMarketplace({
         marketplace: "offline-market",
         pluginStorageRoot,
         workingDirectory: root,
       });
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         pluginStorageRoot,
         skipUserConfig: true,
         workingDirectory: root,
@@ -1543,7 +1543,7 @@ describe("ZCode plugins", () => {
       ]);
       vi.stubEnv("PATH", join(root, "no-system-git"));
 
-      const result = await installZCodeMarketplacePlugin({
+      const result = await installNekodeMarketplacePlugin({
         marketplace: "private-market",
         pluginName: "private-plugin",
         pluginStorageRoot,
@@ -1568,10 +1568,16 @@ describe("ZCode plugins", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-mode-reseed-"));
     const entryRoot = join(root, "resources", "glm");
     const pluginStorageRoot = join(root, "plugins");
-    // 用仍登记的官方插件（skill-creator）做载体；文件全是 fixture 伪造的，
-    // 真实 skill-creator 是否带 hook 无关紧要——seed 逻辑按伪造目录 reseed。
-    const pluginRoot = join(entryRoot, "packages", "skill-creator-plugin");
-    const targetRoot = join(pluginStorageRoot, OFFICIAL_SKILL_CREATOR_PLUGIN_CACHE_PATH);
+    // 用仍登记的官方插件（restore-legacy-sessions）做载体；文件全是 fixture 伪造的，
+    // 真实插件是否带 hook 无关紧要——seed 逻辑按伪造目录 reseed。
+    const pluginRoot = join(entryRoot, "packages", "restore-legacy-sessions-plugin");
+    const targetRoot = join(
+      pluginStorageRoot,
+      "cache",
+      "zcode-plugins-official",
+      "restore-legacy-sessions",
+      "0.1.0",
+    );
     const originalEntrypoint = process.argv[1];
 
     try {
@@ -1579,7 +1585,7 @@ describe("ZCode plugins", () => {
       await writeTestFile(
         join(pluginRoot, ".zcode-plugin", "plugin.json"),
         JSON.stringify({
-          name: "skill-creator",
+          name: "restore-legacy-sessions",
           skills: "skills",
           version: "0.1.0",
         }),
@@ -1589,13 +1595,13 @@ describe("ZCode plugins", () => {
         join(pluginRoot, "hooks", "run-hook.cmd"),
         "#!/usr/bin/env bash\n",
       );
-      await writeTestFile(join(pluginRoot, "skills", "skill-creator", "SKILL.md"), "# skill");
+      await writeTestFile(join(pluginRoot, "skills", "restore-legacy-sessions", "SKILL.md"), "# skill");
 
       const seedFiles = await hashFixtureSeedFiles(pluginRoot, [
         ".zcode-plugin/plugin.json",
         "hooks/hooks.json",
         "hooks/run-hook.cmd",
-        "skills/skill-creator/SKILL.md",
+        "skills/restore-legacy-sessions/SKILL.md",
       ]);
       await writeTestFile(join(targetRoot, ".zcode-plugin", "plugin.json"), "{}");
       await writeTestFile(join(targetRoot, "hooks", "run-hook.cmd"), "#!/usr/bin/env bash\n");
@@ -1604,7 +1610,7 @@ describe("ZCode plugins", () => {
         JSON.stringify({
           hash: hashText(JSON.stringify(seedFiles.map(({ path, sha256 }) => [path, sha256]))),
           marketplace: "zcode-plugins-official",
-          plugin: "skill-creator",
+          plugin: "restore-legacy-sessions",
           pluginVersion: "0.1.0",
           source: "filesystem",
           version: 1,
@@ -1639,7 +1645,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const outcome = resolveZCodePlugins({
+      const outcome = resolveNekodePlugins({
         env: {},
         pluginStorageRoot,
         userConfigPath: configPath,
@@ -1702,7 +1708,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const outcome = resolveZCodePlugins({
+      const outcome = resolveNekodePlugins({
         env: {},
         pluginStorageRoot,
         userConfigPath: configPath,
@@ -1731,7 +1737,7 @@ describe("ZCode plugins", () => {
           IOS_SIM_UI_BACKEND: "auto",
         },
       });
-      expect(server?.args?.at(-2)).toBe(ZCODE_PLUGIN_HOST_COMMAND);
+      expect(server?.args?.at(-2)).toBe(NEKODE_PLUGIN_HOST_COMMAND);
       expect(server?.args?.at(-1)).toContain(
         join(
           "cache",
@@ -1789,7 +1795,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const outcome = resolveZCodePlugins({
+      const outcome = resolveNekodePlugins({
         env: {},
         pluginStorageRoot,
         userConfigPath: configPath,
@@ -1828,7 +1834,7 @@ describe("ZCode plugins", () => {
       ]) {
         expect(server?.env).not.toHaveProperty(unusedEnv);
       }
-      expect(server?.args?.at(-2)).toBe(ZCODE_PLUGIN_HOST_COMMAND);
+      expect(server?.args?.at(-2)).toBe(NEKODE_PLUGIN_HOST_COMMAND);
       expect(server?.args?.at(-1)).toContain(
         join(
           "cache",
@@ -1860,7 +1866,7 @@ describe("ZCode plugins", () => {
   it("persists sensitive plugin options in the selected User or Workspace config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-options-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".nekode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "secret-plugin");
     const pluginId = "secret-plugin@inline";
@@ -1890,14 +1896,14 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      await configureZCodePlugin({
+      await configureNekodePlugin({
         options: { region: "us-east-1" },
         pluginId,
         pluginStorageRoot,
         userConfigPath,
         workingDirectory: root,
       });
-      await configureZCodePlugin({
+      await configureNekodePlugin({
         options: { token: "secret" },
         pluginId,
         pluginStorageRoot,
@@ -1921,13 +1927,13 @@ describe("ZCode plugins", () => {
       });
       expect(reloadedConfig.config.plugins.dirs).toEqual([pluginRoot]);
       expect(
-        resolveZCodePlugins({
+        resolveNekodePlugins({
           configResult: reloadedConfig,
           pluginStorageRoot,
           workingDirectory: root,
         }).plugins.map((plugin) => plugin.id),
       ).toContain(pluginId);
-      await configureZCodePlugin({
+      await configureNekodePlugin({
         options: { region: "eu-west-1" },
         pluginId,
         pluginStorageRoot,
@@ -1936,7 +1942,7 @@ describe("ZCode plugins", () => {
         userConfigPath,
         workingDirectory: root,
       });
-      await setZCodePluginEnabled({
+      await setNekodePluginEnabled({
         enabled: true,
         plugin: pluginId,
         pluginStorageRoot,
@@ -1945,7 +1951,7 @@ describe("ZCode plugins", () => {
         userConfigPath,
         workingDirectory: root,
       });
-      await configureZCodePlugin({
+      await configureNekodePlugin({
         clearOptionKeys: ["token"],
         options: {},
         pluginId,
@@ -1978,7 +1984,7 @@ describe("ZCode plugins", () => {
   it("writes Workspace enablement without mutating User config", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-scope-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".nekode", "config.json");
     const pluginStorageRoot = join(root, "plugins");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -1998,7 +2004,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const result = await setZCodePluginEnabled({
+      const result = await setNekodePluginEnabled({
         enabled: true,
         plugin: pluginId,
         pluginStorageRoot,
@@ -2028,8 +2034,8 @@ describe("ZCode plugins", () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-nested-plugin-scope-"));
     const repositoryRoot = join(root, "repository");
     const workspaceRoot = join(repositoryRoot, "packages", "app");
-    const repositoryConfigPath = join(repositoryRoot, ".zcode", "config.json");
-    const workspaceConfigPath = join(workspaceRoot, ".zcode", "config.json");
+    const repositoryConfigPath = join(repositoryRoot, ".nekode", "config.json");
+    const workspaceConfigPath = join(workspaceRoot, ".nekode", "config.json");
     const userConfigPath = join(root, "user-config.json");
     const pluginRoot = join(root, "workspace-plugin");
     const pluginId = "workspace-plugin@inline";
@@ -2052,7 +2058,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      await setZCodePluginEnabled({
+      await setNekodePluginEnabled({
         enabled: true,
         plugin: pluginId,
         pluginStorageRoot: join(root, "plugins"),
@@ -2085,7 +2091,7 @@ describe("ZCode plugins", () => {
   it("resets Workspace plugin keys so effective config inherits User", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-plugin-reset-"));
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".nekode", "config.json");
     const pluginId = "workspace-plugin@inline";
     try {
       await writeTestFile(
@@ -2107,7 +2113,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      await resetZCodePluginConfig({
+      await resetNekodePluginConfig({
         pluginId,
         scope: "workspace",
         projectConfigPath: workspaceConfigPath,
@@ -2138,7 +2144,7 @@ describe("ZCode plugins", () => {
     const marketplaceRoot = join(root, "user-marketplace");
     const pluginRoot = join(marketplaceRoot, "plugins", "workspace-demo");
     const userConfigPath = join(root, "user-config.json");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".nekode", "config.json");
     const marketplaceId = "workspace-market";
     const pluginName = "workspace-demo";
 
@@ -2178,7 +2184,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const beforeRefresh = getZCodePluginsOverview({
+      const beforeRefresh = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot,
         userConfigPath,
@@ -2202,7 +2208,7 @@ describe("ZCode plugins", () => {
       ) as { marketplaces: Array<{ id: string }> };
       expect(knownBeforeRefresh.marketplaces.some((item) => item.id === marketplaceId)).toBe(false);
 
-      const dryRun = await installZCodeMarketplacePlugin({
+      const dryRun = await installNekodeMarketplacePlugin({
         dryRun: true,
         env: {},
         marketplace: marketplaceId,
@@ -2214,7 +2220,7 @@ describe("ZCode plugins", () => {
       expect(dryRun.diagnostics).toEqual([]);
       expect(existsSync(join(pluginStorageRoot, "marketplaces", marketplaceId))).toBe(false);
 
-      const refreshed = await updateZCodePluginMarketplace({
+      const refreshed = await updateNekodePluginMarketplace({
         env: {},
         marketplace: marketplaceId,
         pluginStorageRoot,
@@ -2229,7 +2235,7 @@ describe("ZCode plugins", () => {
         existsSync(join(pluginStorageRoot, "marketplaces", marketplaceId, "marketplace.json")),
       ).toBe(true);
 
-      const afterRefresh = getZCodePluginsOverview({
+      const afterRefresh = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot,
         userConfigPath,
@@ -2244,7 +2250,7 @@ describe("ZCode plugins", () => {
         ]),
       );
 
-      const installed = await installZCodeMarketplacePlugin({
+      const installed = await installNekodeMarketplacePlugin({
         env: {},
         marketplace: marketplaceId,
         pluginName,
@@ -2292,7 +2298,7 @@ describe("ZCode plugins", () => {
     const marketplaceId = "workspace-market";
     try {
       await writeTestFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({
           plugins: {
             extraKnownMarketplaces: {
@@ -2312,7 +2318,7 @@ describe("ZCode plugins", () => {
         workingDirectory: root,
       });
       expect(configResult.config.plugins?.extraKnownMarketplaces?.[marketplaceId]).toBeUndefined();
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot: join(root, "plugins"),
         userConfigPath: join(root, "user-config.json"),
@@ -2344,7 +2350,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot: join(root, "plugins"),
         userConfigPath,
@@ -2385,7 +2391,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const overview = getZCodePluginsOverview({
+      const overview = getNekodePluginsOverview({
         env: {},
         pluginStorageRoot,
         userConfigPath,
@@ -2395,7 +2401,7 @@ describe("ZCode plugins", () => {
       expect(
         overview.marketplaces.find((marketplace) => marketplace.id === "zcode-plugins-official"),
       ).toMatchObject({
-        pluginCount: 15,
+        pluginCount: 14,
         source: {
           source: "url",
           url: "https://cdn-zcode.z.ai/zcode/official-plugin/marketplace.json",
@@ -2420,7 +2426,7 @@ describe("ZCode plugins", () => {
     const pluginStorageRoot = join(root, "plugins");
     const originalSource = join(root, "original-marketplace");
     const workspaceSource = join(root, "workspace-marketplace");
-    const workspaceConfigPath = join(root, ".zcode", "config.json");
+    const workspaceConfigPath = join(root, ".nekode", "config.json");
     const marketplaceId = "shared-market";
     try {
       await writeTestFile(
@@ -2449,7 +2455,7 @@ describe("ZCode plugins", () => {
         }),
       );
 
-      const result = await updateZCodePluginMarketplace({
+      const result = await updateNekodePluginMarketplace({
         env: {},
         marketplace: marketplaceId,
         pluginStorageRoot,
@@ -2466,7 +2472,7 @@ describe("ZCode plugins", () => {
           severity: "error",
         }),
       ]);
-      const installResult = await installZCodeMarketplacePlugin({
+      const installResult = await installNekodeMarketplacePlugin({
         env: {},
         marketplace: marketplaceId,
         pluginName: "demo",
@@ -2533,7 +2539,7 @@ describe("ZCode plugins", () => {
       const controller = new AbortController();
       controller.abort();
 
-      const result = await updateZCodePluginMarketplace({
+      const result = await updateNekodePluginMarketplace({
         abortSignal: controller.signal,
         env: {},
         marketplace: marketplaceId,
@@ -2554,15 +2560,15 @@ describe("ZCode plugins", () => {
   });
 
   it("matches Workspace config paths case-insensitively on Windows", () => {
-    expect(isWorkspacePluginConfigPath("C:\\repo\\.ZCODE\\CONFIG.JSON", "win32")).toBe(true);
+    expect(isWorkspacePluginConfigPath("C:\\repo\\.NEKODE\\CONFIG.JSON", "win32")).toBe(true);
     expect(isWorkspacePluginConfigPath("C:\\repo\\zcode.json", "win32")).toBe(false);
   });
 
   // Regression for c0120fa: the app-startup discovery path must default-enable
-  // content-only official plugins (skill-creator) the same way the CLI subcommand
-  // path does. Without forwarding the default-enabled set, `/skill skill-creator`
+  // content-only official plugins (zcode-guide) the same way the CLI subcommand
+  // path does. Without forwarding the default-enabled set, `/skill zcode-guide`
   // failed with "Skill not found" inside a session even though it was bundled.
-  it("default-enables skill-creator through the app-startup plugin discovery path", async () => {
+  it("default-enables content-only official plugins through the app-startup plugin discovery path", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-bootstrap-startup-plugins-"));
     const pluginStorageRoot = join(root, "plugins");
 
@@ -2576,17 +2582,19 @@ describe("ZCode plugins", () => {
         cliStorageRoot: join(root, "cli"),
         configResult,
         env: {},
-        options: { pluginStorageRoot } as ZCodeAppOptions,
+        options: { pluginStorageRoot } as NekodeAppOptions,
         startupTimer: createNoopStartupTimer(),
         workingDirectory: root,
       });
 
-      const plugin = outcome.plugins.find((item) => item.id === SKILL_CREATOR_PLUGIN_ID);
+      const plugin = outcome.plugins.find(
+        (item) => item.id === "plugin-creator@zcode-plugins-official",
+      );
       const browserUsePlugin = outcome.plugins.find((item) => item.id === BROWSER_USE_PLUGIN_ID);
       const documentPlugin = outcome.plugins.find((item) => item.id === DOCUMENTS_PLUGIN_ID);
       expect(plugin).toMatchObject({
         enabled: true,
-        name: "skill-creator",
+        name: "plugin-creator",
         skillCount: 1,
         skillRootCount: 1,
       });

@@ -1,4 +1,4 @@
 export {
-  BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES as SLASH_COMMAND_HELP_ENTRIES,
-  type BuiltinZCodeSlashCommandHelpEntry as SlashCommandHelpEntry,
+  BUILTIN_NEKODE_SLASH_COMMAND_HELP_ENTRIES as SLASH_COMMAND_HELP_ENTRIES,
+  type BuiltinNekodeSlashCommandHelpEntry as SlashCommandHelpEntry,
 } from "@zcode/shared";

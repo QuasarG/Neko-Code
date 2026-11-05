@@ -22,7 +22,7 @@ import {
 } from "@zcode/shared";
 import { FileManagerPane } from "@/WorkspaceFileTree.js";
 import type { FileManagerTarget } from "@/lib/workspaceSidePane.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { composerScopeKey, resolveComposerScope } from "@/v4/composer/composerDraftStore.js";
 import { SidePaneTerminalPane } from "@/SidePaneTerminalPane.js";
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
@@ -59,6 +59,7 @@ import { SubagentSessionSidePane } from "@/app-shell/SubagentSessionSidePane.js"
 import { SubagentDirectorySidePane } from "@/app-shell/SubagentDirectorySidePane.js";
 import { SelectionSideChatPane } from "@/app-shell/SelectionSideChatPane.js";
 import { BackgroundBashOutputSidePane } from "@/app-shell/BackgroundBashOutputSidePane.js";
+import { InjectionSidePane } from "@/app-shell/InjectionSidePane.js";
 import { PlanDetailSidePane } from "@/app-shell/PlanDetailSidePane.js";
 import {
   PluginUiLauncherItems,
@@ -112,7 +113,7 @@ import {
 import { inferMediaPreview, type CodeViewerSource } from "@/lib/codeViewer.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import { getVisibleSidePaneTabs } from "@/lib/workspaceSidePane.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import {
   BugIcon,
   ChevronRightIcon,
@@ -463,7 +464,7 @@ export function AnimatedSidePanePanel({
   mobileStacked?: boolean;
 }) {
   const onOpenPluginUi = useOpenPluginUi();
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const developerToolsEnabled = useDeveloperToolsVisibility();
   const isMobileTextInputViewport = useIsMobileTextInputViewport();
@@ -471,7 +472,7 @@ export function AnimatedSidePanePanel({
   const isResizeDisabled = !isVisible;
   const workspaceKey = workspaceIdentity?.trim() || workspaceAbsPath;
   const composerClientNamespace = useComposerClientNamespace();
-  const draftProjectId = useZCodeSessionStore(
+  const draftProjectId = useNekodeSessionStore(
     (state) => state.workspaces[workspaceKey]?.draftProjectId,
   );
   const draftScopeKey = composerScopeKey(
@@ -1263,6 +1264,8 @@ export function AnimatedSidePanePanel({
                             onOpenBrowserUrl={onOpenBrowserUrl}
                             onCloseTab={onCloseTab}
                           />
+                        ) : tab.type === "injection" ? (
+                          <InjectionSidePane tab={tab} />
                         ) : tab.type === "plan-detail" ? (
                           <PlanDetailSidePane
                             tab={tab}

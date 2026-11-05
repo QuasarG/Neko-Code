@@ -1,9 +1,9 @@
 import { net } from "electron";
 import {
   buildHelpAppConfigUrl,
-  buildZCodeSourceHeadersFromContext,
+  buildNekodeSourceHeadersFromContext,
   createHelpAppConfigReader,
-  ZCODE_ENV,
+  NEKODE_ENV,
 } from "@zcode/shared";
 
 export function createDesktopHelpConfigReader(options: {
@@ -24,14 +24,14 @@ export function createDesktopHelpConfigReader(options: {
         options.appVersion,
         `${process.platform}-${process.arch}`,
       ),
-      buildZCodeSourceHeadersFromContext({
+      buildNekodeSourceHeadersFromContext({
         endpointOrigin,
         appVersion: options.appVersion,
         clientLanguage: options.getClientLanguage(),
         deviceMid: options.deviceMid,
         platform: process.platform,
         arch: process.arch,
-        releaseChannel: ZCODE_ENV,
+        releaseChannel: NEKODE_ENV,
         sourceTitle: "electron",
       }),
     );

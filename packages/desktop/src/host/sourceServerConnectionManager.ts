@@ -19,10 +19,10 @@ import {
   SOURCE_SERVER_IDENTITY_CHANGE_PENDING_ERROR_CODE,
   SOURCE_SERVER_UPGRADE_REQUIRED_ERROR_CODE,
   REMOTE_RECOVERY_BUDGET_EXHAUSTED_ERROR_CODE,
-  ZCODE_COMPATIBILITY_MANIFEST,
+  NEKODE_COMPATIBILITY_MANIFEST,
   compareCompatibilityVersions,
   evaluateSourceServerCompatibility,
-  isPublicZCodeErrorCode,
+  isPublicNekodeErrorCode,
   normalizeRemoteConnectionError,
   stripRemoteTargetSecrets,
 } from "@zcode/shared";
@@ -103,7 +103,7 @@ export class SourceServerUpgradeRequiredError extends Error {
         ? `Source Server ${currentVersion} release archive differs from the current development build and must be updated`
         : upgradeTarget === "server"
           ? `Source Server ${currentVersion} must be upgraded to at least ${minimumVersion}`
-          : `ZCode Desktop ${currentVersion} must be upgraded to at least ${minimumVersion}`,
+          : `Nekode Desktop ${currentVersion} must be upgraded to at least ${minimumVersion}`,
     );
     this.name = "SourceServerUpgradeRequiredError";
   }
@@ -254,7 +254,7 @@ function describeLifecycleOperationFailure(
   const normalized = normalizeRemoteConnectionError(error);
   return {
     error: normalized.message,
-    ...(isPublicZCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
+    ...(isPublicNekodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
     retryable: normalized.retryable ?? true,
   };
 }
@@ -404,7 +404,7 @@ export class SourceServerConnectionManager {
       options.createAdapter ?? ((kind) => createSourceServerTransportAdapter(kind));
     this.connectServer = options.connectServer ?? connectServerRemoteOverDuplex;
     this.now = options.now ?? Date.now;
-    this.compatibilityManifest = options.compatibilityManifest ?? ZCODE_COMPATIBILITY_MANIFEST;
+    this.compatibilityManifest = options.compatibilityManifest ?? NEKODE_COMPATIBILITY_MANIFEST;
   }
 
   public async connect(
@@ -1527,7 +1527,7 @@ export class SourceServerConnectionManager {
       )
         throw error;
       const normalized = normalizeRemoteConnectionError(error);
-      const errorCode = isPublicZCodeErrorCode(normalized.code) ? normalized.code : undefined;
+      const errorCode = isPublicNekodeErrorCode(normalized.code) ? normalized.code : undefined;
       const retryable =
         error && typeof error === "object" && "retryable" in error
           ? (error as { retryable?: unknown }).retryable
@@ -1732,7 +1732,7 @@ export class SourceServerConnectionManager {
     const errorCode =
       normalized?.code &&
       normalized.code !== "remote-connection-unknown" &&
-      isPublicZCodeErrorCode(normalized.code)
+      isPublicNekodeErrorCode(normalized.code)
         ? normalized.code
         : REMOTE_RECOVERY_BUDGET_EXHAUSTED_ERROR_CODE;
     for (const profileId of this.profileIdsForSource(sourceServerId, input.profile.profileId)) {
@@ -1792,7 +1792,7 @@ export class SourceServerConnectionManager {
         sourceServerId,
         ...this.compatibilityByProfileId.get(input.profile.profileId),
         error: normalized.message,
-        ...(isPublicZCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
+        ...(isPublicNekodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
         retryable: false,
       });
     }
@@ -1805,7 +1805,7 @@ export class SourceServerConnectionManager {
           state: "offline",
           sourceServerId,
           error: normalized.message,
-          ...(isPublicZCodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
+          ...(isPublicNekodeErrorCode(normalized.code) ? { errorCode: normalized.code } : {}),
           retryable: false,
         });
       }

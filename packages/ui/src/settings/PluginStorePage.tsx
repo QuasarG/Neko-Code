@@ -12,7 +12,7 @@ import { ArrowLeft, RefreshCw, Store } from "lucide-react";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useServices } from "@/hooks/useServices.js";
 import { usePluginStoreOrder } from "@/hooks/usePluginStoreOrder.js";
 import { useScopedPluginManagementStore } from "@/store/pluginManagementStore.js";
@@ -44,7 +44,7 @@ import {
   resolvePluginDisplayName,
   type StorePluginItem,
 } from "@/settings/pluginStoreListing.js";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID } from "@zcode/shared";
 import { PluginUninstallConfirmDialog } from "@/settings/PluginUninstallConfirmDialog.js";
 import { usePluginUninstall } from "@/settings/usePluginUninstall.js";
 import { claimMarketplaceAutoRefresh } from "@/settings/officialMarketplaceAutoRefresh.js";
@@ -85,7 +85,7 @@ export function PluginStorePage({
   onBack,
 }: PluginStorePageProps) {
   const platform = usePlatform();
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const { order: storeOrder, refresh: refreshStoreOrder } = usePluginStoreOrder();
   const { pluginManagementService, skillsService } = useServices();
   const usePluginManagementStore = useScopedPluginManagementStore(pluginManagementService);
@@ -167,17 +167,17 @@ export function PluginStorePage({
     });
   }, [initialize, pluginManagementService, workspaceIdentity, workspacePath]);
 
-  // 目录自动刷新（Catalog Auto-Refresh）：只针对 ZCode 官方市场。每次进入商店页都刷新 CDN 目录，
+  // 目录自动刷新（Catalog Auto-Refresh）：只针对 Nekode 官方市场。每次进入商店页都刷新 CDN 目录，
   // 否则新上架插件要等用户手动点刷新才可见；以 10 分钟窗口节流，并在发起时占位防抖（失败/在飞不重复），
   // 判据见 officialMarketplaceAutoRefresh。状态放模块级而非组件 ref，因为每次进入都是重新挂载。
   useEffect(() => {
-    const official = marketplaces.find((item) => item.id === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID);
+    const official = marketplaces.find((item) => item.id === NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID);
     if (
       official &&
-      claimMarketplaceAutoRefresh(ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID, official.lastUpdated)
+      claimMarketplaceAutoRefresh(NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID, official.lastUpdated)
     ) {
       void updateMarketplace(
-        ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+        NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
         withPluginTelemetry(pluginManagementService, {
           trigger: "automatic",
           client_kind: isWebRemoteControl ? "mobile" : "desktop",

@@ -168,10 +168,10 @@ public static class NativeFileApps {
   }
 }
 '@
-if ($env:ZCODE_FILE_APP_ACTION -eq 'open') {
-  [NativeFileApps]::Open($env:ZCODE_FILE_APP_PATH, $env:ZCODE_FILE_APP_HANDLER)
+if ($env:NEKODE_FILE_APP_ACTION -eq 'open') {
+  [NativeFileApps]::Open($env:NEKODE_FILE_APP_PATH, $env:NEKODE_FILE_APP_HANDLER)
 } else {
-  $zcodeQuery = [NativeFileApps]::Query($env:ZCODE_FILE_APP_PATH, ($env:ZCODE_FILE_APP_INCLUDE_ICONS -ne '0'))
+  $zcodeQuery = [NativeFileApps]::Query($env:NEKODE_FILE_APP_PATH, ($env:NEKODE_FILE_APP_INCLUDE_ICONS -ne '0'))
   ${WINDOWS_SUITE_ICON_SCRIPT}
   ConvertTo-Json -InputObject $zcodeQuery -Depth 6 -Compress
 }

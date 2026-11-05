@@ -125,7 +125,7 @@ export function resolveWindowsAssociationIcon(application: NativeFileApplication
 export const WINDOWS_SUITE_ICON_SCRIPT = `
 $suiteId = ${JSON.stringify(WPS_SUITE_APP_ID)}
 $suiteRows = @($zcodeQuery.applications | Where-Object { $_.appId -ieq $suiteId })
-if (($env:ZCODE_FILE_APP_INCLUDE_ICONS -ne '0') -and $suiteRows.Count -gt 0) {
+if (($env:NEKODE_FILE_APP_INCLUDE_ICONS -ne '0') -and $suiteRows.Count -gt 0) {
   $suiteShell = $null; $suiteFolder = $null; $suiteItem = $null
   try {
     $suiteShell = New-Object -ComObject Shell.Application

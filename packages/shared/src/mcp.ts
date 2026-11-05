@@ -1,5 +1,5 @@
 /**
- * MCP (Model Context Protocol) types for ZCode
+ * MCP (Model Context Protocol) types for Nekode
  * Based on the original Tauri implementation
  */
 
@@ -7,13 +7,13 @@ import type { SettingsDirectoryLocation } from "./settings-source.js";
 import type { McpServerFailureKind, WorkspaceMcpTrustReview } from "./zcode-protocol/index.js";
 
 // CUA official plugin 身份常量（port 自 feat；UI 设置面板 + bootstrap 复用以避免字面量漂移）。
-export const ZCODE_CUA_OFFICIAL_PLUGIN_ID = "computer-use@zcode-plugins-official";
+export const NEKODE_CUA_OFFICIAL_PLUGIN_ID = "computer-use@zcode-plugins-official";
 // CUA server 身份串（port 自 feat mcp.ts）：server key = 模型可见工具前缀段（刻意不带 zcode-）；
 // namespace name = official plugin 运行时命名空间 plugin:<pluginId>:<serverKey>。
-export const ZCODE_CUA_OFFICIAL_MCP_NAMESPACE_NAME = "plugin:computer-use:computer-use";
+export const NEKODE_CUA_OFFICIAL_MCP_NAMESPACE_NAME = "plugin:computer-use:computer-use";
 // 插件身份 env key：resolver（adapters/src/plugins/mcp.ts）权威写入 loaded.id，manifest/user env 不可覆盖。
 // bootstrap + cli/plugin-host-command.ts 复用此常量识别 official zcode-cua plugin server，避免字面量漂移。
-export const ZCODE_PLUGIN_ID_ENV_KEY = "ZCODE_PLUGIN_ID";
+export const NEKODE_PLUGIN_ID_ENV_KEY = "NEKODE_PLUGIN_ID";
 
 export type McpSource =
   | "mcp"
@@ -127,7 +127,7 @@ export interface McpConfig {
   opencodemcp: CliMcpConfig;
 }
 
-export interface ZCodeMcpServer {
+export interface NekodeMcpServer {
   id: string;
   name: string;
   config: McpServerConfig;
@@ -181,7 +181,7 @@ export interface McpTestResult {
   response_time?: number;
 }
 
-export type ZCodeAgentMcpServer = { scope?: "user" | "workspace" } & (
+export type NekodeAgentMcpServer = { scope?: "user" | "workspace" } & (
   | {
       name: string;
       command: string;
@@ -249,7 +249,7 @@ function zcodeCuaArgLeaf(value: string): string {
 // zcode-cua）；覆盖 uv/npm 的 `@version`、pip 的 `==version`、extras `[...]`、git 的 `.git`/`.git@`，
 // 以及 `python -m zcode_cua.server` 这种点号子模块（`zcode-cua.<submodule>`）。fail-closed 边界宁可
 // 过判也不漏判；仍不会误判 `zcode-cua-proxy`（短横续接，不以 `.`/`@`/`[`/`==` 边界续接）。
-function matchesZCodeCuaSpec(candidate: string): boolean {
+function matchesNekodeCuaSpec(candidate: string): boolean {
   const c = candidate.replace(/_/g, "-");
   return (
     c === "zcode-cua" ||
@@ -266,8 +266,8 @@ function matchesZCodeCuaSpec(candidate: string): boolean {
  * 覆盖 `command: "zcode-cua"`、`/opt/bin/zcode-cua`，以及把包规格直接当 command 的写法
  * （`zcode-cua@1.2.3` 等）。对 fail-closed 边界宁可过判也不漏判。
  */
-export function isZCodeCuaMcpCommand(command: string): boolean {
-  return matchesZCodeCuaSpec(command) || matchesZCodeCuaSpec(zcodeCuaArgLeaf(command));
+export function isNekodeCuaMcpCommand(command: string): boolean {
+  return matchesNekodeCuaSpec(command) || matchesNekodeCuaSpec(zcodeCuaArgLeaf(command));
 }
 
 /**
@@ -275,8 +275,8 @@ export function isZCodeCuaMcpCommand(command: string): boolean {
  * `zcode-cua==1.2.3`、`zcode_cua`，以及 git / 本地路径形态（`.../zcode-cua`、`zcode-cua.git`、
  * `git+https://.../zcode-cua.git@v1`）。同时比对原始值与路径叶子，覆盖 `--from <path>`、`--from <git-url>`。
  */
-export function isZCodeCuaMcpPackageArg(value: string): boolean {
-  return matchesZCodeCuaSpec(value) || matchesZCodeCuaSpec(zcodeCuaArgLeaf(value));
+export function isNekodeCuaMcpPackageArg(value: string): boolean {
+  return matchesNekodeCuaSpec(value) || matchesNekodeCuaSpec(zcodeCuaArgLeaf(value));
 }
 
 /** 审核摘要与 Host DTO 共用 Windows 命令归一化，避免批准 cmd /c 后执行 npx 被误拒绝。 */
@@ -297,11 +297,11 @@ export function normalizeMcpStdioCommand(command: string, args: string[] = []) {
   return { command, args };
 }
 
-export function convertToZCodeAgentMcpServer(
+export function convertToNekodeAgentMcpServer(
   name: string,
   config: McpServerConfig,
   scope?: "user" | "workspace",
-): ZCodeAgentMcpServer | null {
+): NekodeAgentMcpServer | null {
   let inferredType = config.type;
   if (!inferredType) {
     if (config.command) inferredType = "stdio";

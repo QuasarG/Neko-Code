@@ -3,7 +3,7 @@
 import { useEffect, useState, type ComponentPropsWithoutRef } from "react";
 import { cn } from "@/components/lib/utils.js";
 import { formatRunningWorkDuration } from "@/lib/workDuration.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 
 export interface ChatLoadingProps extends ComponentPropsWithoutRef<"div"> {
   loading: boolean;
@@ -42,7 +42,7 @@ export function ChatLoading({
   size: _size,
   ...props
 }: ChatLoadingProps) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const [elapsedMs, setElapsedMs] = useState(initialElapsedMs);
   useEffect(() => {
     if (!loading) return;

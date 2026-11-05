@@ -10,7 +10,7 @@ import {
 } from "../helpers/desktop-app.js";
 
 const marker = "E2E_MFH01_HOST_SEARCH";
-const root = join(getE2EAppDataPaths().workspace, ".zcode-e2e", "file-mention-host-search");
+const root = join(getE2EAppDataPaths().workspace, ".nekode-e2e", "file-mention-host-search");
 
 describe("MFH01：@ 文件候选由 Host 查询", () => {
   before(async () => {

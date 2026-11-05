@@ -7,12 +7,12 @@ import type { Logger } from "@zcode/contracts";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createWorkflowChildSkillPort } from "../src/app/script-workflow-child-runtime.js";
 import { resolveStartupPlugins } from "../src/app/startup-marks.js";
-import type { ZCodeApp, ZCodeAppOptions } from "../src/app/types.js";
-import { inspectZCodeSkill, listZCodeSkills } from "../src/skills.js";
+import type { NekodeApp, NekodeAppOptions } from "../src/app/types.js";
+import { inspectNekodeSkill, listNekodeSkills } from "../src/skills.js";
 import { StartupTimer } from "../src/startup-logging.js";
 import { getSkillReferenceCatalog } from "../src/zcode-protocol/skill-reference-catalog.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
-import { createWorkspaceZCodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import { createWorkspaceNekodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
 
 const VISUALIZE_PLUGIN_ID = "visualize@zcode-plugins-official";
 const VISUALIZE_SKILL = "visualize:visualize";
@@ -29,7 +29,7 @@ describe("visualize protocol-only skill discovery", () => {
 
   beforeEach(async () => {
     root = await mkdtemp(join(tmpdir(), "zcode-visualize-gate-"));
-    env = { ZCODE_STORAGE_DIR: join(root, "storage") };
+    env = { NEKODE_STORAGE_DIR: join(root, "storage") };
   });
 
   afterEach(async () => {
@@ -40,18 +40,18 @@ describe("visualize protocol-only skill discovery", () => {
     "list and inspect agree with includeVisualize=%s",
     async (includeVisualize) => {
       const options = { env, includeVisualize, skipUserConfig: true, workingDirectory: root };
-      const outcome = await listZCodeSkills(options);
+      const outcome = await listNekodeSkills(options);
       expect(outcome.skills.some((skill) => skill.pluginId === VISUALIZE_PLUGIN_ID)).toBe(
         includeVisualize === true,
       );
       expect(outcome.skills.some((skill) => skill.name === "pdf")).toBe(true);
       for (const name of ["visualize", VISUALIZE_SKILL]) {
         if (includeVisualize) {
-          const result = await inspectZCodeSkill({ ...options, name });
+          const result = await inspectNekodeSkill({ ...options, name });
           expect(result.skill.metadata.pluginId).toBe(VISUALIZE_PLUGIN_ID);
           expect(result.skill.content).toContain("Inline HTML output contract");
         } else {
-          await expect(inspectZCodeSkill({ ...options, name })).rejects.toThrow("Skill not found:");
+          await expect(inspectNekodeSkill({ ...options, name })).rejects.toThrow("Skill not found:");
         }
       }
     },
@@ -61,7 +61,7 @@ describe("visualize protocol-only skill discovery", () => {
     "startup and workflow child agree with includeVisualize=%s",
     async (includeVisualize) => {
       const configResult = createConfig({ env, skipUserConfig: true, workingDirectory: root });
-      const appOptions = { includeVisualize } as ZCodeAppOptions;
+      const appOptions = { includeVisualize } as NekodeAppOptions;
       const plugins = resolveStartupPlugins({
         cliStorageRoot: join(root, "storage", "cli"),
         configResult,
@@ -93,7 +93,7 @@ describe("visualize protocol-only skill discovery", () => {
       join(skillDir, "SKILL.md"),
       "---\nname: visualize\ndescription: Project visualization.\n---\nProject skill.",
     );
-    const result = await inspectZCodeSkill({
+    const result = await inspectNekodeSkill({
       env,
       skipUserConfig: true,
       workingDirectory: root,
@@ -115,24 +115,24 @@ describe("visualize protocol-only skill discovery", () => {
       userConfigPath: configPath,
       workingDirectory: root,
     };
-    const outcome = await listZCodeSkills(options);
+    const outcome = await listNekodeSkills(options);
     expect(outcome.skills.some((skill) => skill.pluginId === VISUALIZE_PLUGIN_ID)).toBe(false);
-    await expect(inspectZCodeSkill({ ...options, name: VISUALIZE_SKILL })).rejects.toThrow(
+    await expect(inspectNekodeSkill({ ...options, name: VISUALIZE_SKILL })).rejects.toThrow(
       "Skill not found:",
     );
   });
 
   it("opts protocol apps in and keeps their draft catalog consistent", async () => {
-    const createZCodeApp = vi.fn(() => ({}) as ZCodeApp);
+    const createNekodeApp = vi.fn(() => ({}) as NekodeApp);
     const context = {
-      deps: { createZCodeApp, env },
+      deps: { createNekodeApp, env },
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext;
+    } as unknown as NekodeProtocolAgentServerContext;
     const workspace = { workspacePath: root, workspaceKey: root };
-    await createWorkspaceZCodeApp(context, workspace, {
-      providerRuntimeHeadersPort: {} as ZCodeAppOptions["providerRuntimeHeadersPort"],
+    await createWorkspaceNekodeApp(context, workspace, {
+      providerRuntimeHeadersPort: {} as NekodeAppOptions["providerRuntimeHeadersPort"],
     });
-    expect(createZCodeApp).toHaveBeenCalledWith(
+    expect(createNekodeApp).toHaveBeenCalledWith(
       expect.objectContaining({ includeVisualize: true }),
     );
     const catalog = await getSkillReferenceCatalog(context, { workspace });

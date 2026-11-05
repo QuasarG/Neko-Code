@@ -1,8 +1,7 @@
 import {
-  mapZCodeEnvToArmsRumEnv,
-  type ZCodeRuntimeEnv,
-  ZCODE_ARMS_RUM_ENDPOINT,
-  ZCODE_VERSION,
+  mapNekodeEnvToArmsRumEnv,
+  type NekodeRuntimeEnv,
+  NEKODE_VERSION,
 } from "@zcode/shared";
 
 /** 主进程 init 的 browserCollectors，经 autoInject 注入到 renderer 的 RumSDK.init(collectors) */
@@ -34,12 +33,13 @@ export function parseArmsViewName(url: string): string {
 }
 
 /** Renderer Browser SDK init 配置（与主进程 endpoint/env/version 对齐） */
-export function buildArmsBrowserInitConfig(runtimeEnv: ZCodeRuntimeEnv) {
+export function buildArmsBrowserInitConfig(runtimeEnv: NekodeRuntimeEnv) {
   return {
-    enable: ZCODE_ARMS_RUM_ENDPOINT !== "",
-    version: ZCODE_VERSION,
-    endpoint: ZCODE_ARMS_RUM_ENDPOINT,
-    env: mapZCodeEnvToArmsRumEnv(runtimeEnv),
+    // ARMS 出网已停用：enable=false 时 SDK 在安装 collector / reporter / 渲染进程注入之前直接返回。
+    enable: false,
+    version: NEKODE_VERSION,
+    endpoint: "",
+    env: mapNekodeEnvToArmsRumEnv(runtimeEnv),
     sessionConfig: {
       sampleRate: 1,
     },

@@ -659,7 +659,7 @@ describe("transcript→event 合成", () => {
       name: "legacy protocol session stop",
       error: {
         name: "Error",
-        data: { message: "ZCode Protocol session stopped" },
+        data: { message: "Nekode Protocol session stopped" },
       },
     },
   ])("cold $name restores interrupted completion instead of TurnError", ({ error }) => {
@@ -717,6 +717,48 @@ describe("transcript→event 合成", () => {
       }),
     );
     expect(projection.getSnapshot().control.phase).toBe("completedInterrupted");
+  });
+
+  it("冷恢复把记忆注入合成 lightBoundary 的 contextInjection 行", () => {
+    const reminder = "<runtime_memory>\n### Memory baseline: persona\n记住这条\n</runtime_memory>";
+    const { events, projection } = reduce([
+      userMessage("u-mem", "hello", 1000),
+      syntheticUserMessage("m-mem", reminder, 1001, {
+        metadata: {
+          runtimeMessage: { source: "runtime_memory" },
+          source: "runtime_memory",
+          visibility: "model-only",
+        },
+        semantics: {
+          origin: "agent_runtime",
+          kind: "system_reminder",
+          source: "runtime_memory",
+          uiVisibility: "hidden",
+          providerVisibility: "visible",
+          transcriptVisibility: "hidden",
+        },
+        visibility: "model-only",
+      }),
+    ]);
+
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        type: SessionEventType.ContextInjected,
+        payload: { source: "runtime_memory", text: reminder, messageId: "m-mem" },
+      }),
+    );
+    expect(projection.getSnapshot().rows.window).toContainEqual(
+      expect.objectContaining({
+        kind: "timelineMarker",
+        lane: "lightBoundary",
+        marker: {
+          type: "contextInjection",
+          source: "runtime_memory",
+          text: reminder,
+          messageId: "m-mem",
+        },
+      }),
+    );
   });
 
   function streamRecoveryDiscardedMessage(id: string, parentId: string, created: number) {
@@ -3639,7 +3681,7 @@ describe("workflow-direct-launch 启动轮冷恢复", () => {
     toolCallId: "launch-abc",
     name: "deep-research",
     scope: "global" as const,
-    path: "/home/u/.zcode/workflows/deep-research.ts",
+    path: "/home/u/.nekode/workflows/deep-research.ts",
     args: { topic: "adaptive concurrency" },
     description: "Deep-dive a topic",
   };

@@ -25,7 +25,6 @@ zcode hooks trust status --workspace /absolute/path/to/project --json
 - `--json`：命令支持时输出 JSON；并非所有子命令或错误路径都返回 JSON。
 - `--output-format text|json|stream-json`：控制普通 prompt 的输出，优先于 `--json`。
 - `--workflow-mode disabled|onDemand|alwaysOn`：当前源码中用于 prompt、target 和 TUI；默认 `disabled`。旧构建可能拒绝此参数。
-- `--memory-bench`：仅配合 `--prompt`，开启自动记忆提取并等待提取结束；须先启用记忆。
 - `--browser-use=headless`：显式启用 CLI 管理的无界面浏览器；可用 `--browser-executable <absolute-path>` 指定浏览器。后者不能单独使用。
 - `--locale auto|en-US|zh-CN`、`--no-color`、`--verbose`：语言、颜色与附加诊断。
 - `--version`/`-v`：版本；`-v` 不是 verbose。

@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { createSqliteSessionStore } from "@zcode/adapters/storage";
 import { describe, expect, it, vi } from "vitest";
 import { createRegistryBackedTestApp } from "./helpers/registry-backed-test-app.js";
-import type { ZCodeApp } from "../src/app/types.js";
+import type { NekodeApp } from "../src/app/types.js";
 
 const { resolveRuntimeConfig } = vi.hoisted(() => ({ resolveRuntimeConfig: vi.fn() }));
 vi.mock("../src/app/runtime-config.js", async (importOriginal) => {
@@ -22,13 +22,13 @@ describe("App 初始化旧 Subagent 身份", () => {
   // 真实文件迁移与 App 初始化在高负载下可能超过默认 5 秒，保留全部迁移顺序断言。
   it("用户目录完成原地迁移再构造 Runtime；项目文件不迁移也不暗中换身份", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-subagent-init-"));
-    const directory = join(root, ".zcode", "agents");
+    const directory = join(root, ".nekode", "agents");
     const file = join(directory, "legacy.md");
     const markdown =
       "---\nname: legacy\ndescription: legacy profile\nmodel: builtin:zai-coding-plan/glm-4.6\nthoughtLevel: high\n---\nreview";
     const store = await createSqliteSessionStore({ dbPath: ":memory:" });
-    let app: ZCodeApp | undefined;
-    let creation: Promise<ZCodeApp> | undefined;
+    let app: NekodeApp | undefined;
+    let creation: Promise<NekodeApp> | undefined;
     try {
       await mkdir(directory, { recursive: true });
       await writeFile(file, markdown);
@@ -50,7 +50,7 @@ describe("App 初始化旧 Subagent 身份", () => {
       resolveRuntimeConfig.mockClear();
       creation = Promise.resolve(
         createRegistryBackedTestApp({
-          env: { ZCODE_STORAGE_DIR: join(root, "storage") },
+          env: { NEKODE_STORAGE_DIR: join(root, "storage") },
           skipUserConfig: true,
           sessionStore: store,
           runtimeConfig: { workingDirectory: root, mcp: { enabled: false } },

@@ -3,8 +3,8 @@
 // ============================================================
 
 import { realpathSync } from "node:fs";
-import { open, readFile, realpath, stat } from "node:fs/promises";
-import { basename, dirname, join, resolve } from "node:path";
+import { open, readdir, readFile, realpath, stat } from "node:fs/promises";
+import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import type {
   SkillContent,
   SkillDiagnostic,
@@ -22,9 +22,12 @@ const SAFE_FRONTMATTER_KEYS = new Set([
   "name",
   "description",
   "when_to_use",
+  "category",
   "license",
   "metadata",
 ]);
+/** category 上限（字符）：与 skill-keeper 词表约定一致。 */
+const MAX_CATEGORY_LENGTH = 24;
 const DEFAULT_MAX_SKILL_BYTES = 100_000;
 const MAX_PLUGIN_MANIFEST_SEARCH_DEPTH = 5;
 const PLUGIN_MANIFEST_RELATIVE_PATHS = [
@@ -66,10 +69,17 @@ export class NodeSkillAdapter implements SkillPort {
     const roots = request.roots ?? (await resolveDefaultSkillRoots(workingDirectory, this.options));
     const diagnostics: SkillDiagnostic[] = [];
     const selected = new Map<string, SkillMetadata>();
+    const categories = new Map<string, string>();
     let totalDiscovered = 0;
 
     for (const root of roots.toSorted((a, b) => a.priority - b.priority)) {
       throwIfAborted(options);
+      if (root.source !== "plugin") {
+        // 分组目录的分类级描述：<root>/<分类>/category.json（分类目录可为整目录软链）。
+        for (const [name, description] of await this.readCategoryDescriptions(root.path)) {
+          if (!categories.has(name)) categories.set(name, description);
+        }
+      }
       const skillPaths = await this.skillFilesUnderRoot(root, diagnostics);
       for (const path of skillPaths) {
         throwIfAborted(options);
@@ -89,6 +99,13 @@ export class NodeSkillAdapter implements SkillPort {
       skills: Array.from(selected.values()).toSorted((a, b) => a.name.localeCompare(b.name)),
       diagnostics,
       totalDiscovered,
+      ...(categories.size > 0
+        ? {
+            categories: Array.from(categories.entries())
+              .toSorted(([left], [right]) => left.localeCompare(right))
+              .map(([name, description]) => ({ name, description })),
+          }
+        : {}),
     };
   }
 
@@ -129,6 +146,34 @@ export class NodeSkillAdapter implements SkillPort {
     };
   }
 
+  private async readCategoryDescriptions(rootPath: string): Promise<Array<[string, string]>> {
+    let entries;
+    try {
+      entries = await readdir(rootPath, { withFileTypes: true });
+    } catch {
+      return [];
+    }
+    const result: Array<[string, string]> = [];
+    for (const entry of entries) {
+      if (!entry.isDirectory() && !entry.isSymbolicLink()) continue;
+      let raw: string;
+      try {
+        raw = await readFile(join(rootPath, entry.name, "category.json"), "utf8");
+      } catch {
+        continue;
+      }
+      try {
+        const parsed = JSON.parse(raw) as { description?: unknown };
+        if (typeof parsed.description === "string" && parsed.description.trim()) {
+          result.push([entry.name, parsed.description.trim()]);
+        }
+      } catch {
+        // 损坏的 category.json 忽略；分类索引仍按目录名工作。
+      }
+    }
+    return result;
+  }
+
   private async skillFilesUnderRoot(
     skillRoot: SkillRoot,
     diagnostics: SkillDiagnostic[],
@@ -140,6 +185,7 @@ export class NodeSkillAdapter implements SkillPort {
       // 一并拒绝）；用户级根保持跟随，symlink 技能导入能力不变。
       return await scanSkillFilesUnderRoot(skillRoot.path, {
         followSymbolicLinks: skillRoot.source !== "plugin",
+        allowGroupedDirectory: skillRoot.source !== "plugin",
       });
     } catch (error) {
       if (isNotFoundError(error)) {
@@ -214,6 +260,18 @@ export class NodeSkillAdapter implements SkillPort {
       return null;
     }
 
+    // 分类推断：frontmatter category > 分组目录名（root/<分类>/<技能>）> 插件名 > other。
+    // 进入提示词的描述只到分类粒度，这里只决定分组归属。
+    const normalizeCategory = (value: string | undefined): string | undefined =>
+      value
+        ? Array.from(value.replace(/\s+/gu, " ").trim()).slice(0, MAX_CATEGORY_LENGTH).join("")
+        : undefined;
+    const relParts = relative(root.path, dirname(path)).split(sep).filter(Boolean);
+    const category =
+      normalizeCategory(parseScalar(parsed.values.category)) ??
+      normalizeCategory(relParts.length >= 2 ? relParts[0] : undefined) ??
+      (root.source === "plugin" ? normalizeCategory(root.namespace) : undefined);
+
     // 第三方/旧版 skill 常带 version、homepage 等扩展字段。
     // 这些字段不影响加载，不再作为 warning 暴露，只保留 safeToAutoLoad 的保守判断。
     const pluginAlias = await this.resolvePluginSkillAlias(name, root);
@@ -222,6 +280,7 @@ export class NodeSkillAdapter implements SkillPort {
       name,
       description,
       whenToUse: parseScalar(parsed.values.when_to_use),
+      ...(category ? { category } : {}),
       ...pluginAlias,
       ...(root.namespace ? { qualifiedName: `${root.namespace}/${name}` } : {}),
       path,
@@ -243,7 +302,7 @@ export class NodeSkillAdapter implements SkillPort {
       return true;
     }
     const canonicalPath = await realpath(resolvedPath).catch(() => resolvedPath);
-    // UI 可能把 symlink 目标真实路径写入 config，而 agent 从 ~/.zcode/skills 的链接路径扫描。
+    // UI 可能把 symlink 目标真实路径写入 config，而 agent 从 ~/.nekode/skills 的链接路径扫描。
     // 同时比对扫描路径和真实路径，避免同一个 SKILL.md 因路径形态不同绕过禁用开关。
     return this.disabledPaths.has(canonicalPath);
   }

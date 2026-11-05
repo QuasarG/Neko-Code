@@ -1,4 +1,4 @@
-import type { McpServerConfig, ZCodeMcpServer } from "@zcode/shared";
+import type { McpServerConfig, NekodeMcpServer } from "@zcode/shared";
 
 export const MCP_SECTIONS = ["zcodeagentmcp"] as const;
 
@@ -9,8 +9,8 @@ export const SOURCE_META: Record<
   { label: string; section: string; badgeClass: string }
 > = {
   zcodeagentmcp: {
-    label: "ZCode Agent",
-    section: "ZCode Agent",
+    label: "Nekode Agent",
+    section: "Nekode Agent",
     badgeClass: "bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400",
   },
 };
@@ -51,7 +51,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-export function serverToForm(server: ZCodeMcpServer): FormState {
+export function serverToForm(server: NekodeMcpServer): FormState {
   const cfg = server.config;
   let type: FormState["type"];
   if (cfg.type === "sse") {
@@ -221,7 +221,7 @@ export function jsonDraftToForm(jsonText: string, fallback: FormState): FormStat
   };
 }
 
-// 与 shared 层 convertToZCodeAgentMcpServer 的 isMcpProtocolVersion 守卫保持同一语义：
+// 与 shared 层 convertToNekodeAgentMcpServer 的 isMcpProtocolVersion 守卫保持同一语义：
 // 非法枚举值在 UI 读取侧就归一为未设置（等价 auto），不留给连接阶段。
 function isMcpProtocolVersion(value: unknown): value is "legacy" | "auto" | "2026-07-28" {
   return value === "legacy" || value === "auto" || value === "2026-07-28";

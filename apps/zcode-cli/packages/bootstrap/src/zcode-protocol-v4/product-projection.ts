@@ -12,6 +12,7 @@ import type {
   AssistantFeedbackUpdatedPayload,
   HighspeedMetricsUpdatedPayload,
   CompactLifecyclePayload,
+  ContextInjectedPayload,
   DynamicWorkflowRunProgressPayload,
   HookRunLifecyclePayload,
   ModelCompletePayload,
@@ -74,16 +75,16 @@ import {
 // 会在 packages/ui 的 Desktop 构建链解析失败，App 重启后打不开。）
 import {
   WORKFLOW_REFINE_PERMISSION_OPTION_ID,
-  ZCODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS,
+  NEKODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS,
   extractPlanStepsFromToolInput,
   extractPlanStepsFromToolOutput,
   isHighspeedProviderId,
-  isZCodeFileStreamingToolInputPreviewTool,
-  isZCodeModelRetryRecoveryProgressPayload,
-  parseZCodeBackgroundTaskNotifications,
-  resolveZCodeBackgroundTaskControlKind,
+  isNekodeFileStreamingToolInputPreviewTool,
+  isNekodeModelRetryRecoveryProgressPayload,
+  parseNekodeBackgroundTaskNotifications,
+  resolveNekodeBackgroundTaskControlKind,
   zcodeBackgroundTaskNotificationToolUpdateStatus,
-  type ZCodeParsedBackgroundTaskNotification,
+  type NekodeParsedBackgroundTaskNotification,
 } from "@zcode/shared";
 import { verdictWorkspaceHookReviewRequest } from "@zcode/shared/workspace-hook-review-monotonicity";
 import type {
@@ -324,7 +325,6 @@ export interface ConversationEditTarget {
     inputOrigin?: "desktop" | "mobile";
     genUiContext?: import("@zcode/contracts").TurnInputIntentMetadata["genUiContext"];
     conversationQuotes?: import("@zcode/contracts").TurnInputIntentMetadata["conversationQuotes"];
-    botGroupSource?: CanonicalUserIntentFact["botGroupSource"];
     kind: "sendText" | "sendGoalCommand";
     text: string;
     sourceCommandId?: string;
@@ -480,6 +480,11 @@ export class ProductProjection {
   private currentEditableEntityId: string | null = null;
   private stableCompactCoverageBoundaryRowId: number | null = null;
   private turnHeaderRowIdByTurnId = new Map<string, number>();
+  /** userInput 行尚未出现时先挂起注入正文，TurnStarted 落行时再并进气泡。 */
+  private pendingContextInjectionsByTurn = new Map<
+    string,
+    Array<{ source: string; text: string }>
+  >();
   private compactMarkerRowIdByOperationId = new Map<string, number>();
   // goal verify boundary 身份 = targetId_goalIteration
   // （verificationId 仅 attempt alias——同 iteration 重试携带新 verificationId，
@@ -578,7 +583,7 @@ export class ProductProjection {
         if (
           state.lastPublishedAt !== null &&
           this.ms(event) - state.lastPublishedAt <
-            ZCODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS
+            NEKODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS
         ) {
           return "";
         }
@@ -1183,6 +1188,9 @@ export class ProductProjection {
     clone.currentEditableEntityId = this.currentEditableEntityId;
     clone.stableCompactCoverageBoundaryRowId = this.stableCompactCoverageBoundaryRowId;
     clone.turnHeaderRowIdByTurnId = new Map(this.turnHeaderRowIdByTurnId);
+    clone.pendingContextInjectionsByTurn = new Map(
+      [...this.pendingContextInjectionsByTurn].map(([turnId, items]) => [turnId, [...items]]),
+    );
     clone.compactMarkerRowIdByOperationId = new Map(this.compactMarkerRowIdByOperationId);
     clone.goalVerifyMarkerRowIdByLifecycleKey = new Map(this.goalVerifyMarkerRowIdByLifecycleKey);
     clone.productTurnIdByRuntimeTurnId = new Map(this.productTurnIdByRuntimeTurnId);
@@ -1236,6 +1244,7 @@ export class ProductProjection {
     this.currentEditableEntityId = candidate.currentEditableEntityId;
     this.stableCompactCoverageBoundaryRowId = candidate.stableCompactCoverageBoundaryRowId;
     this.turnHeaderRowIdByTurnId = candidate.turnHeaderRowIdByTurnId;
+    this.pendingContextInjectionsByTurn = candidate.pendingContextInjectionsByTurn;
     this.compactMarkerRowIdByOperationId = candidate.compactMarkerRowIdByOperationId;
     this.goalVerifyMarkerRowIdByLifecycleKey = candidate.goalVerifyMarkerRowIdByLifecycleKey;
     this.productTurnIdByRuntimeTurnId = candidate.productTurnIdByRuntimeTurnId;
@@ -1445,7 +1454,7 @@ export class ProductProjection {
         this.guideDrainOpen = false;
         const shouldClearApiRetry =
           this.acceptsActiveModelEvent(event) &&
-          isZCodeModelRetryRecoveryProgressPayload(
+          isNekodeModelRetryRecoveryProgressPayload(
             event.payload as unknown as Record<string, unknown>,
           );
         const streamingDeltas = this.onModelStreaming(fact);
@@ -1583,6 +1592,8 @@ export class ProductProjection {
         return this.onTargetVerification(event);
       case SessionEventType.SessionForked:
         return this.onSessionForked(event);
+      case SessionEventType.ContextInjected:
+        return this.onContextInjected(event);
       case SessionEventType.RewindTriggered:
         return this.onRewindTriggered(event);
       case SessionEventType.BackgroundTaskStarted:
@@ -2195,11 +2206,15 @@ export class ProductProjection {
         ...attachment,
         ref: attachment.ref ?? `turn-attachment/${rowBase.rowId}/${index}`,
       }));
+      const pendingContextInjection = this.pendingContextInjectionsByTurn.get(turnId);
       const row: UserInputRow = {
         ...rowBase,
         kind: "userInput",
+        ...(pendingContextInjection?.length
+          ? { contextInjection: pendingContextInjection }
+          : {}),
         text:
-          fact.conversationQuotes || fact.botGroupSource
+          fact.conversationQuotes
             ? (fact.intentText ?? fact.input)
             : fact.input,
         origin: fact.origin,
@@ -2207,7 +2222,6 @@ export class ProductProjection {
         ...(rootSourceCommandId ? { rootSourceCommandId } : {}),
         ...(fact.inputOrigin ? { inputOrigin: fact.inputOrigin } : {}),
         ...(fact.conversationQuotes ? { conversationQuotes: fact.conversationQuotes } : {}),
-        ...(fact.botGroupSource ? { botGroupSource: fact.botGroupSource } : {}),
         ...(fact.clientId ? { clientId: fact.clientId } : {}),
         ...(fact.highspeed ? { highspeed: fact.highspeed } : {}),
         ...(fact.workflowLaunch ? { workflowLaunch: fact.workflowLaunch } : {}),
@@ -2234,7 +2248,6 @@ export class ProductProjection {
                 ...(fact.sourceCommandId ? { sourceCommandId: fact.sourceCommandId } : {}),
                 ...(fact.inputOrigin ? { inputOrigin: fact.inputOrigin } : {}),
                 ...(fact.conversationQuotes ? { conversationQuotes: fact.conversationQuotes } : {}),
-                ...(fact.botGroupSource ? { botGroupSource: fact.botGroupSource } : {}),
                 ...(fact.clientId ? { clientId: fact.clientId } : {}),
                 ...(fact.attachments ? { attachments: fact.attachments } : {}),
                 ...(fact.queueItemId ? { queueItemId: fact.queueItemId } : {}),
@@ -2255,6 +2268,9 @@ export class ProductProjection {
         op: "row.appended",
         row,
       });
+      if (pendingContextInjection?.length) {
+        this.pendingContextInjectionsByTurn.delete(turnId);
+      }
     }
 
     if (fact.executionKind === "agent") {
@@ -2292,14 +2308,14 @@ export class ProductProjection {
   private applyBackgroundTaskNotification(fact: CanonicalUserIntentFact): ConversationDelta[] {
     // 终态与失败原文优先取本轮 originMeta 的结构化结果，不解析 summary 文本。
     // 合并轮的每条通知各自更新自己的工具行。
-    return parseZCodeBackgroundTaskNotifications(fact.input, fact.originMeta).flatMap((parsed) =>
+    return parseNekodeBackgroundTaskNotifications(fact.input, fact.originMeta).flatMap((parsed) =>
       this.applyBackgroundTaskNotificationBlock(fact, parsed),
     );
   }
 
   private applyBackgroundTaskNotificationBlock(
     fact: CanonicalUserIntentFact,
-    parsed: ZCodeParsedBackgroundTaskNotification,
+    parsed: NekodeParsedBackgroundTaskNotification,
   ): ConversationDelta[] {
     const row = this.findToolRow(parsed.toolUseId);
     if (!row) return [];
@@ -3061,7 +3077,7 @@ export class ProductProjection {
       inputText: "",
     };
     this.toolRowIdByCallId.set(toolCallId, row.rowId);
-    if (isZCodeFileStreamingToolInputPreviewTool(row.toolName)) {
+    if (isNekodeFileStreamingToolInputPreviewTool(row.toolName)) {
       this.fileToolInputPreviewByCallId.set(toolCallId, {
         lastPublishedAt: null,
         pendingAppend: "",
@@ -3087,7 +3103,7 @@ export class ProductProjection {
     const now = this.ms(event);
     if (
       state.lastPublishedAt !== null &&
-      now - state.lastPublishedAt < ZCODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS
+      now - state.lastPublishedAt < NEKODE_FILE_STREAMING_TOOL_INPUT_PREVIEW_MIN_INTERVAL_MS
     ) {
       return [];
     }
@@ -3782,9 +3798,6 @@ export class ProductProjection {
       ...((payload.intent?.conversationQuotes ?? existing?.conversationQuotes)
         ? { conversationQuotes: payload.intent?.conversationQuotes ?? existing?.conversationQuotes }
         : {}),
-      ...((payload.intent?.botGroupSource ?? existing?.botGroupSource)
-        ? { botGroupSource: payload.intent?.botGroupSource ?? existing?.botGroupSource }
-        : {}),
       delivery: {
         requested: requestedDelivery,
         admitted: admittedDelivery,
@@ -3968,7 +3981,7 @@ export class ProductProjection {
         ...this.rowBase(event, productTurnId, entityId),
         kind: "userInput" as const,
         text:
-          item.intent?.conversationQuotes || item.intent?.botGroupSource
+          item.intent?.conversationQuotes
             ? normalizeGenUiInput(item.intent.text ?? item.text, item.intent.genUiContext).text
             : normalizedInput.text,
         origin: "realUser" as const,
@@ -3979,7 +3992,6 @@ export class ProductProjection {
         ...(item.intent?.conversationQuotes
           ? { conversationQuotes: item.intent.conversationQuotes }
           : {}),
-        ...(item.intent?.botGroupSource ? { botGroupSource: item.intent.botGroupSource } : {}),
         ...(item.intent?.clientId ? { clientId: item.intent.clientId } : {}),
         ...(item.intent?.highspeed ? { highspeed: item.intent.highspeed } : {}),
         ...(item.intent?.attachmentRefs?.length ? { attachments: item.intent.attachmentRefs } : {}),
@@ -4007,9 +4019,6 @@ export class ProductProjection {
                 ...(item.intent?.inputOrigin ? { inputOrigin: item.intent.inputOrigin } : {}),
                 ...(item.intent?.conversationQuotes
                   ? { conversationQuotes: item.intent.conversationQuotes }
-                  : {}),
-                ...(item.intent?.botGroupSource
-                  ? { botGroupSource: item.intent.botGroupSource }
                   : {}),
                 ...(item.intent?.clientId ? { clientId: item.intent.clientId } : {}),
                 ...(item.intent?.attachmentRefs ? { attachments: item.intent.attachmentRefs } : {}),
@@ -4681,7 +4690,7 @@ export class ProductProjection {
     if (!workId) return [];
     const prev = this.snapshot.backgroundWorks;
     const existing = prev.find((work) => work.workId === workId);
-    const legacyKind = resolveZCodeBackgroundTaskControlKind(payload);
+    const legacyKind = resolveNekodeBackgroundTaskControlKind(payload);
     // 新事件使用 runtime 的显式 taskKind；旧事件统一走 shared resolver，
     // 不能再在 reducer 内散落 Agent/Task/subagent 字符串分支。
     // "workflow" 是 workflow run（此前错标成 bash）；legacy resolver 里没有对应值，因为
@@ -5466,6 +5475,32 @@ export class ProductProjection {
   }
 
   // ── fork marker（forkAssistant 命令效果）──
+
+  /**
+   * 记忆注入的可折叠上下文行：lightBoundary 让它留在轮顶、排在 user 输入之前，
+   * 且不产生 turnHeader/userInput，不参与轮次计数。
+   */
+  private onContextInjected(event: SessionEvent): ConversationDelta[] {
+    const payload = event.payload as ContextInjectedPayload;
+    const turnId = this.turnIdOf(event);
+    const injection = { source: payload.source, text: payload.text };
+    const rows = this.snapshot.rows.window;
+    for (let index = rows.length - 1; index >= 0; index -= 1) {
+      const row = rows[index];
+      if (!row || row.turnId !== turnId) continue;
+      if (row.kind !== "userInput") continue;
+      return [
+        {
+          op: "row.upserted",
+          row: { ...row, contextInjection: [...(row.contextInjection ?? []), injection] },
+        },
+      ];
+    }
+    const pending = this.pendingContextInjectionsByTurn.get(turnId) ?? [];
+    pending.push(injection);
+    this.pendingContextInjectionsByTurn.set(turnId, pending);
+    return [];
+  }
 
   private onSessionForked(event: SessionEvent): ConversationDelta[] {
     const payload = event.payload as SessionForkedPayload;

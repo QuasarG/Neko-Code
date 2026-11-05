@@ -1,38 +1,38 @@
 /* eslint-disable max-lines -- zcodeSessionService 聚合 desktop-continuous session 操作、draft lifecycle 和 task index 同步边界，拆分需要单独设计。 */
-import type { IZCodeAgentService } from "#src/zcode-agent/zcodeAgent.js";
-import type { ZCodeTaskIndexSyncer } from "#src/zcode-agent/zcodeTaskIndexSyncer.js";
+import type { INekodeAgentService } from "#src/zcode-agent/zcodeAgent.js";
+import type { NekodeTaskIndexSyncer } from "#src/zcode-agent/zcodeTaskIndexSyncer.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import {
   createSessionTraceId,
-  type ZCodeSessionStateSnapshot,
-  type ZCodeWorkspaceTaskListChanged,
+  type NekodeSessionStateSnapshot,
+  type NekodeWorkspaceTaskListChanged,
 } from "@zcode/shared";
 import type {
-  IZCodeSessionService,
-  ZCodeSessionCreateParams,
-  ZCodeSessionEventsParams,
-  ZCodeSessionListParams,
-  ZCodeSessionMessagesParams,
-  ZCodeSessionReadParams,
-  ZCodeSessionReadWorkspacePresentationParams,
-  ZCodeSessionResumeParams,
-  ZCodeSessionSetModeParams,
-  ZCodeSessionSetModelParams,
-  ZCodeSessionSetThoughtLevelParams,
-  ZCodeTaskTarget,
-  ZCodeSessionWorkspaceTarget,
+  INekodeSessionService,
+  NekodeSessionCreateParams,
+  NekodeSessionEventsParams,
+  NekodeSessionListParams,
+  NekodeSessionMessagesParams,
+  NekodeSessionReadParams,
+  NekodeSessionReadWorkspacePresentationParams,
+  NekodeSessionResumeParams,
+  NekodeSessionSetModeParams,
+  NekodeSessionSetModelParams,
+  NekodeSessionSetThoughtLevelParams,
+  NekodeTaskTarget,
+  NekodeSessionWorkspaceTarget,
 } from "#src/zcode-session/zcodeSession.js";
 import { formatModelPickerValue } from "#src/zcode-agent/zcodeConfigOptions.js";
-import { createZCodeSessionApiRetryRuntimeTracker } from "#src/zcode-session/zcodeSessionApiRetry.js";
+import { createNekodeSessionApiRetryRuntimeTracker } from "#src/zcode-session/zcodeSessionApiRetry.js";
 import { appendWorkspaceToFilesystemMcpServers } from "#src/session/mcpWorkspaceScope.js";
 import { repairEmptyImportedClaudeSessionSnapshot } from "#src/zcode-session/importedClaudeSessionRepair.js";
-import { createZCodeDeferredDraftRegistry } from "#src/zcode-session/zcodeSessionDraftRegistry.js";
+import { createNekodeDeferredDraftRegistry } from "#src/zcode-session/zcodeSessionDraftRegistry.js";
 import type { CuaProductMcpServerResolver } from "#src/cua-permission-broker/index.js";
 
 const logger = createServiceLogger("zcode-session-service");
 
-interface CreateZCodeSessionServiceOptions {
-  agentService: IZCodeAgentService;
+interface CreateNekodeSessionServiceOptions {
+  agentService: INekodeAgentService;
   /**
    * 后台 task index sqlite 同步器。注入后，每次 session 被创建/恢复/发送 prompt 或
    * 订阅事件时都会通知 syncer 维护 shadow 订阅，保证 desktop-continuous 路径下
@@ -40,19 +40,19 @@ interface CreateZCodeSessionServiceOptions {
    * 主动把最新 snapshot 同步到 sqlite 并广播 workspace_task_list_changed，
    * 让侧边栏列表立刻看到 first_input title 和 updatedAt 排序刷新。
    */
-  taskIndexSyncer?: ZCodeTaskIndexSyncer;
+  taskIndexSyncer?: NekodeTaskIndexSyncer;
   cuaProductMcpServerResolver?: CuaProductMcpServerResolver;
 }
 
-export function createZCodeSessionService({
+export function createNekodeSessionService({
   agentService,
   taskIndexSyncer,
   cuaProductMcpServerResolver,
-}: CreateZCodeSessionServiceOptions): IZCodeSessionService {
-  const { withApiRetryRuntime } = createZCodeSessionApiRetryRuntimeTracker();
-  const deferredDraftSessions = createZCodeDeferredDraftRegistry();
+}: CreateNekodeSessionServiceOptions): INekodeSessionService {
+  const { withApiRetryRuntime } = createNekodeSessionApiRetryRuntimeTracker();
+  const deferredDraftSessions = createNekodeDeferredDraftRegistry();
 
-  function notifySyncer(target: ZCodeTaskTarget): void {
+  function notifySyncer(target: NekodeTaskTarget): void {
     if (!taskIndexSyncer) {
       return;
     }
@@ -63,7 +63,7 @@ export function createZCodeSessionService({
     });
   }
 
-  function getSessionSnapshotDiagnostics(snapshot: ZCodeSessionStateSnapshot) {
+  function getSessionSnapshotDiagnostics(snapshot: NekodeSessionStateSnapshot) {
     // 日志诊断不能假设测试 mock 或未来 partial snapshot 一定带齐 messages/pendingRequestIds。
     // 原因是 readSession 的业务结果已经由 agent 层校验，服务层这里只记录观测字段；若日志读取抛错，会反过来打断
     // desktop-continuous snapshot 恢复。这里仅对诊断值做空数组统计，不修改返回给 UI 的 snapshot 本体。
@@ -82,7 +82,7 @@ export function createZCodeSessionService({
   }
 
   function readSnapshotAvailableThoughtLevels(
-    snapshot: ZCodeSessionStateSnapshot,
+    snapshot: NekodeSessionStateSnapshot,
   ): Set<string> | null {
     const thoughtLevel = snapshot.settings.thoughtLevel;
     if (!thoughtLevel.enabled) {
@@ -110,7 +110,7 @@ export function createZCodeSessionService({
   }
 
   function canReplayThoughtLevelFromResumeSnapshot(params: {
-    snapshot: ZCodeSessionStateSnapshot;
+    snapshot: NekodeSessionStateSnapshot;
     thoughtLevel: string;
   }): boolean {
     const availableThoughtLevels = readSnapshotAvailableThoughtLevels(params.snapshot);
@@ -122,14 +122,14 @@ export function createZCodeSessionService({
   // workspace_task_list_changed。旧写路径（send/steer/fork/compact/rewind pass-through）
   // 已删除，仅剩 createSession/resumeSession/setModel 等生命周期与配置 op 调用本方法。
   async function broadcastSnapshot(
-    snapshot: ZCodeSessionStateSnapshot,
+    snapshot: NekodeSessionStateSnapshot,
     tag: string,
     options: {
       modelOverride?: string;
       thoughtLevelOverride?: string;
       moveGroupedTaskToTop?: boolean;
       /** 设计修正：必填，发射点必须声明变更类别。 */
-      broadcastReason: ZCodeWorkspaceTaskListChanged["reason"];
+      broadcastReason: NekodeWorkspaceTaskListChanged["reason"];
     },
   ): Promise<void> {
     if (!taskIndexSyncer) {
@@ -152,9 +152,9 @@ export function createZCodeSessionService({
   }
 
   async function repairEmptyImportedClaudeSession(
-    snapshot: ZCodeSessionStateSnapshot,
-    params: ZCodeSessionResumeParams | ZCodeSessionReadParams,
-  ): Promise<ZCodeSessionStateSnapshot> {
+    snapshot: NekodeSessionStateSnapshot,
+    params: NekodeSessionResumeParams | NekodeSessionReadParams,
+  ): Promise<NekodeSessionStateSnapshot> {
     return withApiRetryRuntime(
       await repairEmptyImportedClaudeSessionSnapshot({
         agentService,
@@ -165,7 +165,7 @@ export function createZCodeSessionService({
   }
 
   async function withResolvedMcpServers<
-    T extends ZCodeSessionCreateParams | ZCodeSessionResumeParams,
+    T extends NekodeSessionCreateParams | NekodeSessionResumeParams,
   >(params: T): Promise<T> {
     const mcpServers = appendWorkspaceToFilesystemMcpServers(
       params.mcpServers,
@@ -187,7 +187,7 @@ export function createZCodeSessionService({
   }
 
   return {
-    async initializeWorkspace(params: ZCodeSessionWorkspaceTarget) {
+    async initializeWorkspace(params: NekodeSessionWorkspaceTarget) {
       const result = await agentService.initialize(params);
       // task index 的 v4 摄入（sessions-index/workspace-config）是
       // workspace 级常驻订阅。v4 命令路径（createSession/sendText 走 v4/command）
@@ -202,15 +202,15 @@ export function createZCodeSessionService({
       return result;
     },
 
-    getWorkspaceRuntimeIdentity(params: ZCodeSessionWorkspaceTarget) {
+    getWorkspaceRuntimeIdentity(params: NekodeSessionWorkspaceTarget) {
       return agentService.getWorkspaceRuntimeIdentity(params);
     },
 
-    readWorkspacePresentation(params: ZCodeSessionReadWorkspacePresentationParams) {
+    readWorkspacePresentation(params: NekodeSessionReadWorkspacePresentationParams) {
       return agentService.readWorkspacePresentation(params);
     },
 
-    async createSession(params: ZCodeSessionCreateParams) {
+    async createSession(params: NekodeSessionCreateParams) {
       const startedAt = Date.now();
       const sessionTraceId = params.sessionTraceId ?? createSessionTraceId();
       const agentParams = await withResolvedMcpServers({ ...params, sessionTraceId });
@@ -236,7 +236,7 @@ export function createZCodeSessionService({
         deferredDraftSessions.remember(agentParams, snapshot);
         return snapshot;
       }
-      // desktop-continuous 路径不会经过 ZCode task adapter，sqlite 的 task index 全靠
+      // desktop-continuous 路径不会经过 Nekode task adapter，sqlite 的 task index 全靠
       // syncer 的 shadow 订阅刷新。createSession 成功后立刻 ensure，保证后续 runtime
       // 事件首条到达前订阅已就位。
       notifySyncer({
@@ -264,7 +264,7 @@ export function createZCodeSessionService({
       return snapshotWithRuntime;
     },
 
-    async resumeSession(params: ZCodeSessionResumeParams) {
+    async resumeSession(params: NekodeSessionResumeParams) {
       const startedAt = Date.now();
       const { broadcastSnapshot: shouldBroadcastSnapshot = true, ...resumeParams } = params;
       const agentParams = await withResolvedMcpServers(resumeParams);
@@ -371,11 +371,11 @@ export function createZCodeSessionService({
       return snapshot;
     },
 
-    listSessions(params: ZCodeSessionListParams) {
+    listSessions(params: NekodeSessionListParams) {
       return agentService.listSessions(params);
     },
 
-    async readSession(params: ZCodeSessionReadParams) {
+    async readSession(params: NekodeSessionReadParams) {
       const startedAt = Date.now();
       const snapshot = await repairEmptyImportedClaudeSession(
         withApiRetryRuntime(await agentService.readSession(params)),
@@ -393,15 +393,15 @@ export function createZCodeSessionService({
       return snapshot;
     },
 
-    readSessionMessages(params: ZCodeSessionMessagesParams) {
+    readSessionMessages(params: NekodeSessionMessagesParams) {
       return agentService.readSessionMessages(params);
     },
 
-    readSessionEvents(params: ZCodeSessionEventsParams) {
+    readSessionEvents(params: NekodeSessionEventsParams) {
       return agentService.readSessionEvents(params);
     },
 
-    promoteDeferredDraftSession(params: ZCodeTaskTarget) {
+    promoteDeferredDraftSession(params: NekodeTaskTarget) {
       const wasDeferredDraft = deferredDraftSessions.has(params);
       deferredDraftSessions.forget(params);
       if (!wasDeferredDraft) {
@@ -418,12 +418,12 @@ export function createZCodeSessionService({
       return Promise.resolve();
     },
 
-    closeSession(params: ZCodeTaskTarget) {
+    closeSession(params: NekodeTaskTarget) {
       deferredDraftSessions.forget(params);
       return agentService.closeSession(params).then(() => undefined);
     },
 
-    async closeDeferredDraftSession(params: ZCodeTaskTarget) {
+    async closeDeferredDraftSession(params: NekodeTaskTarget) {
       try {
         const closed = await agentService.closeSession({
           ...params,
@@ -450,7 +450,7 @@ export function createZCodeSessionService({
       }
     },
 
-    async setModel(params: ZCodeSessionSetModelParams) {
+    async setModel(params: NekodeSessionSetModelParams) {
       const isDeferredDraft = deferredDraftSessions.has(params);
       if (!isDeferredDraft) {
         notifySyncer(params);
@@ -471,11 +471,11 @@ export function createZCodeSessionService({
       return snapshot;
     },
 
-    async setThoughtLevel(params: ZCodeSessionSetThoughtLevelParams) {
+    async setThoughtLevel(params: NekodeSessionSetThoughtLevelParams) {
       return withApiRetryRuntime(await agentService.setThoughtLevel(params));
     },
 
-    async setMode(params: ZCodeSessionSetModeParams) {
+    async setMode(params: NekodeSessionSetModeParams) {
       return withApiRetryRuntime(await agentService.setMode(params));
     },
 

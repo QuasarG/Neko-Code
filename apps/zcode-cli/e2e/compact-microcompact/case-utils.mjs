@@ -17,7 +17,7 @@ const OUTPUT_TOKEN_FIELDS = {
   "openai-responses": "max_output_tokens",
 };
 
-export async function loadZCodeModules(repoRoot) {
+export async function loadNekodeModules(repoRoot) {
   try {
     const [bootstrap, contracts, providerConfig, providerRegistry] = await Promise.all([
       import(pathToFileURL(join(repoRoot, "packages", "bootstrap", "dist", "index.js")).href),
@@ -37,11 +37,11 @@ export async function loadZCodeModules(repoRoot) {
       CompactReason: contracts.CompactReason,
       CompactTrigger: contracts.CompactTrigger,
       SessionEventType: contracts.SessionEventType,
-      createZCodeApp: bootstrap.createZCodeApp,
+      createNekodeApp: bootstrap.createNekodeApp,
       provider: { ...providerConfig, ...providerRegistry },
     };
   } catch (error) {
-    throw new Error("Unable to load built ZCode packages. Run `pnpm build` before this E2E.", {
+    throw new Error("Unable to load built Nekode packages. Run `pnpm build` before this E2E.", {
       cause: error,
     });
   }
@@ -115,10 +115,10 @@ export async function writeProviderConfig(configPath, input) {
 
 export async function createApp(input) {
   const providerConfig = JSON.parse(await readFile(`${input.configPath}.provider.json`, "utf8"));
-  return input.modules.createZCodeApp({
+  return input.modules.createNekodeApp({
     env: {
       ...process.env,
-      ZCODE_STORAGE_DIR: input.storageDir,
+      NEKODE_STORAGE_DIR: input.storageDir,
     },
     runtimeConfig: input.runtimeConfig,
     // 重构后旧字符串解析入口已删除；新 session 使用完整选择，冷恢复仍由持久选择接管。

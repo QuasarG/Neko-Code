@@ -3,20 +3,20 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   createRootTraceContext,
   createSessionId,
-  ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY,
-  ZCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
-  ZCODE_MCP_ERROR_PRESENTATION_META_KEY,
+  NEKODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY,
+  NEKODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
+  NEKODE_MCP_ERROR_PRESENTATION_META_KEY,
   type ImageProcessorPort,
   type McpPort,
   type ToolArtifactStorePort,
 } from "@zcode/contracts";
 import {
-  resetCapturedZCodeCuaBrokerCredentialsForTest,
-  ZCODE_CUA_OFFICIAL_MCP_NAMESPACE_NAME as ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
-  sanitizeZCodeRuntimeEnv,
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  ZCODE_PLUGIN_ID_ENV_KEY,
+  resetCapturedNekodeCuaBrokerCredentialsForTest,
+  NEKODE_CUA_OFFICIAL_MCP_NAMESPACE_NAME as NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+  sanitizeNekodeRuntimeEnv,
+  NEKODE_CUA_OFFICIAL_PLUGIN_ID,
+  NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  NEKODE_PLUGIN_ID_ENV_KEY,
 } from "@zcode/shared";
 import {
   MCP_IMAGE_INLINE_BASE64_BYTES,
@@ -80,16 +80,16 @@ function cuaActionReceipt(overrides: Record<string, unknown> = {}): string {
 // computeOfficialCuaServerNames 只信任本进程私有捕获的 authority；测试必须走与生产同一条
 // capture 路径（sanitize 时捕获完整凭据组）来播种，绝不能直接改写内部状态。
 function seedCapturedBrokerCredentials(): void {
-  sanitizeZCodeRuntimeEnv({
-    ZCODE_CUA_PERMISSION_BROKER_SOCKET: "/tmp/zcode-cua-test.sock",
-    ZCODE_CUA_PERMISSION_BROKER_TOKEN: "test-broker-token",
-    [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: TEST_PLUGIN_AUTHORITY,
+  sanitizeNekodeRuntimeEnv({
+    NEKODE_CUA_PERMISSION_BROKER_SOCKET: "/tmp/zcode-cua-test.sock",
+    NEKODE_CUA_PERMISSION_BROKER_TOKEN: "test-broker-token",
+    [NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: TEST_PLUGIN_AUTHORITY,
   });
 }
 
 describe("MCP tool bridge", () => {
   afterEach(() => {
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
   });
 
   it("marks only authority-verified official CUA entries with the project capability group", () => {
@@ -141,7 +141,7 @@ describe("MCP tool bridge", () => {
         statuses: {},
         tools: [
           {
-            serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+            serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
             toolName: "open_application",
             // adapter 会先按 namespaced serverName 生成这个内部描述符名；core 再把可信官方
             // CUA 投影成模型约定的 computer-use 主名，调用路由仍保留原 serverName。
@@ -155,16 +155,16 @@ describe("MCP tool bridge", () => {
       {
         mcp: {
           servers: {
-            [ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]: {
+            [NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]: {
               type: "stdio",
               command: "zcode-cua",
               env: {
-                [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-                [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: TEST_PLUGIN_AUTHORITY,
+                [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID,
+                [NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: TEST_PLUGIN_AUTHORITY,
               },
             },
           },
-          trustedOfficialCuaServerNames: [ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME],
+          trustedOfficialCuaServerNames: [NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME],
         },
       },
       {
@@ -191,7 +191,7 @@ describe("MCP tool bridge", () => {
     await alias?.handler({ app: { name: "notepad.exe" } }, createToolContext());
     expect(callTool).toHaveBeenCalledWith(
       expect.objectContaining({
-        serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+        serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
         toolName: "open_application",
       }),
       expect.anything(),
@@ -207,12 +207,12 @@ describe("MCP tool bridge", () => {
       {
         mcp: {
           servers: {
-            [ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]: {
+            [NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]: {
               type: "stdio",
               command: "zcode-cua",
             },
           },
-          trustedOfficialCuaServerNames: [ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME],
+          trustedOfficialCuaServerNames: [NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME],
         },
       },
       {
@@ -222,7 +222,7 @@ describe("MCP tool bridge", () => {
             statuses: {},
             tools: [
               {
-                serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+                serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
                 toolName: "open_application",
                 name: "mcp__plugin_zcode-cua_computer-use__open_application",
               },
@@ -287,13 +287,13 @@ describe("MCP tool bridge", () => {
       mcpPort,
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "open_application",
           name: "mcp__computer-use__open_application",
         },
       ],
       {
-        officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
+        officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
       },
     );
 
@@ -308,7 +308,7 @@ describe("MCP tool bridge", () => {
     await alias?.handler({ app: { name: "notepad.exe" } }, createToolContext());
     expect(calls).toEqual([
       {
-        serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+        serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
         toolName: "open_application",
       },
     ]);
@@ -338,14 +338,14 @@ describe("MCP tool bridge", () => {
       createMockMcpPort(),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "open_application",
           name: namespacedName,
         },
       ],
       {
         disallowedTools: [namespacedName],
-        officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
+        officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
       },
     );
 
@@ -363,14 +363,14 @@ describe("MCP tool bridge", () => {
       createMockMcpPort(),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "open_application",
           name: namespacedName,
         },
       ],
       {
         allowedTools: [namespacedName],
-        officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
+        officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]),
       },
     );
 
@@ -728,7 +728,7 @@ describe("MCP tool bridge", () => {
       ],
       isError: true,
       _meta: {
-        [ZCODE_MCP_ERROR_PRESENTATION_META_KEY]: ZCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
+        [NEKODE_MCP_ERROR_PRESENTATION_META_KEY]: NEKODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
       },
     });
 
@@ -775,7 +775,7 @@ describe("MCP tool bridge", () => {
       ],
       isError: true,
       _meta: {
-        [ZCODE_MCP_ERROR_PRESENTATION_META_KEY]: ZCODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
+        [NEKODE_MCP_ERROR_PRESENTATION_META_KEY]: NEKODE_MCP_ERROR_PRESENTATION_MESSAGE_ONLY,
       },
     });
 
@@ -872,12 +872,12 @@ describe("MCP tool bridge", () => {
       createMockMcpPort({ callTool }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "get_app_state",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const entry = registry.get("mcp__computer-use__get_app_state");
@@ -927,12 +927,12 @@ describe("MCP tool bridge", () => {
       createMockMcpPort({ callTool: async () => result }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "perform_action",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const entry = registry.get("mcp__computer-use__perform_action");
@@ -959,12 +959,12 @@ describe("MCP tool bridge", () => {
       }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "perform_action",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const output = await registry
@@ -995,12 +995,12 @@ describe("MCP tool bridge", () => {
       }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "perform_action",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const output = await registry
@@ -1027,12 +1027,12 @@ describe("MCP tool bridge", () => {
       }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "perform_action",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const output = await registry
@@ -1070,12 +1070,12 @@ describe("MCP tool bridge", () => {
       createMockMcpPort({ callTool: async () => result }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "perform_action",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const entry = registry.get("mcp__computer-use__perform_action");
@@ -1101,12 +1101,12 @@ describe("MCP tool bridge", () => {
       createMockMcpPort({ callTool: async () => result }),
       [
         {
-          serverName: ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME,
+          serverName: NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME,
           toolName: "list_apps",
           inputSchema: { type: "object", properties: {} },
         },
       ],
-      { officialCuaServerNames: new Set([ZCODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
+      { officialCuaServerNames: new Set([NEKODE_CUA_OFFICIAL_MCP_SERVER_NAME]) },
     );
 
     const output = await registry
@@ -1133,7 +1133,7 @@ describe("MCP tool bridge", () => {
           { type: "text", text: "(no output)" },
         ],
         _meta: {
-          [ZCODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY]: [0],
+          [NEKODE_MCP_BROWSER_SCREENSHOT_CONTENT_INDICES_META_KEY]: [0],
         },
       }),
     });

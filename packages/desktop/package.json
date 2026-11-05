@@ -1,8 +1,8 @@
 {
   "name": "@zcode/desktop",
   "private": true,
-  "description": "ZCode Desktop App",
-  "author": "ZCode",
+  "description": "Nekode Desktop App",
+  "author": "Nekode",
   "type": "module",
   "main": "out/main/index.js",
   "imports": {
@@ -58,7 +58,6 @@
     "@arms/rum-electron": "^0.0.3",
     "@babel/runtime": "^7.24.5",
     "@fiahfy/icns": "^0.0.7",
-    "@larksuiteoapi/node-sdk": "1.61.1",
     "@lydell/node-pty-linux-arm64": "1.2.0-beta.10",
     "@lydell/node-pty-linux-x64": "1.2.0-beta.10",
     "@modelcontextprotocol/client": "2.0.0",
@@ -131,5 +130,5 @@
     "wdio-electron-service": "^9.2.1",
     "webdriverio": "^9.27.0"
   },
-  "productName": "ZCode"
+  "productName": "Nekode"
 }

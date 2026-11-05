@@ -89,6 +89,10 @@
     "./tools": {
       "types": "./dist/tools/index.d.ts",
       "import": "./dist/tools/index.js"
+    },
+    "./neko-memory": {
+      "types": "./dist/neko-memory/index.d.ts",
+      "import": "./dist/neko-memory/index.js"
     }
   },
   "scripts": {
@@ -106,6 +110,7 @@
     "@ai-sdk/openai-compatible": "^2.0.58",
     "@modelcontextprotocol/client": "2.0.0",
     "@zcode/contracts": "workspace:*",
+    "@zcode/core": "workspace:*",
     "@zcode/dynamic-workflow": "workspace:*",
     "@zcode/model-option-map": "workspace:*",
     "@zcode/provider": "workspace:*",

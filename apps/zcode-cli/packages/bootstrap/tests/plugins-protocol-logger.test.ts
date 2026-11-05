@@ -9,7 +9,7 @@ vi.mock("../src/plugins.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../src/plugins.js")>();
   return {
     ...actual,
-    resolveZCodePlugins(options: Record<string, unknown>): PluginLoadOutcome {
+    resolveNekodePlugins(options: Record<string, unknown>): PluginLoadOutcome {
       resolverCapture.options = options;
       return {
         commandRoots: [],
@@ -24,7 +24,7 @@ vi.mock("../src/plugins.js", async (importOriginal) => {
 });
 
 import { listPlugins } from "../src/zcode-protocol/plugins.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 describe("plugins protocol logger propagation", () => {
   beforeEach(() => {
@@ -34,7 +34,7 @@ describe("plugins protocol logger propagation", () => {
   it("forwards the protocol logger to degraded plugin cache handling", async () => {
     const logger = createLogger();
 
-    await listPlugins({ logger } as ZCodeProtocolAgentServerContext, {
+    await listPlugins({ logger } as NekodeProtocolAgentServerContext, {
       workspace: { workspaceKey: "/workspace", workspacePath: "/workspace" },
     });
 

@@ -1,30 +1,30 @@
 import {
   zcodeTopicResourceReadParamsSchema,
   zcodeTopicResourceReadResultSchema,
-  type ZCodeTopicResourceReadParams,
-  type ZCodeTopicResourceReadResult,
-  type ZCodePromptAttachment,
-  type ZCodeProtocolTrace,
+  type NekodeTopicResourceReadParams,
+  type NekodeTopicResourceReadResult,
+  type NekodePromptAttachment,
+  type NekodeProtocolTrace,
 } from "@zcode/shared";
 
 const RESOURCE_TIMEOUT_MS = 120_000;
 export interface TopicResourceBridgeDependencies {
   validate(
-    request: ZCodeTopicResourceReadParams,
+    request: NekodeTopicResourceReadParams,
     signal: AbortSignal,
-    trace?: ZCodeProtocolTrace,
+    trace?: NekodeProtocolTrace,
   ): Promise<void>;
   read(
-    request: ZCodeTopicResourceReadParams,
+    request: NekodeTopicResourceReadParams,
     signal: AbortSignal,
-    trace?: ZCodeProtocolTrace,
-  ): Promise<ZCodePromptAttachment>;
+    trace?: NekodeProtocolTrace,
+  ): Promise<NekodePromptAttachment>;
   upload(
-    request: ZCodeTopicResourceReadParams,
-    attachment: ZCodePromptAttachment,
+    request: NekodeTopicResourceReadParams,
+    attachment: NekodePromptAttachment,
     signal: AbortSignal,
-    trace?: ZCodeProtocolTrace,
-  ): Promise<ZCodeTopicResourceReadResult>;
+    trace?: NekodeProtocolTrace,
+  ): Promise<NekodeTopicResourceReadResult>;
 }
 
 /** 每个实际 CLI 连接拥有独立取消域，不能取消另一工作区或另一任务的读取。 */
@@ -34,7 +34,7 @@ export function createTopicResourceBridge(
   const pending = new Map<string, { taskId: string; controller: AbortController }>();
   let disposed = false;
   return {
-    async read(value: unknown, trace?: ZCodeProtocolTrace): Promise<ZCodeTopicResourceReadResult> {
+    async read(value: unknown, trace?: NekodeProtocolTrace): Promise<NekodeTopicResourceReadResult> {
       const request = zcodeTopicResourceReadParamsSchema.parse(value);
       if (disposed) throw new Error("Topic resource connection is closed");
       if (pending.has(request.requestId))

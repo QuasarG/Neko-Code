@@ -8,9 +8,9 @@ session 里模型多次 `Read limit` 后继续 `Write` 仍失败，直到完整 
 
 根因是两层语义有缺陷：
 
-- ZCode 的 `readFileState` 只存在于当前 `ToolExecutor` runtime 内，`resume` 只恢复
+- Nekode 的 `readFileState` 只存在于当前 `ToolExecutor` runtime 内，`resume` 只恢复
   provider-visible message history，没有从历史 tool transcript 重建 read-state。
-- ZCode 把 `offset` / `limit` read 当作 `isPartialView`，并且 `Write` 只接受 strict
+- Nekode 把 `offset` / `limit` read 当作 `isPartialView`，并且 `Write` 只接受 strict
   full read；正确的 same-runtime guard 是拒绝没读过或 `isPartialView`，`offset`
   / `limit` 本身不是 `isPartialView`。
 
@@ -76,7 +76,7 @@ compaction 补回文件（`rewind-compact.md` 的“文件恢复”）重读磁�
 - 这些记录不落盘：补回附件没有快照，hydrator 只扫描工具结果。重启或 rewind 之后没有这些记录，Read
   返回正文，Edit / Write 要求先读。
 
-## ZCode 实现边界
+## Nekode 实现边界
 
 `AgentRuntime` 持有一个 session 生命周期内共享的 `ReadFileStateMap`，构造
 `ToolExecutor` 时传入同一个 map。`resumeFromStore` 在恢复 provider-visible history 的

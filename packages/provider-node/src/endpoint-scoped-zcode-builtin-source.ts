@@ -1,38 +1,38 @@
 import type { ProviderConfigLayerSnapshot, ProviderSource } from "@zcode/provider";
 import {
-  normalizeZCodeBuiltinEndpointOrigin,
-  resolveZCodeBuiltinCachePaths,
+  normalizeNekodeBuiltinEndpointOrigin,
+  resolveNekodeBuiltinCachePaths,
 } from "./zcode-builtin-cache-paths.js";
-import { NodeZCodeBuiltinProviderConfigSource } from "./zcode-builtin-provider-config-source.js";
+import { NodeNekodeBuiltinProviderConfigSource } from "./zcode-builtin-provider-config-source.js";
 import {
-  ZCodeBuiltinRemoteSynchronizer,
-  type ZCodeBuiltinRefreshResult,
-  type ZCodeBuiltinRemoteSynchronizerOptions,
+  NekodeBuiltinRemoteSynchronizer,
+  type NekodeBuiltinRefreshResult,
+  type NekodeBuiltinRemoteSynchronizerOptions,
 } from "./zcode-builtin-remote-synchronizer.js";
 
-export interface EndpointScopedZCodeBuiltinSourceOptions {
+export interface EndpointScopedNekodeBuiltinSourceOptions {
   readonly bundledFilePath: string;
   readonly environmentConfigRoot: string;
   readonly platform: string;
   readonly appVersion: string;
   readonly resolveEndpointOrigin: () => string | Promise<string>;
-  readonly fetchRelease: ZCodeBuiltinRemoteSynchronizerOptions["fetchRelease"];
-  readonly onRefreshResult?: ZCodeBuiltinRemoteSynchronizerOptions["onRefreshResult"];
+  readonly fetchRelease: NekodeBuiltinRemoteSynchronizerOptions["fetchRelease"];
+  readonly onRefreshResult?: NekodeBuiltinRemoteSynchronizerOptions["onRefreshResult"];
   readonly watch?: boolean;
 }
 
 /**
- * 让 Environment 的 ZCode 控制面 Endpoint 同时决定 Active/LKG 与刷新控制路径。
+ * 让 Environment 的 Nekode 控制面 Endpoint 同时决定 Active/LKG 与刷新控制路径。
  * Endpoint 切换只替换当前 Source，不读取上一 Endpoint 的缓存。
  */
-export class EndpointScopedZCodeBuiltinSource implements ProviderSource<ProviderConfigLayerSnapshot> {
-  readonly #options: EndpointScopedZCodeBuiltinSourceOptions;
+export class EndpointScopedNekodeBuiltinSource implements ProviderSource<ProviderConfigLayerSnapshot> {
+  readonly #options: EndpointScopedNekodeBuiltinSourceOptions;
   readonly #listeners = new Set<(reason: string) => void>();
   #current: CurrentEndpointSource | null = null;
   #ensureInFlight: Promise<CurrentEndpointSource> | null = null;
   #disposed = false;
 
-  constructor(options: EndpointScopedZCodeBuiltinSourceOptions) {
+  constructor(options: EndpointScopedNekodeBuiltinSourceOptions) {
     this.#options = options;
   }
 
@@ -46,7 +46,7 @@ export class EndpointScopedZCodeBuiltinSource implements ProviderSource<Provider
     return () => this.#listeners.delete(listener);
   }
 
-  async refresh(options?: { readonly force?: boolean }): Promise<ZCodeBuiltinRefreshResult> {
+  async refresh(options?: { readonly force?: boolean }): Promise<NekodeBuiltinRefreshResult> {
     return (await this.#ensureCurrent()).synchronizer.refresh(options);
   }
 
@@ -74,10 +74,10 @@ export class EndpointScopedZCodeBuiltinSource implements ProviderSource<Provider
   }
 
   async #resolveCurrent(): Promise<CurrentEndpointSource> {
-    const endpointOrigin = normalizeZCodeBuiltinEndpointOrigin(
+    const endpointOrigin = normalizeNekodeBuiltinEndpointOrigin(
       await this.#options.resolveEndpointOrigin(),
     );
-    const paths = resolveZCodeBuiltinCachePaths({
+    const paths = resolveNekodeBuiltinCachePaths({
       environmentConfigRoot: this.#options.environmentConfigRoot,
       platform: this.#options.platform,
       appVersion: this.#options.appVersion,
@@ -85,17 +85,17 @@ export class EndpointScopedZCodeBuiltinSource implements ProviderSource<Provider
     });
     if (this.#current?.activeFilePath === paths.activeFilePath) return this.#current;
 
-    const source = new NodeZCodeBuiltinProviderConfigSource({
+    const source = new NodeNekodeBuiltinProviderConfigSource({
       bundledFilePath: this.#options.bundledFilePath,
       activeFilePath: paths.activeFilePath,
       watch: this.#options.watch,
     });
     const sourceDispose = source.onDidChange((reason) => this.#emit(reason));
-    const synchronizer = new ZCodeBuiltinRemoteSynchronizer({
+    const synchronizer = new NekodeBuiltinRemoteSynchronizer({
       source,
       controlFilePath: paths.controlFilePath,
       resolveEndpointKey: async () =>
-        normalizeZCodeBuiltinEndpointOrigin(await this.#options.resolveEndpointOrigin()),
+        normalizeNekodeBuiltinEndpointOrigin(await this.#options.resolveEndpointOrigin()),
       fetchRelease: this.#options.fetchRelease,
       onRefreshResult: this.#options.onRefreshResult,
     });
@@ -128,15 +128,15 @@ export class EndpointScopedZCodeBuiltinSource implements ProviderSource<Provider
   }
 
   #assertNotDisposed(): void {
-    if (this.#disposed) throw new Error("EndpointScopedZCodeBuiltinSource 已 dispose");
+    if (this.#disposed) throw new Error("EndpointScopedNekodeBuiltinSource 已 dispose");
   }
 }
 
 class CurrentEndpointSource {
   constructor(
     readonly activeFilePath: string,
-    readonly source: NodeZCodeBuiltinProviderConfigSource,
-    readonly synchronizer: ZCodeBuiltinRemoteSynchronizer,
+    readonly source: NodeNekodeBuiltinProviderConfigSource,
+    readonly synchronizer: NekodeBuiltinRemoteSynchronizer,
     readonly sourceDispose: () => void,
   ) {}
 

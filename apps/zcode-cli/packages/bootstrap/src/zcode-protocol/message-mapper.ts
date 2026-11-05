@@ -1,10 +1,10 @@
 import { normalizeGenUiInput } from "@zcode/core";
 import { genUiModelContextSchema } from "@zcode/shared/gen-ui";
-import type { ZCodeMessagePart, ZCodeMessageWithParts, ZCodeToolState } from "@zcode/shared";
+import type { NekodeMessagePart, NekodeMessageWithParts, NekodeToolState } from "@zcode/shared";
 import type { MessagePart, MessageWithParts, ToolState } from "@zcode/contracts";
 import { shouldHideInvalidToolCallFromProduct } from "../tool-call-product-visibility.js";
 
-export function mapMessageWithParts(message: MessageWithParts): ZCodeMessageWithParts {
+export function mapMessageWithParts(message: MessageWithParts): NekodeMessageWithParts {
   const intent =
     message.info.metadata?.conversationInputIntent ?? message.info.metadata?.inputIntent;
   const context = genUiModelContextSchema.safeParse(
@@ -83,7 +83,7 @@ export function mapMessageWithParts(message: MessageWithParts): ZCodeMessageWith
   };
 }
 
-function mapMessagePart(part: MessagePart): ZCodeMessagePart {
+function mapMessagePart(part: MessagePart): NekodeMessagePart {
   const base = {
     messageId: String(part.messageID),
     partId: String(part.id),
@@ -238,7 +238,7 @@ function mapToolPartMetadata(
   return Object.keys(visibleMetadata).length > 0 ? visibleMetadata : undefined;
 }
 
-function mapToolState(state: ToolState): ZCodeToolState {
+function mapToolState(state: ToolState): NekodeToolState {
   switch (state.status) {
     case "pending":
       return { input: state.input, raw: state.raw, status: "pending" };
@@ -317,6 +317,6 @@ function mapCompletedToolStateMetadata(
   const visibleMetadata = { ...protocolMetadata };
   delete visibleMetadata.modelContentLayout;
   // core 的历史/异常 completed tool part 可能没有 metadata，但
-  // ZCode protocol 的 completed tool state 要求 metadata 必须是 object。
+  // Nekode protocol 的 completed tool state 要求 metadata 必须是 object。
   return visibleMetadata;
 }

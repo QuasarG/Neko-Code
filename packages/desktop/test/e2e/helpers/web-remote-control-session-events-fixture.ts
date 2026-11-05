@@ -9,8 +9,8 @@ export const WEB_REMOTE_CONTROL_FIXTURE_CREDENTIALS = {
   "oauth:zai:access_token": "mock-token",
   "oauth:zai:user_info": JSON.stringify({
     id: "zcode-e2e-user",
-    username: "ZCode E2E",
-    displayName: "ZCode E2E",
+    username: "Nekode E2E",
+    displayName: "Nekode E2E",
   }),
   zcodejwttoken: "mock-token",
 };
@@ -63,14 +63,14 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
   });
   const envPatch = {
     // 账号后台请求也必须走 loopback；合成凭据发到默认业务 API 会触发401并提前登出。
-    ...(options.webUrl ? { VITE_ZCODE_E2E_STORE_BRIDGE: "1" } : {}),
+    ...(options.webUrl ? { VITE_NEKODE_E2E_STORE_BRIDGE: "1" } : {}),
     ZAI_BUSINESS_BASE_URL: relay.httpUrl,
-    ZCODE_E2E_REMOTE_AUTH_GATE_URL: relay.httpUrl,
-    ZCODE_BASE_URL: relay.httpUrl,
-    ZCODE_ENDPOINT_ORIGIN: relay.httpUrl,
-    ZCODE_TEST_BASE_URL: relay.httpUrl,
-    ZCODE_WEB_REMOTE_CONTROL_RELAY_WS_URL: relay.wsUrl,
-    ZCODE_WEB_REMOTE_CONTROL_URL: options.webUrl ?? `${relay.httpUrl}/remote/v4`,
+    NEKODE_E2E_REMOTE_AUTH_GATE_URL: relay.httpUrl,
+    NEKODE_BASE_URL: relay.httpUrl,
+    NEKODE_ENDPOINT_ORIGIN: relay.httpUrl,
+    NEKODE_TEST_BASE_URL: relay.httpUrl,
+    NEKODE_WEB_REMOTE_CONTROL_RELAY_WS_URL: relay.wsUrl,
+    NEKODE_WEB_REMOTE_CONTROL_URL: options.webUrl ?? `${relay.httpUrl}/remote/v4`,
   };
   const previous = Object.fromEntries(Object.keys(envPatch).map((key) => [key, process.env[key]]));
   Object.assign(process.env, envPatch);
@@ -109,7 +109,7 @@ export async function prepareWebRemoteControlSessionEventsFixture(options: {
         }
         if (!origin) return;
         // 独立夹具可能避开已占用端口，手机配对必须使用 Vite 实际监听的端口。
-        process.env.ZCODE_WEB_REMOTE_CONTROL_URL = new URL(
+        process.env.NEKODE_WEB_REMOTE_CONTROL_URL = new URL(
           new URL(options.webUrl!).pathname,
           origin,
         ).href;

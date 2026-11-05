@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZCode Sites start.sh for a Node.js server. Runs in the foreground on 0.0.0.0:3000.
+# Nekode Sites start.sh for a Node.js server. Runs in the foreground on 0.0.0.0:3000.
 # Dependencies must already be in ./node_modules (installed for linux x64); never install here.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

@@ -19,8 +19,8 @@ import { startOpenAiProviderProxy } from "./openai-provider-proxy.js";
 
 const RECORDER_REASONING_LEVEL = "disabled";
 
-interface ZCodeBootstrapModule {
-  createZCodeApp(input: unknown): Promise<{
+interface NekodeBootstrapModule {
+  createNekodeApp(input: unknown): Promise<{
     close?: () => Promise<void>;
     submitPrompt(prompt: RecorderPromptInput): Promise<unknown>;
   }>;
@@ -41,7 +41,7 @@ interface ProviderRegistryConstructor {
   new (providers?: readonly unknown[]): unknown;
 }
 
-interface ZCodeProviderModule {
+interface NekodeProviderModule {
   ApiKeyAccessConfig: ConfigConstructor;
   ModelConfig: ConfigConstructor;
   ModelOptionSpecsConfig: ConfigConstructor;
@@ -90,7 +90,7 @@ export async function recordPromptTrajectoryFromFixture(input: {
   const restoreHome = useIsolatedHome(isolatedHome);
 
   try {
-    const { bootstrap, provider } = await loadZCodeModules();
+    const { bootstrap, provider } = await loadNekodeModules();
     const proxy = await startOpenAiProviderProxy({
       ledger,
       mockResponses: fixture.mockResponses,
@@ -109,7 +109,7 @@ export async function recordPromptTrajectoryFromFixture(input: {
     };
     const eventObserver = createRuntimeEventObserver();
     const providerRegistry = createRecorderProviderRegistry(provider, modelConfig, fixture);
-    const app = await bootstrap.createZCodeApp({
+    const app = await bootstrap.createNekodeApp({
       eventSink: eventObserver.sink,
       env: process.env,
       providerRegistry,
@@ -142,10 +142,10 @@ const HOME_ENV_KEYS = ["HOME", "USERPROFILE"] as const;
 
 /** 进程内切换家目录与存储目录，返回恢复函数；录制按 case 顺序执行，不并发。 */
 function useIsolatedHome(home: string): () => void {
-  const keys = [...HOME_ENV_KEYS, "ZCODE_STORAGE_DIR"] as const;
+  const keys = [...HOME_ENV_KEYS, "NEKODE_STORAGE_DIR"] as const;
   const previous = new Map(keys.map((key) => [key, process.env[key]]));
   for (const key of HOME_ENV_KEYS) process.env[key] = home;
-  process.env.ZCODE_STORAGE_DIR = join(home, ".zcode");
+  process.env.NEKODE_STORAGE_DIR = join(home, ".nekode");
   return () => {
     for (const [key, value] of previous) {
       if (value === undefined) delete process.env[key];
@@ -237,9 +237,9 @@ function assertNever(value: never): never {
   throw new Error(`Unsupported fixture step: ${JSON.stringify(value)}`);
 }
 
-async function loadZCodeModules(): Promise<{
-  bootstrap: ZCodeBootstrapModule;
-  provider: ZCodeProviderModule;
+async function loadNekodeModules(): Promise<{
+  bootstrap: NekodeBootstrapModule;
+  provider: NekodeProviderModule;
 }> {
   const bootstrapPath = pathToFileURL(
     join(import.meta.dirname, "../../../packages/bootstrap/dist/index.js"),
@@ -251,8 +251,8 @@ async function loadZCodeModules(): Promise<{
   ).href;
   try {
     const [bootstrap, provider] = await Promise.all([
-      import(bootstrapPath) as Promise<ZCodeBootstrapModule>,
-      import(providerPath) as Promise<ZCodeProviderModule>,
+      import(bootstrapPath) as Promise<NekodeBootstrapModule>,
+      import(providerPath) as Promise<NekodeProviderModule>,
     ]);
     return { bootstrap, provider };
   } catch (error) {
@@ -264,7 +264,7 @@ async function loadZCodeModules(): Promise<{
 }
 
 function createRecorderProviderRegistry(
-  provider: ZCodeProviderModule,
+  provider: NekodeProviderModule,
   modelConfig: RuntimeModelConfig,
   fixture: PromptTrajectoryFixture,
 ): unknown {

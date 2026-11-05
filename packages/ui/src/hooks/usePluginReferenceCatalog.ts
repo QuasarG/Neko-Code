@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
-  ZCodePluginReferenceCatalogEntry,
-  ZCodePluginsReferenceCatalogResult,
+  NekodePluginReferenceCatalogEntry,
+  NekodePluginsReferenceCatalogResult,
 } from "@zcode/shared";
 import { useWorkspaceServicesResolution } from "@/hooks/useWorkspaceServices.js";
 import { logger } from "@/logger.js";
 
 export interface PluginReferenceCatalogState {
-  entries: ZCodePluginReferenceCatalogEntry[];
+  entries: NekodePluginReferenceCatalogEntry[];
   authority: "session" | "workspace" | null;
   loading: boolean;
   error: string | null;
@@ -41,7 +41,7 @@ export interface PluginReferenceCatalogOptions {
 
 let sessionCatalogRequests = new WeakMap<
   object,
-  Map<string, Promise<ZCodePluginsReferenceCatalogResult>>
+  Map<string, Promise<NekodePluginsReferenceCatalogResult>>
 >();
 
 export function clearPluginReferenceCatalogCacheForTest(): void {
@@ -50,9 +50,9 @@ export function clearPluginReferenceCatalogCacheForTest(): void {
 
 function releaseSessionCatalogRequest(
   services: object,
-  serviceCache: Map<string, Promise<ZCodePluginsReferenceCatalogResult>>,
+  serviceCache: Map<string, Promise<NekodePluginsReferenceCatalogResult>>,
   requestKey: string,
-  request: Promise<ZCodePluginsReferenceCatalogResult>,
+  request: Promise<NekodePluginsReferenceCatalogResult>,
 ): void {
   // 成功 Promise 曾永久驻留，并在 Agent runtime 换代后继续冒充新
   // runtime 的 Session authority。缓存只能做挂载期的 in-flight 单飞；旧请求
@@ -66,9 +66,9 @@ function releaseSessionCatalogRequest(
 
 function releaseSessionCatalogRequestWhenSettled(
   services: object,
-  serviceCache: Map<string, Promise<ZCodePluginsReferenceCatalogResult>>,
+  serviceCache: Map<string, Promise<NekodePluginsReferenceCatalogResult>>,
   requestKey: string,
-  request: Promise<ZCodePluginsReferenceCatalogResult>,
+  request: Promise<NekodePluginsReferenceCatalogResult>,
 ): void {
   const release = () => releaseSessionCatalogRequest(services, serviceCache, requestKey, request);
   void request.then(release, release);
@@ -141,8 +141,8 @@ export function usePluginReferenceCatalog(
       ...(remoteSessionId ? { remoteSessionId } : {}),
       ...(sessionId ? { sessionId } : {}),
     };
-    let request: Promise<ZCodePluginsReferenceCatalogResult>;
-    let requestServiceCache: Map<string, Promise<ZCodePluginsReferenceCatalogResult>> | undefined;
+    let request: Promise<NekodePluginsReferenceCatalogResult>;
+    let requestServiceCache: Map<string, Promise<NekodePluginsReferenceCatalogResult>> | undefined;
     if (options?.dedupeSessionRequest && sessionId) {
       let serviceCache = sessionCatalogRequests.get(services);
       if (!serviceCache) {

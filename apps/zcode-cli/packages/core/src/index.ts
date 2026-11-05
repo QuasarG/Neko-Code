@@ -11,8 +11,11 @@ export * from "./context/index.js";
 // Compact helpers
 export * from "./compact/index.js";
 
-// Memory paths
-export { resolveProjectMemoryRoot } from "./memory/project-root.js";
+// Neko scoped long-term memory runtime (pure logic)
+export * from "./neko-memory/index.js";
+
+// Wardrobe (global outfit state, pure logic)
+export * from "./wardrobe/index.js";
 
 // Tool components
 export { ToolScheduler, defaultToolScheduler, READ_ONLY_TOOLS } from "./tool/scheduler.js";

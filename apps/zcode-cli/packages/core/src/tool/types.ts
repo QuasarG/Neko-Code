@@ -24,7 +24,6 @@ import type {
   ModelMessageContent,
   ModelToolSideEffectScope,
   OffPeakPort,
-  TopicResourcePort,
   PdfDocumentPort,
   PermissionBrokerReasonSource,
   PermissionCapabilityGroup,
@@ -58,6 +57,8 @@ import type {
   WorkflowSubmitPort,
 } from "@zcode/contracts";
 import type { RuntimeTaskRegistry } from "../runtime-task/registry.js";
+import type { NekoMemoryBooksPort } from "../neko-memory/ports.js";
+import type { WardrobeStorePort } from "../wardrobe/ports.js";
 import type { SystemReminderSource } from "../system-reminder/source.js";
 import type {
   PersistedReadFileStateMetadata,
@@ -180,7 +181,6 @@ export interface ToolExecutionContext {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
-  topicResourcePort?: TopicResourcePort;
   sessionStore?: SessionStorePort;
   sessionModePort?: SessionModePort;
   workflowPort?: WorkflowPort;
@@ -204,7 +204,10 @@ export interface ToolExecutionContext {
   remoteSessionId?: string;
   clientMode?: "desktop-continuous" | "web-remote-replayable";
   deliveryKind?: "desktop-continuous" | "web-remote-replayable";
-  memoryRoot?: string;
+  /** Neko Memory v2 书架；Edit/Write 预算闸门与 Bash 拒写靠它识别记忆书。 */
+  nekoMemoryBooks?: NekoMemoryBooksPort;
+  /** 衣橱存储端口；wardrobe 工具的全部动作走它，与记忆书相互独立。 */
+  wardrobeStore?: WardrobeStorePort;
   runtimeScope?: ToolRuntimeScope;
   providerVisibleToolNames?: readonly string[];
   sessionId: SessionId;

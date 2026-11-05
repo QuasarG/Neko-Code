@@ -11,7 +11,7 @@ import {
   type ToolPart,
   STREAM_RECOVERY_DISCARDED_ERROR_NAME,
 } from "@zcode/contracts";
-import type { ZCodeSessionEndedSubagent, ZCodeSessionRunningSubagent } from "@zcode/shared";
+import type { NekodeSessionEndedSubagent, NekodeSessionRunningSubagent } from "@zcode/shared";
 
 const SUBAGENT_TOOL_NAMES = new Set(["Agent", "Task", "subagent"]);
 const CANCELLATION_PATTERN = /abort|cancel|interrupt|stop/i;
@@ -43,8 +43,8 @@ interface SubagentEventRelation {
 
 export interface SessionSubagentProjection {
   revision: number;
-  running: ZCodeSessionRunningSubagent[];
-  ended: ZCodeSessionEndedSubagent[];
+  running: NekodeSessionRunningSubagent[];
+  ended: NekodeSessionEndedSubagent[];
 }
 
 export interface ProjectSessionSubagentsInput {
@@ -295,7 +295,7 @@ function runningStatus(input: {
   childOutcome: ReturnType<typeof lastChildOutcome>;
   childProjection?: SessionProjection;
   parentProjection?: SessionProjection;
-}): ZCodeSessionRunningSubagent["status"] | undefined {
+}): NekodeSessionRunningSubagent["status"] | undefined {
   if (input.background?.status === "running") {
     return input.background.blocked ? "blocked" : "running";
   }
@@ -333,7 +333,7 @@ function runningStatus(input: {
 
 function terminalBackgroundStatus(
   task: BackgroundTaskInfo | undefined,
-): ZCodeSessionEndedSubagent["status"] | undefined {
+): NekodeSessionEndedSubagent["status"] | undefined {
   switch (task?.status) {
     case "completed":
       return "success";
@@ -355,7 +355,7 @@ function endedStatus(input: {
   candidate: SubagentCandidate;
   childOutcome: ReturnType<typeof lastChildOutcome>;
   childProjection?: SessionProjection;
-}): ZCodeSessionEndedSubagent["status"] {
+}): NekodeSessionEndedSubagent["status"] {
   const backgroundStatus = terminalBackgroundStatus(input.background);
   if (backgroundStatus) return backgroundStatus;
   if (input.childProjection?.status === "error") return "failed";
@@ -384,8 +384,8 @@ function startedAt(
 export function projectSessionSubagents(
   input: ProjectSessionSubagentsInput,
 ): SessionSubagentProjection {
-  const running: ZCodeSessionRunningSubagent[] = [];
-  const ended: ZCodeSessionEndedSubagent[] = [];
+  const running: NekodeSessionRunningSubagent[] = [];
+  const ended: NekodeSessionEndedSubagent[] = [];
   for (const candidate of collectCandidates(
     input.parentSession,
     input.messages,
@@ -448,7 +448,7 @@ export function projectSessionSubagents(
   return { revision: input.revision, running, ended };
 }
 
-function encodeCursor(item: ZCodeSessionEndedSubagent): string {
+function encodeCursor(item: NekodeSessionEndedSubagent): string {
   return Buffer.from(
     JSON.stringify({ childSessionId: item.childSessionId, endedAt: item.endedAt ?? 0 }),
   ).toString("base64url");
@@ -472,9 +472,9 @@ function decodeCursor(cursor: string | undefined): {
 }
 
 export function paginateEndedSubagents(
-  ended: readonly ZCodeSessionEndedSubagent[],
+  ended: readonly NekodeSessionEndedSubagent[],
   options: { cursor?: string; limit: number },
-): { items: ZCodeSessionEndedSubagent[]; nextCursor?: string } {
+): { items: NekodeSessionEndedSubagent[]; nextCursor?: string } {
   const cursor = decodeCursor(options.cursor);
   const start = cursor
     ? ended.findIndex(

@@ -21,7 +21,7 @@ export type {
   IntegratedTerminalShellSelection,
   Locale,
   LocalePreference,
-  ZCodeInteractionBehavior,
+  NekodeInteractionBehavior,
   TabId,
   TabState,
   ResourceUsageCategory,
@@ -35,9 +35,9 @@ export type {
 } from "./protocol.js";
 export type { WorkspacePurpose } from "./workspacePurpose.js";
 export { DEFAULT_LOCALE } from "./protocol.js";
-export { ZCODE_VERSION, ZCODE_COMMIT, ZCODE_BUILD_TIME } from "./version.js";
+export { NEKODE_VERSION, NEKODE_COMMIT, NEKODE_BUILD_TIME } from "./version.js";
 export type { HelloMessage, HelloAckMessage } from "./handshake.js";
-export type { ArmsRumEnv, ZCodeEnv, ZCodeProductFlavor } from "./env.js";
+export type { ArmsRumEnv, NekodeEnv, NekodeProductFlavor } from "./env.js";
 export type { RemoteAssetInstallMode } from "./remoteAssetInstallMode.js";
 export type {
   RemoteResourcePackageId,
@@ -68,17 +68,17 @@ export {
   serializeShortcutBinding,
 } from "./shortcutCommands.js";
 export {
-  ZCODE_ENV,
-  ZCODE_PRODUCT_FLAVOR,
-  ZCODE_APP_VERSION_ENV,
-  ZCODE_BUILD_COMMIT_ID_ENV,
-  RUNTIME_ZCODE_DEBUG,
-  ZCODE_ARMS_RUM_ENDPOINT,
-  ZCODE_TELEMETRY_REPORT_ENDPOINT,
-  ZCODE_AUTO_UPDATE_ENABLED,
-  mapZCodeEnvToArmsRumEnv,
-  normalizeZCodeEnv,
-  normalizeZCodeProductFlavor,
+  NEKODE_ENV,
+  NEKODE_PRODUCT_FLAVOR,
+  NEKODE_APP_VERSION_ENV,
+  NEKODE_BUILD_COMMIT_ID_ENV,
+  RUNTIME_NEKODE_DEBUG,
+  NEKODE_ARMS_RUM_ENDPOINT,
+  NEKODE_TELEMETRY_REPORT_ENDPOINT,
+  NEKODE_AUTO_UPDATE_ENABLED,
+  mapNekodeEnvToArmsRumEnv,
+  normalizeNekodeEnv,
+  normalizeNekodeProductFlavor,
 } from "./env.js";
 export * from "./errors.js";
 export {
@@ -258,7 +258,7 @@ export type {
   UpdateStatePayload,
   WSLDistro,
   WindowControlsOverlayReadyPayload,
-  ZCodeStdioTapDevState,
+  NekodeStdioTapDevState,
 } from "./platform.js";
 export type {
   CuaAccessibilitySettingsResult,
@@ -266,7 +266,7 @@ export type {
   OpenCuaPermissionOnboardingOptions,
   PrepareCuaHelperPermissionDragResult,
 } from "./cuaAccessibilitySettings.js";
-export type { ZCodeTaskCreateResult } from "./zcode-task-types.js";
+export type { NekodeTaskCreateResult } from "./zcode-task-types.js";
 export * from "./zcode-task-types.js";
 export * from "./automation-types.js";
 export * from "./off-peak-types.js";
@@ -304,7 +304,6 @@ export * from "./process-names.js";
 export * from "./mcp.js";
 export * from "./runtime-tool-runtime.js";
 export * from "./git.js";
-export * from "./bots.js";
 export * from "./assistant-message-parts.js";
 export * from "./zcodePersistedMessageMerge.js";
 export * from "./assistant-presentation.js";
@@ -375,8 +374,6 @@ export {
 
 export * from "./conversationSelection.js";
 export * from "./attachment-source.js";
-
-export * from "./channel-mention.js";
 
 export {
   requestSecuritySensitiveHeaders,

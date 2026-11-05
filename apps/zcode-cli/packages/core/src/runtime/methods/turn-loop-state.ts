@@ -119,6 +119,10 @@ export interface RegularTurnLoopState {
   completedRealToolResultBatch: boolean;
   /** 下一次 loop 迭代要收集输入附件：轮首、完整工具批次之后、文本回复后续上 guide 时置位。 */
   inputAttachmentCollectionPending: boolean;
+  /** Neko 记忆投递每轮只收集一次；工具批次后的收集不重复计数或提醒。 */
+  nekoMemoryAttachmentsCollected: boolean;
+  /** 衣橱注入同样每轮只收集一次；与记忆各自独立判定与去重。 */
+  wardrobeAttachmentCollected: boolean;
   /** 工具批次结算时本轮已被停止；决定中断标记用工具阶段的文字。 */
   interruptedDuringToolBatch?: boolean;
   reactiveCompactAttemptedInCurrentModelStep: boolean;

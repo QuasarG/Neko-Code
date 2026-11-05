@@ -1,13 +1,13 @@
 // ── 旧协议兼容面（过渡期）──────────────────────────────
 // 剩余 11 个导出：goal 迭代/可见消息投影函数。
 // 消费者：zcodeTaskServiceAdapter/zcodeSessionProjection/zcodeTaskIndexSyncer、
-// CLI bootstrap session-mapper。textFromZCodeMessageParts 已迁
+// CLI bootstrap session-mapper。textFromNekodeMessageParts 已迁
 // zcode-protocol-legacy-types.ts（幸存面）。本文件与旧投影栈同生命周期。
-import type { ZCodeSessionGoal } from "./zcode-protocol/index.js";
+import type { NekodeSessionGoal } from "./zcode-protocol/index.js";
 import { getConversationMessageProjectionPolicy } from "./conversation-message-projection-policy.js";
 import {
-  type ZCodeMessageWithParts,
-  textFromZCodeMessageParts,
+  type NekodeMessageWithParts,
+  textFromNekodeMessageParts,
 } from "./zcode-protocol-legacy-types.js";
 
 const GOAL_CONTINUATION_REMINDER_PREFIX = '<system-reminder source="goal-continuation">';
@@ -15,7 +15,7 @@ const GOAL_CONTINUATION_TEXT_MARKER = "Continue working toward the active sessio
 const GOAL_STATE_TEXT_MARKER = "Current session goal state";
 const SUBAGENT_MESSAGE_SOURCE = "subagent_message";
 
-export function isZCodeGoalContinuationReminderText(text: string): boolean {
+export function isNekodeGoalContinuationReminderText(text: string): boolean {
   const normalized = text.trimStart();
   if (normalized.startsWith(GOAL_CONTINUATION_REMINDER_PREFIX)) {
     return true;
@@ -25,29 +25,29 @@ export function isZCodeGoalContinuationReminderText(text: string): boolean {
   );
 }
 
-export function isZCodeGoalContinuationReminderMessage(message: ZCodeMessageWithParts): boolean {
+export function isNekodeGoalContinuationReminderMessage(message: NekodeMessageWithParts): boolean {
   return (
     message.info.role === "user" &&
     (message.info.source === "goal-continuation" ||
       String(message.info.metadata?.["source"] ?? "") === "goal-continuation" ||
-      isZCodeGoalContinuationReminderText(textFromZCodeMessageParts(message.parts)))
+      isNekodeGoalContinuationReminderText(textFromNekodeMessageParts(message.parts)))
   );
 }
 
-export function isZCodeGoalStateReminderText(text: string): boolean {
+export function isNekodeGoalStateReminderText(text: string): boolean {
   const normalized = text.trimStart();
   return normalized.startsWith("<system-reminder>") && normalized.includes(GOAL_STATE_TEXT_MARKER);
 }
 
-export function isZCodeGoalModelOnlyReminderMessage(message: ZCodeMessageWithParts): boolean {
+export function isNekodeGoalModelOnlyReminderMessage(message: NekodeMessageWithParts): boolean {
   return (
     message.info.role === "user" &&
-    (isZCodeGoalContinuationReminderMessage(message) ||
-      isZCodeGoalStateReminderText(textFromZCodeMessageParts(message.parts)))
+    (isNekodeGoalContinuationReminderMessage(message) ||
+      isNekodeGoalStateReminderText(textFromNekodeMessageParts(message.parts)))
   );
 }
 
-export function isZCodeModelOnlySyntheticUserMessage(message: ZCodeMessageWithParts): boolean {
+export function isNekodeModelOnlySyntheticUserMessage(message: NekodeMessageWithParts): boolean {
   if (
     message.info.role === "user" &&
     (String(message.info.source ?? "") === SUBAGENT_MESSAGE_SOURCE ||
@@ -64,7 +64,7 @@ export function isZCodeModelOnlySyntheticUserMessage(message: ZCodeMessageWithPa
   return policy === "providerContextOnly" || policy === "hiddenSynthetic";
 }
 
-export function isZCodeCompactSummaryMessage(message: ZCodeMessageWithParts): boolean {
+export function isNekodeCompactSummaryMessage(message: NekodeMessageWithParts): boolean {
   return (
     message.info.role === "user" &&
     message.parts.some((part) => {
@@ -79,13 +79,13 @@ export function isZCodeCompactSummaryMessage(message: ZCodeMessageWithParts): bo
   );
 }
 
-export function getZCodeUserVisibleMessages(
-  messages: readonly ZCodeMessageWithParts[],
-  _options: { target?: ZCodeSessionGoal | null } = {},
-): ZCodeMessageWithParts[] {
-  const visibleMessages: ZCodeMessageWithParts[] = [];
+export function getNekodeUserVisibleMessages(
+  messages: readonly NekodeMessageWithParts[],
+  _options: { target?: NekodeSessionGoal | null } = {},
+): NekodeMessageWithParts[] {
+  const visibleMessages: NekodeMessageWithParts[] = [];
   for (const message of messages) {
-    if (isZCodeModelOnlySyntheticUserMessage(message) || isZCodeCompactSummaryMessage(message)) {
+    if (isNekodeModelOnlySyntheticUserMessage(message) || isNekodeCompactSummaryMessage(message)) {
       // /goal 续跑、后台任务、子 agent、rewind 通知和 compact summary
       // 都是 runtime 注入给模型继续推理的上下文，不是用户真实 query；可见投影必须过滤，
       // 避免快照/远控恢复时渲染成右侧用户气泡或挤占 timeline 位置。
@@ -96,9 +96,9 @@ export function getZCodeUserVisibleMessages(
   return visibleMessages;
 }
 
-export function getZCodeGoalIterationByAssistantMessageId(
-  messages: readonly ZCodeMessageWithParts[],
-  options: { maxGoalIteration?: number; target?: ZCodeSessionGoal | null } = {},
+export function getNekodeGoalIterationByAssistantMessageId(
+  messages: readonly NekodeMessageWithParts[],
+  options: { maxGoalIteration?: number; target?: NekodeSessionGoal | null } = {},
 ): Map<string, number> {
   const target = options.target ?? null;
   if (!target) {
@@ -106,14 +106,14 @@ export function getZCodeGoalIterationByAssistantMessageId(
   }
 
   const iterationByAssistantId = new Map<string, number>();
-  const sortedMessages = [...messages].sort(compareZCodeMessagesByCreatedTime);
+  const sortedMessages = [...messages].sort(compareNekodeMessagesByCreatedTime);
   const inactiveAt = target.status === "active" ? null : target.updatedAt;
   let currentIteration = 0;
   let pendingVisibleGoalUserIteration = false;
 
   for (const message of sortedMessages) {
     if (message.info.role === "user") {
-      if (isZCodeGoalContinuationReminderMessage(message)) {
+      if (isNekodeGoalContinuationReminderMessage(message)) {
         // goal 续跑边界只来自 Continue/source=goal-continuation；
         // Current session goal state 是同一轮内反复注入的状态提示，不能在这里推进迭代号。
         currentIteration += 1;
@@ -159,15 +159,15 @@ export function getZCodeGoalIterationByAssistantMessageId(
   return iterationByAssistantId;
 }
 
-export interface ZCodeGoalIterationCountTimelineItem {
+export interface NekodeGoalIterationCountTimelineItem {
   goalIteration?: number;
   status: "started" | "completed" | "failed_closed" | "cancelled";
   verification?: { passed?: boolean | null } | null;
 }
 
-export function getZCodeGoalActiveIterationCount(input: {
+export function getNekodeGoalActiveIterationCount(input: {
   targetStatus?: string | null;
-  timeline?: readonly ZCodeGoalIterationCountTimelineItem[] | null;
+  timeline?: readonly NekodeGoalIterationCountTimelineItem[] | null;
 }): number {
   if (!input.targetStatus) {
     return 0;
@@ -198,9 +198,9 @@ export function getZCodeGoalActiveIterationCount(input: {
   return latestIteration + 1;
 }
 
-function compareZCodeMessagesByCreatedTime(
-  left: ZCodeMessageWithParts,
-  right: ZCodeMessageWithParts,
+function compareNekodeMessagesByCreatedTime(
+  left: NekodeMessageWithParts,
+  right: NekodeMessageWithParts,
 ) {
   const diff = left.info.time.created - right.info.time.created;
   if (diff !== 0) {
@@ -209,7 +209,7 @@ function compareZCodeMessagesByCreatedTime(
   return left.info.messageId.localeCompare(right.info.messageId);
 }
 
-function isVisibleRealGoalUserMessage(message: ZCodeMessageWithParts, target: ZCodeSessionGoal) {
+function isVisibleRealGoalUserMessage(message: NekodeMessageWithParts, target: NekodeSessionGoal) {
   if (
     message.info.role !== "user" ||
     getConversationMessageProjectionPolicy(message) !== "realUserInput"
@@ -226,17 +226,17 @@ function isVisibleRealGoalUserMessage(message: ZCodeMessageWithParts, target: ZC
   return true;
 }
 
-export function resolveZCodeVisibleSessionTitle(input: {
+export function resolveNekodeVisibleSessionTitle(input: {
   title?: string;
-  messages: readonly ZCodeMessageWithParts[];
-  target?: ZCodeSessionGoal | null;
+  messages: readonly NekodeMessageWithParts[];
+  target?: NekodeSessionGoal | null;
   fallback?: string;
 }): string {
   const normalizedTitle = input.title?.trim() ?? "";
   if (
     normalizedTitle &&
-    !isZCodeGoalContinuationReminderText(normalizedTitle) &&
-    !isZCodeGoalStateReminderText(normalizedTitle)
+    !isNekodeGoalContinuationReminderText(normalizedTitle) &&
+    !isNekodeGoalStateReminderText(normalizedTitle)
   ) {
     return normalizedTitle;
   }
@@ -245,9 +245,9 @@ export function resolveZCodeVisibleSessionTitle(input: {
     (message) =>
       message.info.role === "user" &&
       getConversationMessageProjectionPolicy(message) === "realUserInput" &&
-      !isZCodeGoalModelOnlyReminderMessage(message),
+      !isNekodeGoalModelOnlyReminderMessage(message),
   );
-  const firstUserText = textFromZCodeMessageParts(firstUser?.parts ?? []).trim();
+  const firstUserText = textFromNekodeMessageParts(firstUser?.parts ?? []).trim();
   if (firstUserText) {
     return firstUserText.slice(0, 80);
   }

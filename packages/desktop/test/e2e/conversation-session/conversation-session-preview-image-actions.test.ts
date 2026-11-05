@@ -13,7 +13,7 @@ import {
 } from "#e2e/helpers/v4-conversation";
 import { countUpstreamRequests } from "#e2e/helpers/conversation-session-network";
 
-const ROOT = join(DEFAULT_WORKSPACE, ".zcode-e2e", "image-actions");
+const ROOT = join(DEFAULT_WORKSPACE, ".nekode-e2e", "image-actions");
 const SHOTS =
   process.env.E2E_IMAGE_ACTION_SCREENSHOTS ??
   join(process.cwd(), ".e2e-artifacts", "image-actions");
@@ -60,14 +60,14 @@ describe("图片下载与添加文件引用", () => {
         .map((node) => ({ id: node.dataset.testid, text: node.textContent })),
     );
     await writeFile(join(SHOTS, "file-tree.json"), JSON.stringify(rows, null, 2));
-    // 只有本 case 时单子目录会压成 .zcode-e2e/image-actions；有共享夹具时才逐级展开。
+    // 只有本 case 时单子目录会压成 .nekode-e2e/image-actions；有共享夹具时才逐级展开。
     if (
       rows.some(
         (row) =>
-          row.id === testId(TID_WORKSPACE_FILE_TREE_ROW, join(DEFAULT_WORKSPACE, ".zcode-e2e")),
+          row.id === testId(TID_WORKSPACE_FILE_TREE_ROW, join(DEFAULT_WORKSPACE, ".nekode-e2e")),
       )
     ) {
-      await clickFile(join(DEFAULT_WORKSPACE, ".zcode-e2e"));
+      await clickFile(join(DEFAULT_WORKSPACE, ".nekode-e2e"));
     }
     await clickFile(ROOT);
   });

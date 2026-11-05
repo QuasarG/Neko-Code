@@ -1,14 +1,14 @@
 import {
   zcodeProviderRefreshRegistryParamsSchema,
   zcodeProviderUpdateAccountConfigParamsSchema,
-  type ZCodeProviderRefreshRegistryResult,
-  type ZCodeProviderUpdateAccountConfigResult,
+  type NekodeProviderRefreshRegistryResult,
+  type NekodeProviderUpdateAccountConfigResult,
 } from "@zcode/shared";
 import { parseProcessAccountProviderConfigSnapshot } from "../app/process-provider-registry-runtime.js";
 import {
   parseParams,
   ProtocolRequestError,
-  type ZCodeProtocolAgentServerContext,
+  type NekodeProtocolAgentServerContext,
 } from "./server-types.js";
 
 /**
@@ -17,9 +17,9 @@ import {
  * 该协议传 Account Overlay 与对应状态；API Key、JWT 和动态 Header 由请求期鉴权协议处理。
  */
 export async function updateAccountProviderConfig(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   params: unknown,
-): Promise<ZCodeProviderUpdateAccountConfigResult> {
+): Promise<NekodeProviderUpdateAccountConfigResult> {
   const envelope = parseParams(zcodeProviderUpdateAccountConfigParamsSchema, params);
   const snapshot = parseProcessAccountProviderConfigSnapshot(envelope);
   if (!context.deps.syncAccountProviderConfig) {
@@ -41,9 +41,9 @@ export async function updateAccountProviderConfig(
  * Worker 仍持有旧 Registry 的窗口。
  */
 export async function refreshProviderRegistry(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   params: unknown,
-): Promise<ZCodeProviderRefreshRegistryResult> {
+): Promise<NekodeProviderRefreshRegistryResult> {
   const envelope = zcodeProviderRefreshRegistryParamsSchema.parse(params);
   if (!context.deps.refreshProviderRegistry) {
     throw new ProtocolRequestError(-32019, "Provider Registry refresh is not configured");

@@ -120,7 +120,6 @@ describe("闲时 turn 清理与当前执行约束共存", () => {
         }),
       );
       expect(record.activeOffPeakTaskId).toBe("previous-id");
-      expect(record.activeBotDeliveryTarget).toBeUndefined();
     },
   );
 });

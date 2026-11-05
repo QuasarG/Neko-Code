@@ -1,10 +1,10 @@
 import { expect, it, vi } from "vitest";
 // 大型工厂模块在准备阶段加载，避免转换开销占用端口行为用例的超时预算。
-import { createWorkspaceZCodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
+import { createWorkspaceNekodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
 import { createProviderRuntimeHeadersPort } from "../src/zcode-protocol/provider-runtime-headers.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
-import type { ZCodeAppOptions } from "../src/app/types.js";
-import type { ZCodeProviderRuntimeHeadersRequestParams } from "@zcode/shared";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeAppOptions } from "../src/app/types.js";
+import type { NekodeProviderRuntimeHeadersRequestParams } from "@zcode/shared";
 const workspace = {
   workspacePath: "/work",
   workspaceIdentity: "ssh:host:/work",
@@ -13,22 +13,22 @@ const workspace = {
 it("真实工厂同样装配唯一请求端口，完整账号事实透传而不写旧 ModelRef", async () => {
   const requestAuth = { apiKey: "team-key", headers: { "X-Team": "team-a" } };
   const requestClient = vi.fn(
-    async (_method: string, _params: ZCodeProviderRuntimeHeadersRequestParams) => ({
+    async (_method: string, _params: NekodeProviderRuntimeHeadersRequestParams) => ({
       headersApplied: true,
       requestAuth,
     }),
   );
-  const createZCodeApp = vi.fn(async (_options: Omit<ZCodeAppOptions, "providerRegistry">) => ({}));
-  await createWorkspaceZCodeApp(
+  const createNekodeApp = vi.fn(async (_options: Omit<NekodeAppOptions, "providerRegistry">) => ({}));
+  await createWorkspaceNekodeApp(
     {
-      deps: { createZCodeApp },
+      deps: { createNekodeApp },
       requestClient,
       notify: vi.fn(),
-    } as unknown as ZCodeProtocolAgentServerContext,
+    } as unknown as NekodeProtocolAgentServerContext,
     workspace,
     {},
   );
-  const port = createZCodeApp.mock.calls[0]![0].providerRuntimeHeadersPort!;
+  const port = createNekodeApp.mock.calls[0]![0].providerRuntimeHeadersPort!;
   const input = {
     sessionId: "session",
     providerId: "account:zai-team-coding-plan",
@@ -74,7 +74,7 @@ it("取消 runtime headers 反向 RPC 后向 Host 发送同一请求的专用取
       }),
   );
   const port = createProviderRuntimeHeadersPort(
-    { requestClient, notify } as unknown as ZCodeProtocolAgentServerContext,
+    { requestClient, notify } as unknown as NekodeProtocolAgentServerContext,
     workspace,
   );
   const pending = port.refreshBeforeModelRequest({
@@ -109,7 +109,7 @@ it("成功或普通错误不发送取消，保留原始响应和失败原因", a
     .mockResolvedValueOnce(response)
     .mockRejectedValueOnce(new Error("network-failure"));
   const port = createProviderRuntimeHeadersPort(
-    { requestClient, notify } as unknown as ZCodeProtocolAgentServerContext,
+    { requestClient, notify } as unknown as NekodeProtocolAgentServerContext,
     workspace,
   );
   const input = {
@@ -126,13 +126,13 @@ it("成功或普通错误不发送取消，保留原始响应和失败原因", a
 
 // 使用真实 RPC pending/timeout/response 实现，避免 mock 自己制造超时掩盖未配置时限。
 it("无人应答在总时限后失败并取消，迟到响应失效且下一请求可以成功", async () => {
-  const { ZCodeProtocolAgentServer } = await import("../src/zcode-protocol/server.js");
+  const { NekodeProtocolAgentServer } = await import("../src/zcode-protocol/server.js");
   vi.useFakeTimers();
   try {
-    const server = new ZCodeProtocolAgentServer({ createZCodeApp: vi.fn() });
+    const server = new NekodeProtocolAgentServer({ createNekodeApp: vi.fn() });
     const sink = vi.fn();
     server.setNotificationSink(sink);
-    const context = (server as unknown as { context: ZCodeProtocolAgentServerContext }).context;
+    const context = (server as unknown as { context: NekodeProtocolAgentServerContext }).context;
     const port = createProviderRuntimeHeadersPort(context, workspace);
     const input = {
       traceContext: { traceId: "timeout-trace" },
@@ -217,7 +217,7 @@ it("闲时 scope 经过执行投影和私有反向 RPC 保留，SSH workspace �
     });
   });
   const port = createProviderRuntimeHeadersPort(
-    { requestClient, notify: vi.fn() } as unknown as ZCodeProtocolAgentServerContext,
+    { requestClient, notify: vi.fn() } as unknown as NekodeProtocolAgentServerContext,
     workspace,
   );
   await expect(

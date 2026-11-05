@@ -39,18 +39,19 @@ export async function resolveBuildTimeConfig(
 ) {
   const defaults = await readPrivateDefaults(defaultsPath);
   return {
-    armsRumEndpoint: pickValue(env, defaults, "ZCODE_ARMS_RUM_ENDPOINT"),
-    telemetryReportEndpoint: pickValue(env, defaults, "ZCODE_TELEMETRY_REPORT_ENDPOINT"),
+    // 遥测出网已停用：环境变量与私有默认配置都不能再启用 ARMS / 事件上报端点。
+    armsRumEndpoint: "",
+    telemetryReportEndpoint: "",
     autoUpdateEnabled: ENABLED_VALUES.has(
-      pickValue(env, defaults, "ZCODE_AUTO_UPDATE").toLowerCase(),
+      pickValue(env, defaults, "NEKODE_AUTO_UPDATE").toLowerCase(),
     ),
   };
 }
 
 export function createBuildTimeConfigDefines(config) {
   return {
-    __ZCODE_ARMS_RUM_ENDPOINT__: JSON.stringify(config.armsRumEndpoint),
-    __ZCODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify(config.telemetryReportEndpoint),
-    __ZCODE_AUTO_UPDATE_ENABLED__: JSON.stringify(config.autoUpdateEnabled),
+    __NEKODE_ARMS_RUM_ENDPOINT__: JSON.stringify(config.armsRumEndpoint),
+    __NEKODE_TELEMETRY_REPORT_ENDPOINT__: JSON.stringify(config.telemetryReportEndpoint),
+    __NEKODE_AUTO_UPDATE_ENABLED__: JSON.stringify(config.autoUpdateEnabled),
   };
 }

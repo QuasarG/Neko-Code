@@ -6,7 +6,7 @@ import { AssistantPreviewCards } from "@/AssistantPreviewCards.js";
 import { PlatformProvider } from "@/hooks/usePlatform.js";
 import { ServiceProvider } from "@/hooks/useServices.js";
 import { TabStoreProvider } from "@/store/TabStoreProvider.js";
-import { ZCodeIntlProvider } from "@/i18n/IntlProvider.js";
+import { NekodeIntlProvider } from "@/i18n/IntlProvider.js";
 import "@/styles.css";
 
 const params = new URLSearchParams(location.search);
@@ -68,7 +68,7 @@ function Fixture() {
 }
 
 createRoot(document.getElementById("root")!).render(
-  <ZCodeIntlProvider initialLocale={locale}>
+  <NekodeIntlProvider initialLocale={locale}>
     <ServiceProvider services={services}>
       <PlatformProvider platform={platform}>
         <TabStoreProvider>
@@ -76,5 +76,5 @@ createRoot(document.getElementById("root")!).render(
         </TabStoreProvider>
       </PlatformProvider>
     </ServiceProvider>
-  </ZCodeIntlProvider>,
+  </NekodeIntlProvider>,
 );

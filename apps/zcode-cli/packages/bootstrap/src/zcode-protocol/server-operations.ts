@@ -3,7 +3,7 @@ import {
   isReadonlyAgentSessionKind,
   OFF_PEAK_EXECUTION_TOOL_DENYLIST,
 } from "@zcode/shared";
-/* eslint-disable max-lines -- ZCode Protocol 的 session/workspace 方法共享同一个 server context 与 snapshot helpers，迁移期先集中维护。 */
+/* eslint-disable max-lines -- Nekode Protocol 的 session/workspace 方法共享同一个 server context 与 snapshot helpers，迁移期先集中维护。 */
 import { observeSessionDebug } from "./session-debug.js";
 import {
   TASK_LIST_SESSION_TYPES,
@@ -47,8 +47,8 @@ import {
 } from "@zcode/contracts";
 import {
   subagentRuntimeConfigSchema,
-  DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
-  ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+  DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+  NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
   zcodeProtocolErrorCodes,
   zcodeProtocolMethods,
   zcodeSessionCancelBackgroundTaskParamsSchema,
@@ -78,20 +78,19 @@ import {
   isRemoteWorkspaceIdentity,
   parseRemoteWorkspaceIdentity,
   type AppToolSearchMode,
-  type ZCodeAutomationBotDeliveryTarget,
-  type ZCodeSessionCreateParams,
-  type ZCodeDeliveryKind,
+  type NekodeSessionCreateParams,
+  type NekodeDeliveryKind,
   type IntegratedTerminalShellSelection,
-  type ZCodeSessionRuntimePreferencesScope,
-  type ZCodeSessionRuntimePreferencesResult,
-  type ZCodeModelContextBudgetStrategy,
-  type ZCodeProtocolTrace,
-  type ZCodeSessionEvent,
-  type ZCodeSessionHistoryTarget,
-  type ZCodeSessionResumeParams,
-  type ZCodeSessionPersistence,
-  type ZCodeWorkspaceRef,
-  type ZCodeStateUpdatedNotification,
+  type NekodeSessionRuntimePreferencesScope,
+  type NekodeSessionRuntimePreferencesResult,
+  type NekodeModelContextBudgetStrategy,
+  type NekodeProtocolTrace,
+  type NekodeSessionEvent,
+  type NekodeSessionHistoryTarget,
+  type NekodeSessionResumeParams,
+  type NekodeSessionPersistence,
+  type NekodeWorkspaceRef,
+  type NekodeStateUpdatedNotification,
 } from "@zcode/shared";
 import {
   buildSessionSnapshot,
@@ -111,16 +110,15 @@ import {
   protocolTraceFromTraceContext,
   parseParams,
   requireSession,
-  type ZCodeProtocolAgentServerContext,
-  type ZCodeProtocolSessionRecord,
-  type ZCodeProtocolToolInputTransmissionState,
+  type NekodeProtocolAgentServerContext,
+  type NekodeProtocolSessionRecord,
+  type NekodeProtocolToolInputTransmissionState,
 } from "./server-types.js";
-import { createWorkspaceZCodeApp, ensureSessionModelAvailable } from "./workspace-model-runtime.js";
+import { createWorkspaceNekodeApp, ensureSessionModelAvailable } from "./workspace-model-runtime.js";
 import { buildAppUsageSnapshot, resolveTzOffsetMs } from "./usage-stats-builder.js";
 import { createProtocolInteractionBroker } from "./interaction-broker.js";
 import { createProtocolAutomationPort } from "./automation-port.js";
 import { createProtocolOffPeakPort } from "./offpeak-port.js";
-import { createProtocolTopicResourcePort } from "./topic-resource-port.js";
 import { createProtocolBrowserControlBroker } from "./browser-control-broker.js";
 import { mapComputerUseOperationEvent } from "./computer-use-operation-event.js";
 import { protocolMcpServersToRuntimeMcpConfig } from "./protocol-mcp-config.js";
@@ -150,19 +148,19 @@ const REMOTE_AUTOMATION_TOOL_NAMES = [
 ] as const;
 
 type ProtocolGoalTarget = NonNullable<
-  Awaited<ReturnType<NonNullable<ZCodeProtocolSessionRecord["app"]["readTarget"]>>>
+  Awaited<ReturnType<NonNullable<NekodeProtocolSessionRecord["app"]["readTarget"]>>>
 >;
 
-type ZCodeSessionRecordParams = (
-  | ZCodeSessionCreateParams
-  | (ZCodeSessionResumeParams & {
-      mode?: ZCodeSessionCreateParams["mode"];
-      model?: ZCodeSessionCreateParams["model"];
-      parentSessionId?: ZCodeSessionCreateParams["parentSessionId"];
-      thoughtLevel?: ZCodeSessionCreateParams["thoughtLevel"];
+type NekodeSessionRecordParams = (
+  | NekodeSessionCreateParams
+  | (NekodeSessionResumeParams & {
+      mode?: NekodeSessionCreateParams["mode"];
+      model?: NekodeSessionCreateParams["model"];
+      parentSessionId?: NekodeSessionCreateParams["parentSessionId"];
+      thoughtLevel?: NekodeSessionCreateParams["thoughtLevel"];
       // 自动化会话会在创建期关闭标题二次生成，而 create/resume
       // 共用 record 初始化函数；resume 兼容分支也必须声明该策略字段。
-      titleGenerationEnabled?: ZCodeSessionCreateParams["titleGenerationEnabled"];
+      titleGenerationEnabled?: NekodeSessionCreateParams["titleGenerationEnabled"];
     })
 ) & { taskType?: SessionTaskType };
 
@@ -170,7 +168,7 @@ interface SessionStartupPreferences {
   additionalDirectories?: readonly string[];
   subagentRuntimeConfigEnabled?: boolean;
   memoryEnabled: boolean;
-  modelContextBudgetStrategy: ZCodeModelContextBudgetStrategy;
+  modelContextBudgetStrategy: NekodeModelContextBudgetStrategy;
   nativeSearchEnhancementsEnabled: boolean;
   toolSearchMode: AppToolSearchMode;
   resolveInitialBashShellSelection: () => Promise<ExecutionShellSelection | undefined>;
@@ -178,10 +176,10 @@ interface SessionStartupPreferences {
 
 type SessionStartupPreferencesSource =
   | { kind: "host" }
-  | { kind: "inherit"; parent: ZCodeProtocolSessionRecord };
+  | { kind: "inherit"; parent: NekodeProtocolSessionRecord };
 
 function resolveSupportedAppThoughtLevel(
-  app: Pick<ZCodeProtocolSessionRecord["app"], "listThoughtLevels">,
+  app: Pick<NekodeProtocolSessionRecord["app"], "listThoughtLevels">,
   thoughtLevel: string | undefined,
 ): string | undefined {
   const normalizedThoughtLevel = thoughtLevel?.trim();
@@ -226,17 +224,17 @@ interface LiveProtocolStreamingDeltaBatch {
 }
 
 const liveProtocolStreamingDeltaBatches = new WeakMap<
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolSessionRecord,
   Map<string, LiveProtocolStreamingDeltaBatch>
 >();
 
-function protocolEventSequenceKey(deliveryKind?: ZCodeDeliveryKind): string {
+function protocolEventSequenceKey(deliveryKind?: NekodeDeliveryKind): string {
   return deliveryKind ?? DEFAULT_PROTOCOL_EVENT_SEQUENCE_KEY;
 }
 
 function getProtocolEventSequenceState(
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
 ) {
   const key = protocolEventSequenceKey(deliveryKind);
   const existing = record.protocolEventSequences.get(key);
@@ -252,15 +250,15 @@ function getProtocolEventSequenceState(
 }
 
 function getProtocolToolInputTransmissionState(
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
-): ZCodeProtocolToolInputTransmissionState {
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
+): NekodeProtocolToolInputTransmissionState {
   const key = protocolEventSequenceKey(deliveryKind);
   const existing = record.protocolToolInputTransmissions.get(key);
   if (existing) {
     return existing;
   }
-  const created: ZCodeProtocolToolInputTransmissionState = {
+  const created: NekodeProtocolToolInputTransmissionState = {
     streamedToolCallIdsWithInput: new Set(),
   };
   record.protocolToolInputTransmissions.set(key, created);
@@ -272,9 +270,9 @@ function protocolSourceEventKey(event: SessionEvent): string {
 }
 
 function assignProtocolEventSeq(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   event: SessionEvent,
-  deliveryKind?: ZCodeDeliveryKind,
+  deliveryKind?: NekodeDeliveryKind,
 ): number {
   const state = getProtocolEventSequenceState(record, deliveryKind);
   const sourceEventKey = protocolSourceEventKey(event);
@@ -301,8 +299,8 @@ function numberValue(value: unknown): number | undefined {
 }
 
 function getLiveProtocolStreamingDeltaBatchState(
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
 ): LiveProtocolStreamingDeltaBatch {
   let byDeliveryKind = liveProtocolStreamingDeltaBatches.get(record);
   if (!byDeliveryKind) {
@@ -472,8 +470,8 @@ function shouldFlushProtocolStreamingDeltaBatchForInterval(
 }
 
 function markStreamedToolInputIfPresent(
-  mappedEvent: ZCodeSessionEvent,
-  toolInputTransmissions: ZCodeProtocolToolInputTransmissionState,
+  mappedEvent: NekodeSessionEvent,
+  toolInputTransmissions: NekodeProtocolToolInputTransmissionState,
 ): void {
   if (mappedEvent.type !== "model.streaming") {
     return;
@@ -491,9 +489,9 @@ function markStreamedToolInputIfPresent(
 
 function omitDuplicateScheduledToolInput(
   event: SessionEvent,
-  mappedEvent: ZCodeSessionEvent,
-  toolInputTransmissions: ZCodeProtocolToolInputTransmissionState,
-): ZCodeSessionEvent {
+  mappedEvent: NekodeSessionEvent,
+  toolInputTransmissions: NekodeProtocolToolInputTransmissionState,
+): NekodeSessionEvent {
   markStreamedToolInputIfPresent(mappedEvent, toolInputTransmissions);
   if (event.type !== SessionEventType.ToolCallScheduled || mappedEvent.type !== "tool.updated") {
     return mappedEvent;
@@ -638,7 +636,7 @@ function decodeTextProtocolAttachment(record: Record<string, unknown>): string |
 }
 
 function shouldHideProtocolSessionEvent(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
   event: SessionEvent,
 ): boolean {
   const payload = asRecord(event.payload);
@@ -659,20 +657,20 @@ function shouldHideProtocolSessionEvent(
 }
 
 function mapProtocolSessionEvent(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   event: SessionEvent,
-  deliveryKind?: ZCodeDeliveryKind,
+  deliveryKind?: NekodeDeliveryKind,
   options: {
-    toolInputTransmissions?: ZCodeProtocolToolInputTransmissionState;
+    toolInputTransmissions?: NekodeProtocolToolInputTransmissionState;
   } = {},
-): ZCodeSessionEvent | null {
+): NekodeSessionEvent | null {
   if (shouldHideProtocolSessionEvent(record, event)) {
     return null;
   }
   if (!shouldExposeSessionEventToProtocol(event)) {
     const payload = asRecord(event.payload);
-    context.logger?.debug("ZCode Protocol session event filtered", {
+    context.logger?.debug("Nekode Protocol session event filtered", {
       event: "zcode_protocol.session_event.filtered",
       eventId: String(event.id),
       module: "bootstrap.zcode_protocol",
@@ -685,7 +683,7 @@ function mapProtocolSessionEvent(
     return null;
   }
   // eventStore 的 sequenceNumber 是内部全量账本，包含被协议过滤的
-  // tool_input_delta 等高频模型中间态。ZCode Protocol 的 seq 是 UI/replay 的恢复键，
+  // tool_input_delta 等高频模型中间态。Nekode Protocol 的 seq 是 UI/replay 的恢复键，
   // 必须按“协议实际可见事件流”重新连续编号，不能直接暴露内部 sequenceNumber。
   // sequenceNumber=0 的 subagent mirror/live-only 事件没有进入父 eventStore，也必须
   // 按 eventId 分配独立 seq，不能全部复用同一个 0 号映射。
@@ -704,14 +702,14 @@ function mapProtocolSessionEvent(
 }
 
 async function readProtocolSessionEvents(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
   options: { afterSeq?: number; limit?: number } = {},
-): Promise<ZCodeSessionEvent[]> {
+): Promise<NekodeSessionEvent[]> {
   const events = await record.eventStore.getEvents(record.app.sessionId as SessionId);
-  const visibleEvents: ZCodeSessionEvent[] = [];
-  const toolInputTransmissions: ZCodeProtocolToolInputTransmissionState = {
+  const visibleEvents: NekodeSessionEvent[] = [];
+  const toolInputTransmissions: NekodeProtocolToolInputTransmissionState = {
     streamedToolCallIdsWithInput: new Set(),
   };
   let pendingStreamingDeltaBatch: ProtocolStreamingDeltaBatch | undefined;
@@ -784,18 +782,18 @@ async function readProtocolSessionEvents(
 }
 
 async function getProtocolEventSeq(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
 ): Promise<number> {
   await readProtocolSessionEvents(context, record, deliveryKind);
   return getProtocolEventSequenceState(record, deliveryKind).lastSeq;
 }
 
 function logProtocolSessionEventSent(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sourceEvent: SessionEvent,
-  mappedEvent: ZCodeSessionEvent,
+  mappedEvent: NekodeSessionEvent,
 ): void {
   const payload =
     typeof mappedEvent.payload === "object" && mappedEvent.payload !== null
@@ -805,7 +803,7 @@ function logProtocolSessionEventSent(
     method: "session/event",
     params: mappedEvent,
   };
-  context.logger?.debug("ZCode Protocol session event sent", {
+  context.logger?.debug("Nekode Protocol session event sent", {
     deliveryKind: mappedEvent.deliveryKind,
     event: "zcode_protocol.session_event.sent",
     eventId: mappedEvent.eventId,
@@ -986,7 +984,7 @@ function slugifyImportedSession(value: string): string {
 
 function isImportedHistoryMessage(
   message: MessageWithParts,
-  source: NonNullable<ZCodeSessionCreateParams["importedHistory"]>["source"],
+  source: NonNullable<NekodeSessionCreateParams["importedHistory"]>["source"],
 ): boolean {
   const messageId = String(message.info.id);
   if (/^msg_import_\d+$/u.test(messageId) || messageId.startsWith("msg_claude-import-")) {
@@ -1003,9 +1001,9 @@ function isImportedHistoryMessage(
 }
 
 async function removePreviousImportedSessionHistory(params: {
-  sessionStore: NonNullable<ZCodeProtocolAgentServerContext["deps"]["sessionStore"]>;
+  sessionStore: NonNullable<NekodeProtocolAgentServerContext["deps"]["sessionStore"]>;
   sessionId: SessionId;
-  source: NonNullable<ZCodeSessionCreateParams["importedHistory"]>["source"];
+  source: NonNullable<NekodeSessionCreateParams["importedHistory"]>["source"];
 }): Promise<number> {
   const existingMessages = await params.sessionStore.messages({
     sessionID: params.sessionId,
@@ -1029,10 +1027,10 @@ async function removePreviousImportedSessionHistory(params: {
 }
 
 async function persistImportedSessionHistory(params: {
-  context: ZCodeProtocolAgentServerContext;
-  record: ZCodeProtocolSessionRecord;
+  context: NekodeProtocolAgentServerContext;
+  record: NekodeProtocolSessionRecord;
   sessionId: SessionId;
-  createParams: ZCodeSessionCreateParams;
+  createParams: NekodeSessionCreateParams;
 }): Promise<void> {
   const importedHistory = params.createParams.importedHistory;
   const sessionStore = params.context.deps.sessionStore;
@@ -1232,7 +1230,7 @@ async function persistImportedSessionHistory(params: {
     });
   }
 
-  params.context.logger?.info("ZCode Protocol imported history persisted", {
+  params.context.logger?.info("Nekode Protocol imported history persisted", {
     event: "zcode_protocol.session_import.persisted",
     messageCount: importedHistory.messages.length,
     module: "bootstrap.zcode_protocol",
@@ -1245,9 +1243,9 @@ async function persistImportedSessionHistory(params: {
 }
 
 export async function createSession(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-  trace?: ZCodeProtocolTrace,
+  trace?: NekodeProtocolTrace,
 ) {
   return createSessionWithProjection(context, rawParams, trace, async (record) => {
     const result = await snapshotWithDiagnostics(context, record);
@@ -1261,7 +1259,7 @@ export async function createSession(
 
 /** V4 创建只需要 record；不要为了丢弃的 legacy snapshot 强制解析空模型。 */
 export async function createSessionRecordForV4(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   return createSessionWithProjection(context, rawParams, undefined, async (record) => ({
@@ -1270,11 +1268,11 @@ export async function createSessionRecordForV4(
 }
 
 async function createSessionWithProjection<T>(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-  trace: ZCodeProtocolTrace | undefined,
+  trace: NekodeProtocolTrace | undefined,
   project: (
-    record: ZCodeProtocolSessionRecord,
+    record: NekodeProtocolSessionRecord,
   ) => Promise<{ value: T; phaseDurationsMs?: SnapshotPhaseDurationsMs; messageCount?: number }>,
 ): Promise<T> {
   const params = parseParams(zcodeSessionCreateParamsSchema, rawParams);
@@ -1299,18 +1297,18 @@ async function createSessionWithProjection<T>(
 }
 
 async function materializeCreatedSession<T>(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-  trace: ZCodeProtocolTrace | undefined,
+  trace: NekodeProtocolTrace | undefined,
   project: (
-    record: ZCodeProtocolSessionRecord,
+    record: NekodeProtocolSessionRecord,
   ) => Promise<{ value: T; phaseDurationsMs?: SnapshotPhaseDurationsMs; messageCount?: number }>,
 ): Promise<T> {
   const params = parseParams(zcodeSessionCreateParamsSchema, rawParams);
   const startedAt = Date.now();
   const sessionId = params.sessionId! as SessionId;
   const workspace = params.workspace;
-  context.logger?.info("ZCode Protocol session/create started", {
+  context.logger?.info("Nekode Protocol session/create started", {
     event: "zcode_protocol.session_create.started",
     hasInitialModel: params.model !== undefined,
     hasInitialThoughtLevel: params.thoughtLevel !== undefined,
@@ -1361,7 +1359,7 @@ async function materializeCreatedSession<T>(
       } else if (initialThoughtLevel) {
         // workspace 默认 thoughtLevel 可能来自上一个模型。新 session 继承另一模型时，
         // 不能把不支持的档位硬塞给 runtime，否则创建阶段会抛 Unsupported reasoning effort。
-        context.logger?.warn("ZCode Protocol session/create skipped unsupported thought level", {
+        context.logger?.warn("Nekode Protocol session/create skipped unsupported thought level", {
           event: "zcode_protocol.session_create.thought_level_skipped",
           module: "bootstrap.zcode_protocol",
           requestedThoughtLevel: initialThoughtLevel,
@@ -1375,7 +1373,7 @@ async function materializeCreatedSession<T>(
     if (params.importedHistory) {
       // 历史导入过去只写 legacy snapshot，taskId 不是真实 protocol sessionId，
       // setModel/sendPrompt 会打到不存在的 runtime。这里在创建期把历史写入 sessionStore 并 resume，
-      // 让导入结果从第一刻起就是可续聊、可切模型的 ZCode session。
+      // 让导入结果从第一刻起就是可续聊、可切模型的 Nekode session。
       await persistImportedSessionHistory({
         context,
         record,
@@ -1390,7 +1388,7 @@ async function materializeCreatedSession<T>(
     const createdSnapshot = createdSnapshotResult.value;
     snapshotPhaseDurationsMs = createdSnapshotResult.phaseDurationsMs;
     snapshotDurationMs = Date.now() - snapshotStartedAt;
-    context.logger?.info("ZCode Protocol session/create completed", {
+    context.logger?.info("Nekode Protocol session/create completed", {
       durationMs: Date.now() - startedAt,
       event: "zcode_protocol.session_create.completed",
       hasInitialModel: initialModel !== undefined,
@@ -1412,7 +1410,7 @@ async function materializeCreatedSession<T>(
     context.assertServing?.();
     return createdSnapshot;
   } catch (error) {
-    context.logger?.warn("ZCode Protocol session/create failed", {
+    context.logger?.warn("Nekode Protocol session/create failed", {
       durationMs: Date.now() - startedAt,
       errorMessage: error instanceof Error ? error.message : String(error),
       event: "zcode_protocol.session_create.failed",
@@ -1437,7 +1435,7 @@ async function materializeCreatedSession<T>(
 }
 
 export interface ActivatedSessionForResume {
-  record: ZCodeProtocolSessionRecord;
+  record: NekodeProtocolSessionRecord;
   knownSession?: SessionInfo;
   /** 仅供启动本次 V4 hydration，不写入 record 或跨请求缓存。 */
   persistedMessages?: MessageWithParts[];
@@ -1445,9 +1443,9 @@ export interface ActivatedSessionForResume {
 
 /** 只拆掉本次失败的 record；不删除持久历史或 gateway publisher。 */
 export async function discardFailedSessionResume(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
 ): Promise<void> {
   if (context.sessions.get(sessionId) !== record) return;
   await discardSessionRuntime(context, sessionId);
@@ -1461,8 +1459,8 @@ export async function discardFailedSessionResume(
  * snapshot 之前的原有顺序与副作用，让 V4 随后用自己的 durable projection 水合。
  */
 export async function activateSessionForResume(
-  context: ZCodeProtocolAgentServerContext,
-  params: ZCodeSessionResumeParams,
+  context: NekodeProtocolAgentServerContext,
+  params: NekodeSessionResumeParams,
   options: { reusePersistedMessages?: boolean; persistedMessages?: MessageWithParts[] } = {},
 ): Promise<ActivatedSessionForResume> {
   let activated: ActivatedSessionForResume | undefined;
@@ -1476,13 +1474,13 @@ export async function activateSessionForResume(
 
 /** 生命周期 owner 专用的初始化执行面；外部恢复必须调用 activateSessionForResume。 */
 export async function activateSessionRuntime(
-  context: ZCodeProtocolAgentServerContext,
-  params: ZCodeSessionResumeParams,
+  context: NekodeProtocolAgentServerContext,
+  params: NekodeSessionResumeParams,
   options: { reusePersistedMessages?: boolean; persistedMessages?: MessageWithParts[] } = {},
 ): Promise<ActivatedSessionForResume> {
   const resumeStartedAt = Date.now();
   const activeBeforeWait = context.sessions.has(params.sessionId);
-  context.logger?.debug("ZCode Protocol session resume started", {
+  context.logger?.debug("Nekode Protocol session resume started", {
     activeBeforeWait,
     event: "zcode_protocol.session.resume_started",
     hasSessionStore: Boolean(context.deps.sessionStore),
@@ -1497,7 +1495,7 @@ export async function activateSessionRuntime(
   if (!session || session.time.deleted !== undefined) {
     // 诊断：冷恢复只有在持久化记录也不存在时才会走到这里；单凭错误文本无法和
     // readSession 的“runtime 尚未活跃”区分，因此把两层状态和等待耗时一起落盘。
-    context.logger?.warn("ZCode Protocol session resume found no persisted record", {
+    context.logger?.warn("Nekode Protocol session resume found no persisted record", {
       activeBeforeWait,
       activeSessionCount: context.sessions.size,
       durationMs: Math.max(0, Date.now() - resumeStartedAt),
@@ -1566,7 +1564,7 @@ export async function activateSessionRuntime(
   if (options.reusePersistedMessages && resumeResult.persistedMessagesReloadRequired) {
     persistedMessages = await readPersistedSessionMessages(context, params.sessionId);
   }
-  context.logger?.info("ZCode Protocol session resume completed", {
+  context.logger?.info("Nekode Protocol session resume completed", {
     activeSessionCount: context.sessions.size,
     durationMs: Math.max(0, Date.now() - resumeStartedAt),
     event: "zcode_protocol.session.resume_completed",
@@ -1583,14 +1581,14 @@ export async function activateSessionRuntime(
   };
 }
 
-export async function resumeSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function resumeSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionResumeParamsSchema, rawParams);
   const activated = await activateSessionForResume(context, params);
   return await snapshot(context, activated.record, activated.knownSession);
 }
 
 async function repairLegacyRemoteSessionWorkspaceForResume(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   session: SessionInfo,
 ): Promise<SessionInfo> {
   if (session.workspaceID || !context.deps.sessionStore?.repairLegacyRemoteSessionWorkspace) {
@@ -1655,7 +1653,7 @@ async function repairLegacyRemoteSessionWorkspaceForResume(
 }
 
 function resolveLegacyRemoteWorkspace(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   legacyWorkspaceDirectory: string,
 ): { workspaceIdentity: WorkspaceId; workspacePath: string } | null {
   const currentWorkspacePath = context.deps.cwd ?? process.cwd();
@@ -1687,9 +1685,9 @@ function resolveLegacyRemoteWorkspace(
 }
 
 async function resolvePersistedDirectorySession(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   session: SessionInfo,
-  workspace: ZCodeWorkspaceRef,
+  workspace: NekodeWorkspaceRef,
   resolveOwner: boolean,
 ): Promise<SessionInfo | null> {
   const expectedKey = workspace.workspaceIdentity?.trim() || workspace.workspacePath;
@@ -1710,7 +1708,7 @@ async function resolvePersistedDirectorySession(
   return null;
 }
 
-export async function listSessions(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function listSessions(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionListParamsSchema, rawParams ?? {});
   const store = context.deps.sessionStore;
   // 显式 ID 查询只读持久化身份，供 Host 修复旧索引；不能为了识别 child 激活 runtime。
@@ -1775,7 +1773,7 @@ export async function listSessions(context: ZCodeProtocolAgentServerContext, raw
 }
 
 export async function listSessionSubagents(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   persistedMessages?: MessageWithParts[],
 ) {
@@ -1795,7 +1793,7 @@ export async function listSessionSubagents(
   if (!parentSession) {
     // 诊断：hydrate 会复用子任务种子读取；若 task index/旧 ACP task 残留了无效 ID，
     // 这里会把“持久化记录不存在”包装成 v4.hydrate，必须记录调用阶段而不是只看错误文本。
-    context.logger?.warn("ZCode Protocol session subagents has no persisted parent", {
+    context.logger?.warn("Nekode Protocol session subagents has no persisted parent", {
       activeSessionCount: context.sessions.size,
       activeSession: Boolean(liveParent),
       event: "zcode_protocol.session.persisted_missing",
@@ -1869,7 +1867,7 @@ export async function listSessionSubagents(
 
 const APP_USAGE_RANGE_DAYS: Record<string, number> = { "7d": 7, "30d": 30 };
 
-export async function getUsageStats(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function getUsageStats(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeUsageStatsParamsSchema, rawParams ?? {});
   const timeZone = params.timeZone ?? "UTC";
   const until = Date.now();
@@ -1923,7 +1921,7 @@ export async function getUsageStats(context: ZCodeProtocolAgentServerContext, ra
   return buildAppUsageSnapshot(result, buildOptions);
 }
 
-export async function readSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function readSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionReadParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId, {
     deliveryKind: params.deliveryKind,
@@ -1943,7 +1941,7 @@ export async function readSession(context: ZCodeProtocolAgentServerContext, rawP
  * V4 冷恢复 usage 的窄读取：复用 legacy snapshot 的 meter 计算，但不映射完整协议快照。
  */
 export async function readSessionContextUsage(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
   persistedMessages?: MessageWithParts[],
 ) {
@@ -1970,7 +1968,7 @@ export async function readSessionContextUsage(
   });
 }
 
-export async function readMessages(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function readMessages(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionMessagesParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   const allMessages = await readActiveSessionMessages(context, record);
@@ -1983,7 +1981,7 @@ export async function readMessages(context: ZCodeProtocolAgentServerContext, raw
   };
 }
 
-export async function readEvents(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function readEvents(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionEventsParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   return {
@@ -1995,7 +1993,7 @@ export async function readEvents(context: ZCodeProtocolAgentServerContext, rawPa
 }
 
 export async function subscribeSession(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   const params = parseParams(zcodeSessionSubscribeParamsSchema, rawParams);
@@ -2022,7 +2020,7 @@ export async function subscribeSession(
   };
 }
 
-export async function sendPrompt(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function sendPrompt(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionSendParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   // legacy 输入入口同样必须保持子代理只读，不能绕过 V4 用户输入准入。
@@ -2034,7 +2032,7 @@ export async function sendPrompt(context: ZCodeProtocolAgentServerContext, rawPa
   assertExpectedRevision(record, params.expectedRevision);
   assertExpectedProviderRevision(context, record, params.expectedProviderRevision);
   if (record.activeAbortController) {
-    context.logger?.warn("ZCode Protocol session/send rejected: active prompt exists", {
+    context.logger?.warn("Nekode Protocol session/send rejected: active prompt exists", {
       inputId: params.inputId,
       queryId: params.queryId,
       sessionId: params.sessionId,
@@ -2058,7 +2056,7 @@ export async function sendPrompt(context: ZCodeProtocolAgentServerContext, rawPa
   }
   const abortController = new AbortController();
   record.activeAbortController = abortController;
-  context.logger?.info("ZCode Protocol session/send accepted", {
+  context.logger?.info("Nekode Protocol session/send accepted", {
     attachmentCount: params.attachments?.length ?? 0,
     inputId: params.inputId,
     queryId: params.queryId,
@@ -2108,7 +2106,6 @@ export async function sendPrompt(context: ZCodeProtocolAgentServerContext, rawPa
             }
           : {}),
       toolDenylist: params.toolDenylist,
-      botDeliveryTarget: params.botDeliveryTarget,
     }),
   ).catch(() => {
     // 后台 turn 的错误会通过状态/事件流降级上报；这里兜底防止协议进程出现 unhandled rejection。
@@ -2119,7 +2116,7 @@ export async function sendPrompt(context: ZCodeProtocolAgentServerContext, rawPa
   return afterPromptAccepted(context, record, "prompt_started");
 }
 
-export async function compactSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function compactSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionCompactParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   assertExpectedRevision(record, params.expectedRevision);
@@ -2179,8 +2176,8 @@ export async function compactSession(context: ZCodeProtocolAgentServerContext, r
 }
 
 async function runCompactTurnInBackground(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   params: {
     abortController: AbortController;
     command: string;
@@ -2189,7 +2186,7 @@ async function runCompactTurnInBackground(
 ): Promise<void> {
   const startedAt = Date.now();
   let mutationReason = "session_compacted";
-  context.logger?.info("ZCode Protocol background compact started", {
+  context.logger?.info("Nekode Protocol background compact started", {
     inputId: params.inputId,
     sessionId: record.app.sessionId,
     workspacePath: record.workspace.workspacePath,
@@ -2199,7 +2196,7 @@ async function runCompactTurnInBackground(
       abortSignal: params.abortController.signal,
       inputId: params.inputId,
     });
-    context.logger?.info("ZCode Protocol background compact completed", {
+    context.logger?.info("Nekode Protocol background compact completed", {
       durationMs: Date.now() - startedAt,
       inputId: params.inputId,
       sessionId: record.app.sessionId,
@@ -2209,7 +2206,7 @@ async function runCompactTurnInBackground(
     mutationReason = params.abortController.signal.aborted
       ? "session_compact_cancelled"
       : "session_compact_failed";
-    context.logger?.warn("ZCode Protocol background compact failed", {
+    context.logger?.warn("Nekode Protocol background compact failed", {
       durationMs: Date.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
       inputId: params.inputId,
@@ -2226,7 +2223,7 @@ async function runCompactTurnInBackground(
   await afterStateMutation(context, record, mutationReason);
 }
 
-export async function goalSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function goalSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionGoalParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   assertExpectedRevision(record, params.expectedRevision);
@@ -2262,13 +2259,13 @@ export async function goalSession(context: ZCodeProtocolAgentServerContext, rawP
     const activeAbortController = record.activeAbortController;
     const target = await record.app.updateTargetStatus("paused");
     if (target && activeAbortController) {
-      context.logger?.info("ZCode Protocol goal pause aborting active turn", {
+      context.logger?.info("Nekode Protocol goal pause aborting active turn", {
         inputId: params.inputId,
         sessionId: params.sessionId,
         targetId: target.targetID,
         workspacePath: record.workspace.workspacePath,
       });
-      activeAbortController.abort(new Error("ZCode Protocol goal paused"));
+      activeAbortController.abort(new Error("Nekode Protocol goal paused"));
     }
     const snapshotAfterGoal = await afterStateMutation(context, record, "goal_paused");
     return {
@@ -2333,7 +2330,7 @@ export async function goalSession(context: ZCodeProtocolAgentServerContext, rawP
   });
 }
 
-export async function forkSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function forkSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionForkParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   assertExpectedRevision(record, params.expectedRevision);
@@ -2373,9 +2370,9 @@ export async function registerForkedSession(
 }
 
 async function registerForkedSessionRuntime(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  fork: Awaited<ReturnType<ZCodeProtocolSessionRecord["app"]["forkFromCheckpoint"]>>,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  fork: Awaited<ReturnType<NekodeProtocolSessionRecord["app"]["forkFromCheckpoint"]>>,
   options: {
     runtimeConfig: {
       mode: CollaborationMode;
@@ -2446,9 +2443,9 @@ async function registerForkedSessionRuntime(
 }
 
 async function inheritForkedSessionTarget(
-  context: ZCodeProtocolAgentServerContext,
-  parentRecord: ZCodeProtocolSessionRecord,
-  forkRecord: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  parentRecord: NekodeProtocolSessionRecord,
+  forkRecord: NekodeProtocolSessionRecord,
   forkedSessionId: string,
 ) {
   const parentTarget = await parentRecord.app.readTarget();
@@ -2477,8 +2474,8 @@ async function inheritForkedSessionTarget(
 }
 
 async function runPromptTurnInBackground(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   params: {
     abortController: AbortController;
     intent?: SendInputOptions["intent"];
@@ -2492,11 +2489,10 @@ async function runPromptTurnInBackground(
     queryId?: QueryId;
     content: string;
     toolDenylist?: readonly string[];
-    botDeliveryTarget?: ZCodeAutomationBotDeliveryTarget;
   } & TurnBackgroundAttribution,
 ): Promise<void> {
   const startedAt = Date.now();
-  context.logger?.info("ZCode Protocol background turn started", {
+  context.logger?.info("Nekode Protocol background turn started", {
     inputId: params.inputId,
     queryId: params.queryId,
     sessionId: record.app.sessionId,
@@ -2506,7 +2502,6 @@ async function runPromptTurnInBackground(
   let mutationReason = "prompt_completed";
   const previousAutomationId = record.activeAutomationId;
   const previousOffPeakTaskId = record.activeOffPeakTaskId;
-  const previousBotDeliveryTarget = record.activeBotDeliveryTarget;
   const activeAutomationId = resolvePromptTurnAutomationId(params);
   const activeOffPeakTaskId = resolvePromptTurnOffPeakTaskId(params);
   const turnToolDisallowlist = buildPromptTurnToolDisallowlist(
@@ -2523,7 +2518,6 @@ async function runPromptTurnInBackground(
     // 闲时派发轮同型兜底标记，供 offpeak-port 拒绝递归 OffPeakCreate。
     record.activeOffPeakTaskId = activeOffPeakTaskId;
   }
-  record.activeBotDeliveryTarget = params.botDeliveryTarget;
   try {
     const admission = await record.app.sendInput(
       {
@@ -2558,7 +2552,7 @@ async function runPromptTurnInBackground(
       throw new ProtocolRequestError(-32010, `Prompt admission rejected: ${admission.reason}`);
     }
     if (admission.kind === "started_turn") await admission.completion;
-    context.logger?.info("ZCode Protocol background turn completed", {
+    context.logger?.info("Nekode Protocol background turn completed", {
       durationMs: Date.now() - startedAt,
       inputId: params.inputId,
       queryId: params.queryId,
@@ -2567,7 +2561,7 @@ async function runPromptTurnInBackground(
     });
   } catch (error) {
     mutationReason = "prompt_failed";
-    context.logger?.warn("ZCode Protocol background turn failed", {
+    context.logger?.warn("Nekode Protocol background turn failed", {
       durationMs: Date.now() - startedAt,
       error: error instanceof Error ? error.message : String(error),
       inputId: params.inputId,
@@ -2580,7 +2574,7 @@ async function runPromptTurnInBackground(
       // 必须先释放 active lock 再广播状态，否则手机端收到 ready 后立刻 drain 会被
       // session/send 拒绝为 "A prompt is already running for this session"。
       record.activeAbortController = undefined;
-      context.logger?.info("ZCode Protocol background turn cleared active controller", {
+      context.logger?.info("Nekode Protocol background turn cleared active controller", {
         durationMs: Date.now() - startedAt,
         inputId: params.inputId,
         sessionId: record.app.sessionId,
@@ -2589,16 +2583,13 @@ async function runPromptTurnInBackground(
     }
     record.activeAutomationId = previousAutomationId;
     record.activeOffPeakTaskId = previousOffPeakTaskId;
-    // Bug 原因：legacy record 会跨 turn 复用；必须恢复 Bot 地址，避免后续普通 UI turn
-    // 创建的定时任务错误继承上一轮 Bot 会话。
-    record.activeBotDeliveryTarget = previousBotDeliveryTarget;
   }
   await afterStateMutation(context, record, mutationReason);
 }
 
 function resolveSessionToolDenylist(
-  params: Pick<ZCodeSessionCreateParams, "toolDenylist">,
-  workspace: ZCodeWorkspaceRef,
+  params: Pick<NekodeSessionCreateParams, "toolDenylist">,
+  workspace: NekodeWorkspaceRef,
 ): readonly string[] | undefined {
   const tools = new Set(params.toolDenylist ?? []);
   if (workspace.workspaceIdentity && isRemoteWorkspaceIdentity(workspace.workspaceIdentity)) {
@@ -2654,8 +2645,8 @@ function resolvePromptTurnOffPeakTaskId(params: {
 }
 
 async function continueGoalAfterChange(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   params: {
     inputId?: string;
     reason: string;
@@ -2691,8 +2682,8 @@ async function continueGoalAfterChange(
 }
 
 async function runGoalContinuationInBackground(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   params: {
     abortController: AbortController;
     inputId?: string;
@@ -2716,12 +2707,12 @@ async function runGoalContinuationInBackground(
   await afterStateMutation(context, record, mutationReason);
 }
 
-export async function stopSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function stopSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionStopParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   const hadActivePrompt = Boolean(record.activeAbortController);
   let pausedTarget: ProtocolGoalTarget | null = null;
-  context.logger?.info("ZCode Protocol session/stop received", {
+  context.logger?.info("Nekode Protocol session/stop received", {
     hadActivePrompt,
     sessionId: params.sessionId,
     workspacePath: record.workspace.workspacePath,
@@ -2731,7 +2722,7 @@ export async function stopSession(context: ZCodeProtocolAgentServerContext, rawP
       sessionId: params.sessionId,
     });
   }
-  record.activeAbortController?.abort(new Error("ZCode Protocol session stopped"));
+  record.activeAbortController?.abort(new Error("Nekode Protocol session stopped"));
   if (pausedTarget) {
     await afterStateMutation(context, record, "session_stop_goal_paused");
   }
@@ -2739,8 +2730,8 @@ export async function stopSession(context: ZCodeProtocolAgentServerContext, rawP
 }
 
 async function pauseActiveGoalForSessionStop(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   params: { sessionId: string },
 ): Promise<ProtocolGoalTarget | null> {
   if (!record.app.readTarget || !record.app.updateTargetStatus) {
@@ -2756,7 +2747,7 @@ async function pauseActiveGoalForSessionStop(
     // 会在队列仍持有 stopRequested 的情况下保留 active goal，导致后续队列无法 drain。
     const pausedTarget = await record.app.updateTargetStatus("paused");
     if (pausedTarget) {
-      context.logger?.info("ZCode Protocol session/stop paused active goal", {
+      context.logger?.info("Nekode Protocol session/stop paused active goal", {
         sessionId: params.sessionId,
         targetId: pausedTarget.targetID,
         workspacePath: record.workspace.workspacePath,
@@ -2764,7 +2755,7 @@ async function pauseActiveGoalForSessionStop(
     }
     return pausedTarget;
   } catch (error) {
-    context.logger?.warn("ZCode Protocol session/stop failed to pause active goal", {
+    context.logger?.warn("Nekode Protocol session/stop failed to pause active goal", {
       error: error instanceof Error ? error.message : String(error),
       sessionId: params.sessionId,
       targetId: target.targetID,
@@ -2775,12 +2766,12 @@ async function pauseActiveGoalForSessionStop(
 }
 
 export async function cancelBackgroundTask(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   const params = parseParams(zcodeSessionCancelBackgroundTaskParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
-  context.logger?.info("ZCode Protocol session/cancelBackgroundTask received", {
+  context.logger?.info("Nekode Protocol session/cancelBackgroundTask received", {
     sessionId: params.sessionId,
     taskId: params.taskId,
     workspacePath: record.workspace.workspacePath,
@@ -2804,7 +2795,7 @@ export async function cancelBackgroundTask(
   return result;
 }
 
-export async function setModel(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function setModel(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionSetModelParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   assertExpectedRevision(record, params.expectedRevision);
@@ -2816,7 +2807,7 @@ export async function setModel(context: ZCodeProtocolAgentServerContext, rawPara
 }
 
 export async function setThoughtLevel(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   const params = parseParams(zcodeSessionSetThoughtLevelParamsSchema, rawParams);
@@ -2832,7 +2823,7 @@ export async function setThoughtLevel(
   return await afterStateMutation(context, record, "thought_level_changed");
 }
 
-export async function setMode(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function setMode(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionSetModeParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   assertExpectedRevision(record, params.expectedRevision);
@@ -2840,7 +2831,7 @@ export async function setMode(context: ZCodeProtocolAgentServerContext, rawParam
   return await afterStateMutation(context, record, "mode_changed");
 }
 
-export async function closeSession(context: ZCodeProtocolAgentServerContext, rawParams: unknown) {
+export async function closeSession(context: NekodeProtocolAgentServerContext, rawParams: unknown) {
   const params = parseParams(zcodeSessionCloseParamsSchema, rawParams);
   const record = requireSession(context, params.sessionId);
   if (!shouldCloseSessionForExpectedPersistence(record.persistence, params.expectedPersistence)) {
@@ -2853,14 +2844,14 @@ export async function closeSession(context: ZCodeProtocolAgentServerContext, raw
 }
 
 export function shouldCloseSessionForExpectedPersistence(
-  currentPersistence: ZCodeSessionPersistence,
-  expectedPersistence?: ZCodeSessionPersistence,
+  currentPersistence: NekodeSessionPersistence,
+  expectedPersistence?: NekodeSessionPersistence,
 ): boolean {
   return expectedPersistence === undefined || currentPersistence === expectedPersistence;
 }
 
 export async function generateWorkspaceText(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
 ) {
@@ -2886,7 +2877,7 @@ export async function generateWorkspaceText(
   };
   const app =
     active?.app ??
-    (await createWorkspaceZCodeApp(context, params.workspace, {
+    (await createWorkspaceNekodeApp(context, params.workspace, {
       env: context.deps.env,
       eventStore: context.deps.createSessionEventStore("workspace-generate-text"),
       runtimeConfig: {
@@ -2912,7 +2903,7 @@ export async function generateWorkspaceText(
   }
 }
 
-function ensureNoActiveTurn(record: ZCodeProtocolSessionRecord, message: string): void {
+function ensureNoActiveTurn(record: NekodeProtocolSessionRecord, message: string): void {
   if (!record.activeAbortController) {
     return;
   }
@@ -2947,8 +2938,8 @@ function formatGoalChanged(title: string, target: ProtocolGoalTarget): string {
 }
 
 function assertExpectedProviderRevision(
-  _context: ZCodeProtocolAgentServerContext,
-  _record: ZCodeProtocolSessionRecord,
+  _context: NekodeProtocolAgentServerContext,
+  _record: NekodeProtocolSessionRecord,
   expectedProviderRevision: string | undefined,
 ): void {
   // 兼容旧客户端字段。Provider revision 已由进程 Registry 自己管理，不再接受 Host CAS。
@@ -2956,8 +2947,8 @@ function assertExpectedProviderRevision(
 }
 
 export async function ensureSessionModelAvailableForNextTurn(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ): Promise<void> {
   if (await ensureSessionModelAvailable(context, record)) {
     record.stateRevision++;
@@ -2965,9 +2956,9 @@ export async function ensureSessionModelAvailableForNextTurn(
 }
 
 async function resolveForkTarget(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  target: ZCodeSessionHistoryTarget,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  target: NekodeSessionHistoryTarget,
 ): Promise<{ targetCheckpointId?: string; targetMessageId?: string }> {
   if (target.kind === "latestCheckpoint") {
     return {};
@@ -2984,8 +2975,8 @@ async function resolveForkTarget(
 }
 
 async function resolveTurnMessageId(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   turnIndex: number,
   role: "assistant" | "user",
 ): Promise<MessageId> {
@@ -3023,7 +3014,7 @@ async function resolveTurnMessageId(
 }
 
 export async function getTaskTokenUsage(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   const params = parseParams(zcodeTaskTokenUsageParamsSchema, rawParams ?? {});
@@ -3103,14 +3094,14 @@ function isNonActivitySessionEvent(event: SessionEvent): boolean {
  * （SessionTitleUpdated first_input），紧随其后的 ingest 便把会话推进 sessions-index。
  * 测试桩的 runtime 可能没有这个方法（`as never`），缺席即不对齐。
  */
-function reconcileRecordPersistence(record: ZCodeProtocolSessionRecord): void {
+function reconcileRecordPersistence(record: NekodeProtocolSessionRecord): void {
   if (record.persistence !== "deferred") return;
   if (record.app.runtime?.isSessionPersisted?.() === true) record.persistence = "immediate";
 }
 
 export function onSessionEvent(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   event: SessionEvent,
 ): void {
   const computerUseOperationEvent = mapComputerUseOperationEvent(event);
@@ -3215,9 +3206,9 @@ export function onSessionEvent(
 }
 
 function flushLiveProtocolStreamingDeltaBatch(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
 ): void {
   const batchState = getLiveProtocolStreamingDeltaBatchState(record, deliveryKind);
   if (!batchState.batch) {
@@ -3233,9 +3224,9 @@ function flushLiveProtocolStreamingDeltaBatch(
 }
 
 function resetLiveProtocolStreamingDeltaBatch(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
-  deliveryKind?: ZCodeDeliveryKind,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
+  deliveryKind?: NekodeDeliveryKind,
 ): void {
   const batchState = getLiveProtocolStreamingDeltaBatchState(record, deliveryKind);
   flushLiveProtocolStreamingDeltaBatch(context, record, deliveryKind);
@@ -3244,10 +3235,10 @@ function resetLiveProtocolStreamingDeltaBatch(
 }
 
 function sendProtocolSessionEvent(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   event: SessionEvent,
-  deliveryKind?: ZCodeDeliveryKind,
+  deliveryKind?: NekodeDeliveryKind,
 ): void {
   const mappedEvent = mapProtocolSessionEvent(context, record, event, deliveryKind);
   if (!mappedEvent) return;
@@ -3277,7 +3268,7 @@ function integratedTerminalShellToExecutionSelection(
 }
 
 function resolveProtocolBashShellSelection(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   selection: IntegratedTerminalShellSelection | undefined,
 ): ExecutionShellSelection {
   const configuredSelection = integratedTerminalShellToExecutionSelection(selection);
@@ -3289,18 +3280,18 @@ function resolveProtocolBashShellSelection(
 }
 
 async function requestSessionRuntimePreferences(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: SessionId,
-  scope: ZCodeSessionRuntimePreferencesScope,
-  trace?: ZCodeProtocolTrace,
+  scope: NekodeSessionRuntimePreferencesScope,
+  trace?: NekodeProtocolTrace,
   directorySessionId?: string,
-  workspace?: ZCodeWorkspaceRef,
-): Promise<ZCodeSessionRuntimePreferencesResult> {
+  workspace?: NekodeWorkspaceRef,
+): Promise<NekodeSessionRuntimePreferencesResult> {
   const startedAt = Date.now();
-  // ZCodeProtocolTrace.traceId 是协议层的 string；LogContext 需要 branded TraceId，
+  // NekodeProtocolTrace.traceId 是协议层的 string；LogContext 需要 branded TraceId，
   // 按本文件既有惯例断言收口，避免多处日志构造重复转换。
   const traceId = trace?.traceId as TraceId | undefined;
-  context.logger?.debug("ZCode Protocol runtime preferences request started", {
+  context.logger?.debug("Nekode Protocol runtime preferences request started", {
     event: "zcode_protocol.runtime_preferences.request_started",
     module: "bootstrap.zcode_protocol",
     scope,
@@ -3318,11 +3309,11 @@ async function requestSessionRuntimePreferences(
       },
       zcodeSessionRuntimePreferencesResultSchema,
       {
-        timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+        timeoutMs: NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
         ...(trace ? { trace } : {}),
       },
     );
-    context.logger?.debug("ZCode Protocol runtime preferences response received", {
+    context.logger?.debug("Nekode Protocol runtime preferences response received", {
       durationMs: Math.max(0, Date.now() - startedAt),
       event: "zcode_protocol.runtime_preferences.response_received",
       module: "bootstrap.zcode_protocol",
@@ -3347,12 +3338,12 @@ async function requestSessionRuntimePreferences(
     if (errorCode === -32022) {
       // 诊断：偏好请求超时发生在 runtime 注册前；记录 session/scope，区分
       // “Host 没收到/没回包”和“恢复过程中其他阶段失败”。
-      context.logger?.warn("ZCode Protocol runtime preferences request timed out", diagnostic);
+      context.logger?.warn("Nekode Protocol runtime preferences request timed out", diagnostic);
     } else if (errorCode !== -32601 && errorCode !== -32020) {
-      context.logger?.warn("ZCode Protocol runtime preferences request failed", diagnostic);
+      context.logger?.warn("Nekode Protocol runtime preferences request failed", diagnostic);
     } else {
       context.logger?.debug(
-        "ZCode Protocol runtime preferences compatibility fallback",
+        "Nekode Protocol runtime preferences compatibility fallback",
         diagnostic,
       );
     }
@@ -3362,7 +3353,7 @@ async function requestSessionRuntimePreferences(
       return {
         askUserQuestionAutoResolutionEnabled: true,
         memoryEnabled: false,
-        modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+        modelContextBudgetStrategy: DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
         nativeSearchEnhancementsEnabled: true,
         toolSearchMode: "off",
       };
@@ -3372,19 +3363,19 @@ async function requestSessionRuntimePreferences(
 }
 
 async function resolveSessionStartupPreferences(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: SessionId,
   source: SessionStartupPreferencesSource,
-  trace?: ZCodeProtocolTrace,
+  trace?: NekodeProtocolTrace,
   directorySessionId?: string,
-  workspace?: ZCodeWorkspaceRef,
+  workspace?: NekodeWorkspaceRef,
 ): Promise<SessionStartupPreferences> {
   if (source.kind === "inherit") {
     const inheritedShellSelection = source.parent.app.runtime.getSessionShellSelection();
     return {
       memoryEnabled: source.parent.memoryEnabled,
       subagentRuntimeConfigEnabled: source.parent.subagentRuntimeConfigEnabled,
-      modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+      modelContextBudgetStrategy: DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
       nativeSearchEnhancementsEnabled: source.parent.nativeSearchEnhancementsEnabled,
       toolSearchMode: source.parent.toolSearchMode,
       resolveInitialBashShellSelection: async () => inheritedShellSelection,
@@ -3407,7 +3398,7 @@ async function resolveSessionStartupPreferences(
     additionalDirectories: runtimePreferences.additionalDirectories,
     subagentRuntimeConfigEnabled: runtimePreferences.subagentRuntimeConfigEnabled,
     memoryEnabled: runtimePreferences.memoryEnabled,
-    modelContextBudgetStrategy: DEFAULT_ZCODE_MODEL_CONTEXT_BUDGET_STRATEGY,
+    modelContextBudgetStrategy: DEFAULT_NEKODE_MODEL_CONTEXT_BUDGET_STRATEGY,
     nativeSearchEnhancementsEnabled: runtimePreferences.nativeSearchEnhancementsEnabled,
     toolSearchMode: runtimePreferences.toolSearchMode,
     resolveInitialBashShellSelection: async () => {
@@ -3428,13 +3419,13 @@ async function resolveSessionStartupPreferences(
 }
 
 async function materializeSessionRecord(
-  context: ZCodeProtocolAgentServerContext,
-  params: ZCodeSessionRecordParams,
+  context: NekodeProtocolAgentServerContext,
+  params: NekodeSessionRecordParams,
   sessionId: SessionId,
   resume: boolean,
   source: SessionStartupPreferencesSource,
-  trace?: ZCodeProtocolTrace,
-): Promise<ZCodeProtocolSessionRecord> {
+  trace?: NekodeProtocolTrace,
+): Promise<NekodeProtocolSessionRecord> {
   let directorySessionId: string | undefined;
   if (source.kind === "host" && context.sessionDirectorySourceEnabled) {
     directorySessionId = sessionId;
@@ -3463,13 +3454,13 @@ async function materializeSessionRecord(
 }
 
 async function createRecord(
-  context: ZCodeProtocolAgentServerContext,
-  params: ZCodeSessionRecordParams,
+  context: NekodeProtocolAgentServerContext,
+  params: NekodeSessionRecordParams,
   sessionId: SessionId,
   resume: boolean,
   startupPreferences: SessionStartupPreferences,
-  trace?: ZCodeProtocolTrace,
-): Promise<ZCodeProtocolSessionRecord> {
+  trace?: NekodeProtocolTrace,
+): Promise<NekodeProtocolSessionRecord> {
   const workspace =
     "workspace" in params && params.workspace
       ? params.workspace
@@ -3483,7 +3474,7 @@ async function createRecord(
       : undefined;
   const taskType = params.taskType ?? "interactive";
   const runtimeMcp = protocolMcpServersToRuntimeMcpConfig(params.mcpServers);
-  context.logger?.info("ZCode Protocol createRecord MCP config", {
+  context.logger?.info("Nekode Protocol createRecord MCP config", {
     event: "zcode_protocol.create_record.mcp_config",
     rootTraceId: traceContext.traceId,
     inboundTraceId: trace?.traceId,
@@ -3496,8 +3487,8 @@ async function createRecord(
   });
   // automation-port 需要读取「本会话」的实时 model/mode/thought；record 在 app 之后才建。
   // 用可变持有者做惰性绑定：CronCreate 在 turn 中调用 create() 时 record 早已就绪。
-  let ownSessionRecord: ZCodeProtocolSessionRecord | undefined;
-  const app = await createWorkspaceZCodeApp(context, workspace, {
+  let ownSessionRecord: NekodeProtocolSessionRecord | undefined;
+  const app = await createWorkspaceNekodeApp(context, workspace, {
     env: context.deps.env,
     eventStore,
     resume,
@@ -3526,16 +3517,13 @@ async function createRecord(
       nativeSearchEnhancementsEnabled: startupPreferences.nativeSearchEnhancementsEnabled,
       toolSearch: { mode: startupPreferences.toolSearchMode },
       modelContextBudgetStrategy: startupPreferences.modelContextBudgetStrategy,
-      // Memory Settings 是现有 CLI features.memory/use 之外的总开关。只在关闭时
-      // 写入 override，避免开启值反向覆盖用户已有的 CLI 禁用配置。
-      ...(startupPreferences.memoryEnabled ? {} : { memory: { enabled: false } }),
-      // desktop-continuous session/create 由 UI 先解析 ~/.zcode/.agents 的 enabled MCP，
+      // desktop-continuous session/create 由 UI 先解析 ~/.nekode/.agents 的 enabled MCP，
       // 但 protocol app-server 自己不会读取 UI/main 侧的 MCP store；之前 createRecord 没把
       // params.mcpServers 注入 runtimeConfig，导致日志里 runtimeHasMcpConfig=false，工具永远不启动。
       // MCP 是 runtime 启动期配置，因此必须在 session 创建/恢复边界一次性写入 runtimeConfig.mcp。
       ...(runtimeMcp ? { mcp: runtimeMcp } : {}),
       // 之前只有 TUI 路径（tui-prompt-handler）注入 titleGeneration，
-      // ZCode Protocol app-server 创建的 session（desktop/web/mobile）没有传，导致
+      // Nekode Protocol app-server 创建的 session（desktop/web/mobile）没有传，导致
       // shouldAttemptSessionTitleGeneration 的 `if (!config.titleGeneration) return false`
       // 永远命中，模型生成 title 的请求从不触发，侧边栏标题一直停在 first_input 的用户 query。
       // 这里补一份默认配置开启；具体是否生成仍由 runtime 按 parent/taskType/turnNumber 把关。
@@ -3546,12 +3534,11 @@ async function createRecord(
       // workingDirectory 仍是远端机器上的实际路径；本地 workspace 保持 undefined。
       workspaceIdentity: workspace.workspaceIdentity as WorkspaceId | undefined,
     },
-    // ZCode Protocol app-server 以前没有注入可等待的交互 broker，
+    // Nekode Protocol app-server 以前没有注入可等待的交互 broker，
     // core 遇到 permission / AskUserQuestion 只能走默认拒绝，UI 永远收不到阻塞请求。
     // 这里把阻塞交互转换成 server-to-client JSON-RPC request，由 app 通过 response 释放 runtime。
     permissionBroker: createProtocolInteractionBroker(context),
     automationPort: createProtocolAutomationPort(context, () => ownSessionRecord),
-    topicResourcePort: createProtocolTopicResourcePort(context),
     // 只接入 Host 已开放的工具面；缺省不注入。复用现行异步工厂，
     // 不恢复旧 deferred ModelAdapter/Registry overlay，也不改变 Session Selection。
     ...(("offPeakToolEnabled" in params && params.offPeakToolEnabled === true) ||
@@ -3571,7 +3558,7 @@ async function createRecord(
               subagentRuntimeConfigSchema,
               {
                 signal,
-                timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+                timeoutMs: NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
                 trace: { traceId: traceContext.traceId },
               },
             );
@@ -3602,7 +3589,7 @@ async function createRecord(
     modelIoFullRetentionEnabled: context.appRuntimePreferences.modelIoFullRetentionEnabled,
   });
   const now = Date.now();
-  const record: ZCodeProtocolSessionRecord = {
+  const record: NekodeProtocolSessionRecord = {
     app,
     createdAt: now,
     eventStore,
@@ -3642,7 +3629,7 @@ async function createRecord(
 }
 
 async function readPersistedSessionMessages(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
 ): Promise<MessageWithParts[]> {
   return await (context.deps.sessionStore?.messages({
@@ -3652,17 +3639,17 @@ async function readPersistedSessionMessages(
 
 function derivePersistedSessionMode(
   messages: readonly MessageWithParts[],
-): ZCodeSessionCreateParams["mode"] | undefined {
+): NekodeSessionCreateParams["mode"] | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const info = messages[index]?.info;
-    if (info?.role === "assistant" && isZCodeSessionMode(info.mode)) return info.mode;
+    if (info?.role === "assistant" && isNekodeSessionMode(info.mode)) return info.mode;
   }
   return undefined;
 }
 
-function isZCodeSessionMode(
+function isNekodeSessionMode(
   value: unknown,
-): value is NonNullable<ZCodeSessionCreateParams["mode"]> {
+): value is NonNullable<NekodeSessionCreateParams["mode"]> {
   return (
     value === "plan" ||
     value === "build" ||
@@ -3674,7 +3661,7 @@ function isZCodeSessionMode(
 }
 
 function toRuntimeModelSelection(
-  model: ZCodeSessionCreateParams["model"],
+  model: NekodeSessionCreateParams["model"],
 ): ModelSelection | undefined {
   if (!model) return undefined;
   return {
@@ -3702,8 +3689,8 @@ interface SnapshotWithDiagnostics {
 }
 
 async function snapshot(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   knownSession?: SessionInfo | null,
   options: {
     messageLimit?: number;
@@ -3714,8 +3701,8 @@ async function snapshot(
 }
 
 async function snapshotWithDiagnostics(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   knownSession?: SessionInfo | null,
   options: {
     messageLimit?: number;
@@ -3805,7 +3792,7 @@ async function snapshotWithDiagnostics(
   if (totalDurationMs >= SLOW_SNAPSHOT_LOG_THRESHOLD_MS) {
     // SSH 场景下慢点集中在 session snapshot，但旧日志只有总耗时。
     // 超过阈值时记录各子阶段，便于区分 sqlite 等待、消息读取和 projection 构建。
-    context.logger?.warn("ZCode Protocol session snapshot slow", {
+    context.logger?.warn("Nekode Protocol session snapshot slow", {
       durationMs: totalDurationMs,
       event: "zcode_protocol.session_snapshot.slow",
       messageCount: messages.length,
@@ -3821,8 +3808,8 @@ async function snapshotWithDiagnostics(
 }
 
 async function readSnapshotTarget(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ) {
   try {
     return await record.app.readTarget();
@@ -3839,8 +3826,8 @@ async function readSnapshotTarget(
 }
 
 async function readSnapshotTodos(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ) {
   try {
     return await record.app.readTodos();
@@ -3857,8 +3844,8 @@ async function readSnapshotTodos(
 }
 
 async function readSessionTargetCompletionVerificationEvents(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ): Promise<SessionEvent[]> {
   const sessionStore = context.deps.sessionStore;
   if (!sessionStore?.sessionEntries) {
@@ -3977,8 +3964,8 @@ function limitMessages<T>(messages: T[], limit?: number): T[] {
 }
 
 async function readSessionMessages(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ) {
   if (!context.deps.sessionStore) return [];
   return await context.deps.sessionStore.messages({
@@ -3987,15 +3974,15 @@ async function readSessionMessages(
 }
 
 async function readSessionContextUsageBreakdownEvents(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
 ): Promise<SessionEvent[]> {
   const events = await record.eventStore.getEvents(record.app.sessionId as SessionId);
   return events.filter((event) => event.type === SessionEventType.ModelComplete);
 }
 
 async function readActiveSessionMessages(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ): Promise<MessageWithParts[]> {
   const [messages, session, rewindEvents] = await Promise.all([
     readSessionMessages(context, record),
@@ -4006,7 +3993,7 @@ async function readActiveSessionMessages(
 }
 
 async function readSessionRewindEvents(
-  record: ZCodeProtocolSessionRecord,
+  record: NekodeProtocolSessionRecord,
 ): Promise<SessionEvent[]> {
   const events = await record.eventStore.getEvents(record.app.sessionId as SessionId);
   return events.filter((event) => event.type === SessionEventType.RewindTriggered);
@@ -4178,7 +4165,7 @@ function applyRewindBranch(
 }
 
 async function getPersistedSession(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   sessionId: string,
 ): Promise<SessionInfo | null> {
   const sessionStore = context.deps.sessionStore;
@@ -4210,8 +4197,8 @@ const CONFIG_ONLY_MUTATION_REASONS = new Set([
 ]);
 
 export async function afterStateMutation(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   reason: string,
 ) {
   if (!record.activeAbortController) {
@@ -4233,8 +4220,8 @@ export async function afterStateMutation(
 }
 
 function afterPromptAccepted(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   reason: string,
 ) {
   record.stateRevision++;
@@ -4248,12 +4235,12 @@ function afterPromptAccepted(
 }
 
 function emitStateUpdated(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
   reason: string,
   patch: unknown,
 ): void {
-  const notification: ZCodeStateUpdatedNotification = {
+  const notification: NekodeStateUpdatedNotification = {
     patch,
     reason,
     revision: record.stateRevision,

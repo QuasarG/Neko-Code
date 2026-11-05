@@ -1,10 +1,10 @@
 /* eslint-disable max-lines -- 旧版临时驱动必须逐项翻译统一场景，并通过旧 production builder/reporter 发到最终出口。 */
 import {
   type IPlatformService,
-  type ZCodeContextCompactionTimelineMeta,
-  type ZCodeProvider,
-  type ZCodeStreamEvent,
-  type ZCodeUsage,
+  type NekodeContextCompactionTimelineMeta,
+  type NekodeProvider,
+  type NekodeStreamEvent,
+  type NekodeUsage,
 } from "@zcode/shared";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
 import { reportChatErrorBannerTelemetry } from "@/lib/chatErrorBannerTelemetry.js";
@@ -57,7 +57,7 @@ interface LegacyLifecycle {
   active: boolean;
   turnId?: string;
   startedTools: Set<string>;
-  terminalUsage?: ZCodeUsage;
+  terminalUsage?: NekodeUsage;
   lastErrorMessage?: string;
 }
 
@@ -283,7 +283,7 @@ async function applyLegacyOperation(input: {
         inputId: operation.commandId,
         content: "",
         ...(operation.parentToolCallId ? { parentToolUseId: operation.parentToolCallId } : {}),
-      } as Extract<ZCodeStreamEvent, { type: "agent_thought_chunk" | "agent_message_chunk" }>;
+      } as Extract<NekodeStreamEvent, { type: "agent_thought_chunk" | "agent_message_chunk" }>;
       await reportFinalizedSteps(
         input.platform,
         lifecycle,
@@ -354,7 +354,7 @@ async function applyLegacyOperation(input: {
               kind: operation.toolName,
               title: "",
               raw: {},
-            } as Extract<ZCodeStreamEvent, { type: "tool_call" }>)
+            } as Extract<NekodeStreamEvent, { type: "tool_call" }>)
           : ({
               type: "tool_call_update",
               taskId: operation.sessionId,
@@ -372,7 +372,7 @@ async function applyLegacyOperation(input: {
               kind: operation.toolName,
               error: operation.errorMessage,
               raw: {},
-            } as Extract<ZCodeStreamEvent, { type: "tool_call_update" }>);
+            } as Extract<NekodeStreamEvent, { type: "tool_call_update" }>);
       await reportFinalizedSteps(
         input.platform,
         lifecycle,
@@ -448,7 +448,7 @@ async function applyLegacyOperation(input: {
               traceId: operation.eventId,
               inputId: operation.commandId,
               stopReason: "complete",
-            } as Extract<ZCodeStreamEvent, { type: "task_complete" }>)
+            } as Extract<NekodeStreamEvent, { type: "task_complete" }>)
           : ({
               type: "task_error",
               taskId: operation.sessionId,
@@ -457,7 +457,7 @@ async function applyLegacyOperation(input: {
               error:
                 operation.errorMessage ?? lifecycle.lastErrorMessage ?? operation.errorCode ?? "",
               code: operation.errorCode,
-            } as Extract<ZCodeStreamEvent, { type: "task_error" }>);
+            } as Extract<NekodeStreamEvent, { type: "task_error" }>);
       await reportFinalizedSteps(
         input.platform,
         lifecycle,
@@ -505,7 +505,7 @@ async function applyLegacyOperation(input: {
       const dedupeKey = `${operation.sessionId}\u0000${operation.operationId}\u0000context_compaction`;
       if (!remember(scope.compactionKeys, dedupeKey) || !isForeground(scope, operation.sessionId))
         return;
-      const timeline: ZCodeContextCompactionTimelineMeta = {
+      const timeline: NekodeContextCompactionTimelineMeta = {
         version: 1,
         kind: "synthetic",
         type: "context_compaction",
@@ -524,7 +524,7 @@ async function applyLegacyOperation(input: {
       };
       const detail = buildCompactionTelemetryExtraDetail({
         timeline,
-        provider: "glm" as ZCodeProvider,
+        provider: "glm" as NekodeProvider,
         modelName: operation.modelName,
       });
       if (detail) {
@@ -710,7 +710,7 @@ async function reportLegacyEvent(
 
 function toNetworkEvent(
   operation: Extract<ConversationTelemetryParityOperation, { kind: "model.status" }>,
-): Extract<ZCodeStreamEvent, { type: "task_network_debug_status" }> {
+): Extract<NekodeStreamEvent, { type: "task_network_debug_status" }> {
   return {
     type: "task_network_debug_status",
     taskId: operation.sessionId,
@@ -735,7 +735,7 @@ function toNetworkEvent(
     nextAttempt: operation.nextAttempt,
     idleMs: operation.idleMs,
     timeoutMs: operation.timeoutMs,
-  } as Extract<ZCodeStreamEvent, { type: "task_network_debug_status" }>;
+  } as Extract<NekodeStreamEvent, { type: "task_network_debug_status" }>;
 }
 
 function activeLifecycle(scope: LegacyScope, commandId: string): LegacyLifecycle | undefined {
@@ -767,7 +767,7 @@ function remember(set: Set<string>, key: string): boolean {
   return true;
 }
 
-function mergeUsage(left: ZCodeUsage | undefined, right: ZCodeUsage): ZCodeUsage {
+function mergeUsage(left: NekodeUsage | undefined, right: NekodeUsage): NekodeUsage {
   if (!left) return right;
   return {
     inputTokens: left.inputTokens + right.inputTokens,

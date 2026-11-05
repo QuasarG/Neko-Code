@@ -1,11 +1,11 @@
 import type { Logger } from "@zcode/contracts";
-import type { listZCodePlugins } from "@zcode/bootstrap";
+import type { listNekodePlugins } from "@zcode/bootstrap";
 import { createInterface } from "node:readline";
 import type { GlobalOptions, RunContext } from "@zcode/shared-types";
 import type { CliEnv } from "./env.js";
 
 export type BootstrapModule = typeof import("@zcode/bootstrap");
-export type PluginListOutcome = ReturnType<typeof listZCodePlugins>;
+export type PluginListOutcome = ReturnType<typeof listNekodePlugins>;
 export type PluginListItem = PluginListOutcome["plugins"][number];
 export type PluginDiagnostic = PluginListOutcome["diagnostics"][number];
 export type PluginScope = "user" | "workspace";
@@ -15,16 +15,16 @@ export type PluginScope = "user" | "workspace";
  * 避免 `zcode plugins list` 这类轻命令把整个 bootstrap 图提前拉起来。
  */
 export const BOOTSTRAP_EXPORTS = {
-  addMarketplace: "addZCodePluginMarketplace",
-  getPluginsOverview: "getZCodePluginsOverview",
-  installPlugin: "installZCodeMarketplacePlugin",
-  listPlugins: "listZCodePlugins",
-  removeMarketplace: "removeZCodePluginMarketplace",
-  setPluginEnabled: "setZCodePluginEnabled",
-  uninstallPlugin: "uninstallZCodeMarketplacePlugin",
-  updateMarketplace: "updateZCodePluginMarketplace",
-  updatePlugin: "updateZCodeMarketplacePlugin",
-  validatePluginPath: "validateZCodePluginPath",
+  addMarketplace: "addNekodePluginMarketplace",
+  getPluginsOverview: "getNekodePluginsOverview",
+  installPlugin: "installNekodeMarketplacePlugin",
+  listPlugins: "listNekodePlugins",
+  removeMarketplace: "removeNekodePluginMarketplace",
+  setPluginEnabled: "setNekodePluginEnabled",
+  uninstallPlugin: "uninstallNekodeMarketplacePlugin",
+  updateMarketplace: "updateNekodePluginMarketplace",
+  updatePlugin: "updateNekodeMarketplacePlugin",
+  validatePluginPath: "validateNekodePluginPath",
 } as const satisfies Record<string, keyof BootstrapModule>;
 
 export type PluginDepName = keyof typeof BOOTSTRAP_EXPORTS;

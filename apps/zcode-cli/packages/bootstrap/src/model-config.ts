@@ -5,9 +5,9 @@ import type {
 } from "@zcode/adapters/model";
 import type { ProviderEndpointRoutingPort } from "@zcode/contracts";
 import {
-  resolveRuntimeZCodeEnv,
-  resolveRuntimeZCodeEndpointOrigin,
-  ZCODE_APP_VERSION_ENV,
+  resolveRuntimeNekodeEnv,
+  resolveRuntimeNekodeEndpointOrigin,
+  NEKODE_APP_VERSION_ENV,
 } from "@zcode/shared";
 import {
   createRuntimePlatformHeaders,
@@ -29,7 +29,7 @@ export function createRuntimeAiSdkModelExecutionConfig(
 ): AiSdkModelExecutionConfig {
   const network = normalizeAiSdkNetworkConfig(options.network);
   return {
-    defaultHeaders: buildCliZCodeSourceHeaders(env, options),
+    defaultHeaders: buildCliNekodeSourceHeaders(env, options),
     env,
     ...(network ? { network } : {}),
     ...(options.endpointRoutingPort ? { endpointRoutingPort: options.endpointRoutingPort } : {}),
@@ -47,7 +47,7 @@ function normalizeAiSdkNetworkConfig(
   };
 }
 
-export function buildCliZCodeSourceHeaders(
+export function buildCliNekodeSourceHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion" | "sourceTitle"> = {},
 ): Record<string, string> {
@@ -56,14 +56,14 @@ export function buildCliZCodeSourceHeaders(
   const locale = normalizePrintableHeaderValue(Intl.DateTimeFormat().resolvedOptions().locale);
   const timezone = normalizePrintableHeaderValue(Intl.DateTimeFormat().resolvedOptions().timeZone);
   return {
-    "HTTP-Referer": resolveRuntimeZCodeEndpointOrigin(env),
-    "User-Agent": `ZCode/${appVersion ?? "unknown"}`,
-    ...(appVersion ? { "X-ZCode-App-Version": appVersion } : {}),
+    "HTTP-Referer": resolveRuntimeNekodeEndpointOrigin(env),
+    "User-Agent": `Nekode/${appVersion ?? "unknown"}`,
+    ...(appVersion ? { "X-Nekode-App-Version": appVersion } : {}),
     "X-Title": `Z Code@${sourceTitle}`,
-    "X-Release-Channel": resolveRuntimeZCodeEnv(env),
+    "X-Release-Channel": resolveRuntimeNekodeEnv(env),
     "X-Client-Language": locale ?? "unknown",
     "X-Client-Timezone": timezone ?? "unknown",
-    "X-ZCode-Agent": "glm",
+    "X-Nekode-Agent": "glm",
     ...createRuntimePlatformHeaders(),
   };
 }
@@ -72,7 +72,7 @@ function resolveAppVersionForHeaders(
   env: EnvRecord,
   options: Pick<RuntimeExecutionConfigOptions, "appVersion">,
 ): string | undefined {
-  return normalizePrintableHeaderValue(env[ZCODE_APP_VERSION_ENV] ?? options.appVersion);
+  return normalizePrintableHeaderValue(env[NEKODE_APP_VERSION_ENV] ?? options.appVersion);
 }
 
 function detectDefaultProviderSourceTitle(): ModelProviderSourceTitle {

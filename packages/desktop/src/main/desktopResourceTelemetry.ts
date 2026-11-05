@@ -1,9 +1,9 @@
-import armsRum from "@arms/rum-electron";
+import armsRum from "./armsRumShim.js";
 import {
   bytesToKb,
   createMemorySampleWriteGate,
   formatMemorySampleLine,
-  mapZCodeEnvToArmsRumEnv,
+  mapNekodeEnvToArmsRumEnv,
   memoryUsageToSampleFields,
   type MemorySample,
   type MemorySampleWriteGate,
@@ -60,7 +60,7 @@ function resolveDefaultReportIntervalMs(): number {
     return 60_000;
   }
   // E2E 跑的是打包构建，没有这个短窗口就无法在一次用例里观察到趋势事件。
-  if (process.env.ZCODE_ENV === "test" && process.env.ZCODE_E2E_RUN_ID?.trim()) {
+  if (process.env.NEKODE_ENV === "test" && process.env.NEKODE_E2E_RUN_ID?.trim()) {
     return 60_000;
   }
   return 300_000;
@@ -87,7 +87,7 @@ interface ResourceGlobalContext {
   deviceMid: string;
   platform: NodeJS.Platform;
   appVersion: string;
-  armsEnv: ReturnType<typeof mapZCodeEnvToArmsRumEnv>;
+  armsEnv: ReturnType<typeof mapNekodeEnvToArmsRumEnv>;
 }
 
 let globalContext: ResourceGlobalContext | null = null;
@@ -214,8 +214,8 @@ function auditDisabledAgentMetricProbe(logger: ResourceLogger | undefined): void
   if (
     agentMetricProbeDisabledAuditLogged ||
     process.platform !== "win32" ||
-    process.env.ZCODE_ENV !== "test" ||
-    !process.env.ZCODE_E2E_RUNTIME_LOG_DIR?.trim()
+    process.env.NEKODE_ENV !== "test" ||
+    !process.env.NEKODE_E2E_RUNTIME_LOG_DIR?.trim()
   ) {
     return;
   }

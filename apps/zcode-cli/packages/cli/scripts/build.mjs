@@ -3,6 +3,7 @@ import { basename, dirname, relative, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import sharedPackage from "../../../../../packages/shared/package.json" with { type: "json" };
+import corePackage from "../../core/package.json" with { type: "json" };
 import { stageBuiltinProviderConfig } from "../../../../../scripts/builtin-provider-config.mjs";
 import { stageThirdPartyNotices } from "../../../../../scripts/third-party-notices.mjs";
 
@@ -123,7 +124,7 @@ export const readRootPackageVersion = async ({ root = projectRoot } = {}) => {
 
 export const resolveBuildOptions = (args = [], env = process.env) => {
   const desktopAgent = args.includes(desktopAgentBuildFlag);
-  const e2eCoverage = env.ZCODE_E2E_COVERAGE === "1";
+  const e2eCoverage = env.NEKODE_E2E_COVERAGE === "1";
 
   return {
     // desktop-agent 正常发布仍需压缩且不携带 map；E2E coverage
@@ -148,7 +149,19 @@ export const resolveBuildAliases = ({
         resolve(rootDirectory, "../../packages/shared", target),
       ]),
   ),
-  "@zcode/core": resolve(cliDirectory, "../core/dist/index.js"),
+  // 与 shared 同一规则：从 core 的 exports 派生全部子路径，通用入口放最后，
+  // 否则 esbuild 按 `@zcode/core` 前缀改写会把 dist/index.js 当成目录。
+  ...Object.fromEntries(
+    Object.entries(corePackage.exports)
+      .sort(([a], [b]) => Number(a === ".") - Number(b === "."))
+      .map(([subpath, target]) => {
+        const entry = typeof target === "string" ? target : target.import;
+        return [
+          subpath === "." ? "@zcode/core" : `@zcode/core/${subpath.slice(2)}`,
+          resolve(cliDirectory, "../core", entry),
+        ];
+      }),
+  ),
 });
 
 export const buildCli = async ({

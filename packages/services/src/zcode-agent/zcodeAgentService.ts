@@ -1,10 +1,11 @@
 import { sessionLifecycleSnapshotSchema, type SessionLifecycleSnapshot } from "@zcode/shared";
+import { resolveNekodeDataBaseRoot } from "@zcode/shared/node";
 import {
   getNetworkErrorCodes,
   isNetworkFailure,
 } from "#src/providers/api/networkErrorClassifier.js";
 import {
-  ZCODE_PROVIDER_CONFIG_NETWORK_ERROR,
+  NEKODE_PROVIDER_CONFIG_NETWORK_ERROR,
   zcodeProviderRuntimeHeadersErrorCode,
 } from "@zcode/shared";
 import { RemoteConversationTelemetry } from "#src/conversation-telemetry/remoteConversationTelemetry.js";
@@ -35,18 +36,13 @@ import {
 } from "@zcode/shared";
 import { zcodeMcpUiSamplingResultSchema } from "@zcode/shared";
 import { MCP_APPS_SAMPLING_TRANSPORT_TIMEOUT_MS } from "@zcode/shared/mcp-apps";
-import {
-  channelReplyRequestSchema,
-  type ChannelReplyHostRequest,
-  type ChannelReplyResult,
-} from "@zcode/shared";
 import { requestPluginReferenceCatalog } from "#src/zcode-agent/pluginReferenceCatalogRequest.js";
 import {
   localTtftFactsSchema,
   sessionDebugSnapshotSchema,
   type LocalTtftFacts,
 } from "@zcode/shared";
-/* oxlint-disable eslint(max-lines) -- ZCode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
+/* oxlint-disable eslint(max-lines) -- Nekode Protocol transport、通知 wiring 和 app-facing session 方法必须共享同一个 client/emitter 上下文。 */
 import { ensureIndependentPlanSupport } from "./independentPlanSupport.js";
 import { isRemoteInputPredictionEnabled } from "./inputPredictionSwitch.js";
 import { randomUUID } from "node:crypto";
@@ -54,9 +50,9 @@ import { createTopicResourceBridge } from "./topicResourceBridge.js";
 import { uploadTopicResourceToClient } from "./topicResourceUpload.js";
 import {
   zcodeTopicResourceCancelParamsSchema,
-  type ZCodeTopicResourceReadParams,
-  type ZCodeProtocolTrace,
-  type ZCodePromptAttachment,
+  type NekodeTopicResourceReadParams,
+  type NekodeProtocolTrace,
+  type NekodePromptAttachment,
 } from "@zcode/shared";
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
@@ -73,17 +69,17 @@ import {
   subagentRuntimeConfigSchema,
   zcodeSubagentsReadRuntimeConfigParamsSchema,
   type SubagentRuntimeConfig,
-  ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+  NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
   formatLogPrefix,
   resolveWorkspaceKey,
   type TraceId,
-  ZCODE_AGENT_PROVIDER,
-  ZCODE_AGENT_PROVIDER_NOT_READY_CODE,
-  ZCODE_AGENT_PROVIDER_NOT_READY_REASON,
-  ZCODE_MODEL_REASONING_SEPARATOR,
+  NEKODE_AGENT_PROVIDER,
+  NEKODE_AGENT_PROVIDER_NOT_READY_CODE,
+  NEKODE_AGENT_PROVIDER_NOT_READY_REASON,
+  NEKODE_MODEL_REASONING_SEPARATOR,
   isRemoteWorkspaceIdentity,
-  ZCODE_PROTOCOL_NAME,
-  ZCODE_PROTOCOL_VERSION,
+  NEKODE_PROTOCOL_NAME,
+  NEKODE_PROTOCOL_VERSION,
   zcodeMcpListResultSchema,
   zcodeWorkspaceMcpTrustResultSchema,
   zcodePermissionRequestParamsSchema,
@@ -95,7 +91,7 @@ import {
   zcodePluginsMarketplaceMutationResultSchema,
   zcodePluginsOverviewResultSchema,
   zcodeProcessChildProcessesResultSchema,
-  type ZCodeProcessChildProcess,
+  type NekodeProcessChildProcess,
   zcodeSkillsReferenceCatalogResultSchema,
   zcodeMcpReadResourceResultSchema,
   zcodeMcpUiCallToolResultSchema,
@@ -171,9 +167,9 @@ import {
   zcodeWorkspaceUpdateInteractionPreferencesResultSchema,
   zcodeWorkspaceUpdateModelIoPreferencesResultSchema,
   zcodeProviderUpdateAccountConfigResultSchema,
-  type ZCodeSessionStateSnapshot,
-  type ZCodeAutomation,
-  type ZCodeAutomationRun,
+  type NekodeSessionStateSnapshot,
+  type NekodeAutomation,
+  type NekodeAutomationRun,
   zcodeWorkspaceUpdateOffPeakToolPolicyResultSchema,
   zcodeWorkspaceUpdateDynamicWorkflowPolicyResultSchema,
   type DynamicWorkflowClientConfig,
@@ -185,11 +181,11 @@ import {
   normalizeDynamicWorkflowMode,
   type AgentLaneResourceSample,
   type ProcessResourceCliLane,
-  type ZCodeMcpTelemetryEvent,
-  type ZCodeMcpResourceSample,
-  type ZCodeToolExecResource,
-  type ZCodePluginOperationProgressNotification,
-  type ZCodeTaskMode,
+  type NekodeMcpTelemetryEvent,
+  type NekodeMcpResourceSample,
+  type NekodeToolExecResource,
+  type NekodePluginOperationProgressNotification,
+  type NekodeTaskMode,
 } from "@zcode/shared";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import { createOfficialMcpIssuanceAudit } from "#src/official-mcp/officialMcpIssuanceAudit.js";
@@ -201,123 +197,123 @@ import {
   mergeAutomationMutationToolDenylist,
   mergeOffPeakMutationToolDenylist,
 } from "#src/zcode-agent/automationToolPolicy.js";
-import { ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
+import { NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE } from "./zcodeAgent.js";
 import type {
-  ZCodeProtocolRequestId,
+  NekodeProtocolRequestId,
   ModelSelection,
-  ZCodeProviderRuntimeHeadersRequestParams,
-  ZCodeProviderRuntimeHeadersCancelled,
-  ZCodeSessionEvent,
-  ZCodeSessionRuntimePreferencesScope,
-  ZCodeSavedWorkflowScope,
-  ZCodeStateUpdatedNotification,
-  ZCodeWorkspacePresentation,
-  ZCodeWorkspaceRef,
-  ZCodeSessionRuntimePreferencesResult,
+  NekodeProviderRuntimeHeadersRequestParams,
+  NekodeProviderRuntimeHeadersCancelled,
+  NekodeSessionEvent,
+  NekodeSessionRuntimePreferencesScope,
+  NekodeSavedWorkflowScope,
+  NekodeStateUpdatedNotification,
+  NekodeWorkspacePresentation,
+  NekodeWorkspaceRef,
+  NekodeSessionRuntimePreferencesResult,
 } from "@zcode/shared";
 import type {
-  IZCodeAgentService,
-  ZCodeAgentBackgroundBashOutputParams,
-  ZCodeAgentAppRuntimePreferences,
-  ZCodeAgentRuntimeLifecycleEvent,
-  ZCodeAgentAddPluginMarketplaceParams,
-  ZCodeAgentAppUsageParams,
-  ZCodeAgentCancelPluginOperationParams,
-  ZCodeAgentCompactParams,
-  ZCodeAgentConfigurePluginParams,
-  ZCodeAgentResetPluginConfigParams,
-  ZCodeAgentCreateSessionParams,
-  ZCodeAgentInstallPluginParams,
-  ZCodeAgentGenerateWorkspaceTextParams,
-  ZCodeAgentTestModelConnectivityParams,
-  ZCodeAgentGoalParams,
-  ZCodeAgentGrantWorkspaceHookTrustParams,
-  ZCodeAgentInitializeResult,
-  ZCodeAgentListSessionsParams,
-  ZCodeAgentListSessionSubagentsParams,
-  ZCodeAgentReadWorkspacePresentationParams,
-  ZCodeAgentReadSessionEventsParams,
-  ZCodeAgentReadSessionMessagesParams,
-  ZCodeAgentReadSessionParams,
-  ZCodeAgentRemovePluginMarketplaceParams,
-  ZCodeAgentRespondProviderRuntimeHeadersParams,
-  ZCodeAgentRespondSessionRuntimePreferencesParams,
-  ZCodeAgentResumeSessionParams,
-  ZCodeAgentSendPromptParams,
-  ZCodeAgentServiceEvent,
-  ZCodeAgentProviderRuntimeHeadersRequest,
-  ZCodeAgentSessionSubscribeParams,
-  ZCodeAgentSessionTarget,
-  ZCodeAgentSessionRuntimePreferencesRequest,
-  ZCodeAgentTaskTokenUsageParams,
-  ZCodeAgentSetModeParams,
-  ZCodeAgentSetModelParams,
-  ZCodeAgentSetPluginEnabledParams,
-  ZCodeAgentSetThoughtLevelParams,
-  ZCodeAgentPluginReferenceCatalogParams,
-  ZCodeAgentSkillReferenceCatalogParams,
-  ZCodeAgentReadMcpResourceParams,
-  ZCodeAgentCallMcpToolForUiParams,
-  ZCodeAgentCancelMcpToolCallForUiParams,
-  ZCodeAgentReadMcpResourceForUiParams,
-  ZCodeAgentListMcpResourcesForUiParams,
-  ZCodeAgentAppToolCallForUiParams,
-  ZCodeAgentAppToolInstanceForUiParams,
-  ZCodeAgentRegisterAppToolsForUiParams,
-  ZCodeAgentResolveAppToolCallForUiParams,
-  ZCodeAgentMcpResourceSubscriptionForUiParams,
-  ZCodeAgentDeleteSavedWorkflowParams,
-  ZCodeAgentFindSavedWorkflowForRunParams,
-  ZCodeAgentGetSavedWorkflowParams,
-  ZCodeAgentListSavedWorkflowRunsParams,
-  ZCodeAgentListSavedWorkflowsParams,
-  ZCodeAgentMoveSavedWorkflowParams,
-  ZCodeAgentSaveSavedWorkflowFromRunParams,
-  ZCodeAgentSavedWorkflowTarget,
-  ZCodeAgentUpdateSavedWorkflowMetaParams,
-  ZCodeAgentResolveSuggestedPluginReferenceParams,
-  ZCodeAgentPluginViewParams,
-  ZCodeAgentUninstallPluginParams,
-  ZCodeAgentUpdatePluginParams,
-  ZCodeAgentRestoreBuiltinPluginParams,
-  ZCodeAgentUpdatePluginMarketplaceParams,
-  ZCodeAgentValidatePluginParams,
-  ZCodeAgentDescribePluginParams,
-  ZCodeAgentListMcpServerStatusesParams,
-  ZCodeAgentWorkspaceTarget,
-  ZCodeAgentCuaPermissionObservation,
-  ZCodeAgentCreateAutomationParams,
-  ZCodeAgentUpdateAutomationParams,
-  ZCodeAgentAutomationIdParams,
-  ZCodeAgentSetAutomationEnabledParams,
-  ZCodeAgentDeleteAutomationRunParams,
-  ZCodeAgentAttachmentBeginParams,
-  ZCodeAgentAttachmentChunkParams,
-  ZCodeAgentAttachmentReadParams,
-  ZCodeAgentConversationAttachmentReadParams,
-  ZCodeAgentConversationAttachmentStatParams,
-  ZCodeAgentAttachmentPreviewSourceParams,
-  ZCodeAgentAttachmentTerminalParams,
-  ZCodeAgentConversationCommandParams,
-  ZCodeAgentCommandsQueryParams,
-  ZCodeAgentConversationFileChangesParams,
-  ZCodeAgentConversationFileRewindPreviewParams,
-  ZCodeAgentConversationRowsRangeParams,
-  ZCodeAgentConversationPlansParams,
-  ZCodeAgentConversationInputPredictionParams,
-  ZCodeAgentConversationWorkflowRunEventsParams,
-  ZCodeAgentConversationWorkflowRunArtifactDataParams,
-  ZCodeAgentConversationWorkflowRunArtifactReadParams,
-  ZCodeAgentConversationWorkflowRunArtifactsParams,
-  ZCodeAgentConversationWorkflowRunNodeResultParams,
-  ZCodeAgentConversationWorkflowRunWorkspaceParams,
-  ZCodeAgentConversationWorkflowRunsParams,
-  ZCodeAgentConversationResyncParams,
-  ZCodeAgentConversationSubscribeParams,
-  ZCodeAgentConversationUnsubscribeParams,
-  ZCodeAgentConnectionFlowParams,
-  ZCodeAgentSessionsIndexSubscribeParams,
-  ZCodeAgentWorkspaceConfigSubscribeParams,
+  INekodeAgentService,
+  NekodeAgentBackgroundBashOutputParams,
+  NekodeAgentAppRuntimePreferences,
+  NekodeAgentRuntimeLifecycleEvent,
+  NekodeAgentAddPluginMarketplaceParams,
+  NekodeAgentAppUsageParams,
+  NekodeAgentCancelPluginOperationParams,
+  NekodeAgentCompactParams,
+  NekodeAgentConfigurePluginParams,
+  NekodeAgentResetPluginConfigParams,
+  NekodeAgentCreateSessionParams,
+  NekodeAgentInstallPluginParams,
+  NekodeAgentGenerateWorkspaceTextParams,
+  NekodeAgentTestModelConnectivityParams,
+  NekodeAgentGoalParams,
+  NekodeAgentGrantWorkspaceHookTrustParams,
+  NekodeAgentInitializeResult,
+  NekodeAgentListSessionsParams,
+  NekodeAgentListSessionSubagentsParams,
+  NekodeAgentReadWorkspacePresentationParams,
+  NekodeAgentReadSessionEventsParams,
+  NekodeAgentReadSessionMessagesParams,
+  NekodeAgentReadSessionParams,
+  NekodeAgentRemovePluginMarketplaceParams,
+  NekodeAgentRespondProviderRuntimeHeadersParams,
+  NekodeAgentRespondSessionRuntimePreferencesParams,
+  NekodeAgentResumeSessionParams,
+  NekodeAgentSendPromptParams,
+  NekodeAgentServiceEvent,
+  NekodeAgentProviderRuntimeHeadersRequest,
+  NekodeAgentSessionSubscribeParams,
+  NekodeAgentSessionTarget,
+  NekodeAgentSessionRuntimePreferencesRequest,
+  NekodeAgentTaskTokenUsageParams,
+  NekodeAgentSetModeParams,
+  NekodeAgentSetModelParams,
+  NekodeAgentSetPluginEnabledParams,
+  NekodeAgentSetThoughtLevelParams,
+  NekodeAgentPluginReferenceCatalogParams,
+  NekodeAgentSkillReferenceCatalogParams,
+  NekodeAgentReadMcpResourceParams,
+  NekodeAgentCallMcpToolForUiParams,
+  NekodeAgentCancelMcpToolCallForUiParams,
+  NekodeAgentReadMcpResourceForUiParams,
+  NekodeAgentListMcpResourcesForUiParams,
+  NekodeAgentAppToolCallForUiParams,
+  NekodeAgentAppToolInstanceForUiParams,
+  NekodeAgentRegisterAppToolsForUiParams,
+  NekodeAgentResolveAppToolCallForUiParams,
+  NekodeAgentMcpResourceSubscriptionForUiParams,
+  NekodeAgentDeleteSavedWorkflowParams,
+  NekodeAgentFindSavedWorkflowForRunParams,
+  NekodeAgentGetSavedWorkflowParams,
+  NekodeAgentListSavedWorkflowRunsParams,
+  NekodeAgentListSavedWorkflowsParams,
+  NekodeAgentMoveSavedWorkflowParams,
+  NekodeAgentSaveSavedWorkflowFromRunParams,
+  NekodeAgentSavedWorkflowTarget,
+  NekodeAgentUpdateSavedWorkflowMetaParams,
+  NekodeAgentResolveSuggestedPluginReferenceParams,
+  NekodeAgentPluginViewParams,
+  NekodeAgentUninstallPluginParams,
+  NekodeAgentUpdatePluginParams,
+  NekodeAgentRestoreBuiltinPluginParams,
+  NekodeAgentUpdatePluginMarketplaceParams,
+  NekodeAgentValidatePluginParams,
+  NekodeAgentDescribePluginParams,
+  NekodeAgentListMcpServerStatusesParams,
+  NekodeAgentWorkspaceTarget,
+  NekodeAgentCuaPermissionObservation,
+  NekodeAgentCreateAutomationParams,
+  NekodeAgentUpdateAutomationParams,
+  NekodeAgentAutomationIdParams,
+  NekodeAgentSetAutomationEnabledParams,
+  NekodeAgentDeleteAutomationRunParams,
+  NekodeAgentAttachmentBeginParams,
+  NekodeAgentAttachmentChunkParams,
+  NekodeAgentAttachmentReadParams,
+  NekodeAgentConversationAttachmentReadParams,
+  NekodeAgentConversationAttachmentStatParams,
+  NekodeAgentAttachmentPreviewSourceParams,
+  NekodeAgentAttachmentTerminalParams,
+  NekodeAgentConversationCommandParams,
+  NekodeAgentCommandsQueryParams,
+  NekodeAgentConversationFileChangesParams,
+  NekodeAgentConversationFileRewindPreviewParams,
+  NekodeAgentConversationRowsRangeParams,
+  NekodeAgentConversationPlansParams,
+  NekodeAgentConversationInputPredictionParams,
+  NekodeAgentConversationWorkflowRunEventsParams,
+  NekodeAgentConversationWorkflowRunArtifactDataParams,
+  NekodeAgentConversationWorkflowRunArtifactReadParams,
+  NekodeAgentConversationWorkflowRunArtifactsParams,
+  NekodeAgentConversationWorkflowRunNodeResultParams,
+  NekodeAgentConversationWorkflowRunWorkspaceParams,
+  NekodeAgentConversationWorkflowRunsParams,
+  NekodeAgentConversationResyncParams,
+  NekodeAgentConversationSubscribeParams,
+  NekodeAgentConversationUnsubscribeParams,
+  NekodeAgentConnectionFlowParams,
+  NekodeAgentSessionsIndexSubscribeParams,
+  NekodeAgentWorkspaceConfigSubscribeParams,
 } from "./zcodeAgent.js";
 import {
   backgroundBashOutputResultSchema,
@@ -379,8 +375,8 @@ import {
   workspaceConfigTopic,
   workspaceConfigTopicWireCandidateSchema,
   utf8JsonByteLength,
-  ZCODE_ATTACHMENT_FAULT_CODES,
-  ZCodeAttachmentFaultError,
+  NEKODE_ATTACHMENT_FAULT_CODES,
+  NekodeAttachmentFaultError,
   type CommandAck,
   type ConversationTopicWireCandidate,
   type ConversationTelemetryFact,
@@ -389,21 +385,21 @@ import {
   type CommandEnvelope,
 } from "@zcode/shared/zcode-protocol-v4";
 import {
-  readTrustedZCodeAgentV4Connection,
-  readTrustedZCodeAgentV4UnsubscribeRoute,
-  type ZCodeAgentV4ConnectionContext,
+  readTrustedNekodeAgentV4Connection,
+  readTrustedNekodeAgentV4UnsubscribeRoute,
+  type NekodeAgentV4ConnectionContext,
 } from "./zcodeAgentConnectionScope.js";
 import { createBackgroundSessionEventCoalescer } from "#src/zcode-agent/zcodeSessionEventCoalescer.js";
 import { AutomationService } from "#src/session/automationService.js";
 import { AutomationRepo } from "#src/session/automationRepo.js";
 import { TaskIndexRepo } from "#src/session/taskIndexRepo.js";
-import { ZCodeAgentMcpStatusModeUnsupportedError } from "#src/zcode-agent/zcodeAgentErrors.js";
-import { ZCodeAgentProcessManager } from "./zcodeAgentProcessManager.js";
-import type { ZCodeAgentProcessManagerOptions } from "./zcodeAgentProcessManager.js";
+import { NekodeAgentMcpStatusModeUnsupportedError } from "#src/zcode-agent/zcodeAgentErrors.js";
+import { NekodeAgentProcessManager } from "./zcodeAgentProcessManager.js";
+import type { NekodeAgentProcessManagerOptions } from "./zcodeAgentProcessManager.js";
 import type { IOffPeakTaskService } from "#src/session/offPeakTask.js";
 import {
-  ZCodeProtocolRequestTimeoutError,
-  type ZCodeProtocolClient,
+  NekodeProtocolRequestTimeoutError,
+  type NekodeProtocolClient,
 } from "./zcodeProtocolClient.js";
 import { getDataBaseDir } from "../paths.js";
 import {
@@ -437,19 +433,19 @@ const PLUGIN_OPERATION_CANCEL_REQUEST_TIMEOUT_MS = 5_000;
 const SESSION_COMPACT_REQUEST_TIMEOUT_MS = 5 * 60_000;
 
 interface PendingPermissionRequest {
-  client: ZCodeProtocolClient;
-  protocolRequestId: ZCodeProtocolRequestId;
+  client: NekodeProtocolClient;
+  protocolRequestId: NekodeProtocolRequestId;
 }
 
 interface PendingProviderRuntimeHeadersRequest extends PendingPermissionRequest {
-  request: ZCodeAgentProviderRuntimeHeadersRequest;
+  request: NekodeAgentProviderRuntimeHeadersRequest;
   interactionRequired?: boolean;
   responding?: boolean;
 }
 
 interface PendingSessionRuntimePreferencesRequest extends PendingPermissionRequest {
-  workspace: ZCodeAgentWorkspaceTarget;
-  request: ZCodeAgentSessionRuntimePreferencesRequest;
+  workspace: NekodeAgentWorkspaceTarget;
+  request: NekodeAgentSessionRuntimePreferencesRequest;
   timeout: ReturnType<typeof setTimeout>;
   workspaceKey: string;
 }
@@ -476,7 +472,6 @@ type SessionSendCompatField =
   | "automationId"
   | "offPeakTaskId"
   | "offPeakRunType"
-  | "botDeliveryTarget"
   | "toolDenylist";
 
 const SESSION_CREATE_OPTIONAL_COMPAT_FIELDS = new Set<SessionCreateCompatField>([
@@ -510,7 +505,6 @@ const SESSION_SEND_OPTIONAL_COMPAT_FIELDS = new Set<SessionSendCompatField>([
   "automationId",
   "offPeakTaskId",
   "offPeakRunType",
-  "botDeliveryTarget",
   "toolDenylist",
 ]);
 // onDynamicSessionEvent 建立上游订阅时若 getClient / sessionSubscribe 瞬时失败
@@ -533,7 +527,7 @@ export function supportsLegacyRemoteTaskAllowlist(workspaceIdentity: string | un
 }
 
 function isClosedStdioTransportError(error: unknown): boolean {
-  return error instanceof Error && error.message === "ZCode agent stdio transport is closed";
+  return error instanceof Error && error.message === "Nekode agent stdio transport is closed";
 }
 
 interface SessionEventSequenceState {
@@ -553,7 +547,7 @@ function isProtocolMethodNotFoundError(error: unknown): boolean {
   );
 }
 
-function buildWorkspaceRef(params: ZCodeAgentWorkspaceTarget): ZCodeWorkspaceRef {
+function buildWorkspaceRef(params: NekodeAgentWorkspaceTarget): NekodeWorkspaceRef {
   return {
     workspacePath: params.workspacePath,
     workspaceIdentity: params.workspaceIdentity,
@@ -566,29 +560,32 @@ function buildWorkspaceRef(params: ZCodeAgentWorkspaceTarget): ZCodeWorkspaceRef
 // GUI 项目组里明说 `scope:"global"` 的动作都带 workspacePath；只给 `{ scope: "global" }` 的
 // 全局组动作不带，交给 services 自选载体。
 function savedWorkflowTargetHasWorkspace(
-  params: ZCodeAgentSavedWorkflowTarget,
-): params is ZCodeAgentWorkspaceTarget & { scope?: ZCodeSavedWorkflowScope } {
-  return typeof (params as Partial<ZCodeAgentWorkspaceTarget>).workspacePath === "string";
+  params: NekodeAgentSavedWorkflowTarget,
+): params is NekodeAgentWorkspaceTarget & { scope?: NekodeSavedWorkflowScope } {
+  return typeof (params as Partial<NekodeAgentWorkspaceTarget>).workspacePath === "string";
 }
 
 // 只在 `scope` 有定义时下推到 RPC params：不给 scope 的项目档保持与今天逐字一致的线上形状。
-function savedWorkflowScopeParam(params: ZCodeAgentSavedWorkflowTarget): {
-  scope?: ZCodeSavedWorkflowScope;
+function savedWorkflowScopeParam(params: NekodeAgentSavedWorkflowTarget): {
+  scope?: NekodeSavedWorkflowScope;
 } {
   return params.scope === undefined ? {} : { scope: params.scope };
 }
 
 function ensurePluginManagementWorkspacePath(): string {
-  const workspacePath = join(getDataBaseDir(), ".zcode", PLUGIN_MANAGEMENT_WORKSPACE_DIR_NAME);
+  const workspacePath = join(
+    resolveNekodeDataBaseRoot(getDataBaseDir()),
+    PLUGIN_MANAGEMENT_WORKSPACE_DIR_NAME,
+  );
   // 插件管理是控制面能力，不能复用可能因真实 workspace 被删而 EPIPE 的会话进程。
   // 这里给它固定一个内部 cwd；真实 workspace 仍通过协议参数传给 CLI 做 workspace-scope 判定。
   mkdirSync(workspacePath, { recursive: true });
   return workspacePath;
 }
 
-// NOTE: this counts ONLY the per-session MCP servers passed through the ZCode Protocol
+// NOTE: this counts ONLY the per-session MCP servers passed through the Nekode Protocol
 // session/create params (the app→protocol channel). It is deliberately independent of the
-// CLI/bootstrap MCP servers configured in ~/.zcode/cli/config.json (mcp.servers), which the agent
+// CLI/bootstrap MCP servers configured in ~/.nekode/cli/config.json (mcp.servers), which the agent
 // runtime connects separately and reports via the `mcp.server.connected`/toolCount events. So a
 // createSession log line with mcpServerCount:0 is EXPECTED when zcode-cua is a CLI-config MCP server
 // (e.g. the product Helper broker path injected through the gated bootstrap env): the model still receives those
@@ -709,10 +706,10 @@ function getSessionSendCompatFields(error: unknown): SessionSendCompatField[] {
 }
 
 function isProtocolRequestTimeout(error: unknown, method: string): boolean {
-  if (error instanceof ZCodeProtocolRequestTimeoutError) {
+  if (error instanceof NekodeProtocolRequestTimeoutError) {
     return error.method === method;
   }
-  return error instanceof Error && error.message === `ZCode Protocol request timed out: ${method}`;
+  return error instanceof Error && error.message === `Nekode Protocol request timed out: ${method}`;
 }
 
 function assertV4AttachmentNdjsonEnvelope(method: string, params: unknown): void {
@@ -724,7 +721,7 @@ function assertV4AttachmentNdjsonEnvelope(method: string, params: unknown): void
 }
 
 function buildSessionCreateParams(
-  params: ZCodeAgentCreateSessionParams & {
+  params: NekodeAgentCreateSessionParams & {
     offPeakToolEnabled?: boolean;
     dynamicWorkflowEnabled?: boolean;
     dynamicWorkflowMode?: DynamicWorkflowMode;
@@ -801,7 +798,7 @@ function buildDynamicWorkflowModeField(
 }
 
 function buildSessionResumeParams(
-  params: ZCodeAgentResumeSessionParams & {
+  params: NekodeAgentResumeSessionParams & {
     offPeakToolEnabled?: boolean;
     dynamicWorkflowEnabled?: boolean;
     dynamicWorkflowMode?: DynamicWorkflowMode;
@@ -847,7 +844,7 @@ function buildSessionResumeParams(
 }
 
 function buildSessionSendParams(
-  params: ZCodeAgentSendPromptParams,
+  params: NekodeAgentSendPromptParams,
   omittedFields: ReadonlySet<SessionSendCompatField> = new Set(),
 ) {
   return {
@@ -873,16 +870,13 @@ function buildSessionSendParams(
     ...(params.offPeakRunType !== undefined && !omittedFields.has("offPeakRunType")
       ? { offPeakRunType: params.offPeakRunType }
       : {}),
-    ...(params.botDeliveryTarget !== undefined && !omittedFields.has("botDeliveryTarget")
-      ? { botDeliveryTarget: params.botDeliveryTarget }
-      : {}),
     ...(params.toolDenylist !== undefined && !omittedFields.has("toolDenylist")
       ? { toolDenylist: params.toolDenylist }
       : {}),
   };
 }
 
-function buildSessionCompactParams(params: ZCodeAgentCompactParams) {
+function buildSessionCompactParams(params: NekodeAgentCompactParams) {
   return {
     sessionId: params.sessionId,
     inputId: params.inputId,
@@ -898,10 +892,10 @@ function formatModelSelectionForLog(ref: ModelSelection | undefined): string | n
 
   const base = `${ref.providerId}/${ref.modelId}`;
   const reasoningLevel = ref.options?.reasoningLevel;
-  return reasoningLevel ? `${base}${ZCODE_MODEL_REASONING_SEPARATOR}${reasoningLevel}` : base;
+  return reasoningLevel ? `${base}${NEKODE_MODEL_REASONING_SEPARATOR}${reasoningLevel}` : base;
 }
 
-function sessionEventKey(params: ZCodeAgentSessionTarget): string {
+function sessionEventKey(params: NekodeAgentSessionTarget): string {
   return `${resolveWorkspaceKey(params)}\u0000${params.sessionId}`;
 }
 
@@ -920,16 +914,16 @@ function rememberBoundedEventId(ids: Set<string>, order: string[], eventId: stri
   return true;
 }
 
-function permissionRequestKey(params: ZCodeAgentSessionTarget & { requestId: string }): string {
+function permissionRequestKey(params: NekodeAgentSessionTarget & { requestId: string }): string {
   return `${sessionEventKey(params)}\u0000${params.requestId}`;
 }
 
-function userInputRequestKey(params: ZCodeAgentSessionTarget & { requestId: string }): string {
+function userInputRequestKey(params: NekodeAgentSessionTarget & { requestId: string }): string {
   return `${sessionEventKey(params)}\u0000${params.requestId}`;
 }
 
 function providerRuntimeHeadersRequestKey(
-  params: ZCodeAgentSessionTarget & { requestId: string },
+  params: NekodeAgentSessionTarget & { requestId: string },
 ): string {
   return `${sessionEventKey(params)}\u0000${params.requestId}`;
 }
@@ -945,7 +939,7 @@ interface ModelSelectionReadinessSource {
   onDidChange?: (listener: (view: ModelSelectionView) => void) => IDisposable;
 }
 
-interface ZCodeAgentProviderReadinessSnapshot {
+interface NekodeAgentProviderReadinessSnapshot {
   readonly providerCount: number;
   readonly revision: string;
   readonly readiness: {
@@ -957,7 +951,7 @@ interface ZCodeAgentProviderReadinessSnapshot {
 
 function createProviderReadinessSnapshotFromSelectionView(
   view: ModelSelectionView,
-): ZCodeAgentProviderReadinessSnapshot {
+): NekodeAgentProviderReadinessSnapshot {
   for (const provider of view.providers) {
     const model = provider.models[0];
     if (!model) continue;
@@ -981,19 +975,19 @@ function createProviderReadinessSnapshotFromSelectionView(
 interface WaitingWorkspaceStartup {
   cancelled: boolean;
   lastLoggedRevision?: string;
-  starting?: Promise<ZCodeProtocolClient>;
-  workspace: ZCodeAgentWorkspaceTarget;
+  starting?: Promise<NekodeProtocolClient>;
+  workspace: NekodeAgentWorkspaceTarget;
 }
 
 interface ActiveWorkspaceClient {
-  client: ZCodeProtocolClient;
+  client: NekodeProtocolClient;
   interactionPreferencesReady?: Promise<void>;
   /**
    * 只记录该进程生命周期内是否曾通过 provider/model 启动门禁。
    * 只读 topic 可以先启动 CLI，但不能因此让后续 create/command 绕过门禁。
    */
   modelExecutionEnabled: boolean;
-  workspace: ZCodeAgentWorkspaceTarget;
+  workspace: NekodeAgentWorkspaceTarget;
   /**
    * 该 CLI 进程当前持有的动态工作流策略（launch.md「The user's choice」）。CLI 启动时缺省关闭，
    * 只在 workspace/updateDynamicWorkflowPolicy 成功后更新；重同步据此跳过没有变化的请求。
@@ -1026,15 +1020,15 @@ function sessionNotResidentError(sessionId: string): Error {
   return new Error(`session is not resident: ${sessionId} (proto.sessionNotResident)`);
 }
 
-function createRuntimeUnavailableError(params: ZCodeAgentWorkspaceTarget): Error & {
-  code: typeof ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
+function createRuntimeUnavailableError(params: NekodeAgentWorkspaceTarget): Error & {
+  code: typeof NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
   workspaceKey: string;
 } {
-  const error = new Error("ZCode Agent runtime is not running.") as Error & {
-    code: typeof ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
+  const error = new Error("Nekode Agent runtime is not running.") as Error & {
+    code: typeof NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
     workspaceKey: string;
   };
-  error.code = ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
+  error.code = NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE;
   error.workspaceKey = resolveWorkspaceKey(params);
   return error;
 }
@@ -1088,11 +1082,11 @@ type AccountRequestAuthOptions =
       readRequestVerificationConfig: () => Promise<RequestVerificationConfig | null>;
     };
 
-type CreateZCodeAgentServiceOptions = CreateZCodeAgentServiceBaseOptions &
+type CreateNekodeAgentServiceOptions = CreateNekodeAgentServiceBaseOptions &
   AccountRequestAuthOptions;
 
-interface CreateZCodeAgentServiceBaseOptions extends Omit<
-  ZCodeAgentProcessManagerOptions,
+interface CreateNekodeAgentServiceBaseOptions extends Omit<
+  NekodeAgentProcessManagerOptions,
   "idleTimeoutMs"
 > {
   /** 仅供 MCP 状态探测进程使用，不能把空闲回收传给 chat。 */
@@ -1101,7 +1095,7 @@ interface CreateZCodeAgentServiceBaseOptions extends Omit<
   /** Desktop Host 请求 Main 登记 Agent 已授权的精确本地视频路径。 */
   authorizeLocalMediaPreviewPath?: (path: string) => Promise<string>;
   modelSelectionReadinessSource?: ModelSelectionReadinessSource;
-  prepareRuntimeWorkspace?: (workspace: ZCodeAgentWorkspaceTarget) => Promise<void>;
+  prepareRuntimeWorkspace?: (workspace: NekodeAgentWorkspaceTarget) => Promise<void>;
   readSubagentRuntimeConfig?: (workspace: {
     workspacePath: string;
     workspaceIdentity?: string;
@@ -1111,21 +1105,21 @@ interface CreateZCodeAgentServiceBaseOptions extends Omit<
     projectId: string,
   ) => Promise<import("@zcode/shared").ProjectExecutionSnapshot>;
   prepareSessionCreation?: (
-    target: Omit<ZCodeAgentSessionTarget, "sessionId"> & {
+    target: Omit<NekodeAgentSessionTarget, "sessionId"> & {
       sessionId?: string;
       projectId: string | null;
       creationCommand?: { clientId: string; commandId: string };
       additionalDirectories?: string[];
     },
   ) => Promise<{ sessionId: string; additionalDirectories: string[] }>;
-  resolveSessionDirectories?: (target: ZCodeAgentSessionTarget) => Promise<string[]>;
+  resolveSessionDirectories?: (target: NekodeAgentSessionTarget) => Promise<string[]>;
   resolveSessionRuntimePreferences?: (
-    scope: ZCodeSessionRuntimePreferencesScope,
-  ) => Promise<ZCodeSessionRuntimePreferencesResult>;
+    scope: NekodeSessionRuntimePreferencesScope,
+  ) => Promise<NekodeSessionRuntimePreferencesResult>;
   /** manual run 落库后由当前 host 直接派发；返回时 prompt 必须已被 session 接受。 */
   onAutomationManualRunRequested?: (params: {
-    automation: ZCodeAutomation;
-    run: ZCodeAutomationRun;
+    automation: NekodeAutomation;
+    run: NekodeAutomationRun;
   }) => Promise<void>;
   /**
    * Off-Peak 会话内创建。config 同时承担曝光门（enabled && Selection View 非空 →
@@ -1156,15 +1150,14 @@ interface CreateZCodeAgentServiceBaseOptions extends Omit<
    * browser 命令返回 backend_unavailable，不影响其它功能。
    */
   browserControlExecutor?: BrowserAmbientContextExecutor;
-  channelReplyExecutor?: (request: ChannelReplyHostRequest) => Promise<ChannelReplyResult>;
   topicResourceExecutor?: (
-    request: ZCodeTopicResourceReadParams &
-      ZCodeAgentWorkspaceTarget & { trace?: ZCodeProtocolTrace },
+    request: NekodeTopicResourceReadParams &
+      NekodeAgentWorkspaceTarget & { trace?: NekodeProtocolTrace },
     signal: AbortSignal,
-  ) => Promise<ZCodePromptAttachment>;
+  ) => Promise<NekodePromptAttachment>;
   topicResourceValidator?: (
-    request: ZCodeTopicResourceReadParams &
-      ZCodeAgentWorkspaceTarget & { trace?: ZCodeProtocolTrace },
+    request: NekodeTopicResourceReadParams &
+      NekodeAgentWorkspaceTarget & { trace?: NekodeProtocolTrace },
     signal: AbortSignal,
   ) => Promise<void>;
   /**
@@ -1176,7 +1169,7 @@ interface CreateZCodeAgentServiceBaseOptions extends Omit<
    */
   officialMcpAuthHeadersResolver?: {
     resolveHeaders(request: {
-      /** plugin-command 按「套餐可选」解析：没有套餐时只返回 ZCode 登录身份。 */
+      /** plugin-command 按「套餐可选」解析：没有套餐时只返回 Nekode 登录身份。 */
       consumer: OfficialAuthConsumerKind;
       mcpKey: string;
       pluginId: string;
@@ -1212,7 +1205,7 @@ interface CreateZCodeAgentServiceBaseOptions extends Omit<
   ) => void;
 }
 
-function toProtocolAutomation(automation: ZCodeAutomation) {
+function toProtocolAutomation(automation: NekodeAutomation) {
   return {
     automationId: automation.automationId,
     title: automation.title,
@@ -1264,9 +1257,9 @@ export const OFF_PEAK_INTERNAL_ERROR_MESSAGE = "Internal off-peak service error"
  * 对外固定稳定错误码 + 通用文案；业务失败分类仍走 respond({ok:false}) 不经此处。
  */
 async function respondOffPeakInternalError(
-  client: Pick<ZCodeProtocolClient, "respondError">,
-  request: { id: ZCodeProtocolRequestId; method: string },
-  workspace: ZCodeAgentWorkspaceTarget,
+  client: Pick<NekodeProtocolClient, "respondError">,
+  request: { id: NekodeProtocolRequestId; method: string },
+  workspace: NekodeAgentWorkspaceTarget,
   error: unknown,
 ): Promise<void> {
   logger.warn(undefined, "Off-peak 协议请求处理失败", {
@@ -1323,10 +1316,10 @@ export function resolveOffPeakToolSelection(
     ? selection
     : { ...selection, options: { reasoningLevel: thoughtLevel } };
 }
-export function createZCodeAgentService(
-  options?: CreateZCodeAgentServiceOptions,
-): IZCodeAgentService & { disposeAllAndWait(): Promise<void> } {
-  const processManager = new ZCodeAgentProcessManager(options);
+export function createNekodeAgentService(
+  options?: CreateNekodeAgentServiceOptions,
+): INekodeAgentService & { disposeAllAndWait(): Promise<void> } {
+  const processManager = new NekodeAgentProcessManager(options);
   // Windows indicator 与 macOS producer lifecycle client 共用已校验、去重的 sideband facts。
   const cuaOperationTurnTracker =
     options?.cuaOperationStateReporter || options?.onCuaPipSessionLifecycle
@@ -1348,7 +1341,7 @@ export function createZCodeAgentService(
   const automationRepo = new AutomationRepo();
   const automationService = new AutomationService(automationRepo, options?.prepareProjectExecution);
   const automationTaskIndexRepo = new TaskIndexRepo();
-  const pluginProcessManager = new ZCodeAgentProcessManager({
+  const pluginProcessManager = new NekodeAgentProcessManager({
     commandResolver: options?.commandResolver,
     presentationSurface: options?.presentationSurface,
     requestTimeoutMs: options?.requestTimeoutMs,
@@ -1357,7 +1350,7 @@ export function createZCodeAgentService(
   });
   // 合并时误删了独立进程：mcp/list 的慢握手会堵住串行 stdio 队列，连带卡住插件卸载。
   // 恢复专用控制面进程及空闲回收；共享 workspace 路径，不共享请求队列或 watchdog。
-  const mcpStatusProcessManager = new ZCodeAgentProcessManager({
+  const mcpStatusProcessManager = new NekodeAgentProcessManager({
     commandResolver: options?.commandResolver,
     presentationSurface: options?.presentationSurface,
     processLifecycleReporter: options?.processLifecycleReporter,
@@ -1367,7 +1360,7 @@ export function createZCodeAgentService(
     lane: "mcp-status",
     idleTimeoutMs: options?.mcpStatusIdleTimeoutMs ?? MCP_STATUS_LANE_IDLE_TIMEOUT_MS,
   });
-  const sessionEmitters = new Map<string, Emitter<ZCodeAgentServiceEvent>>();
+  const sessionEmitters = new Map<string, Emitter<NekodeAgentServiceEvent>>();
   /**
    * 已经记过"首次发放官方身份头"审计日志的 (pluginId, mcpKey, workspaceKey)。
    *
@@ -1379,11 +1372,11 @@ export function createZCodeAgentService(
   const officialMcpIssuanceAudit = createOfficialMcpIssuanceAudit();
   const providerRuntimeHeadersWorkspaceEmitters = new Map<
     string,
-    Emitter<ZCodeAgentProviderRuntimeHeadersRequest>
+    Emitter<NekodeAgentProviderRuntimeHeadersRequest>
   >();
   const providerRuntimeHeadersCancelledEmitters = new Map<
     string,
-    Emitter<ZCodeProviderRuntimeHeadersCancelled>
+    Emitter<NekodeProviderRuntimeHeadersCancelled>
   >();
   function cancelProviderRuntimeHeaders(
     key: string,
@@ -1402,14 +1395,14 @@ export function createZCodeAgentService(
     });
   }
   const sessionRuntimePreferencesRequestEmitter =
-    new Emitter<ZCodeAgentSessionRuntimePreferencesRequest>();
+    new Emitter<NekodeAgentSessionRuntimePreferencesRequest>();
   const processResourceSampleEmitter = new Emitter<AgentLaneResourceSample>();
-  const toolExecResourceEmitter = new Emitter<ZCodeToolExecResource>();
-  const mcpResourceSamplesEmitter = new Emitter<ZCodeMcpResourceSample[]>();
-  const mcpTelemetryEmitter = new Emitter<ZCodeMcpTelemetryEvent>();
+  const toolExecResourceEmitter = new Emitter<NekodeToolExecResource>();
+  const mcpResourceSamplesEmitter = new Emitter<NekodeMcpResourceSample[]>();
+  const mcpTelemetryEmitter = new Emitter<NekodeMcpTelemetryEvent>();
   const pluginOperationProgressEmitters = new Map<
     string,
-    Emitter<ZCodePluginOperationProgressNotification>
+    Emitter<NekodePluginOperationProgressNotification>
   >();
   // v4 conversation 帧 fan-out：workspace 级 emitter，renderer 侧按 topic 自行路由。
   const sessionLifecycleEmitter = new Emitter<{
@@ -1422,7 +1415,7 @@ export function createZCodeAgentService(
   const remoteConversationTelemetryEmitter = new Emitter<RemoteConversationTelemetryEvent>();
   const remoteConversationTelemetry = new Map<string, RemoteConversationTelemetry>();
   function collectRemoteConversationFact(
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
     fact: ConversationTelemetryFact,
   ): boolean {
     const key = resolveWorkspaceKey(workspace);
@@ -1443,9 +1436,9 @@ export function createZCodeAgentService(
 
   const offPeakLifecycleEmitters = new Map<string, Emitter<OffPeakLifecycleNotification>>();
   const pluginUiToolResultEmitter = new Emitter<
-    PluginUiToolResultNotification & ZCodeAgentWorkspaceTarget
+    PluginUiToolResultNotification & NekodeAgentWorkspaceTarget
   >();
-  const cuaPermissionObservationEmitter = new Emitter<ZCodeAgentCuaPermissionObservation>();
+  const cuaPermissionObservationEmitter = new Emitter<NekodeAgentCuaPermissionObservation>();
   // sessions-index 帧 fan-out：与 conversation 同一 conversationFrame 通知，按 topic 前缀分流到此 emitter。
   const sessionsIndexFrameEmitters = new Map<string, Emitter<SessionsIndexTopicWireCandidate>>();
   // workspace-config 帧 fan-out：配置目录活性（task-index syncer 消费），同一通知按前缀分流。
@@ -1469,16 +1462,16 @@ export function createZCodeAgentService(
     cuaOperationTurnTracker?.clearWorkspaceKey(workspaceKey);
   });
   const sessionEventSequenceStates = new Map<string, SessionEventSequenceState>();
-  const wiredClients = new WeakSet<ZCodeProtocolClient>();
+  const wiredClients = new WeakSet<NekodeProtocolClient>();
   const clientWorkspaces = new WeakMap<
-    ZCodeProtocolClient,
-    Map<string, ZCodeAgentWorkspaceTarget>
+    NekodeProtocolClient,
+    Map<string, NekodeAgentWorkspaceTarget>
   >();
-  const clientSessions = new WeakMap<ZCodeProtocolClient, Map<string, string>>();
+  const clientSessions = new WeakMap<NekodeProtocolClient, Map<string, string>>();
 
   function rememberClientTarget(
-    client: ZCodeProtocolClient,
-    target: ZCodeAgentWorkspaceTarget,
+    client: NekodeProtocolClient,
+    target: NekodeAgentWorkspaceTarget,
     sessionId?: string,
   ): void {
     let workspaces = clientWorkspaces.get(client);
@@ -1490,7 +1483,7 @@ export function createZCodeAgentService(
       ...(target.workspaceIdentity ? { workspaceIdentity: target.workspaceIdentity } : {}),
       ...(target.remoteSessionId ? { remoteSessionId: target.remoteSessionId } : {}),
     });
-    const request = target as ZCodeAgentWorkspaceTarget & {
+    const request = target as NekodeAgentWorkspaceTarget & {
       sessionId?: string;
       envelope?: { sessionId?: string | null };
     };
@@ -1505,9 +1498,9 @@ export function createZCodeAgentService(
   }
 
   function routeClientMessage(
-    client: ZCodeProtocolClient,
+    client: NekodeProtocolClient,
     value: unknown,
-  ): ZCodeAgentWorkspaceTarget | undefined {
+  ): NekodeAgentWorkspaceTarget | undefined {
     const workspaces = clientWorkspaces.get(client);
     if (!workspaces) return undefined;
     const data = value && typeof value === "object" ? (value as Record<string, unknown>) : {};
@@ -1556,7 +1549,7 @@ export function createZCodeAgentService(
     return workspace;
   }
 
-  const clientDisposables = new WeakMap<ZCodeProtocolClient, IDisposable[]>();
+  const clientDisposables = new WeakMap<NekodeProtocolClient, IDisposable[]>();
   const pendingPermissions = new Map<string, PendingPermissionRequest>();
   const pendingUserInputs = new Map<string, PendingPermissionRequest>();
   // 内存诊断计数器：只读各 per-session 镜像表的 size。
@@ -1572,14 +1565,14 @@ export function createZCodeAgentService(
     PendingSessionRuntimePreferencesRequest
   >();
   const activeClientsByWorkspaceKey = new Map<string, ActiveWorkspaceClient>();
-  const interactionPreferenceSyncByClient = new WeakMap<ZCodeProtocolClient, Promise<void>>();
-  let latestAppRuntimePreferences: ZCodeAgentAppRuntimePreferences | undefined;
+  const interactionPreferenceSyncByClient = new WeakMap<NekodeProtocolClient, Promise<void>>();
+  let latestAppRuntimePreferences: NekodeAgentAppRuntimePreferences | undefined;
   /** 服务端「提供」的进程内单次读取；见 resolveDynamicWorkflowGate 的注释。 */
   let dynamicWorkflowOffer: Promise<DynamicWorkflowClientConfig | undefined> | undefined;
   /** desktop 推来的用户选择；只在没有本机设置权威（未注入 resolveDynamicWorkflowUserMode）时使用。 */
   let pushedDynamicWorkflowUserMode: DynamicWorkflowMode | undefined;
   /** 每个物理 CLI 的策略同步链：后入队的步骤在前一步落地后才读取生效模式并发送。 */
-  const dynamicWorkflowPolicySyncByClient = new WeakMap<ZCodeProtocolClient, Promise<void>>();
+  const dynamicWorkflowPolicySyncByClient = new WeakMap<NekodeProtocolClient, Promise<void>>();
   const waitingWorkspaceStartups = new Map<string, WaitingWorkspaceStartup>();
   function cancelWaitingWorkspaceStartup(workspaceKey: string): void {
     const waiting = waitingWorkspaceStartups.get(workspaceKey);
@@ -1594,9 +1587,9 @@ export function createZCodeAgentService(
     }
     waitingWorkspaceStartups.clear();
   }
-  const accountConfigSyncByClient = new WeakMap<ZCodeProtocolClient, Promise<void>>();
+  const accountConfigSyncByClient = new WeakMap<NekodeProtocolClient, Promise<void>>();
   // 此缓存只去重已交付的账号快照，不表示 Worker 的 Registry 已应用该版本。
-  const accountConfigReceivedRevisionByClient = new WeakMap<ZCodeProtocolClient, string>();
+  const accountConfigReceivedRevisionByClient = new WeakMap<NekodeProtocolClient, string>();
   const sessionTraceIdBySessionKey = new Map<string, TraceId>();
   const accountRequestAuthService = options?.accountRequestAuthService;
   const accountProviderConfigSource = options?.accountProviderConfigSource;
@@ -1604,7 +1597,7 @@ export function createZCodeAgentService(
   const sessionRuntimePreferencesAuthority = options?.sessionRuntimePreferencesAuthority ?? "local";
   const resolveSessionRuntimePreferences = options?.resolveSessionRuntimePreferences;
 
-  function invalidateWorkspaceClient(workspaceKey: string, client: ZCodeProtocolClient): void {
+  function invalidateWorkspaceClient(workspaceKey: string, client: NekodeProtocolClient): void {
     for (const [key, pending] of pendingPermissions) {
       if (pending.client === client) {
         pendingPermissions.delete(key);
@@ -1656,7 +1649,7 @@ export function createZCodeAgentService(
   });
 
   async function resolveAccountRequestAuth(
-    request: ZCodeProviderRuntimeHeadersRequestParams,
+    request: NekodeProviderRuntimeHeadersRequestParams,
   ): Promise<AccountRequestAuthMaterial | undefined> {
     if (!request.accountAccess || !accountRequestAuthService) {
       return undefined;
@@ -1687,7 +1680,7 @@ export function createZCodeAgentService(
         headersApplied: true,
         requestAuth,
       });
-      logger.info(undefined, "ZCode provider runtime headers 已应用", {
+      logger.info(undefined, "Nekode provider runtime headers 已应用", {
         modelId: params.pending.request.modelSelection.modelId,
         providerId: params.pending.request.providerId,
         requestId: params.pending.request.requestId,
@@ -1696,7 +1689,7 @@ export function createZCodeAgentService(
       });
     } catch (error) {
       if (pendingProviderRuntimeHeaders.get(params.key) !== params.pending) return;
-      logger.warn(undefined, "ZCode provider runtime headers 应用失败", {
+      logger.warn(undefined, "Nekode provider runtime headers 应用失败", {
         modelId: params.pending.request.modelSelection.modelId,
         providerId: params.pending.request.providerId,
         requestId: params.pending.request.requestId,
@@ -1718,7 +1711,7 @@ export function createZCodeAgentService(
   async function routeProviderRuntimeHeadersRequest(
     key: string,
     pending: PendingProviderRuntimeHeadersRequest,
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
   ): Promise<void> {
     let configFailureCode:
       | (typeof zcodeProviderRuntimeHeadersErrorCode)[keyof typeof zcodeProviderRuntimeHeadersErrorCode]
@@ -1781,7 +1774,7 @@ export function createZCodeAgentService(
       const cause = error instanceof Error ? error.cause : undefined;
       const loggedError =
         cause === undefined ? errorMessage : describeVerificationConfigError(cause);
-      logger.warn(undefined, "ZCode provider runtime headers 应用失败", {
+      logger.warn(undefined, "Nekode provider runtime headers 应用失败", {
         modelId: pending.request.modelSelection.modelId,
         providerId: pending.request.providerId,
         requestId: pending.request.requestId,
@@ -1791,7 +1784,7 @@ export function createZCodeAgentService(
       });
       if (configFailureCode === zcodeProviderRuntimeHeadersErrorCode.configNetwork) {
         await pending.client.respondError(pending.protocolRequestId, {
-          code: ZCODE_PROVIDER_CONFIG_NETWORK_ERROR,
+          code: NEKODE_PROVIDER_CONFIG_NETWORK_ERROR,
           message: errorMessage,
         });
         return;
@@ -1828,7 +1821,7 @@ export function createZCodeAgentService(
       requestId,
       scope: pending.request.scope,
       sessionId: pending.request.sessionId,
-      timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+      timeoutMs: NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
       workspaceKey: pending.workspaceKey,
     });
     void pending.client
@@ -1836,7 +1829,7 @@ export function createZCodeAgentService(
         code: -32022,
         message: "Session runtime preferences request timed out",
         data: {
-          timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+          timeoutMs: NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
         },
       })
       .catch((error: unknown) => {
@@ -1869,7 +1862,7 @@ export function createZCodeAgentService(
   });
 
   async function syncAccountProviderConfigToClient(params: {
-    client: ZCodeProtocolClient;
+    client: NekodeProtocolClient;
     reason: string;
     refreshRegistry?: boolean;
   }): Promise<void> {
@@ -1888,7 +1881,7 @@ export function createZCodeAgentService(
             zcodeProtocolMethods.providerUpdateAccountConfig,
             {
               revision: snapshot.revision,
-              basedOnZCodeBuiltinRevision: snapshot.basedOnZCodeBuiltinRevision,
+              basedOnNekodeBuiltinRevision: snapshot.basedOnNekodeBuiltinRevision,
               // Account 是运行时事实信封，不是磁盘 Provider 规则集合；保持原有协议字典。
               providers: Object.fromEntries(
                 [...snapshot.providers.entries()].map(([providerId, config]) => [
@@ -1904,7 +1897,7 @@ export function createZCodeAgentService(
             throw new Error("Account Config 接收回执版本与交付版本不一致");
           }
           accountConfigReceivedRevisionByClient.set(params.client, result.receivedRevision);
-          logger.info(undefined, "account provider config 已交付到 ZCode agent", {
+          logger.info(undefined, "account provider config 已交付到 Nekode agent", {
             providerCount: result.providerCount,
             reason: params.reason,
             receivedRevision: result.receivedRevision,
@@ -1930,9 +1923,9 @@ export function createZCodeAgentService(
   }
 
   async function ensureAccountProviderConfigSynced(params: {
-    client: ZCodeProtocolClient;
+    client: NekodeProtocolClient;
     reason: string;
-    workspace: ZCodeAgentWorkspaceTarget;
+    workspace: NekodeAgentWorkspaceTarget;
     refreshRegistry?: boolean;
   }): Promise<void> {
     await syncAccountProviderConfigToClient({
@@ -1954,9 +1947,9 @@ export function createZCodeAgentService(
   }
 
   function enqueueInteractionPreferenceSync(params: {
-    client: ZCodeProtocolClient;
-    preferences: ZCodeAgentAppRuntimePreferences;
-    workspace: ZCodeAgentWorkspaceTarget;
+    client: NekodeProtocolClient;
+    preferences: NekodeAgentAppRuntimePreferences;
+    workspace: NekodeAgentWorkspaceTarget;
   }): Promise<void> {
     // 同一物理连接上的全局偏好必须串行，防止旧工作区快照覆盖新设置。
     const previous = interactionPreferenceSyncByClient.get(params.client) ?? Promise.resolve();
@@ -2010,7 +2003,7 @@ export function createZCodeAgentService(
 
   async function handleProviderReadinessChanged(event: {
     reason: string;
-    snapshot: ZCodeAgentProviderReadinessSnapshot;
+    snapshot: NekodeAgentProviderReadinessSnapshot;
   }): Promise<void> {
     if (event.snapshot.readiness.ready) {
       await Promise.allSettled(
@@ -2036,7 +2029,7 @@ export function createZCodeAgentService(
             workspace,
             refreshRegistry: true,
           });
-          logger.info(undefined, "provider/model 就绪后已启动等待中的 ZCode agent", {
+          logger.info(undefined, "provider/model 就绪后已启动等待中的 Nekode agent", {
             providerCount: event.snapshot.providerCount,
             reason: event.reason,
             revision: event.snapshot.revision,
@@ -2048,13 +2041,13 @@ export function createZCodeAgentService(
     }
   }
 
-  function getSessionEmitter(params: ZCodeAgentSessionTarget) {
+  function getSessionEmitter(params: NekodeAgentSessionTarget) {
     const key = sessionEventKey(params);
     const existing = sessionEmitters.get(key);
     if (existing) {
       return existing;
     }
-    const created = new Emitter<ZCodeAgentServiceEvent>();
+    const created = new Emitter<NekodeAgentServiceEvent>();
     sessionEmitters.set(key, created);
     return created;
   }
@@ -2062,7 +2055,7 @@ export function createZCodeAgentService(
   function getPluginOperationProgressEmitter(operationId: string) {
     const existing = pluginOperationProgressEmitters.get(operationId);
     if (existing) return existing;
-    let created: Emitter<ZCodePluginOperationProgressNotification>;
+    let created: Emitter<NekodePluginOperationProgressNotification>;
     created = new Emitter({
       onDidRemoveLastListener: () => {
         if (pluginOperationProgressEmitters.get(operationId) !== created) return;
@@ -2074,7 +2067,7 @@ export function createZCodeAgentService(
     return created;
   }
 
-  function getConversationFrameEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getConversationFrameEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = conversationFrameEmitters.get(key);
     if (existing) {
@@ -2085,18 +2078,18 @@ export function createZCodeAgentService(
     return created;
   }
 
-  function getProviderRuntimeHeadersWorkspaceEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getProviderRuntimeHeadersWorkspaceEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = providerRuntimeHeadersWorkspaceEmitters.get(key);
     if (existing) {
       return existing;
     }
-    const created = new Emitter<ZCodeAgentProviderRuntimeHeadersRequest>();
+    const created = new Emitter<NekodeAgentProviderRuntimeHeadersRequest>();
     providerRuntimeHeadersWorkspaceEmitters.set(key, created);
     return created;
   }
 
-  function getConversationTelemetryFactEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getConversationTelemetryFactEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = conversationTelemetryFactEmitters.get(key);
     if (existing) return existing;
@@ -2105,7 +2098,7 @@ export function createZCodeAgentService(
     return created;
   }
 
-  function getOffPeakLifecycleEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getOffPeakLifecycleEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     let emitter = offPeakLifecycleEmitters.get(key);
     if (!emitter) {
@@ -2115,7 +2108,7 @@ export function createZCodeAgentService(
     return emitter;
   }
 
-  function getSessionsIndexFrameEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getSessionsIndexFrameEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = sessionsIndexFrameEmitters.get(key);
     if (existing) {
@@ -2126,7 +2119,7 @@ export function createZCodeAgentService(
     return created;
   }
 
-  function getWorkspaceConfigFrameEmitter(workspace: ZCodeAgentWorkspaceTarget) {
+  function getWorkspaceConfigFrameEmitter(workspace: NekodeAgentWorkspaceTarget) {
     const key = resolveWorkspaceKey(workspace);
     const existing = workspaceConfigFrameEmitters.get(key);
     if (existing) {
@@ -2145,9 +2138,9 @@ export function createZCodeAgentService(
   function resolveV4Connection(
     params: unknown,
     fallbackConnectionId: string = v4ConnectionId,
-  ): ZCodeAgentV4ConnectionContext {
+  ): NekodeAgentV4ConnectionContext {
     return (
-      readTrustedZCodeAgentV4Connection(params) ?? {
+      readTrustedNekodeAgentV4Connection(params) ?? {
         // 没有可信 carrier 就是宿主内部直调：按旧消费者订阅（整键 patch），不猜能力。
         connectionId: fallbackConnectionId,
         clientMode: "desktop-continuous" as const,
@@ -2164,7 +2157,7 @@ export function createZCodeAgentService(
   }
 
   function rememberV4SubscriptionRoute(
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
     topic: string,
     subscriptionId: string,
     connectionId: string,
@@ -2206,11 +2199,11 @@ export function createZCodeAgentService(
   }
 
   function resolveV4UnsubscribeRoute(
-    params: ZCodeAgentConversationUnsubscribeParams | ZCodeAgentConversationResyncParams,
+    params: NekodeAgentConversationUnsubscribeParams | NekodeAgentConversationResyncParams,
     topicPrefix: string,
   ): V4SubscriptionRoute | null {
     const expectedWorkspaceKey = resolveWorkspaceKey(params);
-    const trusted = readTrustedZCodeAgentV4UnsubscribeRoute(params);
+    const trusted = readTrustedNekodeAgentV4UnsubscribeRoute(params);
     if (trusted) {
       if (!trusted.topic.startsWith(topicPrefix)) return null;
       const route: V4SubscriptionRoute = {
@@ -2233,7 +2226,7 @@ export function createZCodeAgentService(
   }
 
   async function unsubscribeV4Route(
-    params: ZCodeAgentConversationUnsubscribeParams,
+    params: NekodeAgentConversationUnsubscribeParams,
     topicPrefix: string,
   ): Promise<void> {
     const route = resolveV4UnsubscribeRoute(params, topicPrefix);
@@ -2256,7 +2249,7 @@ export function createZCodeAgentService(
     if (isCurrentV4SubscriptionRoute(route)) forgetV4SubscriptionRoute(route);
   }
 
-  async function resyncV4Route(params: ZCodeAgentConversationResyncParams, topicPrefix: string) {
+  async function resyncV4Route(params: NekodeAgentConversationResyncParams, topicPrefix: string) {
     const route = resolveV4UnsubscribeRoute(params, topicPrefix);
     if (!route) throw new Error("fault.subscription.notOwned");
     const client = await getReadOnlyClient(params, params.runtimePolicy);
@@ -2283,16 +2276,16 @@ export function createZCodeAgentService(
   }
 
   function emitSessionEvent(
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
     sessionId: string,
-    event: ZCodeAgentServiceEvent,
+    event: NekodeAgentServiceEvent,
   ): void {
     sessionEmitters.get(sessionEventKey({ ...workspace, sessionId }))?.fire(event);
   }
 
   function emitWorkspaceEvent(
-    workspace: ZCodeAgentWorkspaceTarget,
-    event: ZCodeAgentServiceEvent,
+    workspace: NekodeAgentWorkspaceTarget,
+    event: NekodeAgentServiceEvent,
   ): void {
     const workspaceKey = resolveWorkspaceKey(workspace);
     for (const [key, emitter] of sessionEmitters) {
@@ -2303,7 +2296,7 @@ export function createZCodeAgentService(
   }
 
   function getSessionEventSequenceState(
-    workspace: ZCodeAgentWorkspaceTarget,
+    workspace: NekodeAgentWorkspaceTarget,
     sessionId: string,
   ): SessionEventSequenceState {
     const key = sessionEventKey({ ...workspace, sessionId });
@@ -2323,9 +2316,9 @@ export function createZCodeAgentService(
   }
 
   function normalizeSessionEventSeq(
-    workspace: ZCodeAgentWorkspaceTarget,
-    event: ZCodeSessionEvent,
-  ): ZCodeSessionEvent {
+    workspace: NekodeAgentWorkspaceTarget,
+    event: NekodeSessionEvent,
+  ): NekodeSessionEvent {
     const state = getSessionEventSequenceState(workspace, event.sessionId);
     if (event.seq > 0) {
       state.lastAssignedSeq = Math.max(state.lastAssignedSeq, event.seq);
@@ -2353,16 +2346,16 @@ export function createZCodeAgentService(
   }
 
   function shouldDeliverLiveSessionEvent(
-    workspace: ZCodeAgentWorkspaceTarget,
-    event: ZCodeSessionEvent,
+    workspace: NekodeAgentWorkspaceTarget,
+    event: NekodeSessionEvent,
   ): boolean {
     const state = getSessionEventSequenceState(workspace, event.sessionId);
     return rememberBoundedEventId(state.liveEventIds, state.liveEventIdOrder, event.eventId);
   }
 
   function handleSessionEvent(
-    workspace: ZCodeAgentWorkspaceTarget,
-    event: ZCodeSessionEvent,
+    workspace: NekodeAgentWorkspaceTarget,
+    event: NekodeSessionEvent,
   ): void {
     const normalizedEvent = normalizeSessionEventSeq(workspace, event);
     if (!shouldDeliverLiveSessionEvent(workspace, normalizedEvent)) {
@@ -2375,8 +2368,8 @@ export function createZCodeAgentService(
   }
 
   function handleStateUpdated(
-    workspace: ZCodeAgentWorkspaceTarget,
-    notification: ZCodeStateUpdatedNotification,
+    workspace: NekodeAgentWorkspaceTarget,
+    notification: NekodeStateUpdatedNotification,
   ): void {
     if (notification.sessionId) {
       emitSessionEvent(workspace, notification.sessionId, {
@@ -2389,8 +2382,8 @@ export function createZCodeAgentService(
   }
 
   function wireClient(
-    client: ZCodeProtocolClient,
-    initialWorkspace: ZCodeAgentWorkspaceTarget,
+    client: NekodeProtocolClient,
+    initialWorkspace: NekodeAgentWorkspaceTarget,
     /**
      * 该 client 所属的进程泳道。CLI 进程不知道自己被哪个进程管理器拉起，
      * 因此资源样本的 lane 只能在这里按调用方补齐。
@@ -2403,7 +2396,7 @@ export function createZCodeAgentService(
     }
     wiredClients.add(client);
     const topicResources = new Map<string, ReturnType<typeof createTopicResourceBridge>>();
-    const getTopicResources = (workspace: ZCodeAgentWorkspaceTarget) => {
+    const getTopicResources = (workspace: NekodeAgentWorkspaceTarget) => {
       const key = resolveWorkspaceKey(workspace);
       const existing = topicResources.get(key);
       if (existing) return existing;
@@ -2492,7 +2485,7 @@ export function createZCodeAgentService(
           if (parsed.success) {
             processResourceSampleEmitter.fire({ ...parsed.data, lane });
           } else {
-            logger.debug(undefined, "丢弃无效 ZCode CLI 资源样本", {
+            logger.debug(undefined, "丢弃无效 Nekode CLI 资源样本", {
               issues: parsed.error.issues.map((issue) => ({
                 code: issue.code,
                 path: issue.path.join("."),
@@ -2519,7 +2512,7 @@ export function createZCodeAgentService(
           if (parsed.success) {
             mcpTelemetryEmitter.fire(parsed.data);
           } else {
-            logger.debug(undefined, "丢弃无效 ZCode CLI MCP 遥测事件", {
+            logger.debug(undefined, "丢弃无效 Nekode CLI MCP 遥测事件", {
               issues: parsed.error.issues.map((issue) => ({
                 code: issue.code,
                 path: issue.path.join("."),
@@ -2534,7 +2527,7 @@ export function createZCodeAgentService(
           if (parsed.success) {
             pluginOperationProgressEmitters.get(parsed.data.operationId)?.fire(parsed.data);
           } else {
-            logger.warn(undefined, "丢弃无效 ZCode Protocol 插件操作进度", {
+            logger.warn(undefined, "丢弃无效 Nekode Protocol 插件操作进度", {
               issues: parsed.error.issues.map((issue) => ({
                 code: issue.code,
                 message: issue.message,
@@ -2552,7 +2545,7 @@ export function createZCodeAgentService(
             // 避免把两条独立事件流的 sequenceNumber/seq 混为同一顺序域。
             cuaOperationTurnTracker?.accept(workspace, parsed.data);
           } else {
-            logger.warn(undefined, "丢弃无效 ZCode Protocol Computer Use operation event", {
+            logger.warn(undefined, "丢弃无效 Nekode Protocol Computer Use operation event", {
               issues: parsed.error.issues.map((issue) => ({
                 code: issue.code,
                 message: issue.message,
@@ -2575,7 +2568,7 @@ export function createZCodeAgentService(
                 : {};
             logger.warn(
               typeof rawParams.traceId === "string" ? rawParams.traceId : undefined,
-              "丢弃无效 ZCode Protocol session event",
+              "丢弃无效 Nekode Protocol session event",
               {
                 eventId: rawParams.eventId,
                 issues: parsed.error.issues.map((issue) => ({
@@ -2787,31 +2780,6 @@ export function createZCodeAgentService(
           );
           return;
         }
-        if (request.method === zcodeProtocolMethods.channelReply) {
-          void (async () => {
-            const params = channelReplyRequestSchema.parse(request.params);
-            if (!options?.channelReplyExecutor) throw new Error("Channel reply unavailable");
-            const active = activeClientsByWorkspaceKey.get(resolveWorkspaceKey(workspace));
-            if (active?.client !== client)
-              throw new Error("Channel reply client is no longer active");
-            const currentWorkspace = active.workspace;
-            const result = await options.channelReplyExecutor({
-              ...params,
-              // 活跃连接还携带 V4 envelope 等内部字段；跨回复契约只能投影工作区身份，不能展开整个对象。
-              workspacePath: currentWorkspace.workspacePath,
-              workspaceIdentity: currentWorkspace.workspaceIdentity,
-              remoteSessionId: currentWorkspace.remoteSessionId,
-              trace: request.trace,
-            });
-            await client.respond(request.id, result);
-          })().catch((error: unknown) =>
-            client.respondError(request.id, {
-              code: -32603,
-              message: error instanceof Error ? error.message : "Channel reply failed",
-            }),
-          );
-          return;
-        }
         if (request.method === zcodeProtocolMethods.topicResourceRead) {
           void getTopicResources(workspace)
             .read(request.params, request.trace)
@@ -2855,7 +2823,7 @@ export function createZCodeAgentService(
           }
           if (sessionRuntimePreferencesAuthority === "local") {
             void (async () => {
-              let preferences: ZCodeSessionRuntimePreferencesResult;
+              let preferences: NekodeSessionRuntimePreferencesResult;
               try {
                 preferences = zcodeSessionRuntimePreferencesResultSchema.parse(
                   // 同一 RPC 承载 runtime 创建与首次执行两个时机；必须继续传递
@@ -2896,7 +2864,7 @@ export function createZCodeAgentService(
           }
 
           const requestId = randomUUID();
-          const dynamicRequest: ZCodeAgentSessionRuntimePreferencesRequest = {
+          const dynamicRequest: NekodeAgentSessionRuntimePreferencesRequest = {
             ...parsed.data,
             requestId,
           };
@@ -2907,7 +2875,7 @@ export function createZCodeAgentService(
             workspace,
             timeout: setTimeout(
               () => expireSessionRuntimePreferencesRequest(requestId),
-              ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+              NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
             ),
             workspaceKey: resolveWorkspaceKey(workspace),
           });
@@ -3002,7 +2970,7 @@ export function createZCodeAgentService(
             request: parsed.data,
           };
           pendingProviderRuntimeHeaders.set(pendingKey, pending);
-          logger.info(request.trace?.traceId, "收到 ZCode provider runtime headers 请求", {
+          logger.info(request.trace?.traceId, "收到 Nekode provider runtime headers 请求", {
             modelId: parsed.data.modelSelection.modelId,
             providerId: parsed.data.providerId,
             requestId: parsed.data.requestId,
@@ -3016,7 +2984,7 @@ export function createZCodeAgentService(
           // 记录，不能再补发第二个响应。
           void routeProviderRuntimeHeadersRequest(pendingKey, pending, workspace).catch(
             (error: unknown) => {
-              logger.warn(undefined, "ZCode provider runtime headers 响应发送失败", {
+              logger.warn(undefined, "Nekode provider runtime headers 响应发送失败", {
                 modelId: parsed.data.modelSelection.modelId,
                 providerId: parsed.data.providerId,
                 requestId: parsed.data.requestId,
@@ -3262,7 +3230,6 @@ export function createZCodeAgentService(
                 modelSelection: parsed.data.modelSelection,
                 mode: parsed.data.mode,
                 targetTaskId: parsed.data.targetTaskId,
-                botDeliveryTarget: parsed.data.botDeliveryTarget,
                 workspacePath: workspace.workspacePath,
                 workspaceIdentity: workspace.workspaceIdentity,
                 recurring: parsed.data.recurring ?? true,
@@ -3594,7 +3561,7 @@ export function createZCodeAgentService(
 
         void client.respondError(request.id, {
           code: -32601,
-          message: `Unsupported ZCode Protocol request: ${request.method}`,
+          message: `Unsupported Nekode Protocol request: ${request.method}`,
         });
       }),
       client.onClose(() => {
@@ -3608,8 +3575,8 @@ export function createZCodeAgentService(
   }
 
   function rememberSessionTrace(
-    target: ZCodeAgentSessionTarget,
-    snapshot: ZCodeSessionStateSnapshot,
+    target: NekodeAgentSessionTarget,
+    snapshot: NekodeSessionStateSnapshot,
   ): TraceId | undefined {
     const traceId = snapshot.session.traceId as TraceId | undefined;
     if (traceId) {
@@ -3618,18 +3585,18 @@ export function createZCodeAgentService(
     return traceId;
   }
 
-  function getSessionTraceId(target: ZCodeAgentSessionTarget): TraceId | undefined {
+  function getSessionTraceId(target: NekodeAgentSessionTarget): TraceId | undefined {
     return sessionTraceIdBySessionKey.get(sessionEventKey(target));
   }
 
   function createProviderNotReadyError(params: {
-    snapshot?: ZCodeAgentProviderReadinessSnapshot;
-    workspace: ZCodeAgentWorkspaceTarget;
+    snapshot?: NekodeAgentProviderReadinessSnapshot;
+    workspace: NekodeAgentWorkspaceTarget;
   }): Error & {
-    code: typeof ZCODE_AGENT_PROVIDER_NOT_READY_CODE;
+    code: typeof NEKODE_AGENT_PROVIDER_NOT_READY_CODE;
     data: {
       providerCount: number;
-      reason: typeof ZCODE_AGENT_PROVIDER_NOT_READY_REASON;
+      reason: typeof NEKODE_AGENT_PROVIDER_NOT_READY_REASON;
       revision: string | null;
       workspaceKey: string;
       workspacePath: string;
@@ -3637,19 +3604,19 @@ export function createZCodeAgentService(
   } {
     const workspaceKey = resolveWorkspaceKey(params.workspace);
     const error = new Error("当前没有可用的模型供应商和模型，请先登录或配置 API Key。") as Error & {
-      code: typeof ZCODE_AGENT_PROVIDER_NOT_READY_CODE;
+      code: typeof NEKODE_AGENT_PROVIDER_NOT_READY_CODE;
       data: {
         providerCount: number;
-        reason: typeof ZCODE_AGENT_PROVIDER_NOT_READY_REASON;
+        reason: typeof NEKODE_AGENT_PROVIDER_NOT_READY_REASON;
         revision: string | null;
         workspaceKey: string;
         workspacePath: string;
       };
     };
-    error.code = ZCODE_AGENT_PROVIDER_NOT_READY_CODE;
+    error.code = NEKODE_AGENT_PROVIDER_NOT_READY_CODE;
     error.data = {
       providerCount: params.snapshot?.providerCount ?? 0,
-      reason: ZCODE_AGENT_PROVIDER_NOT_READY_REASON,
+      reason: NEKODE_AGENT_PROVIDER_NOT_READY_REASON,
       revision: params.snapshot?.revision ?? null,
       workspaceKey,
       workspacePath: params.workspace.workspacePath,
@@ -3659,15 +3626,15 @@ export function createZCodeAgentService(
 
   function isProviderNotReadyError(
     error: unknown,
-  ): error is Error & { code: typeof ZCODE_AGENT_PROVIDER_NOT_READY_CODE } {
+  ): error is Error & { code: typeof NEKODE_AGENT_PROVIDER_NOT_READY_CODE } {
     return (
       error instanceof Error &&
-      (error as { code?: unknown }).code === ZCODE_AGENT_PROVIDER_NOT_READY_CODE
+      (error as { code?: unknown }).code === NEKODE_AGENT_PROVIDER_NOT_READY_CODE
     );
   }
 
   async function resolveStartupReadiness(): Promise<
-    ZCodeAgentProviderReadinessSnapshot | undefined
+    NekodeAgentProviderReadinessSnapshot | undefined
   > {
     if (modelSelectionReadinessSource) {
       return createProviderReadinessSnapshotFromSelectionView(
@@ -3684,7 +3651,7 @@ export function createZCodeAgentService(
    * 让调用方重新拉起进程（start-if-needed）或按“无运行时”处理（existing-only）。
    */
   function isReusableActiveClientEntry(
-    params: ZCodeAgentWorkspaceTarget,
+    params: NekodeAgentWorkspaceTarget,
     active: ActiveWorkspaceClient | undefined,
   ): boolean {
     if (!active) {
@@ -3695,7 +3662,7 @@ export function createZCodeAgentService(
     }
     const workspaceKey = resolveWorkspaceKey(params);
     activeClientsByWorkspaceKey.delete(workspaceKey);
-    logger.warn(undefined, "复用的 ZCode Protocol client 已 disposed，清理 stale entry", {
+    logger.warn(undefined, "复用的 Nekode Protocol client 已 disposed，清理 stale entry", {
       workspaceKey,
       workspacePath: params.workspacePath,
     });
@@ -3703,15 +3670,15 @@ export function createZCodeAgentService(
   }
 
   async function resolveSessionDirectories(
-    target: ZCodeAgentSessionTarget,
+    target: NekodeAgentSessionTarget,
     directorySessionId = target.sessionId,
   ): Promise<string[] | undefined> {
     return options?.resolveSessionDirectories?.({ ...target, sessionId: directorySessionId });
   }
 
   async function readSessionDirectories(
-    client: ZCodeProtocolClient,
-    params: ZCodeAgentSessionTarget,
+    client: NekodeProtocolClient,
+    params: NekodeAgentSessionTarget,
   ): Promise<string[] | undefined> {
     let directorySessionId = params.sessionId;
     if (options?.resolveSessionDirectories) {
@@ -3751,8 +3718,8 @@ export function createZCodeAgentService(
   }
 
   async function getOrStartReadOnlyClient(
-    params: ZCodeAgentWorkspaceTarget,
-    existingClient?: ZCodeProtocolClient,
+    params: NekodeAgentWorkspaceTarget,
+    existingClient?: NekodeProtocolClient,
   ): Promise<ActiveWorkspaceClient> {
     const workspaceKey = resolveWorkspaceKey(params);
     const active = activeClientsByWorkspaceKey.get(workspaceKey);
@@ -3782,7 +3749,7 @@ export function createZCodeAgentService(
     };
     activeClientsByWorkspaceKey.set(workspaceKey, entry);
     const interactionPreferencesReady = (async () => {
-      let appliedSnapshot: ZCodeAgentAppRuntimePreferences | undefined;
+      let appliedSnapshot: NekodeAgentAppRuntimePreferences | undefined;
       while (latestAppRuntimePreferences && latestAppRuntimePreferences !== appliedSnapshot) {
         const snapshot = latestAppRuntimePreferences;
         await enqueueInteractionPreferenceSync({
@@ -3867,20 +3834,20 @@ export function createZCodeAgentService(
     } finally {
       delete entry.interactionPreferencesReady;
     }
-    logger.info(undefined, "为只读会话控制面启动 ZCode agent", {
+    logger.info(undefined, "为只读会话控制面启动 Nekode agent", {
       workspaceKey,
       workspacePath: params.workspacePath,
     });
     return entry;
   }
 
-  async function getClient(params: ZCodeAgentWorkspaceTarget) {
+  async function getClient(params: NekodeAgentWorkspaceTarget) {
     const client = await getExecutionClient(params);
     rememberClientTarget(client, params);
     return client;
   }
 
-  async function getExecutionClient(params: ZCodeAgentWorkspaceTarget) {
+  async function getExecutionClient(params: NekodeAgentWorkspaceTarget) {
     const workspaceKey = resolveWorkspaceKey(params);
     const active = activeClientsByWorkspaceKey.get(workspaceKey);
     if (active?.modelExecutionEnabled && isReusableActiveClientEntry(params, active)) {
@@ -3906,9 +3873,9 @@ export function createZCodeAgentService(
   }
 
   async function startModelExecutionClient(
-    params: ZCodeAgentWorkspaceTarget,
+    params: NekodeAgentWorkspaceTarget,
     waiting: WaitingWorkspaceStartup,
-  ): Promise<ZCodeProtocolClient> {
+  ): Promise<NekodeProtocolClient> {
     const workspaceKey = resolveWorkspaceKey(params);
     const active = activeClientsByWorkspaceKey.get(workspaceKey);
 
@@ -3926,8 +3893,8 @@ export function createZCodeAgentService(
         logger.info(
           undefined,
           active
-            ? "provider/model 尚未就绪，ZCode agent 保持只读"
-            : "provider/model 尚未就绪，ZCode agent 保持未启动",
+            ? "provider/model 尚未就绪，Nekode agent 保持只读"
+            : "provider/model 尚未就绪，Nekode agent 保持未启动",
           {
             providerCount: readinessSnapshot?.providerCount ?? 0,
             revision: readinessSnapshot?.revision ?? null,
@@ -3947,7 +3914,7 @@ export function createZCodeAgentService(
     processManager.markReady(params, entry.client);
     entry.workspace = params;
     waitingWorkspaceStartups.delete(workspaceKey);
-    logger.info(undefined, "provider/model 就绪，允许 ZCode agent 模型执行", {
+    logger.info(undefined, "provider/model 就绪，允许 Nekode agent 模型执行", {
       modelId: readiness.modelId,
       providerId: readiness.providerId,
       revision: readinessSnapshot.revision,
@@ -3961,8 +3928,8 @@ export function createZCodeAgentService(
    * 只读热会话的 rowsRange：只复用已运行的工作区 CLI（existing-only），执行端还要认识 residency；
    * 任一不满足都报 proto.sessionNotResident，调用方（手机预加载）跳过，绝不为预加载拉起进程。
    */
-  async function getResidentRowsClient(params: ZCodeAgentConversationRowsRangeParams) {
-    let client: ZCodeProtocolClient;
+  async function getResidentRowsClient(params: NekodeAgentConversationRowsRangeParams) {
+    let client: NekodeProtocolClient;
     try {
       client = await getReadOnlyClient(params, "existing-only");
     } catch {
@@ -3973,7 +3940,7 @@ export function createZCodeAgentService(
   }
 
   async function getReadOnlyClient(
-    params: ZCodeAgentWorkspaceTarget,
+    params: NekodeAgentWorkspaceTarget,
     runtimePolicy: "start-if-needed" | "existing-only" = "start-if-needed",
   ) {
     const client = await getReadOnlyRuntimeClient(params, runtimePolicy);
@@ -3982,7 +3949,7 @@ export function createZCodeAgentService(
   }
 
   async function getReadOnlyRuntimeClient(
-    params: ZCodeAgentWorkspaceTarget,
+    params: NekodeAgentWorkspaceTarget,
     runtimePolicy: "start-if-needed" | "existing-only" = "start-if-needed",
   ) {
     if (runtimePolicy === "existing-only") {
@@ -4006,7 +3973,7 @@ export function createZCodeAgentService(
     return (await getOrStartReadOnlyClient(params)).client;
   }
 
-  async function getPluginManagementClient(): Promise<ZCodeProtocolClient> {
+  async function getPluginManagementClient(): Promise<NekodeProtocolClient> {
     const workspace = { workspacePath: ensurePluginManagementWorkspacePath() };
     const client = await pluginProcessManager.getClient(workspace);
     wireClient(client, workspace, "plugin");
@@ -4021,9 +3988,9 @@ export function createZCodeAgentService(
   // 就绪的 workspace 级方法，管理面进程正是为这种「不寄居真实项目」的控制面能力准备的，且不会因
   // 真实 workspace 生命周期被 watchdog 回收；getOrStartReadOnlyClient 反而会把这个合成 workspace
   // 塞进 activeClientsByWorkspaceKey 并跑一遍交互偏好同步，污染会话 client map。两条路径都在本机，
-  // homedir() 即用户家目录，全局根 `~/.zcode/workflows/` 因此解析到真实目录。
+  // homedir() 即用户家目录，全局根 `~/.nekode/workflows/` 因此解析到真实目录。
   // 远程 runtime（SSH/WSL identity 或带 remoteSessionId）的 home 不是本机，绝不选它当载体。
-  function isLocalActiveWorkspaceClient(workspace: ZCodeAgentWorkspaceTarget): boolean {
+  function isLocalActiveWorkspaceClient(workspace: NekodeAgentWorkspaceTarget): boolean {
     return (
       !workspace.remoteSessionId &&
       !(workspace.workspaceIdentity && isRemoteWorkspaceIdentity(workspace.workspaceIdentity))
@@ -4031,8 +3998,8 @@ export function createZCodeAgentService(
   }
 
   async function resolveGlobalSavedWorkflowCarrier(): Promise<{
-    client: ZCodeProtocolClient;
-    workspace: ZCodeWorkspaceRef;
+    client: NekodeProtocolClient;
+    workspace: NekodeWorkspaceRef;
   }> {
     for (const active of activeClientsByWorkspaceKey.values()) {
       if (!isLocalActiveWorkspaceClient(active.workspace)) {
@@ -4053,8 +4020,8 @@ export function createZCodeAgentService(
   // 五个 workflows/* 方法的载体：带 workspace 就直通（项目档，或 GUI 项目组里明说 scope 的动作），
   // 只给 `scope:"global"` 时交给 services 自选本机载体。
   async function resolveSavedWorkflowCarrier(
-    params: ZCodeAgentSavedWorkflowTarget,
-  ): Promise<{ client: ZCodeProtocolClient; workspace: ZCodeWorkspaceRef }> {
+    params: NekodeAgentSavedWorkflowTarget,
+  ): Promise<{ client: NekodeProtocolClient; workspace: NekodeWorkspaceRef }> {
     if (savedWorkflowTargetHasWorkspace(params)) {
       return { client: await getReadOnlyClient(params), workspace: buildWorkspaceRef(params) };
     }
@@ -4062,7 +4029,7 @@ export function createZCodeAgentService(
   }
 
   // mcp/list 专用：与插件管理命令隔离进程，见 mcpStatusProcessManager 处的说明。
-  async function getMcpStatusClient(): Promise<ZCodeProtocolClient> {
+  async function getMcpStatusClient(): Promise<NekodeProtocolClient> {
     const workspace = { workspacePath: ensurePluginManagementWorkspacePath() };
     const client = await mcpStatusProcessManager.getClient(workspace);
     wireClient(client, workspace, "mcp-status");
@@ -4250,7 +4217,7 @@ export function createZCodeAgentService(
   }
 
   async function buildConversationCommandEnvelope(
-    params: ZCodeAgentConversationCommandParams,
+    params: NekodeAgentConversationCommandParams,
   ): Promise<CommandEnvelope> {
     const envelope = params.envelope;
     if (envelope.type === "createSession") {
@@ -4331,16 +4298,16 @@ export function createZCodeAgentService(
     hasActiveCuaOperationTurn(): boolean {
       return cuaOperationTurnTracker?.hasActiveTurn() ?? false;
     },
-    async initialize(params: ZCodeAgentWorkspaceTarget): Promise<ZCodeAgentInitializeResult> {
+    async initialize(params: NekodeAgentWorkspaceTarget): Promise<NekodeAgentInitializeResult> {
       const workspaceKey = resolveWorkspaceKey(params);
       const startedAt = Date.now();
-      logger.info(undefined, "开始初始化 ZCode agent", {
+      logger.info(undefined, "开始初始化 Nekode agent", {
         workspaceKey,
         workspacePath: params.workspacePath,
       });
       try {
         const client = await getClient(params);
-        logger.info(undefined, "ZCode agent 初始化完成", {
+        logger.info(undefined, "Nekode agent 初始化完成", {
           durationMs: Date.now() - startedAt,
           transportKind: client.transportKind === "websocket" ? "websocket" : "stdio",
           workspaceKey,
@@ -4349,15 +4316,15 @@ export function createZCodeAgentService(
         return {
           available: true,
           workspaceKey,
-          protocolName: ZCODE_PROTOCOL_NAME,
-          protocolVersion: ZCODE_PROTOCOL_VERSION,
+          protocolName: NEKODE_PROTOCOL_NAME,
+          protocolVersion: NEKODE_PROTOCOL_VERSION,
           transportKind: client.transportKind === "websocket" ? "websocket" : "stdio",
         };
       } catch (error) {
         const providerNotReady = isProviderNotReadyError(error);
         logger[providerNotReady ? "info" : "warn"](
           undefined,
-          providerNotReady ? "ZCode agent 等待 provider/model 就绪" : "ZCode agent 初始化失败",
+          providerNotReady ? "Nekode agent 等待 provider/model 就绪" : "Nekode agent 初始化失败",
           {
             durationMs: Date.now() - startedAt,
             message: error instanceof Error ? error.message : String(error),
@@ -4370,10 +4337,10 @@ export function createZCodeAgentService(
         return {
           available: false,
           workspaceKey,
-          protocolName: ZCODE_PROTOCOL_NAME,
-          protocolVersion: ZCODE_PROTOCOL_VERSION,
+          protocolName: NEKODE_PROTOCOL_NAME,
+          protocolVersion: NEKODE_PROTOCOL_VERSION,
           reason: error instanceof Error ? error.message : String(error),
-          ...(providerNotReady ? { reasonCode: ZCODE_AGENT_PROVIDER_NOT_READY_REASON } : {}),
+          ...(providerNotReady ? { reasonCode: NEKODE_AGENT_PROVIDER_NOT_READY_REASON } : {}),
         };
       }
     },
@@ -4390,8 +4357,8 @@ export function createZCodeAgentService(
       );
     },
 
-    async syncAppRuntimePreferences(preferences: ZCodeAgentAppRuntimePreferences): Promise<void> {
-      const normalizedPreferences: ZCodeAgentAppRuntimePreferences = {
+    async syncAppRuntimePreferences(preferences: NekodeAgentAppRuntimePreferences): Promise<void> {
+      const normalizedPreferences: NekodeAgentAppRuntimePreferences = {
         ...preferences,
         modelIoFullRetentionEnabled: preferences.modelIoFullRetentionEnabled === true,
       };
@@ -4408,13 +4375,13 @@ export function createZCodeAgentService(
       );
     },
 
-    async getWorkspaceRuntimeIdentity(params: ZCodeAgentWorkspaceTarget) {
+    async getWorkspaceRuntimeIdentity(params: NekodeAgentWorkspaceTarget) {
       // 查询 runtime identity 只能观察现有进程，不能把 dormant workspace 变成活动进程。
       await getReadOnlyClient(params, "existing-only");
       return await processManager.getRuntimeIdentity(params);
     },
 
-    async createSession(params: ZCodeAgentCreateSessionParams) {
+    async createSession(params: NekodeAgentCreateSessionParams) {
       if (options?.prepareSessionCreation) {
         const prepared = await options.prepareSessionCreation({
           ...params,
@@ -4437,7 +4404,7 @@ export function createZCodeAgentService(
         refreshRegistry: true,
       });
       const sessionTraceId = params.sessionTraceId;
-      logger.info(sessionTraceId, "开始请求 ZCode Protocol session/create", {
+      logger.info(sessionTraceId, "开始请求 Nekode Protocol session/create", {
         hasInitialModel: params.model !== undefined,
         hasInitialThoughtLevel: params.thoughtLevel !== undefined,
         initialModel: formatModelSelectionForLog(params.model),
@@ -4458,7 +4425,7 @@ export function createZCodeAgentService(
           sessionTraceId ? { trace: { traceId: sessionTraceId } } : undefined,
         );
         rememberSessionTrace({ ...params, sessionId: snapshot.session.sessionId }, snapshot);
-        logger.info(sessionTraceId, "ZCode Protocol session/create 完成", {
+        logger.info(sessionTraceId, "Nekode Protocol session/create 完成", {
           durationMs: Date.now() - startedAt,
           messageCount: snapshot.messages.length,
           modelCurrent: formatModelSelectionForLog(snapshot.settings.model.current),
@@ -4473,7 +4440,7 @@ export function createZCodeAgentService(
       } catch (error) {
         const compatFields = getSessionCreateCompatFields(error);
         if (compatFields.length === 0) {
-          logger.warn(sessionTraceId, "ZCode Protocol session/create 失败", {
+          logger.warn(sessionTraceId, "Nekode Protocol session/create 失败", {
             durationMs: Date.now() - startedAt,
             message: error instanceof Error ? error.message : String(error),
             persistence: params.persistence,
@@ -4482,7 +4449,7 @@ export function createZCodeAgentService(
           });
           throw error;
         }
-        logger.warn(sessionTraceId, "ZCode Protocol session/create 命中新旧协议兼容重试", {
+        logger.warn(sessionTraceId, "Nekode Protocol session/create 命中新旧协议兼容重试", {
           compatFields,
           durationMs: Date.now() - startedAt,
           workspaceKey: resolveWorkspaceKey(params),
@@ -4502,7 +4469,7 @@ export function createZCodeAgentService(
         );
         rememberSessionTrace({ ...params, sessionId: snapshot.session.sessionId }, snapshot);
         if (!compatFields.includes("thoughtLevel") || !params.thoughtLevel) {
-          logger.info(sessionTraceId, "ZCode Protocol session/create 兼容重试完成", {
+          logger.info(sessionTraceId, "Nekode Protocol session/create 兼容重试完成", {
             durationMs: Date.now() - startedAt,
             sessionId: snapshot.session.sessionId,
             snapshotTraceId: snapshot.session.traceId ?? null,
@@ -4529,7 +4496,7 @@ export function createZCodeAgentService(
         );
         logger.info(
           sessionTraceId,
-          "ZCode Protocol session/create 兼容重试后设置 thoughtLevel 完成",
+          "Nekode Protocol session/create 兼容重试后设置 thoughtLevel 完成",
           {
             durationMs: Date.now() - startedAt,
             sessionId: snapshot.session.sessionId,
@@ -4542,7 +4509,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async resumeSession(params: ZCodeAgentResumeSessionParams) {
+    async resumeSession(params: NekodeAgentResumeSessionParams) {
       const client = await getClient(params);
       params = {
         ...params,
@@ -4560,7 +4527,7 @@ export function createZCodeAgentService(
       const offPeakToolEnabled = isOffPeakToolSupported(params);
       // 冷恢复同样按 Host 的灰度判定下发，否则恢复出来的会话会丢掉工作流工具簇。
       const dynamicWorkflowFlags = await resolveDynamicWorkflowSessionFlags();
-      logger.info(cachedTraceId, "开始请求 ZCode Protocol session/resume", {
+      logger.info(cachedTraceId, "开始请求 Nekode Protocol session/resume", {
         mcpServerCount: getMcpServerCount(params),
         mcpServerNames: getMcpServerNames(params),
         modelHint: params.model ?? null,
@@ -4575,7 +4542,7 @@ export function createZCodeAgentService(
           zcodeSessionStateSnapshotSchema,
         );
         const sessionTraceId = rememberSessionTrace(params, snapshot) ?? cachedTraceId;
-        logger.info(sessionTraceId, "ZCode Protocol session/resume 完成", {
+        logger.info(sessionTraceId, "Nekode Protocol session/resume 完成", {
           durationMs: Date.now() - startedAt,
           messageCount: snapshot.messages.length,
           modelCurrent: formatModelSelectionForLog(snapshot.settings.model.current),
@@ -4589,7 +4556,7 @@ export function createZCodeAgentService(
       } catch (error) {
         const compatFields = getSessionResumeCompatFields(error);
         if (compatFields.length === 0) {
-          logger.warn(cachedTraceId, "ZCode Protocol session/resume 失败", {
+          logger.warn(cachedTraceId, "Nekode Protocol session/resume 失败", {
             durationMs: Date.now() - startedAt,
             message: error instanceof Error ? error.message : String(error),
             sessionId: params.sessionId,
@@ -4598,7 +4565,7 @@ export function createZCodeAgentService(
           });
           throw error;
         }
-        logger.warn(cachedTraceId, "ZCode Protocol session/resume 命中新旧协议兼容重试", {
+        logger.warn(cachedTraceId, "Nekode Protocol session/resume 命中新旧协议兼容重试", {
           compatFields,
           durationMs: Date.now() - startedAt,
           sessionId: params.sessionId,
@@ -4614,7 +4581,7 @@ export function createZCodeAgentService(
           zcodeSessionStateSnapshotSchema,
         );
         const sessionTraceId = rememberSessionTrace(params, snapshot) ?? cachedTraceId;
-        logger.info(sessionTraceId, "ZCode Protocol session/resume 兼容重试完成", {
+        logger.info(sessionTraceId, "Nekode Protocol session/resume 兼容重试完成", {
           durationMs: Date.now() - startedAt,
           sessionId: params.sessionId,
           snapshotTraceId: snapshot.session.traceId ?? null,
@@ -4625,7 +4592,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async listSessions(params: ZCodeAgentListSessionsParams) {
+    async listSessions(params: NekodeAgentListSessionsParams) {
       const client = await getReadOnlyClient(params, params.runtimePolicy);
       const result = await client.request(
         zcodeProtocolMethods.sessionList,
@@ -4647,7 +4614,7 @@ export function createZCodeAgentService(
       return result.sessions;
     },
 
-    async listSessionSubagents(params: ZCodeAgentListSessionSubagentsParams) {
+    async listSessionSubagents(params: NekodeAgentListSessionSubagentsParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.sessionSubagents,
@@ -4660,7 +4627,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async getAppUsageStats(params: ZCodeAgentAppUsageParams) {
+    async getAppUsageStats(params: NekodeAgentAppUsageParams) {
       // usage 表位于全局 session 库；复用任意已连接的 workspace client 即可拿到全应用范围数据。
       const active = activeClientsByWorkspaceKey.values().next().value;
       if (!active) {
@@ -4695,7 +4662,7 @@ export function createZCodeAgentService(
       return client.request(V4_METHODS.sessionDataPurge, params, v4SessionDataPurgeResultSchema);
     },
 
-    async getTaskTokenUsage(params: ZCodeAgentTaskTokenUsageParams) {
+    async getTaskTokenUsage(params: NekodeAgentTaskTokenUsageParams) {
       const client = await getReadOnlyClient(params);
       // session/usage → v4/conversation/usage（同上；task 是 UI 投影概念，
       // v4 名字空间落位 conversation）。
@@ -4706,7 +4673,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async readSession(params: ZCodeAgentReadSessionParams) {
+    async readSession(params: NekodeAgentReadSessionParams) {
       const client = await getReadOnlyClient(params, params.runtimePolicy);
       // task-index 为补正文索引调用 readSession 时，默认策略会在 runtime
       // 已被回收后重新拉起 Agent；这条观察路径不应改变 session 生命周期。只有显式
@@ -4733,7 +4700,7 @@ export function createZCodeAgentService(
       return snapshot;
     },
 
-    async readSessionMessages(params: ZCodeAgentReadSessionMessagesParams) {
+    async readSessionMessages(params: NekodeAgentReadSessionMessagesParams) {
       const client = await getReadOnlyClient(params);
       const result = await client.request(
         zcodeProtocolMethods.sessionMessages,
@@ -4756,7 +4723,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async readSessionEvents(params: ZCodeAgentReadSessionEventsParams) {
+    async readSessionEvents(params: NekodeAgentReadSessionEventsParams) {
       const client = await getReadOnlyClient(params);
       const result = await client.request(
         zcodeProtocolMethods.sessionEvents,
@@ -4770,14 +4737,14 @@ export function createZCodeAgentService(
       return result.events;
     },
 
-    async readWorkspacePresentation(params: ZCodeAgentReadWorkspacePresentationParams) {
+    async readWorkspacePresentation(params: NekodeAgentReadWorkspacePresentationParams) {
       const startedAt = Date.now();
-      logger.info(undefined, "开始请求 ZCode Protocol workspace/readPresentation", {
+      logger.info(undefined, "开始请求 Nekode Protocol workspace/readPresentation", {
         workspaceKey: resolveWorkspaceKey(params),
         workspacePath: params.workspacePath,
       });
       try {
-        let presentation: ZCodeWorkspacePresentation | undefined;
+        let presentation: NekodeWorkspacePresentation | undefined;
         for (let attempt = 0; attempt < 2; attempt += 1) {
           const client = await getReadOnlyClient(params);
           try {
@@ -4816,9 +4783,9 @@ export function createZCodeAgentService(
           }
         }
         if (!presentation) {
-          throw new Error("ZCode Protocol workspace/readPresentation did not return a result");
+          throw new Error("Nekode Protocol workspace/readPresentation did not return a result");
         }
-        logger.info(undefined, "ZCode Protocol workspace/readPresentation 完成", {
+        logger.info(undefined, "Nekode Protocol workspace/readPresentation 完成", {
           durationMs: Date.now() - startedAt,
           slashCommandCount: presentation.slashCommands.length,
           workspaceKey: resolveWorkspaceKey(params),
@@ -4826,7 +4793,7 @@ export function createZCodeAgentService(
         });
         return presentation;
       } catch (error) {
-        logger.warn(undefined, "ZCode Protocol workspace/readPresentation 失败", {
+        logger.warn(undefined, "Nekode Protocol workspace/readPresentation 失败", {
           durationMs: Date.now() - startedAt,
           message: error instanceof Error ? error.message : String(error),
           workspaceKey: resolveWorkspaceKey(params),
@@ -4836,7 +4803,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async grantWorkspaceHookTrust(params: ZCodeAgentGrantWorkspaceHookTrustParams) {
+    async grantWorkspaceHookTrust(params: NekodeAgentGrantWorkspaceHookTrustParams) {
       // 没有 task 时仍允许显式预信任，但只启动 read-only Agent 控制面；不能为了
       // Settings 操作伪造 session，也不能要求 provider/model 已就绪。
       const client = await getReadOnlyClient(params);
@@ -4865,7 +4832,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listMcpServerStatuses(params: ZCodeAgentListMcpServerStatusesParams) {
+    async listMcpServerStatuses(params: NekodeAgentListMcpServerStatusesParams) {
       const requestMcpList = async (options?: { omitMcpServers?: boolean; omitMode?: boolean }) => {
         const client = await getMcpStatusClient();
         return client.request(
@@ -4892,7 +4859,7 @@ export function createZCodeAgentService(
             workspaceKey: resolveWorkspaceKey(params),
             workspacePath: params.workspacePath,
           });
-          throw new ZCodeAgentMcpStatusModeUnsupportedError();
+          throw new NekodeAgentMcpStatusModeUnsupportedError();
         }
         if (
           (params.mode !== undefined && unrecognizedKeys.includes("mode")) ||
@@ -4925,7 +4892,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async listPlugins(params: ZCodeAgentPluginViewParams) {
+    async listPlugins(params: NekodeAgentPluginViewParams) {
       const requestPluginsList = async () => {
         const client = await getPluginManagementClient();
         // plugins/list 只读取本地 plugin metadata，与 mcp/list 一样走默认协议超时，
@@ -4957,7 +4924,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async getPluginReferenceCatalog(params: ZCodeAgentPluginReferenceCatalogParams) {
+    async getPluginReferenceCatalog(params: NekodeAgentPluginReferenceCatalogParams) {
       // Plugin 引用 catalog 必须打到持有 session 记录的 workspace agent client
       // （getReadOnlyClient 优先复用 active client），不能走独立 plugin management 进程——
       // 那个进程没有任何 session，session-owned catalog 会永远查不到。
@@ -4968,7 +4935,7 @@ export function createZCodeAgentService(
       });
     },
 
-    async getSkillReferenceCatalog(params: ZCodeAgentSkillReferenceCatalogParams) {
+    async getSkillReferenceCatalog(params: NekodeAgentSkillReferenceCatalogParams) {
       // 与 Plugin 引用一样，Session 快照只存在于 workspace agent 进程；独立管理进程
       // 没有 resident Session，不能作为对话 authority。
       const client = await getReadOnlyClient(params);
@@ -5043,7 +5010,7 @@ export function createZCodeAgentService(
         zcodeMcpUiCloseInstanceResultSchema,
       );
     },
-    async readMcpResource(params: ZCodeAgentReadMcpResourceParams) {
+    async readMcpResource(params: NekodeAgentReadMcpResourceParams) {
       // 与 Skill / Plugin 引用一样，session 冻结 catalog 只存在于 workspace agent 进程。
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -5093,7 +5060,7 @@ export function createZCodeAgentService(
         zcodeMcpUiCancelCallResultSchema,
       );
     },
-    async callMcpToolForUi(params: ZCodeAgentCallMcpToolForUiParams) {
+    async callMcpToolForUi(params: NekodeAgentCallMcpToolForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiCallTool,
@@ -5111,7 +5078,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async cancelMcpToolCallForUi(params: ZCodeAgentCancelMcpToolCallForUiParams) {
+    async cancelMcpToolCallForUi(params: NekodeAgentCancelMcpToolCallForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiCancelCall,
@@ -5127,7 +5094,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async readMcpResourceForUi(params: ZCodeAgentReadMcpResourceForUiParams) {
+    async readMcpResourceForUi(params: NekodeAgentReadMcpResourceForUiParams) {
       // 与 callMcpToolForUi 同一进程：归属（pluginId ↔ serverName）、mimeType 白名单与 8 MiB 上限都在 agent 侧 fail closed。
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -5144,7 +5111,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listMcpResourcesForUi(params: ZCodeAgentListMcpResourcesForUiParams) {
+    async listMcpResourcesForUi(params: NekodeAgentListMcpResourcesForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiListResources,
@@ -5160,7 +5127,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listMcpResourceTemplatesForUi(params: ZCodeAgentListMcpResourcesForUiParams) {
+    async listMcpResourceTemplatesForUi(params: NekodeAgentListMcpResourcesForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiListResourceTemplates,
@@ -5176,7 +5143,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async subscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams) {
+    async subscribeMcpResourceForUi(params: NekodeAgentMcpResourceSubscriptionForUiParams) {
       // 订阅登记在 agent 侧（按 server / uri 引用计数并随重连重放）；host 只转发身份三元组。
       const client = await getReadOnlyClient(params);
       await client.request(
@@ -5195,7 +5162,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async unsubscribeMcpResourceForUi(params: ZCodeAgentMcpResourceSubscriptionForUiParams) {
+    async unsubscribeMcpResourceForUi(params: NekodeAgentMcpResourceSubscriptionForUiParams) {
       const client = await getReadOnlyClient(params);
       await client.request(
         zcodeProtocolMethods.mcpUiUnsubscribeResource,
@@ -5213,7 +5180,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async registerAppToolsForUi(params: ZCodeAgentRegisterAppToolsForUiParams) {
+    async registerAppToolsForUi(params: NekodeAgentRegisterAppToolsForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiRegisterAppTools,
@@ -5231,7 +5198,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async unregisterAppToolsForUi(params: ZCodeAgentAppToolInstanceForUiParams) {
+    async unregisterAppToolsForUi(params: NekodeAgentAppToolInstanceForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiUnregisterAppTools,
@@ -5248,7 +5215,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async claimAppToolCallForUi(params: ZCodeAgentAppToolCallForUiParams) {
+    async claimAppToolCallForUi(params: NekodeAgentAppToolCallForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiClaimAppToolCall,
@@ -5266,7 +5233,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async resolveAppToolCallForUi(params: ZCodeAgentResolveAppToolCallForUiParams) {
+    async resolveAppToolCallForUi(params: NekodeAgentResolveAppToolCallForUiParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.mcpUiResolveAppToolCall,
@@ -5286,7 +5253,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listPluginUiSurfaces(params: ZCodeAgentWorkspaceTarget) {
+    async listPluginUiSurfaces(params: NekodeAgentWorkspaceTarget) {
       // 面板只在已有会话时可打开，此时 workspace agent 必然存在；走 read-only client 读它解析好的清单，
       // 不用独立插件管理进程（那边没有本 workspace 的启停状态上下文，与 mcp/readResource 同理）。
       const client = await getReadOnlyClient(params);
@@ -5301,7 +5268,7 @@ export function createZCodeAgentService(
     // workspace agent client 路径；文件在 workspace 里，远程 workspace 就在远端进程里扫。
     // 全局档：载体由 resolveSavedWorkflowCarrier 选，
     // `scope` 只在有定义时下推。
-    async listSavedWorkflows(params: ZCodeAgentListSavedWorkflowsParams) {
+    async listSavedWorkflows(params: NekodeAgentListSavedWorkflowsParams) {
       const { client, workspace } = await resolveSavedWorkflowCarrier(params);
       return client.request(
         zcodeProtocolMethods.workflowsList,
@@ -5310,7 +5277,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async getSavedWorkflow(params: ZCodeAgentGetSavedWorkflowParams) {
+    async getSavedWorkflow(params: NekodeAgentGetSavedWorkflowParams) {
       const { client, workspace } = await resolveSavedWorkflowCarrier(params);
       return client.request(
         zcodeProtocolMethods.workflowsGet,
@@ -5319,7 +5286,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async updateSavedWorkflowMeta(params: ZCodeAgentUpdateSavedWorkflowMetaParams) {
+    async updateSavedWorkflowMeta(params: NekodeAgentUpdateSavedWorkflowMetaParams) {
       const { client, workspace } = await resolveSavedWorkflowCarrier(params);
       return client.request(
         zcodeProtocolMethods.workflowsUpdateMeta,
@@ -5328,7 +5295,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async deleteSavedWorkflow(params: ZCodeAgentDeleteSavedWorkflowParams) {
+    async deleteSavedWorkflow(params: NekodeAgentDeleteSavedWorkflowParams) {
       const { client, workspace } = await resolveSavedWorkflowCarrier(params);
       return client.request(
         zcodeProtocolMethods.workflowsDelete,
@@ -5337,7 +5304,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listSavedWorkflowRuns(params: ZCodeAgentListSavedWorkflowRunsParams) {
+    async listSavedWorkflowRuns(params: NekodeAgentListSavedWorkflowRunsParams) {
       const { client, workspace } = await resolveSavedWorkflowCarrier(params);
       return client.request(
         zcodeProtocolMethods.workflowsRuns,
@@ -5354,7 +5321,7 @@ export function createZCodeAgentService(
     // 把全局档搬回项目档（只此一向）：
     // `workspace` 必带，既是载体又是目标项目（协议处理器据它算项目根），因此走
     // getReadOnlyClient(params) 直通，不经全局载体选择。
-    async moveSavedWorkflow(params: ZCodeAgentMoveSavedWorkflowParams) {
+    async moveSavedWorkflow(params: NekodeAgentMoveSavedWorkflowParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.workflowsMove,
@@ -5366,7 +5333,7 @@ export function createZCodeAgentService(
     // 完成卡的「直接保存」（docs/dynamic-workflow/transcript-and-notifications.md）：必须打到
     // **这次 run 所属 workspace** 的 agent client——脚本从那个进程的 journal 里读，全局档也一样
     // （落点由 agent 按 scope 算，与载体无关）。因此走 getReadOnlyClient 直通，不经全局载体选择。
-    async saveSavedWorkflowFromRun(params: ZCodeAgentSaveSavedWorkflowFromRunParams) {
+    async saveSavedWorkflowFromRun(params: NekodeAgentSaveSavedWorkflowFromRunParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.workflowsSave,
@@ -5382,7 +5349,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async findSavedWorkflowForRun(params: ZCodeAgentFindSavedWorkflowForRunParams) {
+    async findSavedWorkflowForRun(params: NekodeAgentFindSavedWorkflowForRunParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         zcodeProtocolMethods.workflowsForRun,
@@ -5395,7 +5362,9 @@ export function createZCodeAgentService(
       );
     },
 
-    async resolveSuggestedPluginReference(params: ZCodeAgentResolveSuggestedPluginReferenceParams) {
+    async resolveSuggestedPluginReference(
+      params: NekodeAgentResolveSuggestedPluginReferenceParams,
+    ) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsResolveSuggestedReference,
@@ -5423,7 +5392,7 @@ export function createZCodeAgentService(
         );
       return Promise.all(
         managed.map(async (runtime) => {
-          let children: ZCodeProcessChildProcess[] = [];
+          let children: NekodeProcessChildProcess[] = [];
           try {
             const result = await runtime.client.request(
               zcodeProtocolMethods.processChildProcesses,
@@ -5437,7 +5406,7 @@ export function createZCodeAgentService(
           }
           return {
             pid: runtime.pid,
-            provider: ZCODE_AGENT_PROVIDER,
+            provider: NEKODE_AGENT_PROVIDER,
             workspacePath: runtime.workspacePath,
             ...(runtime.lane ? { lane: runtime.lane } : {}),
             children,
@@ -5446,7 +5415,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async getPluginsOverview(params: ZCodeAgentPluginViewParams) {
+    async getPluginsOverview(params: NekodeAgentPluginViewParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsOverview,
@@ -5459,7 +5428,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async addPluginMarketplace(params: ZCodeAgentAddPluginMarketplaceParams) {
+    async addPluginMarketplace(params: NekodeAgentAddPluginMarketplaceParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsMarketplaceAdd,
@@ -5474,7 +5443,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async removePluginMarketplace(params: ZCodeAgentRemovePluginMarketplaceParams) {
+    async removePluginMarketplace(params: NekodeAgentRemovePluginMarketplaceParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsMarketplaceRemove,
@@ -5487,7 +5456,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async updatePluginMarketplace(params: ZCodeAgentUpdatePluginMarketplaceParams) {
+    async updatePluginMarketplace(params: NekodeAgentUpdatePluginMarketplaceParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsMarketplaceUpdate,
@@ -5501,7 +5470,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async installPlugin(params: ZCodeAgentInstallPluginParams) {
+    async installPlugin(params: NekodeAgentInstallPluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsInstall,
@@ -5518,7 +5487,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async cancelPluginOperation(params: ZCodeAgentCancelPluginOperationParams) {
+    async cancelPluginOperation(params: NekodeAgentCancelPluginOperationParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsCancelOperation,
@@ -5528,7 +5497,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async uninstallPlugin(params: ZCodeAgentUninstallPluginParams) {
+    async uninstallPlugin(params: NekodeAgentUninstallPluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsUninstall,
@@ -5544,7 +5513,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async updatePlugin(params: ZCodeAgentUpdatePluginParams) {
+    async updatePlugin(params: NekodeAgentUpdatePluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsUpdate,
@@ -5558,7 +5527,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async restoreBuiltinPlugin(params: ZCodeAgentRestoreBuiltinPluginParams) {
+    async restoreBuiltinPlugin(params: NekodeAgentRestoreBuiltinPluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsRestoreBuiltin,
@@ -5571,7 +5540,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async configurePlugin(params: ZCodeAgentConfigurePluginParams) {
+    async configurePlugin(params: NekodeAgentConfigurePluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsConfigure,
@@ -5588,7 +5557,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async resetPluginConfig(params: ZCodeAgentResetPluginConfigParams) {
+    async resetPluginConfig(params: NekodeAgentResetPluginConfigParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsResetConfig,
@@ -5602,7 +5571,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async validatePlugin(params: ZCodeAgentValidatePluginParams) {
+    async validatePlugin(params: NekodeAgentValidatePluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsValidate,
@@ -5617,7 +5586,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async describePlugin(params: ZCodeAgentDescribePluginParams) {
+    async describePlugin(params: NekodeAgentDescribePluginParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsDescribe,
@@ -5631,7 +5600,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async setPluginEnabled(params: ZCodeAgentSetPluginEnabledParams) {
+    async setPluginEnabled(params: NekodeAgentSetPluginEnabledParams) {
       const client = await getPluginManagementClient();
       return client.request(
         zcodeProtocolMethods.pluginsSetEnabled,
@@ -5647,7 +5616,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async listAutomations(params: ZCodeAgentWorkspaceTarget) {
+    async listAutomations(params: NekodeAgentWorkspaceTarget) {
       return automationService.list(params);
     },
 
@@ -5655,7 +5624,7 @@ export function createZCodeAgentService(
       return automationService.list();
     },
 
-    async createAutomation(params: ZCodeAgentCreateAutomationParams) {
+    async createAutomation(params: NekodeAgentCreateAutomationParams) {
       return automationService.create({
         projectId: params.projectId,
         title: params.title,
@@ -5663,7 +5632,7 @@ export function createZCodeAgentService(
         relativeDelayMinutes: params.relativeDelayMinutes,
         prompt: params.prompt,
         modelSelection: params.modelSelection,
-        mode: params.mode as ZCodeTaskMode | undefined,
+        mode: params.mode as NekodeTaskMode | undefined,
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
         recurring: params.recurring ?? true,
@@ -5673,7 +5642,7 @@ export function createZCodeAgentService(
       });
     },
 
-    async updateAutomation(params: ZCodeAgentUpdateAutomationParams) {
+    async updateAutomation(params: NekodeAgentUpdateAutomationParams) {
       return automationService.update(
         params.automationId,
         {
@@ -5681,7 +5650,7 @@ export function createZCodeAgentService(
           cronExpr: params.cronExpr,
           prompt: params.prompt,
           modelSelection: params.modelSelection,
-          mode: params.mode === null ? null : (params.mode as ZCodeTaskMode | undefined),
+          mode: params.mode === null ? null : (params.mode as NekodeTaskMode | undefined),
           recurring: params.recurring,
           maxRuns: params.maxRuns,
           endAt: params.endAt,
@@ -5696,28 +5665,28 @@ export function createZCodeAgentService(
       );
     },
 
-    async deleteAutomation(params: ZCodeAgentAutomationIdParams) {
+    async deleteAutomation(params: NekodeAgentAutomationIdParams) {
       await automationService.delete(params.automationId, {
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
       });
     },
 
-    async setAutomationEnabled(params: ZCodeAgentSetAutomationEnabledParams) {
+    async setAutomationEnabled(params: NekodeAgentSetAutomationEnabledParams) {
       return automationService.setEnabled(params.automationId, params.enabled, {
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
       });
     },
 
-    async restartAutomation(params: ZCodeAgentAutomationIdParams) {
+    async restartAutomation(params: NekodeAgentAutomationIdParams) {
       return automationService.restart(params.automationId, {
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
       });
     },
 
-    async runAutomationNow(params: ZCodeAgentAutomationIdParams) {
+    async runAutomationNow(params: NekodeAgentAutomationIdParams) {
       const dispatch = options?.onAutomationManualRunRequested;
       if (!dispatch) {
         // runNow 会先写 manual run 并占用 single-flight claim；dispatcher
@@ -5737,23 +5706,23 @@ export function createZCodeAgentService(
       return { status: "queued" as const };
     },
 
-    async listAutomationRuns(params: ZCodeAgentAutomationIdParams) {
+    async listAutomationRuns(params: NekodeAgentAutomationIdParams) {
       return automationService.listRuns(params.automationId, {
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
       });
     },
 
-    async deleteAutomationRun(params: ZCodeAgentDeleteAutomationRunParams) {
+    async deleteAutomationRun(params: NekodeAgentDeleteAutomationRunParams) {
       return automationService.deleteRun(params.runId, {
         workspacePath: params.workspacePath,
         workspaceIdentity: params.workspaceIdentity,
       });
     },
 
-    async generateWorkspaceText(params: ZCodeAgentGenerateWorkspaceTextParams) {
+    async generateWorkspaceText(params: NekodeAgentGenerateWorkspaceTextParams) {
       const client = await getClient(params);
-      // Worker 自己读取 ZCode Built-in / Personal Config；Host 只在执行前确保账号状态形成的
+      // Worker 自己读取 Nekode Built-in / Personal Config；Host 只在执行前确保账号状态形成的
       // Account Config Overlay 已同步，避免新进程先按旧套餐状态创建 Model。
       await ensureAccountProviderConfigSynced({
         client,
@@ -5809,7 +5778,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async testModelConnectivity(params: ZCodeAgentTestModelConnectivityParams) {
+    async testModelConnectivity(params: NekodeAgentTestModelConnectivityParams) {
       const client = await getClient(params);
       await ensureAccountProviderConfigSynced({
         client,
@@ -5828,7 +5797,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async sendPrompt(params: ZCodeAgentSendPromptParams) {
+    async sendPrompt(params: NekodeAgentSendPromptParams) {
       const startedAt = Date.now();
       const client = await getClient(params);
       await ensureAccountProviderConfigSynced({
@@ -5848,11 +5817,11 @@ export function createZCodeAgentService(
           ...(params.remoteSessionId ? { remoteSessionId: params.remoteSessionId } : {}),
           ...(params.clientMode ? { clientMode: params.clientMode } : {}),
         }));
-      const protocolParams: ZCodeAgentSendPromptParams = {
+      const protocolParams: NekodeAgentSendPromptParams = {
         ...params,
         ...(browserAmbientContext ? { browserAmbientContext } : {}),
       };
-      logger.info(logTraceId, "ZCode Agent session/send 开始", {
+      logger.info(logTraceId, "Nekode Agent session/send 开始", {
         attachmentCount: params.attachments?.length ?? 0,
         hasBrowserAmbientContext: browserAmbientContext !== undefined,
         inputId: params.inputId,
@@ -5869,7 +5838,7 @@ export function createZCodeAgentService(
           buildSessionSendParams(protocolParams),
           zcodeSessionSendResultSchema,
         );
-        logger.info(logTraceId, "ZCode Agent session/send ACK", {
+        logger.info(logTraceId, "Nekode Agent session/send ACK", {
           durationMs: Date.now() - startedAt,
           inputId: params.inputId,
           queryId: params.queryId ?? null,
@@ -5882,7 +5851,7 @@ export function createZCodeAgentService(
       } catch (error) {
         const compatFields = getSessionSendCompatFields(error);
         if (compatFields.length > 0) {
-          logger.warn(logTraceId, "ZCode Agent session/send 命中新旧协议兼容重试", {
+          logger.warn(logTraceId, "Nekode Agent session/send 命中新旧协议兼容重试", {
             compatFields,
             durationMs: Date.now() - startedAt,
             sessionId: params.sessionId,
@@ -5896,7 +5865,7 @@ export function createZCodeAgentService(
           );
           return result;
         }
-        logger.warn(logTraceId, "ZCode Agent session/send 失败", {
+        logger.warn(logTraceId, "Nekode Agent session/send 失败", {
           durationMs: Date.now() - startedAt,
           error: error instanceof Error ? error.message : String(error),
           inputId: params.inputId,
@@ -5910,11 +5879,11 @@ export function createZCodeAgentService(
       }
     },
 
-    async compactSession(params: ZCodeAgentCompactParams) {
+    async compactSession(params: NekodeAgentCompactParams) {
       const startedAt = Date.now();
       const client = await getClient(params);
       const sessionTraceId = getSessionTraceId(params);
-      logger.info(sessionTraceId ?? params.inputId, "ZCode Protocol session/compact 开始", {
+      logger.info(sessionTraceId ?? params.inputId, "Nekode Protocol session/compact 开始", {
         inputId: params.inputId,
         sessionId: params.sessionId,
         workspaceKey: resolveWorkspaceKey(params),
@@ -5931,7 +5900,7 @@ export function createZCodeAgentService(
             timeoutMs: SESSION_COMPACT_REQUEST_TIMEOUT_MS,
           },
         );
-        logger.info(sessionTraceId ?? params.inputId, "ZCode Protocol session/compact ACK", {
+        logger.info(sessionTraceId ?? params.inputId, "Nekode Protocol session/compact ACK", {
           durationMs: Date.now() - startedAt,
           inputId: params.inputId,
           sessionId: params.sessionId,
@@ -5940,7 +5909,7 @@ export function createZCodeAgentService(
         });
         return result;
       } catch (error) {
-        logger.warn(sessionTraceId ?? params.inputId, "ZCode Protocol session/compact 失败", {
+        logger.warn(sessionTraceId ?? params.inputId, "Nekode Protocol session/compact 失败", {
           durationMs: Date.now() - startedAt,
           error: error instanceof Error ? error.message : String(error),
           inputId: params.inputId,
@@ -5952,10 +5921,10 @@ export function createZCodeAgentService(
       }
     },
 
-    async goalSession(params: ZCodeAgentGoalParams) {
+    async goalSession(params: NekodeAgentGoalParams) {
       const startedAt = Date.now();
       const client = await getClient(params);
-      logger.info(params.inputId, "开始请求 ZCode Protocol session/goal", {
+      logger.info(params.inputId, "开始请求 Nekode Protocol session/goal", {
         action: params.action,
         hasObjective: Boolean(params.objective?.trim()),
         sessionId: params.sessionId,
@@ -5974,7 +5943,7 @@ export function createZCodeAgentService(
           },
           zcodeSessionGoalResultSchema,
         );
-        logger.info(params.inputId, "ZCode Protocol session/goal 完成", {
+        logger.info(params.inputId, "Nekode Protocol session/goal 完成", {
           action: params.action,
           durationMs: Date.now() - startedAt,
           messageCount: result.snapshot.messages.length,
@@ -5987,7 +5956,7 @@ export function createZCodeAgentService(
         });
         return result;
       } catch (error) {
-        logger.warn(params.inputId, "ZCode Protocol session/goal 失败", {
+        logger.warn(params.inputId, "Nekode Protocol session/goal 失败", {
           action: params.action,
           durationMs: Date.now() - startedAt,
           message: error instanceof Error ? error.message : String(error),
@@ -6000,7 +5969,7 @@ export function createZCodeAgentService(
     },
 
     async closeSession(
-      params: ZCodeAgentSessionTarget & {
+      params: NekodeAgentSessionTarget & {
         expectedPersistence?: "deferred" | "immediate";
       },
     ): Promise<boolean> {
@@ -6019,10 +5988,10 @@ export function createZCodeAgentService(
       return result.closed ?? true;
     },
 
-    async setModel(params: ZCodeAgentSetModelParams) {
+    async setModel(params: NekodeAgentSetModelParams) {
       const startedAt = Date.now();
       const client = await getClient(params);
-      logger.info(undefined, "开始请求 ZCode Protocol session/setModel", {
+      logger.info(undefined, "开始请求 Nekode Protocol session/setModel", {
         expectedRevision: params.expectedRevision ?? null,
         persistAsWorkspaceLastUsed: params.persistAsWorkspaceLastUsed ?? null,
         requestedModel: formatModelSelectionForLog(params.model),
@@ -6041,7 +6010,7 @@ export function createZCodeAgentService(
           },
           zcodeSessionStateSnapshotSchema,
         );
-        logger.info(undefined, "ZCode Protocol session/setModel 完成", {
+        logger.info(undefined, "Nekode Protocol session/setModel 完成", {
           durationMs: Date.now() - startedAt,
           requestedModel: formatModelSelectionForLog(params.model),
           sessionId: params.sessionId,
@@ -6051,7 +6020,7 @@ export function createZCodeAgentService(
         });
         return snapshot;
       } catch (error) {
-        logger.warn(undefined, "ZCode Protocol session/setModel 失败", {
+        logger.warn(undefined, "Nekode Protocol session/setModel 失败", {
           durationMs: Date.now() - startedAt,
           message: error instanceof Error ? error.message : String(error),
           requestedModel: formatModelSelectionForLog(params.model),
@@ -6063,7 +6032,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async setThoughtLevel(params: ZCodeAgentSetThoughtLevelParams) {
+    async setThoughtLevel(params: NekodeAgentSetThoughtLevelParams) {
       const client = await getClient(params);
       const snapshot = await client.request(
         zcodeProtocolMethods.sessionSetThoughtLevel,
@@ -6078,7 +6047,7 @@ export function createZCodeAgentService(
       return snapshot;
     },
 
-    async setMode(params: ZCodeAgentSetModeParams) {
+    async setMode(params: NekodeAgentSetModeParams) {
       const client = await getClient(params);
       return client.request(
         zcodeProtocolMethods.sessionSetMode,
@@ -6092,7 +6061,7 @@ export function createZCodeAgentService(
     },
 
     async respondSessionRuntimePreferences(
-      params: ZCodeAgentRespondSessionRuntimePreferencesParams,
+      params: NekodeAgentRespondSessionRuntimePreferencesParams,
     ): Promise<void> {
       const pending = takePendingSessionRuntimePreferences(params.requestId);
       if (!pending) {
@@ -6101,7 +6070,9 @@ export function createZCodeAgentService(
           module: "services.zcode_agent",
           requestId: params.requestId,
         });
-        throw new Error(`ZCode session runtime preferences request not found: ${params.requestId}`);
+        throw new Error(
+          `Nekode session runtime preferences request not found: ${params.requestId}`,
+        );
       }
       const responseContext = {
         event: "zcode_agent.runtime_preferences.host_response_received",
@@ -6122,7 +6093,7 @@ export function createZCodeAgentService(
         });
         return;
       }
-      let preferences: ZCodeSessionRuntimePreferencesResult;
+      let preferences: NekodeSessionRuntimePreferencesResult;
       try {
         preferences = zcodeSessionRuntimePreferencesResultSchema.parse(
           params.resolution.preferences,
@@ -6153,11 +6124,11 @@ export function createZCodeAgentService(
       logger.info(undefined, "运行时偏好响应已回传 Agent", responseContext);
     },
 
-    onDynamicWorkspaceProviderRuntimeHeadersCancelled(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicWorkspaceProviderRuntimeHeadersCancelled(params: NekodeAgentWorkspaceTarget) {
       const key = resolveWorkspaceKey(params);
       let emitter = providerRuntimeHeadersCancelledEmitters.get(key);
       if (!emitter) {
-        emitter = new Emitter<ZCodeProviderRuntimeHeadersCancelled>();
+        emitter = new Emitter<NekodeProviderRuntimeHeadersCancelled>();
         providerRuntimeHeadersCancelledEmitters.set(key, emitter);
       }
       return emitter.event;
@@ -6174,19 +6145,19 @@ export function createZCodeAgentService(
     },
 
     async respondProviderRuntimeHeaders(
-      params: ZCodeAgentRespondProviderRuntimeHeadersParams,
+      params: NekodeAgentRespondProviderRuntimeHeadersParams,
     ): Promise<void> {
       const key = providerRuntimeHeadersRequestKey(params);
       const pending = pendingProviderRuntimeHeaders.get(key);
       if (!pending) {
-        throw new Error(`ZCode provider runtime headers request not found: ${params.requestId}`);
+        throw new Error(`Nekode provider runtime headers request not found: ${params.requestId}`);
       }
       if (!pending.interactionRequired) {
         throw new Error("Provider runtime headers request does not require interaction");
       }
       if (pending.responding) {
         throw new Error(
-          `ZCode provider runtime headers response already pending: ${params.requestId}`,
+          `Nekode provider runtime headers response already pending: ${params.requestId}`,
         );
       }
       // 不能在等待账号 IO 前删除 pending，否则新合入的取消通知找不到请求；
@@ -6206,7 +6177,7 @@ export function createZCodeAgentService(
       } catch (error) {
         if (pendingProviderRuntimeHeaders.get(key) !== pending) return;
         pendingProviderRuntimeHeaders.delete(key);
-        logger.warn(undefined, "ZCode provider runtime headers 应用失败", {
+        logger.warn(undefined, "Nekode provider runtime headers 应用失败", {
           modelId: pending.request.modelSelection.modelId,
           providerId: pending.request.providerId,
           requestId: pending.request.requestId,
@@ -6255,13 +6226,13 @@ export function createZCodeAgentService(
         workspaceKey: resolveWorkspaceKey(pending.request.workspace),
       };
       if (requestAuth) {
-        logger.info(undefined, "ZCode provider runtime headers 已应用", logContext);
+        logger.info(undefined, "Nekode provider runtime headers 已应用", logContext);
       } else {
-        logger.warn(undefined, "ZCode provider runtime headers 应用失败", logContext);
+        logger.warn(undefined, "Nekode provider runtime headers 应用失败", logContext);
       }
     },
 
-    onDynamicProviderRuntimeHeadersRequest(params: ZCodeAgentSessionTarget) {
+    onDynamicProviderRuntimeHeadersRequest(params: NekodeAgentSessionTarget) {
       const emitter = getSessionEmitter(params);
       return (listener) => {
         const disposable = emitter.event((event) => {
@@ -6288,7 +6259,7 @@ export function createZCodeAgentService(
       };
     },
 
-    onDynamicWorkspaceProviderRuntimeHeadersRequest(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicWorkspaceProviderRuntimeHeadersRequest(params: NekodeAgentWorkspaceTarget) {
       const emitter = getProviderRuntimeHeadersWorkspaceEmitter(params);
       return (listener) => {
         const disposable = emitter.event((request) => {
@@ -6313,7 +6284,7 @@ export function createZCodeAgentService(
       };
     },
 
-    onDynamicSessionEvent(params: ZCodeAgentSessionSubscribeParams) {
+    onDynamicSessionEvent(params: NekodeAgentSessionSubscribeParams) {
       const emitter = getSessionEmitter(params);
       return (listener) => {
         // cancelled / retryTimer 的作用域是单个订阅者：调用方 dispose 时取消自己的重试，
@@ -6321,7 +6292,7 @@ export function createZCodeAgentService(
         let cancelled = false;
         let retryTimer: ReturnType<typeof setTimeout> | undefined;
         let subscriptionReady = false;
-        const pendingLiveEvents: ZCodeAgentServiceEvent[] = [];
+        const pendingLiveEvents: NekodeAgentServiceEvent[] = [];
         const deliveredEventIds = new Set<string>();
         const deliveredEventIdOrder: string[] = [];
         const eventCoalescer =
@@ -6332,7 +6303,7 @@ export function createZCodeAgentService(
               })
             : null;
 
-        const deliverToListener = (event: ZCodeAgentServiceEvent): void => {
+        const deliverToListener = (event: NekodeAgentServiceEvent): void => {
           if (cancelled) {
             return;
           }
@@ -6495,8 +6466,8 @@ export function createZCodeAgentService(
       clientHelloSchema.parse(rawClientHello);
     },
 
-    async setConnectionFlowStateV4(params: ZCodeAgentConnectionFlowParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async setConnectionFlowStateV4(params: NekodeAgentConnectionFlowParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.connection.flowControlUntrusted");
       const client = await getReadOnlyClient(params);
       await client.request(
@@ -6506,7 +6477,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async subscribeConversationV4(params: ZCodeAgentConversationSubscribeParams) {
+    async subscribeConversationV4(params: NekodeAgentConversationSubscribeParams) {
       const subscribeStartedAt = performance.now();
       const existingClient = processManager.getExistingClient(params);
       const cliProcessState: "reused" | "spawned" =
@@ -6521,7 +6492,7 @@ export function createZCodeAgentService(
           : undefined;
       // conversation 冷订阅会在 CLI 内部直接恢复历史 Session 并立即发布首帧。
       // 若 Account Config 尚未到达，首帧会先按缺少 Account Overlay 的 Registry 解析；这里只建立
-      // Account Config 顺序屏障，不提升模型执行权限。ZCode Built-in / Personal 仍由 Worker 维护。
+      // Account Config 顺序屏障，不提升模型执行权限。Nekode Built-in / Personal 仍由 Worker 维护。
       const providerRegistryStartedAt = performance.now();
       await ensureAccountProviderConfigSynced({
         client,
@@ -6615,19 +6586,19 @@ export function createZCodeAgentService(
       };
     },
 
-    async unsubscribeConversationV4(params: ZCodeAgentConversationUnsubscribeParams) {
+    async unsubscribeConversationV4(params: NekodeAgentConversationUnsubscribeParams) {
       await unsubscribeV4Route(params, "conversation/");
     },
 
-    async resyncConversationV4(params: ZCodeAgentConversationResyncParams) {
+    async resyncConversationV4(params: NekodeAgentConversationResyncParams) {
       return resyncV4Route(params, "conversation/");
     },
 
-    async sendConversationCommandV4(params: ZCodeAgentConversationCommandParams) {
+    async sendConversationCommandV4(params: NekodeAgentConversationCommandParams) {
       const ttft =
         !params.workspaceIdentity?.trim() &&
         !params.remoteSessionId &&
-        (readTrustedZCodeAgentV4Connection(params)?.clientMode ??
+        (readTrustedNekodeAgentV4Connection(params)?.clientMode ??
           params.clientMode ??
           "desktop-continuous") === "desktop-continuous"
           ? params.envelope.ttft
@@ -6692,7 +6663,7 @@ export function createZCodeAgentService(
       // RPC facade 会清掉调用方可伪造的顶层 clientMode，再用 trusted carrier 注入 host
       // 真值；host 内部 adapter 直调仍兼容显式 clientMode。
       const commandClientMode =
-        readTrustedZCodeAgentV4Connection(params)?.clientMode ??
+        readTrustedNekodeAgentV4Connection(params)?.clientMode ??
         params.clientMode ??
         "desktop-continuous";
       let envelope = {
@@ -6763,8 +6734,8 @@ export function createZCodeAgentService(
       return ack;
     },
 
-    async queryConversationCommandsV4(params: ZCodeAgentCommandsQueryParams) {
-      if (!readTrustedZCodeAgentV4Connection(params)) {
+    async queryConversationCommandsV4(params: NekodeAgentCommandsQueryParams) {
+      if (!readTrustedNekodeAgentV4Connection(params)) {
         throw new Error("fault.command.queryConnectionUntrusted");
       }
       const query = commandsQueryParamsSchema.parse({
@@ -6775,8 +6746,8 @@ export function createZCodeAgentService(
       return client.request(V4_METHODS.commandsQuery, query, commandsQueryResultSchema);
     },
 
-    async attachmentBeginV4(params: ZCodeAgentAttachmentBeginParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async attachmentBeginV4(params: NekodeAgentAttachmentBeginParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.attachment.connectionUntrusted");
       const client = await getClient(params);
       const wireParams = {
@@ -6793,8 +6764,8 @@ export function createZCodeAgentService(
       return client.request(V4_METHODS.attachmentBegin, wireParams, v4AttachmentBeginResultSchema);
     },
 
-    async attachmentChunkV4(params: ZCodeAgentAttachmentChunkParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async attachmentChunkV4(params: NekodeAgentAttachmentChunkParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.attachment.connectionUntrusted");
       const client = await getClient(params);
       const wireParams = {
@@ -6808,8 +6779,8 @@ export function createZCodeAgentService(
       return client.request(V4_METHODS.attachmentChunk, wireParams, v4AttachmentChunkResultSchema);
     },
 
-    async attachmentCommitV4(params: ZCodeAgentAttachmentTerminalParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async attachmentCommitV4(params: NekodeAgentAttachmentTerminalParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.attachment.connectionUntrusted");
       const client = await getClient(params);
       const wireParams = {
@@ -6825,8 +6796,8 @@ export function createZCodeAgentService(
       );
     },
 
-    async attachmentAbortV4(params: ZCodeAgentAttachmentTerminalParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async attachmentAbortV4(params: NekodeAgentAttachmentTerminalParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.attachment.connectionUntrusted");
       const client = await getClient(params);
       const wireParams = {
@@ -6838,8 +6809,8 @@ export function createZCodeAgentService(
       await client.request(V4_METHODS.attachmentAbort, wireParams, v4AttachmentAbortResultSchema);
     },
 
-    async attachmentReadV4(params: ZCodeAgentAttachmentReadParams) {
-      if (!readTrustedZCodeAgentV4Connection(params)) {
+    async attachmentReadV4(params: NekodeAgentAttachmentReadParams) {
+      if (!readTrustedNekodeAgentV4Connection(params)) {
         throw new Error("fault.attachment.readConnectionUntrusted");
       }
       const wireParams = v4AttachmentReadParamsSchema.parse({
@@ -6856,10 +6827,10 @@ export function createZCodeAgentService(
       return client.request(V4_METHODS.attachmentRead, wireParams, v4AttachmentReadResultSchema);
     },
 
-    async conversationAttachmentReadV4(params: ZCodeAgentConversationAttachmentReadParams) {
-      if (!readTrustedZCodeAgentV4Connection(params)) {
-        throw new ZCodeAttachmentFaultError(
-          ZCODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted,
+    async conversationAttachmentReadV4(params: NekodeAgentConversationAttachmentReadParams) {
+      if (!readTrustedNekodeAgentV4Connection(params)) {
+        throw new NekodeAttachmentFaultError(
+          NEKODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted,
         );
       }
       const wireParams = v4ConversationAttachmentReadParamsSchema.parse({
@@ -6878,10 +6849,10 @@ export function createZCodeAgentService(
       );
     },
 
-    async conversationAttachmentStatV4(params: ZCodeAgentConversationAttachmentStatParams) {
-      if (!readTrustedZCodeAgentV4Connection(params)) {
-        throw new ZCodeAttachmentFaultError(
-          ZCODE_ATTACHMENT_FAULT_CODES.shareStatConnectionUntrusted,
+    async conversationAttachmentStatV4(params: NekodeAgentConversationAttachmentStatParams) {
+      if (!readTrustedNekodeAgentV4Connection(params)) {
+        throw new NekodeAttachmentFaultError(
+          NEKODE_ATTACHMENT_FAULT_CODES.shareStatConnectionUntrusted,
         );
       }
       const wireParams = v4ConversationAttachmentStatParamsSchema.parse({
@@ -6898,8 +6869,8 @@ export function createZCodeAgentService(
       );
     },
 
-    async attachmentPreviewSourceV4(params: ZCodeAgentAttachmentPreviewSourceParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async attachmentPreviewSourceV4(params: NekodeAgentAttachmentPreviewSourceParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.attachment.previewSourceConnectionUntrusted");
       if (trusted.clientMode !== "desktop-continuous" || params.remoteSessionId) {
         return { kind: "chunked" } as const;
@@ -6930,8 +6901,8 @@ export function createZCodeAgentService(
     },
 
     // 行分页：只读 query 透传（超时重发安全，无订阅状态）。
-    async conversationRowsRangeV4(params: ZCodeAgentConversationRowsRangeParams) {
-      const trusted = readTrustedZCodeAgentV4Connection(params);
+    async conversationRowsRangeV4(params: NekodeAgentConversationRowsRangeParams) {
+      const trusted = readTrustedNekodeAgentV4Connection(params);
       if (!trusted) throw new Error("fault.conversation.rowsRangeConnectionUntrusted");
       const residentOnly = params.residency === "resident-only";
       const client = residentOnly
@@ -6951,7 +6922,7 @@ export function createZCodeAgentService(
     },
 
     // 只读计划目录沿现有 workspace attachment 透传，不建立新 runtime。
-    async conversationPlansV4(params: ZCodeAgentConversationPlansParams) {
+    async conversationPlansV4(params: NekodeAgentConversationPlansParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         V4_METHODS.conversationPlans,
@@ -6962,7 +6933,7 @@ export function createZCodeAgentService(
 
     // 输入预测：只读 query；绝不为它拉起运行时（existing-only）。开关关闭、无运行时、
     // 旧 CLI 不认识方法、模型失败都降级为空结果——ghost hint 是可有可无的建议。
-    async conversationInputPredictionV4(params: ZCodeAgentConversationInputPredictionParams) {
+    async conversationInputPredictionV4(params: NekodeAgentConversationInputPredictionParams) {
       if (!isRemoteInputPredictionEnabled()) {
         return emptyInputPredictionResult("unavailable", params.requestId);
       }
@@ -6986,7 +6957,7 @@ export function createZCodeAgentService(
     // workflow run 事件日志：同样是只读 query，沿现有 workspace attachment 透传。
     // 分页发生在存储层（JournalStorePort.listEvents 带 afterSequence/limit），这里不切片；
     // 在 RPC 层切等于每翻一页把整条 journal 读进内存。
-    async conversationWorkflowRunEventsV4(params: ZCodeAgentConversationWorkflowRunEventsParams) {
+    async conversationWorkflowRunEventsV4(params: NekodeAgentConversationWorkflowRunEventsParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         V4_METHODS.conversationWorkflowRunEvents,
@@ -7001,7 +6972,7 @@ export function createZCodeAgentService(
     },
 
     // workflow run 枚举：journal-backed 的重启后发现面（workflowRuns 投影跨进程不存活）。
-    async conversationWorkflowRunsV4(params: ZCodeAgentConversationWorkflowRunsParams) {
+    async conversationWorkflowRunsV4(params: NekodeAgentConversationWorkflowRunsParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         V4_METHODS.conversationWorkflowRuns,
@@ -7017,7 +6988,7 @@ export function createZCodeAgentService(
     // ⚠ 术语：artifact = 脚本发布给用户看的产出，不是 run 的顶层返回值。
     // 三条与 plans / workflowRunEvents 同族：只读、无状态、超时重发安全，走只读客户端。
     async conversationWorkflowRunArtifactsV4(
-      params: ZCodeAgentConversationWorkflowRunArtifactsParams,
+      params: NekodeAgentConversationWorkflowRunArtifactsParams,
     ) {
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -7030,7 +7001,7 @@ export function createZCodeAgentService(
     // 看板取数：limit 的缺省与钳制在 CLI 网关侧，这里只透传——两处各钳一次，
     // 同一个 limit 迟早会在两层上得到不同的页大小。
     async conversationWorkflowRunArtifactDataV4(
-      params: ZCodeAgentConversationWorkflowRunArtifactDataParams,
+      params: NekodeAgentConversationWorkflowRunArtifactDataParams,
     ) {
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -7049,7 +7020,7 @@ export function createZCodeAgentService(
     // 字节：一次一块（≤ 512 KiB），拼接归 renderer 的 hook。授权全在 CLI 侧——
     // 这里传下去的 id 只用于在 journal 里查行，绝不成为路径。
     async conversationWorkflowRunArtifactReadV4(
-      params: ZCodeAgentConversationWorkflowRunArtifactReadParams,
+      params: NekodeAgentConversationWorkflowRunArtifactReadParams,
     ) {
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -7069,7 +7040,7 @@ export function createZCodeAgentService(
     // dwf 工作区 transcript 的两条读面。同族：
     // 只读、无状态、超时重发安全，走只读客户端。maxBytes 的缺省与钳制在 CLI 网关侧。
     async conversationWorkflowRunWorkspaceV4(
-      params: ZCodeAgentConversationWorkflowRunWorkspaceParams,
+      params: NekodeAgentConversationWorkflowRunWorkspaceParams,
     ) {
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -7080,7 +7051,7 @@ export function createZCodeAgentService(
     },
 
     async conversationWorkflowRunNodeResultV4(
-      params: ZCodeAgentConversationWorkflowRunNodeResultParams,
+      params: NekodeAgentConversationWorkflowRunNodeResultParams,
     ) {
       const client = await getReadOnlyClient(params);
       return client.request(
@@ -7096,8 +7067,8 @@ export function createZCodeAgentService(
       );
     },
 
-    async backgroundBashOutputV4(params: ZCodeAgentBackgroundBashOutputParams) {
-      if (!readTrustedZCodeAgentV4Connection(params))
+    async backgroundBashOutputV4(params: NekodeAgentBackgroundBashOutputParams) {
+      if (!readTrustedNekodeAgentV4Connection(params))
         throw new Error("fault.bashOutput.connectionUntrusted");
       const wireParams = v4BackgroundBashOutputParamsSchema.parse({
         sessionId: params.sessionId,
@@ -7116,7 +7087,7 @@ export function createZCodeAgentService(
         if (
           error instanceof Error &&
           "code" in error &&
-          error.code === ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE
+          error.code === NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE
         ) {
           return { kind: "unavailable", workId: params.workId };
         }
@@ -7124,7 +7095,7 @@ export function createZCodeAgentService(
       }
     },
 
-    async conversationFileChangesV4(params: ZCodeAgentConversationFileChangesParams) {
+    async conversationFileChangesV4(params: NekodeAgentConversationFileChangesParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         V4_METHODS.conversationFileChanges,
@@ -7138,7 +7109,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async conversationFileRewindPreviewV4(params: ZCodeAgentConversationFileRewindPreviewParams) {
+    async conversationFileRewindPreviewV4(params: NekodeAgentConversationFileRewindPreviewParams) {
       const client = await getReadOnlyClient(params);
       return client.request(
         V4_METHODS.conversationFileRewindPreview,
@@ -7186,11 +7157,11 @@ export function createZCodeAgentService(
           if (event.workspaceKey === resolveWorkspaceKey(params)) listener(event.snapshot);
         });
     },
-    onDynamicConversationFrame(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicConversationFrame(params: NekodeAgentWorkspaceTarget) {
       return getConversationFrameEmitter(params).event;
     },
 
-    onDynamicLocalTtftFacts(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicLocalTtftFacts(params: NekodeAgentWorkspaceTarget) {
       return (listener: (facts: LocalTtftFacts) => void) =>
         localTtftFactsEmitter.event((event) => {
           if (event.workspaceKey === resolveWorkspaceKey(params)) listener(event.facts);
@@ -7199,14 +7170,14 @@ export function createZCodeAgentService(
     onDynamicRemoteConversationTelemetry() {
       return remoteConversationTelemetryEmitter.event;
     },
-    onDynamicConversationTelemetryFact(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicConversationTelemetryFact(params: NekodeAgentWorkspaceTarget) {
       return getConversationTelemetryFactEmitter(params).event;
     },
-    onDynamicOffPeakLifecycle(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicOffPeakLifecycle(params: NekodeAgentWorkspaceTarget) {
       return getOffPeakLifecycleEmitter(params).event;
     },
     async controlOffPeakExecutionV4(
-      params: ZCodeAgentWorkspaceTarget & { control: OffPeakControlParams },
+      params: NekodeAgentWorkspaceTarget & { control: OffPeakControlParams },
     ) {
       const control = offPeakControlParamsSchema.parse(params.control);
       const client = await getReadOnlyClient(params, "existing-only");
@@ -7232,7 +7203,7 @@ export function createZCodeAgentService(
       );
     },
 
-    async subscribeSessionsIndexV4(params: ZCodeAgentSessionsIndexSubscribeParams) {
+    async subscribeSessionsIndexV4(params: NekodeAgentSessionsIndexSubscribeParams) {
       // 侧栏会同时登记所有 restored workspace。被动订阅若使用启动型 client，
       // workspace 数量会直接放大成 CLI 数量；existing-only 缺 runtime 时只进入 dormant。
       const client = await getReadOnlyClient(params, params.runtimePolicy);
@@ -7285,22 +7256,22 @@ export function createZCodeAgentService(
       return result;
     },
 
-    async unsubscribeSessionsIndexV4(params: ZCodeAgentConversationUnsubscribeParams) {
+    async unsubscribeSessionsIndexV4(params: NekodeAgentConversationUnsubscribeParams) {
       await unsubscribeV4Route(params, "sessions-index/");
     },
 
-    async resyncSessionsIndexV4(params: ZCodeAgentConversationResyncParams) {
+    async resyncSessionsIndexV4(params: NekodeAgentConversationResyncParams) {
       return resyncV4Route(params, "sessions-index/");
     },
 
-    onDynamicSessionsIndexFrame(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicSessionsIndexFrame(params: NekodeAgentWorkspaceTarget) {
       return getSessionsIndexFrameEmitter(params).event;
     },
 
     // ── workspace-config 通道（配置目录活性）：复用 conversationSubscribe RPC，
     // 按 topic 前缀由 CLI server 分派 ──
 
-    async subscribeWorkspaceConfigV4(params: ZCodeAgentWorkspaceConfigSubscribeParams) {
+    async subscribeWorkspaceConfigV4(params: NekodeAgentWorkspaceConfigSubscribeParams) {
       const client = await getReadOnlyClient(params, params.runtimePolicy);
       const connection = resolveV4Connection(params, v4ConnectionIdFor(params.subscriberScope));
       const topic = workspaceConfigTopic(resolveWorkspaceKey(params));
@@ -7324,15 +7295,15 @@ export function createZCodeAgentService(
       return result;
     },
 
-    async unsubscribeWorkspaceConfigV4(params: ZCodeAgentConversationUnsubscribeParams) {
+    async unsubscribeWorkspaceConfigV4(params: NekodeAgentConversationUnsubscribeParams) {
       await unsubscribeV4Route(params, "workspace-config/");
     },
 
-    async resyncWorkspaceConfigV4(params: ZCodeAgentConversationResyncParams) {
+    async resyncWorkspaceConfigV4(params: NekodeAgentConversationResyncParams) {
       return resyncV4Route(params, "workspace-config/");
     },
 
-    onDynamicWorkspaceConfigFrame(params: ZCodeAgentWorkspaceTarget) {
+    onDynamicWorkspaceConfigFrame(params: NekodeAgentWorkspaceTarget) {
       return getWorkspaceConfigFrameEmitter(params).event;
     },
 
@@ -7357,7 +7328,7 @@ export function createZCodeAgentService(
       return processManager.onRuntimeRestarted(listener);
     },
 
-    onAgentRuntimeLifecycle(listener: (event: ZCodeAgentRuntimeLifecycleEvent) => void) {
+    onAgentRuntimeLifecycle(listener: (event: NekodeAgentRuntimeLifecycleEvent) => void) {
       return processManager.onRuntimeLifecycle(listener);
     },
 

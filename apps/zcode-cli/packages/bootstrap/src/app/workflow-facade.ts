@@ -40,12 +40,12 @@ import {
   type WorkflowDefinition,
 } from "@zcode/contracts";
 import { collectDisabledPaths } from "../skill-command-overrides.js";
-import type { PrepareUserExecutionBoundary, ZCodeAppOptions } from "./types.js";
+import type { PrepareUserExecutionBoundary, NekodeAppOptions } from "./types.js";
 import { createWorkflowMethods, type WorkflowFacade } from "./workflow-methods.js";
 
 interface CreateWorkflowFacadeDeps {
   agentTelemetry: AgentExecutionTelemetryPort;
-  appOptions: ZCodeAppOptions;
+  appOptions: NekodeAppOptions;
   appVersion: string;
   artifactStore?: ToolArtifactStorePort;
   cliStorageRoot: string;

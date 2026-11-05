@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import type { ZCodeApp } from "../src/app/types.js";
+import type { NekodeApp } from "../src/app/types.js";
 import { runSessionModelConfigMutation } from "../src/zcode-protocol-v4/model-config-mutation.js";
 
 describe("session model config mutation coordinator", () => {
   it("serializes registry fallback and explicit model mutations by session App identity", async () => {
-    const app = {} as ZCodeApp;
+    const app = {} as NekodeApp;
     const order: string[] = [];
     let releaseFirst!: () => void;
     const firstBlocked = new Promise<void>((resolve) => {
@@ -31,7 +31,7 @@ describe("session model config mutation coordinator", () => {
   });
 
   it("does not poison later model mutations when one operation fails", async () => {
-    const app = {} as ZCodeApp;
+    const app = {} as NekodeApp;
     const failed = runSessionModelConfigMutation(app, async () => {
       throw new Error("expected failure");
     });

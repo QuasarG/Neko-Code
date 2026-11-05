@@ -1,22 +1,22 @@
-import type { ZCodeSessionStateSnapshot } from "@zcode/shared";
+import type { NekodeSessionStateSnapshot } from "@zcode/shared";
 import type {
-  ZCodeSessionWorkspaceTarget,
-  ZCodeTaskTarget,
+  NekodeSessionWorkspaceTarget,
+  NekodeTaskTarget,
 } from "#src/zcode-session/zcodeSession.js";
 
-function getWorkspaceKey(target: ZCodeSessionWorkspaceTarget): string {
+function getWorkspaceKey(target: NekodeSessionWorkspaceTarget): string {
   return target.workspaceIdentity?.trim() || target.workspacePath;
 }
 
-function getSessionScopedKey(target: ZCodeTaskTarget): string {
+function getSessionScopedKey(target: NekodeTaskTarget): string {
   return `${getWorkspaceKey(target)}\0${target.sessionId}`;
 }
 
-export function createZCodeDeferredDraftRegistry() {
+export function createNekodeDeferredDraftRegistry() {
   const sessionKeys = new Set<string>();
 
   return {
-    remember(params: ZCodeSessionWorkspaceTarget, snapshot: ZCodeSessionStateSnapshot): void {
+    remember(params: NekodeSessionWorkspaceTarget, snapshot: NekodeSessionStateSnapshot): void {
       sessionKeys.add(
         getSessionScopedKey({
           workspacePath: snapshot.session.workspace.workspacePath,
@@ -27,11 +27,11 @@ export function createZCodeDeferredDraftRegistry() {
       );
     },
 
-    has(target: ZCodeTaskTarget): boolean {
+    has(target: NekodeTaskTarget): boolean {
       return sessionKeys.has(getSessionScopedKey(target));
     },
 
-    forget(target: ZCodeTaskTarget): void {
+    forget(target: NekodeTaskTarget): void {
       sessionKeys.delete(getSessionScopedKey(target));
     },
   };

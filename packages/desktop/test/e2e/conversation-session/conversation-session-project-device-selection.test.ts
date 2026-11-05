@@ -163,7 +163,7 @@ async function readDirectory() {
 }
 describe(marker, () => {
   afterEach(async () => {
-    await browser.saveScreenshot(join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "last-state.png"));
+    await browser.saveScreenshot(join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "last-state.png"));
   });
   after(async () => {
     await browser.electron.execute(() => globalThis.__projectConnectionRestore?.());
@@ -308,7 +308,7 @@ describe(marker, () => {
       `${projectName}_OFFLINE`,
     );
 
-    const artifacts = process.env.ZCODE_E2E_ARTIFACT_DIR!;
+    const artifacts = process.env.NEKODE_E2E_ARTIFACT_DIR!;
     for (const locale of ["zh-CN", "en-US"])
       for (const theme of ["light", "dark"]) {
         await browser.execute(
@@ -524,7 +524,7 @@ describe(marker, () => {
     });
     expect(taskHover).toEqual({ identityDetailsOpened: false });
     await browser.saveScreenshot(
-      join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "task-hover-no-identity.png"),
+      join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "task-hover-no-identity.png"),
     );
     await openForm();
     await expectSelectedDevice(remote.hostId);
@@ -579,7 +579,7 @@ async function createHistoryTask(
   // 空 createSession 是草稿，正式任务前置走公开历史导入，不发送模型请求。
   const call = remote ? callRemoteFixture : callHandoffHost;
   const snapshot = await call<{ session: { sessionId: string } }>(
-    ServiceChannels.ZCodeAgent,
+    ServiceChannels.NekodeAgent,
     "createSession",
     [
       {
@@ -597,7 +597,7 @@ async function createHistoryTask(
     ],
   );
   const taskId = snapshot.session.sessionId;
-  await call(ServiceChannels.ZCodeTask, "resumeTask", [
+  await call(ServiceChannels.NekodeTask, "resumeTask", [
     {
       taskId,
       workspacePath: target.workspacePath,

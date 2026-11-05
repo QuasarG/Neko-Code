@@ -1,7 +1,7 @@
 import { createConfig } from "@zcode/adapters/config";
 import { openStartupSqliteSessionStore } from "@zcode/adapters/storage";
 import type { SessionInfo } from "@zcode/contracts";
-import type { ListZCodeSessionsOptions, ResolveLatestSessionOptions } from "./app/types.js";
+import type { ListNekodeSessionsOptions, ResolveLatestSessionOptions } from "./app/types.js";
 import { getSessionDbPath, isClosableSessionStore } from "./app/session-store.js";
 
 export async function resolveLatestSession(
@@ -28,8 +28,8 @@ export async function resolveLatestSession(
   }
 }
 
-export async function listZCodeSessions(
-  options: ListZCodeSessionsOptions = {},
+export async function listNekodeSessions(
+  options: ListNekodeSessionsOptions = {},
 ): Promise<SessionInfo[]> {
   const ownsStore = options.sessionStore === undefined;
   let sessionStore = options.sessionStore;

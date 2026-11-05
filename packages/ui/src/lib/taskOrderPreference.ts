@@ -1,4 +1,4 @@
-import type { ZCodeTaskMeta } from "@zcode/shared";
+import type { NekodeTaskMeta } from "@zcode/shared";
 
 interface StorageLike {
   getItem(key: string): string | null;
@@ -65,12 +65,12 @@ export function persistTaskOrder(
   storage?.setItem(getTaskOrderStorageKey(workspacePath), JSON.stringify(normalizeTaskOrder(taskIds)));
 }
 
-export function pruneTaskOrder(taskOrder: readonly string[], tasks: readonly ZCodeTaskMeta[]): string[] {
+export function pruneTaskOrder(taskOrder: readonly string[], tasks: readonly NekodeTaskMeta[]): string[] {
   const taskIds = new Set(tasks.map((task) => task.taskId));
   return normalizeTaskOrder(taskOrder).filter((taskId) => taskIds.has(taskId));
 }
 
-export function sortTasksByOrder(tasks: readonly ZCodeTaskMeta[], taskOrder: readonly string[]): ZCodeTaskMeta[] {
+export function sortTasksByOrder(tasks: readonly NekodeTaskMeta[], taskOrder: readonly string[]): NekodeTaskMeta[] {
   const normalizedTaskOrder = normalizeTaskOrder(taskOrder);
   const orderedIndexByTaskId = new Map(
     normalizedTaskOrder.map((taskId, index) => [taskId, index] as const),

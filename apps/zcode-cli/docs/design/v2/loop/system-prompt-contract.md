@@ -1,6 +1,6 @@
 # System Prompt Contract
 
-ZCode stable system prompt is the long-lived behavioral contract for the main
+Nekode stable system prompt is the long-lived behavioral contract for the main
 agent. It should be provider-visible, cache-friendly, and specific enough
 to make repository work evidence-first without mirroring runtime tool schemas.
 
@@ -13,19 +13,19 @@ to make repository work evidence-first without mirroring runtime tool schemas.
   concrete examples.
 - Keep stable prompt copy English-only so prompt behavior is consistent across
   locales.
-- Keep tool schemas, project instructions, skills, and current date outside the
-  default system blocks; keep the static/global-cache body separate from the
-  dynamic/org-cache body.
+- Keep tool schemas and the per-turn date/time outside the stable blocks;
+  project instructions, skills, environment, model, Git snapshot, and subagent
+  type listing are harness facts and belong in the dynamic system body.
 
 ## Stable Sections
 
 | Section              | Purpose                                                                                                       |
 | -------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Static Default Body  | ZCode role, authorized-security boundary, and compact harness guidance.                                       |
+| Static Default Body  | Nekode role, authorized-security boundary, and compact harness guidance.                                       |
 | Dynamic Default Body | Code style, pronouns, risk guidance, session guidance, memory, and context management.                        |
 
 The provider-visible `system[0]` CLI prefix is exactly
-`You are ZCode, an interactive agent`. The provider-visible static
+`You are Nekode, an interactive agent`. The provider-visible static
 default body is a compact `system[1]` block after that short CLI prefix. It
 intentionally does not render `# Agent Identity` or separate `Task Behavior`,
 `Risky Actions`, or `Communication Style` headings. The legacy `task_behavior`,
@@ -69,7 +69,7 @@ An active output style replaces the static intro with
 `You are an interactive agent that helps users according to your "Output Style", which describes how you should respond to user queries.`
 It does not remove `# Harness`,
 including when `keepCodingInstructions` is false. That field applies only to a
-separate doing-tasks coding-instructions block; ZCode does not currently emit
+separate doing-tasks coding-instructions block; Nekode does not currently emit
 such a block. The style text itself is not in the system prompt; it is the
 `output_style_instructions` attachment (see [Meta User Context](meta-user-context.md)).
 A custom system prompt does not suppress that attachment: it uses the same gate
@@ -95,8 +95,10 @@ boundary is:
 6. `# Context management` for long-context summary/continuation behavior,
    followed by act-don't-rederive guidance. No autonomy appendix is emitted.
 
-Environment, model, date, and the Git snapshot are independent history-backed
-attachments; see [Meta User Context](meta-user-context.md).
+Environment, model, Git snapshot, instructions, skills, and the subagent type
+listing are rendered in `system[2]`. Date remains a history-backed announcement;
+current time is a turn-request-only reminder in Beijing time (UTC+8). See
+[Meta User Context](meta-user-context.md).
 
 Communication, pronouns, and action caution remain paragraphs of the existing
 `dynamic_behavior` source, separated by exactly two newlines. Pronouns are not
@@ -109,7 +111,7 @@ truthful-reporting guidance. Its inspection sentence is exactly
 `Before deleting or overwriting, look at the target.`; no conditional clause
 is appended to that sentence.
 
-Legacy ZCode `# Language`, `# Function Result Clearing`, and
+Legacy Nekode `# Language`, `# Function Result Clearing`, and
 `# Summarize Tool Results` sections are not emitted in this dynamic block. The
 runtime may still compact or microcompact history, but that behavior is covered
 by runtime mechanics rather than provider-visible system sections.
@@ -254,7 +256,7 @@ Required Explore prompt behavior:
   command; `Bash` is restricted to read-only operations.
 - Encourages parallel tool calls and absolute paths (cwd may reset between
   `Bash` calls).
-- ZCode-specific, kept on purpose: says exactly what is missing when evidence is
+- Nekode-specific, kept on purpose: says exactly what is missing when evidence is
   incomplete, and explicitly forbids spawning another agent.
 
 ## Test Coverage
@@ -269,7 +271,7 @@ Required Explore prompt behavior:
   policy and the no-URL-fabrication rule.
 - Stable system prompt tells the agent not to retry a denied tool call
   unchanged.
-- Provider-visible static `system[1]` starts with the ZCode intro, uses compact
+- Provider-visible static `system[1]` starts with the Nekode intro, uses compact
   `# Harness`, and does not render `# Agent Identity` or the old `# Task Behavior`,
   `# Risky Actions`, or `# Communication Style` headings; it ends at the final
   `# Harness` bullet.

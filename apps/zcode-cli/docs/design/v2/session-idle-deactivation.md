@@ -2,7 +2,7 @@
 
 ## 文档定位
 
-本文定义 ZCode Protocol app-server 内的 session 常驻池实现合同。产品边界和 renderer 生命周期见
+本文定义 Nekode Protocol app-server 内的 session 常驻池实现合同。产品边界和 renderer 生命周期见
 仓库根 `docs/session-idle-deactivation.md`。
 
 ## 目标
@@ -141,7 +141,7 @@ automation、定时/off-peak 任务、browser use、goal continuation 与 compac
 
 ## Operation lease
 
-`ZCodeProtocolAgentServer.handleRequest` 在 dispatch 之前获取 lease，在整个 async dispatch 完成后释放：
+`NekodeProtocolAgentServer.handleRequest` 在 dispatch 之前获取 lease，在整个 async dispatch 完成后释放：
 
 ```text
 handleRequest(request)

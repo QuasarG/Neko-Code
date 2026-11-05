@@ -10,15 +10,15 @@ import {
 } from "@zcode/provider";
 import { zcodeProviderUpdateAccountConfigParamsSchema } from "@zcode/shared";
 import {
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_BUILTIN_RELEASE_SCHEMA_VERSION,
+  NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  NEKODE_BUILTIN_RELEASE_SCHEMA_VERSION,
   createNodeModelSelectionFacade,
 } from "@zcode/provider-node";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "@zcode/adapters/auth";
 import {
   parseProcessAccountProviderConfigSnapshot,
@@ -70,13 +70,13 @@ describe("process provider registry runtime", () => {
       await wait;
       return new Response(JSON.stringify(builtin));
     });
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_DATA_BASE_DIR: root },
+    const credentialStore = createSharedNekodeCredentialStore({
+      env: { NEKODE_DATA_BASE_DIR: root },
     });
     const env = {
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: active,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
-      ZCODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE: bundled,
+      [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: active,
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
+      NEKODE_BUILTIN_PROVIDER_BUNDLED_CONFIG_FILE: bundled,
     };
     const runtime = await startProcessProviderRegistryRuntime(env, {
       standalone: {
@@ -96,7 +96,7 @@ describe("process provider registry runtime", () => {
         ),
       );
       const next = runtime.runtime.registryService.getSnapshot()!;
-      expect(next.account.basedOnZCodeBuiltinRevision).toBe(next.config.zcodeBuiltinRevision);
+      expect(next.account.basedOnNekodeBuiltinRevision).toBe(next.config.zcodeBuiltinRevision);
       expect(JSON.parse(await readFile(active, "utf8")).revision).toBe(builtin.revision);
       expect(JSON.parse(await readFile(bundled, "utf8")).revision).toBe(builtin.revision - 1);
       const worker = await startProcessProviderRegistryRuntime(env);
@@ -121,13 +121,13 @@ describe("process provider registry runtime", () => {
     );
     const filePath = join(root, "builtin.json");
     await writeFile(filePath, JSON.stringify(builtin));
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_DATA_BASE_DIR: root },
+    const credentialStore = createSharedNekodeCredentialStore({
+      env: { NEKODE_DATA_BASE_DIR: root },
     });
     const runtime = await startProcessProviderRegistryRuntime(
       {
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: filePath,
-        [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
+        [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: filePath,
+        [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
       },
       { standalone: { credentialStore, legacyCliUserConfigFilePath: join(root, "absent.json") } },
     );
@@ -137,7 +137,7 @@ describe("process provider registry runtime", () => {
       await vi.waitFor(() => {
         const next = runtime.runtime.registryService.getSnapshot()!;
         expect(next.config.zcodeBuiltinRevision).toMatch(`zcode-builtin:${builtin.revision}:`);
-        expect(next.account.basedOnZCodeBuiltinRevision).toBe(next.config.zcodeBuiltinRevision);
+        expect(next.account.basedOnNekodeBuiltinRevision).toBe(next.config.zcodeBuiltinRevision);
       });
       expect(
         runtime.runtime.registryService.getProvider("account:bigmodel-individual-coding-plan"),
@@ -149,10 +149,10 @@ describe("process provider registry runtime", () => {
   it("真实 Built-in 下完整状态跨协议往返；仅切 current 即更新 Worker 的有效选择", async () => {
     const root = await temporaryDirectory();
     const runtime = await startProcessProviderRegistryRuntime({
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: fileURLToPath(
+      [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: fileURLToPath(
         new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
       ),
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "personal.json"),
     });
     const personal = "account:bigmodel-individual-coding-plan";
     const team = "account:bigmodel-team-coding-plan";
@@ -216,7 +216,7 @@ describe("process provider registry runtime", () => {
     } as const;
     const parsed = parseProcessAccountProviderConfigSnapshot({
       revision: "account-1",
-      basedOnZCodeBuiltinRevision: "zcode-builtin:1",
+      basedOnNekodeBuiltinRevision: "zcode-builtin:1",
       states,
       providers: {
         account: {
@@ -236,7 +236,7 @@ describe("process provider registry runtime", () => {
         builtinModelIds: ["model-a"],
       },
     });
-    expect(parsed.basedOnZCodeBuiltinRevision).toBe("zcode-builtin:1");
+    expect(parsed.basedOnNekodeBuiltinRevision).toBe("zcode-builtin:1");
     expect(parsed.states).toEqual(states);
   });
 
@@ -244,7 +244,7 @@ describe("process provider registry runtime", () => {
     expect(() =>
       parseProcessAccountProviderConfigSnapshot({
         revision: "account-invalid",
-        basedOnZCodeBuiltinRevision: "zcode-builtin:1",
+        basedOnNekodeBuiltinRevision: "zcode-builtin:1",
         providers: {
           api: {
             access: {
@@ -261,7 +261,7 @@ describe("process provider registry runtime", () => {
     expect(() =>
       parseProcessAccountProviderConfigSnapshot({
         revision: "account-invalid-static-field",
-        basedOnZCodeBuiltinRevision: "zcode-builtin:1",
+        basedOnNekodeBuiltinRevision: "zcode-builtin:1",
         providers: {
           account: {
             access: { type: "zhipu-account", entitled: true },
@@ -288,8 +288,8 @@ describe("process provider registry runtime", () => {
     );
     await writeFile(personalFilePath, "{not-json");
     const started = await startProcessProviderRegistryRuntime({
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+      [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
     });
     try {
       expect(started.configuredDefaultModelSelection).toBeUndefined();
@@ -391,8 +391,8 @@ describe("process provider registry runtime", () => {
     );
 
     const started = await startProcessProviderRegistryRuntime({
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+      [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
     });
 
     expect(started?.snapshot.registry.providers).toHaveLength(1);
@@ -400,7 +400,7 @@ describe("process provider registry runtime", () => {
     started?.accountSource.replace(
       {
         revision: "account-access-1",
-        basedOnZCodeBuiltinRevision: started!.snapshot.config.zcodeBuiltinRevision,
+        basedOnNekodeBuiltinRevision: started!.snapshot.config.zcodeBuiltinRevision,
         providers: new ProviderConfigMap([
           [
             "account",
@@ -422,7 +422,7 @@ describe("process provider registry runtime", () => {
     const beforeSwitch = await started.accountSource.read();
     const switched = parseProcessAccountProviderConfigSnapshot({
       revision: "account-access-2",
-      basedOnZCodeBuiltinRevision: beforeSwitch.basedOnZCodeBuiltinRevision,
+      basedOnNekodeBuiltinRevision: beforeSwitch.basedOnNekodeBuiltinRevision,
       providers: Object.fromEntries(
         [...beforeSwitch.providers.entries()].map(([id, config]) => [id, config.toJSON()]),
       ),
@@ -439,9 +439,9 @@ describe("process provider registry runtime", () => {
     const root = await temporaryDirectory();
     const zcodeBuiltinFilePath = join(root, "zcode-builtin.json");
     const personalFilePath = join(root, "personal.json");
-    const credentialStore = createSharedZCodeCredentialStore({
+    const credentialStore = createSharedNekodeCredentialStore({
       baseDir: join(root, "home"),
-      env: { ZCODE_CREDENTIAL_SECRET: "process-registry-test" },
+      env: { NEKODE_CREDENTIAL_SECRET: "process-registry-test" },
     });
     const providerId = "configured-standalone-provider";
     const accountIdentity = "account-1";
@@ -514,8 +514,8 @@ describe("process provider registry runtime", () => {
 
     const started = await startProcessProviderRegistryRuntime(
       {
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-        [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+        [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+        [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
       },
       { standalone: { credentialStore } },
     );
@@ -589,7 +589,7 @@ describe("process provider registry runtime", () => {
               builtinModelIds: ["model-a"],
             },
           },
-          models: [completeZCodeBuiltinModelRule()],
+          models: [completeNekodeBuiltinModelRule()],
         }),
       ),
       "utf8",
@@ -616,12 +616,12 @@ describe("process provider registry runtime", () => {
       loadMany: vi.fn(async () => {
         throw accountError;
       }),
-    } as unknown as SharedZCodeCredentialStore;
+    } as unknown as SharedNekodeCredentialStore;
 
     const started = await startProcessProviderRegistryRuntime(
       {
-        [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-        [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+        [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+        [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
       },
       { standalone: { credentialStore, onAccountInitializationError } },
     );
@@ -643,7 +643,7 @@ describe("process provider registry runtime", () => {
           providers: {},
           templates: {},
           // Personal Provider 仍由 Built-in 通用规则补齐静态模型事实；迁移器只搬运旧文件显式字段。
-          models: [completeZCodeBuiltinModelRule()],
+          models: [completeNekodeBuiltinModelRule()],
         }),
       ),
       "utf8",
@@ -670,15 +670,15 @@ describe("process provider registry runtime", () => {
       "utf8",
     );
     const env = {
-      [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
+      [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: zcodeBuiltinFilePath,
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: personalFilePath,
     };
 
     // Protocol 启动会创建自己的空目标文件；若与 Standalone 共用目标，就会提前消费
     // “仅目标不存在时导入”的机会，无法再证明 Standalone importer 的独立边界。
     const protocolRuntime = await startProcessProviderRegistryRuntime({
       ...env,
-      [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "protocol-personal.json"),
+      [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(root, "protocol-personal.json"),
     });
     expect(protocolRuntime?.snapshot.registry.providers).toEqual([]);
     expect(protocolRuntime?.configuredDefaultModelSelection).toBeUndefined();
@@ -757,7 +757,7 @@ async function temporaryDirectory(): Promise<string> {
   return directory;
 }
 
-function completeZCodeBuiltinModelRule() {
+function completeNekodeBuiltinModelRule() {
   return {
     modelMatch: ".*",
     config: {
@@ -796,7 +796,7 @@ function zcodeBuiltinRelease(input: {
   readonly models: readonly unknown[];
 }): object {
   return {
-    schemaVersion: ZCODE_BUILTIN_RELEASE_SCHEMA_VERSION,
+    schemaVersion: NEKODE_BUILTIN_RELEASE_SCHEMA_VERSION,
     revision: 1,
     config: {
       providerConfigRules: {

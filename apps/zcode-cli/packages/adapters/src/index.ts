@@ -18,5 +18,7 @@ export * from "./browser/index.js";
 export * from "./mcp/index.js";
 export * from "./workflow/index.js";
 export * from "./tools/index.js";
+export * from "./neko-memory/index.js";
+export * from "./wardrobe/index.js";
 // 官方命令端点转发 zcode-server 时复用 MCP 的网络配置（代理、CA）。
 export { createMcpTransportFetch } from "./mcp/network.js";

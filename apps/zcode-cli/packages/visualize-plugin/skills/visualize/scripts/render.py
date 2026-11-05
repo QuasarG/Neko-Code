@@ -12,7 +12,7 @@ _SKILL_DIRECTORY = Path(__file__).resolve().parents[1]
 _FRAGMENT_PLACEHOLDER = "<!--__INLINE_VISUALIZATION_FRAGMENT__-->"
 _MAX_FRAGMENT_BYTES = 1_000_000
 _DOCUMENT_MARKUP = re.compile(r"<!doctype\s|<\s*(?:html|head|body)(?:\s|>)", re.IGNORECASE)
-_HOST_API_REFERENCE = re.compile(r"\b(?:window|globalThis)\.zcode\b")
+_HOST_API_REFERENCE = re.compile(r"\b(?:window|globalThis)\.nekode\b")
 _RESOURCE_SOURCES = " ".join(
     (
         "blob:",
@@ -106,7 +106,7 @@ def _render_document(fragment: str, title: str) -> str:
 html>body{{padding:0}}</style>
 </head>
 <body>
-<script type="application/json" id="zcode-visualization-widget-state">__ZCODE_VISUALIZATION_WIDGET_STATE__</script>
+<script type="application/json" id="zcode-visualization-widget-state">__NEKODE_VISUALIZATION_WIDGET_STATE__</script>
 <script>{host_bridge}</script>
 {inner_html}
 </body>

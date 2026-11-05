@@ -1,14 +1,15 @@
 import { resolve } from "node:path";
 import { createConfig, resolvePath } from "@zcode/adapters/config";
+import { guardNekodeRoot } from "@zcode/shared/node";
 import { createNodeSkillAdapter } from "@zcode/adapters/skills";
 import type { Logger, SkillContent, SkillDiagnostic, SkillLoadOutcome } from "@zcode/contracts";
 import { resolveBundledSkillRoots } from "./app/bundled-skills.js";
 import { getCliStorageRoot } from "./app/paths.js";
 import { filterVisualizeSkillRoots } from "./app/visualize-skill-gate.js";
-import { resolveZCodePlugins } from "./plugins.js";
+import { resolveNekodePlugins } from "./plugins.js";
 import { collectDisabledPaths } from "./skill-command-overrides.js";
 
-export interface ListZCodeSkillsOptions {
+export interface ListNekodeSkillsOptions {
   env?: NodeJS.ProcessEnv;
   /** 协议宿主草稿目录使用；CLI 命令缺省关闭。 */
   includeVisualize?: boolean;
@@ -19,17 +20,17 @@ export interface ListZCodeSkillsOptions {
   workingDirectory?: string;
 }
 
-export interface InspectZCodeSkillOptions extends ListZCodeSkillsOptions {
+export interface InspectNekodeSkillOptions extends ListNekodeSkillsOptions {
   name: string;
 }
 
-export interface ZCodeSkillInspection {
+export interface NekodeSkillInspection {
   diagnostics: SkillDiagnostic[];
   skill: SkillContent;
 }
 
-export async function listZCodeSkills(
-  options: ListZCodeSkillsOptions = {},
+export async function listNekodeSkills(
+  options: ListNekodeSkillsOptions = {},
 ): Promise<SkillLoadOutcome> {
   const discovery = createSkillDiscovery(options);
   if (!discovery.enabled) {
@@ -45,9 +46,9 @@ export async function listZCodeSkills(
   });
 }
 
-export async function inspectZCodeSkill(
-  options: InspectZCodeSkillOptions,
-): Promise<ZCodeSkillInspection> {
+export async function inspectNekodeSkill(
+  options: InspectNekodeSkillOptions,
+): Promise<NekodeSkillInspection> {
   const discovery = createSkillDiscovery(options);
   if (!discovery.enabled) {
     throw new Error("Skills are disabled.");
@@ -75,7 +76,7 @@ export async function inspectZCodeSkill(
   };
 }
 
-function createSkillDiscovery(options: ListZCodeSkillsOptions):
+function createSkillDiscovery(options: ListNekodeSkillsOptions):
   | {
       enabled: false;
       workingDirectory: string;
@@ -100,7 +101,7 @@ function createSkillDiscovery(options: ListZCodeSkillsOptions):
       workingDirectory,
     };
   }
-  const pluginOutcome = resolveZCodePlugins({
+  const pluginOutcome = resolveNekodePlugins({
     configResult,
     env: options.env,
     logger: options.logger,
@@ -112,7 +113,9 @@ function createSkillDiscovery(options: ListZCodeSkillsOptions):
 
   // 内置技能包与插件技能根并列注入：`zcode skills list`、引用目录与 runtime 看到同一份发现结果。
   const bundledSkillRoots = resolveBundledSkillRoots({
-    cliStorageRoot: getCliStorageRoot(resolvePath(configResult.config.storage.dir)),
+    cliStorageRoot: getCliStorageRoot(
+      guardNekodeRoot(resolvePath(configResult.config.storage.dir), options.env),
+    ),
     logger: options.logger,
   });
 

@@ -1,27 +1,27 @@
-import type { ZCodeError, ZCodeTaskMeta, TraceId } from "@zcode/shared";
+import type { NekodeError, NekodeTaskMeta, TraceId } from "@zcode/shared";
 import { errorAttributionSchema, type ErrorAttribution } from "@zcode/shared/zcode-protocol-v4";
 import { resolveRequestVerificationBusinessCode } from "@/lib/providerBusinessError.js";
 
-export interface ZCodeUiError extends ZCodeError {
+export interface NekodeUiError extends NekodeError {
   attribution?: ErrorAttribution;
   detail?: string;
   underlyingErrorMessage?: string;
   underlyingErrorDetail?: string;
 }
 
-interface NormalizeZCodeUiErrorOptions {
+interface NormalizeNekodeUiErrorOptions {
   fallbackCode?: string;
   fallbackMessage?: string;
   traceId?: TraceId;
   taskId?: string;
 }
 
-const GENERIC_ZCODE_UI_ERROR_MESSAGES = new Set([
+const GENERIC_NEKODE_UI_ERROR_MESSAGES = new Set([
   "Internal error",
   "Turn execution failed",
   "Compact failed",
   "Rewind failed",
-  "ZCode session failed",
+  "Nekode session failed",
 ]);
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -75,7 +75,7 @@ function collectMessageCandidatesFromRecord(record: Record<string, unknown>): st
     ["detail"],
     ["data", "message"],
     ["data", "detail"],
-    // ZCode Agent 常把可读原因放在 data.details（复数）里；之前只识别 detail，
+    // Nekode Agent 常把可读原因放在 data.details（复数）里；之前只识别 detail，
     // 会导致 UI 只能看到 “Internal error” 而丢掉关键可执行提示。
     ["data", "details"],
     ["data", "reason"],
@@ -189,20 +189,20 @@ function readFirstAttributionFromPaths(error: unknown): ErrorAttribution | undef
   return undefined;
 }
 
-export function normalizeZCodeUiError(
+export function normalizeNekodeUiError(
   error: unknown,
-  options: NormalizeZCodeUiErrorOptions = {},
-): ZCodeUiError {
+  options: NormalizeNekodeUiErrorOptions = {},
+): NekodeUiError {
   const candidates = collectMessageCandidates(error);
   // zcode-cli 已经把 provider/network 根因放进 detail 或 data.zcode.error，
   // 外层仍可能保留 "Internal error" 这类包装文案。主提示优先选非泛化候选，避免根因被盖住。
   const primaryMessage =
-    candidates.find((candidate) => !GENERIC_ZCODE_UI_ERROR_MESSAGES.has(candidate)) ??
+    candidates.find((candidate) => !GENERIC_NEKODE_UI_ERROR_MESSAGES.has(candidate)) ??
     candidates[0] ??
     options.fallbackMessage ??
     "Internal error";
   const detailMessage = candidates.find(
-    (candidate) => candidate !== primaryMessage && !GENERIC_ZCODE_UI_ERROR_MESSAGES.has(candidate),
+    (candidate) => candidate !== primaryMessage && !GENERIC_NEKODE_UI_ERROR_MESSAGES.has(candidate),
   );
   const codeFromError = readFirstStringFromPaths(error, [
     ["code"],
@@ -272,14 +272,14 @@ export function normalizeZCodeUiError(
   };
 }
 
-export function normalizeRestoredTaskFailureError(meta: ZCodeTaskMeta): ZCodeUiError | null {
+export function normalizeRestoredTaskFailureError(meta: NekodeTaskMeta): NekodeUiError | null {
   if (!meta.lastError) {
     return null;
   }
 
   // Bugfix: 手机 Web 断连恢复时可能只拿到 error snapshot，看不到断连期间的 task_error。
   // 没有服务端持久化的 lastError 时不再编造兜底文案，避免展示没有实际根因的错误。
-  return normalizeZCodeUiError(meta.lastError, {
+  return normalizeNekodeUiError(meta.lastError, {
     fallbackCode: meta.lastError.code,
     traceId: meta.lastError.traceId ?? meta.traceId,
     taskId: meta.lastError.taskId ?? meta.taskId,

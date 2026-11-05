@@ -63,11 +63,11 @@ describe("Todo127 Built-in 设置刷新整链", () => {
     let proxy: Awaited<ReturnType<typeof startE2ENetworkCaptureProxy>> | undefined;
     try {
       await prepareV4ConversationE2E({ skipProvider: true });
-      const root = join(paths.workspace, ".zcode-e2e", "builtin-refresh");
+      const root = join(paths.workspace, ".nekode-e2e", "builtin-refresh");
       await mkdir(root, { recursive: true });
       // afterSession 会清理隔离工作区，验收证据必须写到报告目录。
       const artifacts = join(
-        process.env.ZCODE_E2E_ARTIFACT_DIR || join(process.cwd(), ".e2e-artifacts"),
+        process.env.NEKODE_E2E_ARTIFACT_DIR || join(process.cwd(), ".e2e-artifacts"),
         "provider-builtin-refresh",
       );
       await mkdir(artifacts, { recursive: true });

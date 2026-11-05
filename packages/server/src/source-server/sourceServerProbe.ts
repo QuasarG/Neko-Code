@@ -21,12 +21,12 @@ import type {
   TransportContext,
 } from "@zcode/server/source-server/transportAdapter.js";
 
-const SERVER_ROOT_SHELL = '"$HOME/.zcode/server"';
-const SERVER_BIN_SHELL = '"$HOME/.zcode/server/bin/zcode"';
+const SERVER_ROOT_SHELL = '"$HOME/.nekode/server"';
+const SERVER_BIN_SHELL = '"$HOME/.nekode/server/bin/zcode"';
 const SERVER_CURRENT_SHELL = `${SERVER_ROOT_SHELL}/current.json`;
 const SERVER_STATUS_SHELL = `${SERVER_ROOT_SHELL}/run/status.json`;
 const SERVER_DOWNGRADE_SHELL = `${SERVER_ROOT_SHELL}/downgrade.json`;
-const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__ZCODE_PROBE_";
+const SOURCE_SERVER_PROBE_MARKER_PREFIX = "__NEKODE_PROBE_";
 
 function buildSourceServerProbeCommand(includeReleaseIdentity: boolean): string {
   return [
@@ -68,7 +68,7 @@ function buildSourceServerProbeCommand(includeReleaseIdentity: boolean): string 
 }
 
 function readSourceServerProbeSections(output: string): Map<string, string> {
-  const parts = output.split(/__ZCODE_PROBE_([A-Z]+)__\r?\n/gu);
+  const parts = output.split(/__NEKODE_PROBE_([A-Z]+)__\r?\n/gu);
   const sections = new Map<string, string>();
   for (let index = 1; index + 1 < parts.length; index += 2) {
     sections.set(parts[index]!, parts[index + 1]!.trim());
@@ -115,7 +115,7 @@ function warnUnsupportedLibc(platform: string, libcText: string, context: Transp
     phase: "probe",
     level: "warn",
     message:
-      `${detected} glibc ${required} required by the bundled ZCode Source Server runtime. ZCode Source Server may fail to start. ` +
+      `${detected} glibc ${required} required by the bundled Nekode Source Server runtime. Nekode Source Server may fail to start. ` +
       "Continuing installation or connection.",
   });
 }

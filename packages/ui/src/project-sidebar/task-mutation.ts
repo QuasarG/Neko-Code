@@ -1,7 +1,7 @@
 import { parseRemoteWorkspaceIdentity } from "@zcode/shared";
 import type {
   ProjectTaskRef,
-  IZCodeTaskService,
+  INekodeTaskService,
   IWindowControllerService,
   WindowHostControllerMutation,
   WindowHostTaskAddress,
@@ -11,7 +11,7 @@ export type ProjectTaskMutation = Exclude<
   { kind: "open" | "resume" }
 >;
 interface ProjectTaskPorts {
-  service: IZCodeTaskService;
+  service: INekodeTaskService;
   controller?: IWindowControllerService;
 }
 function taskAddress(task: ProjectTaskRef, remoteSessionId?: string | null): WindowHostTaskAddress {

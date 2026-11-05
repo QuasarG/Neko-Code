@@ -11,10 +11,10 @@ import { useOnboardingRecordService } from "@/hooks/useOnboardingRecordService.j
 import { usePlatform } from "@/hooks/usePlatform.js";
 import { useEffectiveShortcutBindings } from "@/shortcuts/useShortcutBindings.js";
 import { matchesShortcutBinding } from "@/shortcuts/bindings.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { Button } from "@/components/ui/button.js";
 import { Checkbox } from "@/components/ui/checkbox.js";
-import { useZCodeStore } from "@/store/StoreProvider.js";
+import { useNekodeStore } from "@/store/StoreProvider.js";
 import type { InterfaceMode } from "@/lib/interfaceMode.js";
 import { logger } from "@/logger.js";
 import { DesktopWindowControls } from "@/DesktopWindowControls.js";
@@ -51,22 +51,21 @@ export function OccupationOnboarding({
   const platform = usePlatform();
   const onboardingRecord = useOnboardingRecordService();
   const shortcutBindings = useEffectiveShortcutBindings();
-  const requested = useZCodeStore((state) => state.newUserOnboardingOpen);
-  const setRequested = useZCodeStore((state) => state.setNewUserOnboardingOpen);
+  const requested = useNekodeStore((state) => state.newUserOnboardingOpen);
+  const setRequested = useNekodeStore((state) => state.setNewUserOnboardingOpen);
   // 登录态变化（useRootOAuthEffects 登录成功后 setUser）时按 userId 重新判定是否触发引导。
-  const userId = useZCodeStore((state) => state.user?.id) ?? null;
-  const { intl } = useZCodeIntl();
+  const userId = useNekodeStore((state) => state.user?.id) ?? null;
+  const { intl } = useNekodeIntl();
   const t = (key: string) => intl.formatMessage({ id: `occupationOnboarding.${key}` });
   const [occupation, setOccupation] = useState<OccupationValue | null>("developer");
-  const savedInterfaceMode = useZCodeStore((state) => state.interfaceMode);
-  const setInterfaceMode = useZCodeStore((state) => state.setInterfaceMode);
+  const savedInterfaceMode = useNekodeStore((state) => state.interfaceMode);
+  const setInterfaceMode = useNekodeStore((state) => state.setInterfaceMode);
   // mode 为 null 表示模式页被"跳过"（跳过是显式答案，记录里保留 null 而非兜底值）。
   const [mode, setMode] = useState<InterfaceMode | null>(savedInterfaceMode);
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const preferences = step === 2;
-  const requestOnboardingDialog = useZCodeStore((state) => state.requestOnboardingDialog);
+  const requestOnboardingDialog = useNekodeStore((state) => state.requestOnboardingDialog);
   const [migration, setMigration] = useState(false);
-  const [memory, setMemory] = useState(savedInterfaceMode === "office");
   const [suggestions, setSuggestions] = useState(savedInterfaceMode === "office");
   const suggestionsEditedRef = useRef(false);
   const [saving, setSaving] = useState(false);
@@ -80,7 +79,8 @@ export function OccupationOnboarding({
     loadDeviceMid,
     update,
   });
-  const onboardingVisible = requested || (needsOnboarding === true && !dismissed);
+  // Nekode：工作/办公模式引导整体砍掉，首次启动直接进主界面。
+  const onboardingVisible = false;
   const captureEnd = useOnboardingTelemetry({
     platform,
     visible:
@@ -90,7 +90,6 @@ export function OccupationOnboarding({
     step,
     occupation,
     mode,
-    memory,
     suggestions,
     migration,
   });
@@ -120,7 +119,6 @@ export function OccupationOnboarding({
         setInterfaceMode(nextMode);
         setMode(nextMode);
         if (nextMode !== mode) {
-          setMemory(nextMode === "office");
           if (nextMode === "office" && !suggestionsEditedRef.current) setSuggestions(true);
         }
         return;
@@ -192,8 +190,6 @@ export function OccupationOnboarding({
     );
     const initialMode = entry?.interfaceMode ?? savedInterfaceMode;
     setMode(initialMode);
-    // 编程模式默认关闭主动工作记忆；办公模式才恢复该用户之前的勾选。
-    setMemory(initialMode === "office" && (entry?.memoryEnabled ?? true));
     setSuggestions(entry?.proactiveSuggestionsEnabled ?? initialMode === "office");
     setMigration(false);
     setError(false);
@@ -229,7 +225,6 @@ export function OccupationOnboarding({
         // settings 侧保持既有语义：跳过落保守默认值（职业 other / 偏好关），
         // "跳过也算答案"的区分度只体现在 onboarding-record.json 里。
         onboardingOccupation: occupation ?? "other",
-        memoryEnabled: skip ? false : memory,
         proactiveSuggestionsEnabled: !skip && mode === "office" && suggestions,
       });
       reportEnd();
@@ -248,7 +243,7 @@ export function OccupationOnboarding({
           await appendOnboardingRecord(onboardingRecord, platform.getDeviceId(), {
             occupation,
             interfaceMode: mode,
-            memoryEnabled: skip ? null : memory,
+            memoryEnabled: null,
             proactiveSuggestionsEnabled: skip ? null : mode === "office" && suggestions,
             completedAt: new Date().toISOString(),
           });
@@ -311,8 +306,6 @@ export function OccupationOnboarding({
                       saving={saving}
                       onSelect={(value) => {
                         markUserEdited();
-                        // 重选当前编程模式也应清除旧记录带来的默认勾选。
-                        setMemory(value === "office");
                         if (value !== mode) {
                           if (value === "office" && !suggestionsEditedRef.current)
                             setSuggestions(true);
@@ -324,7 +317,7 @@ export function OccupationOnboarding({
                     />
                   ) : preferences ? (
                     <div className="mt-8 space-y-3">
-                      {(["suggestions", "memory", "migration"] as const)
+                      {(["suggestions", "migration"] as const)
                         .filter((key) => key !== "suggestions" || mode === "office")
                         .map((key) => (
                           <label
@@ -332,18 +325,11 @@ export function OccupationOnboarding({
                             className="grid cursor-pointer grid-cols-[auto_1fr] items-center gap-x-4 gap-y-2 rounded-xl border border-card-border bg-card dark:bg-surface/40 p-5 text-ui-base transition-colors hover:bg-surface-hover"
                           >
                             <Checkbox
-                              checked={
-                                key === "migration"
-                                  ? migration
-                                  : key === "memory"
-                                    ? memory
-                                    : suggestions
-                              }
+                              checked={key === "migration" ? migration : suggestions}
                               disabled={saving}
                               onCheckedChange={(checked) => {
                                 markUserEdited();
                                 if (key === "migration") setMigration(checked === true);
-                                else if (key === "memory") setMemory(checked === true);
                                 else {
                                   suggestionsEditedRef.current = true;
                                   setSuggestions(checked === true);

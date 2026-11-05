@@ -26,13 +26,13 @@ import {
   parseWorkspaceConfigTopic,
 } from "@zcode/shared/zcode-protocol-v4";
 import type {
-  ZCodeProtocolError,
-  ZCodeProtocolMessage,
-  ZCodeProtocolMethod,
-  ZCodeProtocolNotification,
-  ZCodeProtocolRequest,
-  ZCodeProtocolRequestId,
-  ZCodeProtocolResponse,
+  NekodeProtocolError,
+  NekodeProtocolMessage,
+  NekodeProtocolMethod,
+  NekodeProtocolNotification,
+  NekodeProtocolRequest,
+  NekodeProtocolRequestId,
+  NekodeProtocolResponse,
 } from "@zcode/shared";
 import {
   cancelBackgroundTask,
@@ -149,19 +149,19 @@ import {
   type ParamsSchema,
   parseParams,
   toProtocolError,
-  type ZCodeProtocolClientRequestOptions,
-  type ZCodeProtocolAgentDependencies,
-  type ZCodeProtocolAgentServerContext,
-  type ZCodeProtocolSessionRecord,
+  type NekodeProtocolClientRequestOptions,
+  type NekodeProtocolAgentDependencies,
+  type NekodeProtocolAgentServerContext,
+  type NekodeProtocolSessionRecord,
 } from "./server-types.js";
 import { createInMemorySessionEventStore } from "@zcode/contracts";
 
-export type { ZCodeProtocolAgentDependencies, ZCodeProtocolSessionRecord };
+export type { NekodeProtocolAgentDependencies, NekodeProtocolSessionRecord };
 
 import { closeMcpUiInstance, openMcpUiInstance, validateMcpUiInstance } from "./mcp-ui/index.js";
 const MAX_CLIENT_REQUEST_REANNOUNCE_INTERVAL_MS = 10_000;
 
-type ZCodeProtocolOutboundMessage = ZCodeProtocolNotification | ZCodeProtocolRequest;
+type NekodeProtocolOutboundMessage = NekodeProtocolNotification | NekodeProtocolRequest;
 
 /**
  * Trust store 落盘后各 session 的 coordinator
@@ -171,7 +171,7 @@ type ZCodeProtocolOutboundMessage = ZCodeProtocolNotification | ZCodeProtocolReq
  */
 export async function notifyWorkspaceHookTrustGrantSessions(input: {
   grantedWorkspaceKey?: string;
-  sessions: Map<string, ZCodeProtocolSessionRecord>;
+  sessions: Map<string, NekodeProtocolSessionRecord>;
 }): Promise<void> {
   if (!input.grantedWorkspaceKey) return;
   await Promise.all(
@@ -224,8 +224,8 @@ function getOperationId(params: unknown): string | undefined {
     : undefined;
 }
 
-export interface ZCodeProtocolPostResponseBatch {
-  readonly messages: readonly ZCodeProtocolOutboundMessage[];
+export interface NekodeProtocolPostResponseBatch {
+  readonly messages: readonly NekodeProtocolOutboundMessage[];
   commit(): boolean;
 }
 
@@ -241,7 +241,7 @@ interface PendingClientRequest<T> {
   abortHandler?: () => void;
 }
 
-export class ZCodeProtocolAgentServer {
+export class NekodeProtocolAgentServer {
   private readonly networkCapture = createNodeNetworkCapture("cli", (batch) => {
     this.messageSink?.({
       method: zcodeProtocolNotifications.processNetworkRequests,
@@ -269,13 +269,13 @@ export class ZCodeProtocolAgentServer {
     routeMcpServerNotification(this.context, notification);
   }
 
-  get officialMcpAuthRequestContext(): Pick<ZCodeProtocolAgentServerContext, "requestClient"> {
+  get officialMcpAuthRequestContext(): Pick<NekodeProtocolAgentServerContext, "requestClient"> {
     return this.context;
   }
 
-  private messageSink?: (message: ZCodeProtocolOutboundMessage) => void;
+  private messageSink?: (message: NekodeProtocolOutboundMessage) => void;
   private clientDisconnectError?: Error;
-  private readonly context: ZCodeProtocolAgentServerContext;
+  private readonly context: NekodeProtocolAgentServerContext;
   private readonly logger;
   private readonly pendingClientRequests = new Map<string, PendingClientRequest<unknown>>();
   private readonly pluginOperationControllers = new Map<string, AbortController>();
@@ -286,16 +286,16 @@ export class ZCodeProtocolAgentServer {
    * 再写 response line，最后按数组顺序写 notification，不能靠 microtask 猜时序。
    */
   private readonly postResponseOutbox = new Map<
-    ZCodeProtocolRequestId,
-    ZCodeProtocolPostResponseBatch
+    NekodeProtocolRequestId,
+    NekodeProtocolPostResponseBatch
   >();
   private nextClientRequestId = 1;
 
-  constructor(deps: ZCodeProtocolAgentDependencies) {
-    this.runtimeResources = new ProtocolRuntimeResources(deps.createZCodeApp);
+  constructor(deps: NekodeProtocolAgentDependencies) {
+    this.runtimeResources = new ProtocolRuntimeResources(deps.createNekodeApp);
     const resolvedDeps = {
       ...deps,
-      createZCodeApp: this.runtimeResources.create,
+      createNekodeApp: this.runtimeResources.create,
       // 默认 turn 窗口保留策略。
       createSessionEventStore:
         deps.createSessionEventStore ?? (() => createInMemorySessionEventStore()),
@@ -318,7 +318,7 @@ export class ZCodeProtocolAgentServer {
       notify: (notification) => this.messageSink?.(notification),
       requestClient: (method, params, resultSchema, options) =>
         this.requestClient(method, params, resultSchema, options),
-      sessions: new Map<string, ZCodeProtocolSessionRecord>(),
+      sessions: new Map<string, NekodeProtocolSessionRecord>(),
       // 交互应答登记表（broker 反向请求 × v4 resolveInteraction 命令的汇合点）。
       v4Interactions: new V4InteractionRegistry(
         resolveV4InteractionRegistryOptionsFromEnv(deps.env ?? process.env),
@@ -405,7 +405,7 @@ export class ZCodeProtocolAgentServer {
     return counters;
   }
 
-  setNotificationSink(sink: (message: ZCodeProtocolOutboundMessage) => void): void {
+  setNotificationSink(sink: (message: NekodeProtocolOutboundMessage) => void): void {
     this.runtimeResources.assertServing();
     this.clientDisconnectError = undefined;
     this.messageSink = sink;
@@ -428,7 +428,7 @@ export class ZCodeProtocolAgentServer {
     for (const record of this.context.sessions.values()) {
       try {
         record.app.runtime.stopActiveForegroundExecution?.({
-          reason: "ZCode Protocol owner disconnected",
+          reason: "Nekode Protocol owner disconnected",
         });
       } catch (cause) {
         this.logger?.warn("Failed to stop foreground execution after protocol disconnect", {
@@ -457,7 +457,7 @@ export class ZCodeProtocolAgentServer {
     this.shutdownPromise = shutdown.promise;
     const closingResources = this.runtimeResources.close();
     const closingSessions: Promise<void>[] = [];
-    const error = new Error("ZCode Protocol runtime stopping");
+    const error = new Error("Nekode Protocol runtime stopping");
     this.disconnectClient(error);
     this.messageSink = undefined;
     this.clearPostResponseMessages();
@@ -496,14 +496,14 @@ export class ZCodeProtocolAgentServer {
   }
 
   /** 一次性取走某 request 的 post-response messages；重复 take 返回空数组。 */
-  takePostResponseMessages(requestId: ZCodeProtocolRequestId): ZCodeProtocolOutboundMessage[] {
+  takePostResponseMessages(requestId: NekodeProtocolRequestId): NekodeProtocolOutboundMessage[] {
     const batch = this.takePostResponseBatch(requestId);
     batch?.commit();
     return [...(batch?.messages ?? [])];
   }
 
   /** production NDJSON 取完整 batch；只有全部 write 成功后才调 commit。 */
-  takePostResponseBatch(requestId: ZCodeProtocolRequestId): ZCodeProtocolPostResponseBatch | null {
+  takePostResponseBatch(requestId: NekodeProtocolRequestId): NekodeProtocolPostResponseBatch | null {
     const batch = this.postResponseOutbox.get(requestId) ?? null;
     this.postResponseOutbox.delete(requestId);
     return batch;
@@ -515,8 +515,8 @@ export class ZCodeProtocolAgentServer {
   }
 
   async handleMessage(
-    message: ZCodeProtocolMessage,
-  ): Promise<ZCodeProtocolError | ZCodeProtocolResponse | undefined> {
+    message: NekodeProtocolMessage,
+  ): Promise<NekodeProtocolError | NekodeProtocolResponse | undefined> {
     this.runtimeResources.assertServing();
     if (isResponse(message)) {
       this.resolveClientRequest(message.id, message.result);
@@ -538,7 +538,7 @@ export class ZCodeProtocolAgentServer {
         if (control.success) this.networkCapture.setCaptureId(control.data.captureId);
         return undefined;
       }
-      this.logger?.debug("ZCode Protocol notification ignored", {
+      this.logger?.debug("Nekode Protocol notification ignored", {
         event: "zcode_protocol.notification.ignored",
         method: message.method,
         module: "bootstrap.zcode_protocol",
@@ -548,8 +548,8 @@ export class ZCodeProtocolAgentServer {
   }
 
   private async handleRequest(
-    request: ZCodeProtocolRequest,
-  ): Promise<ZCodeProtocolError | ZCodeProtocolResponse> {
+    request: NekodeProtocolRequest,
+  ): Promise<NekodeProtocolError | NekodeProtocolResponse> {
     // request id 可在前一请求完成后复用；新请求不能继承未消费的旧 outbox。
     this.postResponseOutbox.delete(request.id);
     let releaseResidencyOperation: (() => void) | undefined;
@@ -578,7 +578,7 @@ export class ZCodeProtocolAgentServer {
     }
   }
 
-  private async dispatchRequest(request: ZCodeProtocolRequest) {
+  private async dispatchRequest(request: NekodeProtocolRequest) {
     switch (request.method) {
       // ── v4 conversation 通道（竖切，与旧 session/* 并存）──
       case V4_METHODS.connectionFlow: {
@@ -943,7 +943,7 @@ export class ZCodeProtocolAgentServer {
   }
 
   private async withPluginOperationSignal<T>(
-    request: ZCodeProtocolRequest,
+    request: NekodeProtocolRequest,
     run: (signal?: AbortSignal) => Promise<T>,
   ): Promise<T> {
     const operationId = getPluginOperationId(request.params);
@@ -971,7 +971,7 @@ export class ZCodeProtocolAgentServer {
   }
 
   private async withWorkspaceGenerateTextSignal<T>(
-    request: ZCodeProtocolRequest,
+    request: NekodeProtocolRequest,
     run: (signal?: AbortSignal) => Promise<T>,
   ): Promise<T> {
     const operationId = getOperationId(request.params);
@@ -1006,24 +1006,24 @@ export class ZCodeProtocolAgentServer {
     return { operationId: params.operationId, cancelled: true };
   }
 
-  private ok(id: ZCodeProtocolRequestId, result: unknown): ZCodeProtocolResponse {
+  private ok(id: NekodeProtocolRequestId, result: unknown): NekodeProtocolResponse {
     return { id, result };
   }
 
   private fail(
-    id: ZCodeProtocolRequestId,
+    id: NekodeProtocolRequestId,
     code: number,
     message: string,
     data?: unknown,
-  ): ZCodeProtocolError {
+  ): NekodeProtocolError {
     return { error: { code, data, message }, id };
   }
 
   private requestClient<T>(
-    method: ZCodeProtocolMethod,
+    method: NekodeProtocolMethod,
     params: unknown,
     resultSchema: ParamsSchema<T>,
-    options?: ZCodeProtocolClientRequestOptions,
+    options?: NekodeProtocolClientRequestOptions,
   ): Promise<T> {
     if (this.clientDisconnectError) {
       throw this.clientDisconnectError;
@@ -1031,7 +1031,7 @@ export class ZCodeProtocolAgentServer {
     if (!this.messageSink) {
       throw new ProtocolRequestError(
         PROTOCOL_CLIENT_REQUEST_ERROR_CODES.noClientAttached,
-        `No ZCode Protocol client is attached for ${method}`,
+        `No Nekode Protocol client is attached for ${method}`,
       );
     }
 
@@ -1119,7 +1119,7 @@ export class ZCodeProtocolAgentServer {
     });
   }
 
-  private resolveClientRequest(id: ZCodeProtocolRequestId, result: unknown): void {
+  private resolveClientRequest(id: NekodeProtocolRequestId, result: unknown): void {
     const key = String(id);
     const pending = this.pendingClientRequests.get(key);
     if (!pending) {
@@ -1135,7 +1135,7 @@ export class ZCodeProtocolAgentServer {
     }
   }
 
-  private rejectClientRequest(id: ZCodeProtocolRequestId, error: Error): void {
+  private rejectClientRequest(id: NekodeProtocolRequestId, error: Error): void {
     const key = String(id);
     const pending = this.pendingClientRequests.get(key);
     if (!pending) {

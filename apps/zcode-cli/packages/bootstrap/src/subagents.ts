@@ -17,14 +17,14 @@ import {
   type PluginSubagentModelSelectionOverrides,
 } from "@zcode/shared";
 
-interface LoadZCodeAgentProfilesInput {
+interface LoadNekodeAgentProfilesInput {
   logger?: Logger;
   storageRoot: string;
   workingDirectory: string;
   additionalDirectories?: readonly string[];
 }
 
-interface LoadZCodeAgentProfilesResult {
+interface LoadNekodeAgentProfilesResult {
   builtInModelSelectionOverrides: BuiltInSubagentModelSelectionOverrides;
   pluginAgentModelSelectionOverrides: PluginSubagentModelSelectionOverrides;
   diagnostics: AgentProfileParseDiagnostic[];
@@ -47,21 +47,21 @@ interface ParsedPluginAgentProfile {
 
 const RESERVED_AGENT_NAMES = new Set(["general-purpose", "Explore"]);
 
-export async function loadZCodeAgentProfiles(
-  input: LoadZCodeAgentProfilesInput,
-): Promise<LoadZCodeAgentProfilesResult> {
+export async function loadNekodeAgentProfiles(
+  input: LoadNekodeAgentProfilesInput,
+): Promise<LoadNekodeAgentProfilesResult> {
   const migration = await migrateUserSubagentMarkdown(join(input.storageRoot, "agents"));
   await migrateSubagentStateFile(join(input.storageRoot, "v2", "agents-state.json"));
   const roots: Array<{ path: string; source: "user" | "project"; namespace?: string }> = [
     { path: join(input.storageRoot, "agents"), source: "user" as const },
-    { path: join(input.workingDirectory, ".zcode", "agents"), source: "project" as const },
+    { path: join(input.workingDirectory, ".nekode", "agents"), source: "project" as const },
   ];
   for (const directory of new Set(
     (input.additionalDirectories ?? []).map((path) => resolve(path)),
   )) {
     if (directory === resolve(input.workingDirectory)) continue;
     roots.push({
-      path: join(directory, ".zcode", "agents"),
+      path: join(directory, ".nekode", "agents"),
       source: "project",
       namespace: basename(directory),
     });
@@ -133,7 +133,7 @@ export function loadPluginAgentTemplates(
 export function resolvePluginAgentProfiles(
   input: LoadPluginAgentProfilesInput,
   templates: ReturnType<typeof loadPluginAgentTemplates>,
-): LoadZCodeAgentProfilesResult {
+): LoadNekodeAgentProfilesResult {
   const diagnostics = [...templates.diagnostics];
   const parsedProfiles = templates.profiles;
   const reservedProfileNames = new Set([

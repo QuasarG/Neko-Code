@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
   BUILTIN_PROVIDER_TEMPLATE_IDS,
-  ZCODE_AGENT_PROVIDER,
+  NEKODE_AGENT_PROVIDER,
   encodeCustomModelValue,
   type ProviderFamilyConnectionSelection,
 } from "@zcode/shared";
@@ -178,7 +178,7 @@ export async function seedPersistedModelSelection(params: {
     },
     key,
     params,
-    ZCODE_AGENT_PROVIDER,
+    NEKODE_AGENT_PROVIDER,
   );
 }
 
@@ -333,7 +333,7 @@ export async function waitForV4DraftModelConfig(params: { model: string; thought
 }
 
 export async function waitForPlanModelIoRequest(expectedText: string) {
-  const debugDir = join(paths.homeDir, ".zcode", "cli", "debug");
+  const debugDir = join(paths.homeDir, ".nekode", "cli", "debug");
   let matched: { model?: string; thinking?: { type?: string } } | null = null;
   await browser.waitUntil(
     async () => {

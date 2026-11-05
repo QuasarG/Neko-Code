@@ -32,7 +32,7 @@
     },
     {
       "id": "plugin-reference-reminder-tool-call",
-      "description": "PLG01 wire 门禁：只有当请求 body 真正携带 identifiers-only 的 <plugin_reference> reminder（含 skill-creator stable id）时才放行，并驱动一次 Read 测试工具调用。",
+      "description": "PLG01 wire 门禁：只有当请求 body 真正携带 identifiers-only 的 <plugin_reference> reminder（含 zcode-guide stable id）时才放行，并驱动一次 Read 测试工具调用。",
       "metadata": {
         "kind": "main",
         "timingPolicy": "fast-text",
@@ -46,7 +46,7 @@
         "lastUserMessageIncludes": ["E2E_PLUGIN_REFERENCE"],
         "bodyIncludes": [
           "<plugin_reference>",
-          "skill-creator@zcode-plugins-official"
+          "zcode-guide@zcode-plugins-official"
         ],
         "bodyExcludes": [
           "Generate a concise title",

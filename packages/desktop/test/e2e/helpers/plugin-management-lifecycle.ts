@@ -3,11 +3,11 @@ import { existsSync } from "node:fs";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import {
-  type ZCodePluginsInstallResult,
-  type ZCodePluginsListResult,
-  type ZCodePluginsMarketplaceMutationResult,
-  type ZCodePluginsOverviewResult,
-  type ZCodePluginsReferenceCatalogResult,
+  type NekodePluginsInstallResult,
+  type NekodePluginsListResult,
+  type NekodePluginsMarketplaceMutationResult,
+  type NekodePluginsOverviewResult,
+  type NekodePluginsReferenceCatalogResult,
 } from "@zcode/shared";
 import {
   TID_PLUGIN_STORE_BROWSE,
@@ -78,8 +78,8 @@ export function requirePluginManualReview(): void {
   const runningPendingSpec = process.argv.some((arg) =>
     arg.replaceAll("\\", "/").includes("/plugins/manual-review/"),
   );
-  if (runningPendingSpec && process.env.ZCODE_E2E_MANUAL_REVIEW !== "1") {
-    throw new Error("Plugin lifecycle pending specs require ZCODE_E2E_MANUAL_REVIEW=1");
+  if (runningPendingSpec && process.env.NEKODE_E2E_MANUAL_REVIEW !== "1") {
+    throw new Error("Plugin lifecycle pending specs require NEKODE_E2E_MANUAL_REVIEW=1");
   }
 }
 
@@ -179,7 +179,7 @@ export async function corruptLifecycleMarketplaceManifest(
 function lifecycleManagedPluginRoot(homeDir: string): string {
   return join(
     homeDir,
-    ".zcode",
+    ".nekode",
     "cli",
     "plugins",
     "marketplaces",
@@ -236,7 +236,7 @@ export async function seedInlineLifecyclePlugin(): Promise<string> {
     ].join("\n"),
   );
 
-  const configPath = join(homeDir, ".zcode", "cli", "config.json");
+  const configPath = join(homeDir, ".nekode", "cli", "config.json");
   const config = await readJsonRecord(configPath);
   const plugins = isRecord(config.plugins) ? config.plugins : {};
   const enabledPlugins = isRecord(plugins.enabledPlugins) ? plugins.enabledPlugins : {};
@@ -890,7 +890,7 @@ export async function restartPluginLifecycleApp(): Promise<void> {
 export async function getPluginOverview(
   workspacePath = DEFAULT_WORKSPACE,
   configScope?: "user" | "workspace",
-): Promise<ZCodePluginsOverviewResult> {
+): Promise<NekodePluginsOverviewResult> {
   return callPluginTestAction("getPluginsOverview", {
     workspacePath,
     ...(configScope ? { configScope } : {}),
@@ -900,7 +900,7 @@ export async function getPluginOverview(
 export async function addMarketplaceSourceThroughAgent(
   source: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<NekodePluginsMarketplaceMutationResult> {
   return callPluginTestAction("addPluginMarketplace", {
     source,
     workspacePath,
@@ -910,7 +910,7 @@ export async function addMarketplaceSourceThroughAgent(
 export async function updateMarketplaceThroughAgent(
   marketplace: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsMarketplaceMutationResult> {
+): Promise<NekodePluginsMarketplaceMutationResult> {
   return callPluginTestAction("updatePluginMarketplace", {
     marketplace,
     workspacePath,
@@ -921,7 +921,7 @@ export async function installMarketplacePluginThroughAgent(
   pluginName: string,
   marketplace: string,
   workspacePath = DEFAULT_WORKSPACE,
-): Promise<ZCodePluginsInstallResult> {
+): Promise<NekodePluginsInstallResult> {
   return callPluginTestAction("installPlugin", {
     marketplace,
     pluginName,
@@ -934,7 +934,7 @@ export async function getPluginList(
   workspacePath = DEFAULT_WORKSPACE,
   workspaceIdentity?: string,
   configScope?: "user" | "workspace",
-): Promise<ZCodePluginsListResult> {
+): Promise<NekodePluginsListResult> {
   return callPluginTestAction("listPlugins", {
     workspacePath,
     ...(workspaceIdentity ? { workspaceIdentity } : {}),
@@ -948,7 +948,7 @@ export async function getPluginReferenceCatalog(
     workspaceIdentity?: string;
     workspacePath?: string;
   } = {},
-): Promise<ZCodePluginsReferenceCatalogResult> {
+): Promise<NekodePluginsReferenceCatalogResult> {
   return callPluginTestAction("getPluginReferenceCatalog", {
     workspacePath: options.workspacePath ?? DEFAULT_WORKSPACE,
     ...(options.workspaceIdentity ? { workspaceIdentity: options.workspaceIdentity } : {}),
@@ -957,7 +957,7 @@ export async function getPluginReferenceCatalog(
 }
 
 export async function waitUntilPluginOverview(
-  predicate: (overview: ZCodePluginsOverviewResult) => boolean,
+  predicate: (overview: NekodePluginsOverviewResult) => boolean,
   timeoutMsg: string,
   timeout = 30000,
 ): Promise<void> {
@@ -968,11 +968,11 @@ export async function waitUntilPluginOverview(
 }
 
 export async function waitUntilPluginList(
-  predicate: (list: ZCodePluginsListResult) => boolean,
+  predicate: (list: NekodePluginsListResult) => boolean,
   timeoutMsg: string,
   timeout = 30000,
 ): Promise<void> {
-  let latest: ZCodePluginsListResult | undefined;
+  let latest: NekodePluginsListResult | undefined;
   try {
     await browser.waitUntil(
       async () => {
@@ -994,7 +994,7 @@ export async function waitUntilPluginList(
 
 export async function readPluginConfigOptions(): Promise<Record<string, unknown>> {
   const config = await readJsonRecord(
-    join(getE2EAppDataPaths().homeDir, ".zcode", "cli", "config.json"),
+    join(getE2EAppDataPaths().homeDir, ".nekode", "cli", "config.json"),
   );
   const plugins = isRecord(config.plugins) ? config.plugins : {};
   const options = isRecord(plugins.options) ? plugins.options : {};
@@ -1002,7 +1002,7 @@ export async function readPluginConfigOptions(): Promise<Record<string, unknown>
 }
 
 export function pluginStoragePath(...segments: string[]): string {
-  return join(getE2EAppDataPaths().homeDir, ".zcode", "cli", "plugins", ...segments);
+  return join(getE2EAppDataPaths().homeDir, ".nekode", "cli", "plugins", ...segments);
 }
 
 export function pluginDataPath(pluginId: string): string {
@@ -1122,7 +1122,7 @@ async function writeLifecyclePlugin(
     name: PLUGIN_LIFECYCLE_NAME,
     version,
     description: `E2E plugin management lifecycle fixture ${version}`,
-    author: { name: "ZCode E2E" },
+    author: { name: "Nekode E2E" },
     homepage: "https://example.com/e2e-plugin-lifecycle",
     commands: "commands",
     agents: "agents",
@@ -1132,7 +1132,7 @@ async function writeLifecyclePlugin(
       lifecycle: {
         type: "stdio",
         command: "node",
-        args: ["${ZCODE_PLUGIN_ROOT}/server.mjs", version],
+        args: ["${NEKODE_PLUGIN_ROOT}/server.mjs", version],
       },
     },
     ...(withUi
@@ -1239,7 +1239,7 @@ async function writeMarketplaceManifest(marketplaceRoot: string, version: string
         description: `Deterministic plugin lifecycle fixture ${version}`,
         description_i18n: { "zh-CN": `确定性插件生命周期测试 ${version}` },
         category: "productivity",
-        author: { name: "ZCode E2E", url: "https://example.com" },
+        author: { name: "Nekode E2E", url: "https://example.com" },
         homepage: "https://example.com/e2e-plugin-lifecycle",
         privacyPolicy: "https://example.com/privacy",
         termsOfService: "https://example.com/terms",

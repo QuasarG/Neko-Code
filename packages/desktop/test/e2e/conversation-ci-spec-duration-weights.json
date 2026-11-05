@@ -24,7 +24,6 @@
     "./test/e2e/conversation-session/conversation-session-hooks-lifecycle.test.ts": 16367,
     "./test/e2e/conversation-session/conversation-session-markdown-table-enhanced-scroll.test.ts": 12944,
     "./test/e2e/conversation-session/conversation-session-markdown-table-layout.test.ts": 9608,
-    "./test/e2e/conversation-session/conversation-session-memory.test.ts": 19191,
     "./test/e2e/conversation-session/conversation-session-model-output-token-budget.test.ts": 20235,
     "./test/e2e/conversation-session/conversation-session-model-output-token-preflight-smoke.test.ts": 17300,
     "./test/e2e/conversation-session/conversation-session-model-output-token-preflight.test.ts": 15417,

@@ -14,7 +14,7 @@ import {
   ProviderRegistry,
 } from "@zcode/provider";
 import { describe, expect, it, vi } from "vitest";
-import { createZCodeApp } from "../src/app/create-app.js";
+import { createNekodeApp } from "../src/app/create-app.js";
 import { createApiKeyProviderConfig } from "./provider-config-fixtures.js";
 
 const { createModelAdapterMock } = vi.hoisted(() => ({
@@ -26,16 +26,16 @@ vi.mock("../src/model-factory.js", async (importOriginal) => ({
   createModelAdapter: createModelAdapterMock,
 }));
 
-describe("ZCode App Provider Registry runtime", () => {
+describe("Nekode App Provider Registry runtime", () => {
   it("拒绝在没有进程 Provider Registry 时构造 App", async () => {
     await expect(
       // @ts-expect-error 回归保护：运行时仍需拒绝未迁移的 JavaScript/嵌入调用方。
-      createZCodeApp({
+      createNekodeApp({
         env: {},
         runtimeConfig: { mcp: { enabled: false }, workingDirectory: process.cwd() },
         skipUserConfig: true,
       }),
-    ).rejects.toThrow("createZCodeApp requires a Provider Registry");
+    ).rejects.toThrow("createNekodeApp requires a Provider Registry");
   });
 
   it("新 Session 优先 Configured Default；未配置时按正式初始规则选择最高档", async () => {
@@ -54,7 +54,7 @@ describe("ZCode App Provider Registry runtime", () => {
     } as const;
 
     const execution = vi.spyOn(executionAdapters, "createNodeExecutionAdapter");
-    const configured = await createZCodeApp({
+    const configured = await createNekodeApp({
       ...common,
       configuredDefaultModelSelection: {
         providerId: "provider-a",
@@ -70,7 +70,7 @@ describe("ZCode App Provider Registry runtime", () => {
     expect(configured.getThoughtLevel()).toBe("low");
     await configured.close?.();
 
-    const unbound = await createZCodeApp(common);
+    const unbound = await createNekodeApp(common);
     // Todo 88：这是全新 Session 初始化，不是历史失效选择恢复，允许正式初始推荐。
     expect(unbound.getModel()).toBe("provider-a/model-a");
     expect(unbound.runtime.getSessionModelSelection()).toMatchObject({
@@ -105,7 +105,7 @@ describe("ZCode App Provider Registry runtime", () => {
         options: { reasoningLevel: "low" },
       },
     });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       configuredDefaultModelSelection: {
         providerId: "provider-a",
         modelId: "model-a",
@@ -152,7 +152,7 @@ describe("ZCode App Provider Registry runtime", () => {
       time: { created: 1, updated: 1 },
       data: { providerId: "provider-a", modelId: "glm-5.2" },
     });
-    const unavailable = await createZCodeApp({
+    const unavailable = await createNekodeApp({
       configuredDefaultModelSelection: {
         providerId: "provider-a",
         modelId: "model-a",
@@ -190,7 +190,7 @@ describe("ZCode App Provider Registry runtime", () => {
       },
     };
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       modelAdapter: {
         addStatusSink() {},
@@ -248,7 +248,7 @@ describe("ZCode App Provider Registry runtime", () => {
     const registry = new ProviderRegistry([provider()]);
     const createdReasoningLevels: string[] = [];
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       configuredDefaultModelSelection: {
         providerId: "provider-a",
         modelId: "model-a",
@@ -289,7 +289,7 @@ describe("ZCode App Provider Registry runtime", () => {
     const registry = new ProviderRegistry([provider()]);
     const createdModels: string[] = [];
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       modelAdapter: fakeModelAdapter(() => {
         createdModels.push("provider-a/model-a");
@@ -325,7 +325,7 @@ describe("ZCode App Provider Registry runtime", () => {
     const adapter = fakeModelAdapter(() => workflowModel());
     createModelAdapterMock.mockReturnValue(adapter);
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       providerRegistry: registry,
       runtimeConfig: {

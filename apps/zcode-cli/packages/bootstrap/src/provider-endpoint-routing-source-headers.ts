@@ -2,14 +2,15 @@ import { readFile } from "node:fs/promises";
 import { arch as readOsArch, homedir, release as readOsRelease } from "node:os";
 import { join } from "node:path";
 import {
-  buildZCodeSourceHeadersFromContext,
-  resolveRuntimeZCodeEndpointOrigin,
-  resolveRuntimeZCodeEnv,
-  ZCODE_APP_VERSION_ENV,
+  buildNekodeSourceHeadersFromContext,
+  resolveRuntimeNekodeEndpointOrigin,
+  resolveRuntimeNekodeEnv,
+  NEKODE_APP_VERSION_ENV,
 } from "@zcode/shared";
+import { resolveNekodeDataBaseRoot } from "@zcode/shared/node";
 import type { ModelProviderSourceTitle } from "./model-config.js";
 
-const ZCODE_DATA_BASE_DIR_ENV_KEY = "ZCODE_DATA_BASE_DIR";
+const NEKODE_DATA_BASE_DIR_ENV_KEY = "NEKODE_DATA_BASE_DIR";
 const cachedDeviceMidByStateFile = new Map<string, string>();
 
 interface CreateProviderEndpointRoutingSourceHeadersOptions {
@@ -23,16 +24,16 @@ export async function createProviderEndpointRoutingSourceHeaders(
 ): Promise<Record<string, string>> {
   const env = options.env ?? process.env;
   const deviceMid = await readExistingDeviceMid(resolveTelemetryStateFile(env));
-  return buildZCodeSourceHeadersFromContext({
-    appVersion: env[ZCODE_APP_VERSION_ENV] ?? options.appVersion,
+  return buildNekodeSourceHeadersFromContext({
+    appVersion: env[NEKODE_APP_VERSION_ENV] ?? options.appVersion,
     arch: readOsArch(),
     clientLanguage: resolveClientLanguage(),
     clientTimezone: resolveClientTimezone(),
     deviceMid,
-    endpointOrigin: resolveRuntimeZCodeEndpointOrigin(env),
+    endpointOrigin: resolveRuntimeNekodeEndpointOrigin(env),
     osVersion: readOsRelease(),
     platform: process.platform,
-    releaseChannel: resolveRuntimeZCodeEnv(env),
+    releaseChannel: resolveRuntimeNekodeEnv(env),
     sourceTitle: options.sourceTitle ?? "cli",
   });
 }
@@ -46,8 +47,8 @@ function resolveClientTimezone(): string {
 }
 
 function resolveTelemetryStateFile(env: NodeJS.ProcessEnv): string {
-  const dataBaseDir = env[ZCODE_DATA_BASE_DIR_ENV_KEY]?.trim() || homedir();
-  return join(dataBaseDir, ".zcode", "v2", "telemetry-state.json");
+  const dataBaseDir = env.NEKODE_DATA_BASE_DIR?.trim() || env[NEKODE_DATA_BASE_DIR_ENV_KEY]?.trim() || homedir();
+  return join(resolveNekodeDataBaseRoot(dataBaseDir, env), "v2", "telemetry-state.json");
 }
 
 async function readExistingDeviceMid(

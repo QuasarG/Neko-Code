@@ -48,7 +48,7 @@ async function openFromChat(locale = "zh-CN", evidence?: string) {
   );
   if (evidence) {
     await settlePresentation();
-    await browser.saveScreenshot(join(process.env.ZCODE_E2E_ARTIFACT_DIR!, `menu-${evidence}.png`));
+    await browser.saveScreenshot(join(process.env.NEKODE_E2E_ARTIFACT_DIR!, `menu-${evidence}.png`));
   }
   await entry.click();
   await $(`[data-testid="${TID_SETTINGS_PAGE}"]`).waitForDisplayed();
@@ -98,7 +98,7 @@ async function readTaskIdentity(taskId: string) {
 async function createOriginalTask(target: Awaited<ReturnType<typeof readChatIdentity>>) {
   if (!target.projectId) throw new Error(`${marker}: project selection is not committed`);
   const result = await callHandoffHost<{ session: { sessionId: string } }>(
-    ServiceChannels.ZCodeAgent,
+    ServiceChannels.NekodeAgent,
     "createSession",
     [
       {
@@ -118,7 +118,7 @@ async function createOriginalTask(target: Awaited<ReturnType<typeof readChatIden
     ],
   );
   const taskId = result.session.sessionId;
-  await callHandoffHost(ServiceChannels.ZCodeTask, "resumeTask", [
+  await callHandoffHost(ServiceChannels.NekodeTask, "resumeTask", [
     { taskId, workspacePath: target.workspacePath },
   ]);
   const toggle = $(
@@ -199,11 +199,11 @@ describe(marker, () => {
         events: (window as Window & { __chatDeviceFocus?: unknown[] }).__chatDeviceFocus,
       }));
       await writeFile(
-        join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "chat-device-focus.json"),
+        join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "chat-device-focus.json"),
         JSON.stringify(focus, null, 2),
       );
       await browser.saveScreenshot(
-        join(process.env.ZCODE_E2E_ARTIFACT_DIR!, "chat-device-failure.png"),
+        join(process.env.NEKODE_E2E_ARTIFACT_DIR!, "chat-device-failure.png"),
       );
     }
   });
@@ -289,7 +289,7 @@ describe(marker, () => {
           await settlePresentation();
           await browser.saveScreenshot(
             join(
-              process.env.ZCODE_E2E_ARTIFACT_DIR!,
+              process.env.NEKODE_E2E_ARTIFACT_DIR!,
               `cancel-return-${locale}-${theme}-${width}.png`,
             ),
           );
@@ -329,7 +329,7 @@ describe(marker, () => {
           const bounds = await folder.getLocation();
           expect(bounds.x).toBeGreaterThanOrEqual(0);
           await browser.saveScreenshot(
-            join(process.env.ZCODE_E2E_ARTIFACT_DIR!, `folder-${locale}-${theme}-${width}.png`),
+            join(process.env.NEKODE_E2E_ARTIFACT_DIR!, `folder-${locale}-${theme}-${width}.png`),
           );
         }
       }

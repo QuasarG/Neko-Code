@@ -12,8 +12,8 @@ import {
   type LocalhostOAuthCallbackServer,
 } from "../auth/localhost-callback.js";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "../auth/shared-credentials.js";
 import {
   deriveCredentialPair,
@@ -51,7 +51,7 @@ export type { McpOAuthAuthorizationContext };
 
 export interface McpOAuthRuntimeOptions {
   authorizationTimeoutMs?: number;
-  credentialStore?: SharedZCodeCredentialStore;
+  credentialStore?: SharedNekodeCredentialStore;
   onAuthorizationRequired?: (context: McpOAuthAuthorizationContext) => Promise<void> | void;
   openAuthorizationUrl?: (context: McpOAuthAuthorizationContext) => Promise<void> | void;
 }
@@ -78,9 +78,9 @@ export async function createMcpAuthorizationCodeOAuthSession(input: {
     callbackPath,
     state,
   });
-  const credentialStore = input.options?.credentialStore ?? createSharedZCodeCredentialStore();
+  const credentialStore = input.options?.credentialStore ?? createSharedNekodeCredentialStore();
   const keyPrefix = createCredentialKeyPrefix(input.serverName, input.serverUrl, input.config);
-  const provider = new ZCodeMcpAuthorizationCodeProvider({
+  const provider = new NekodeMcpAuthorizationCodeProvider({
     adapterInstanceId: input.adapterInstanceId,
     callbackServer,
     config: input.config,
@@ -108,11 +108,11 @@ export async function createMcpAuthorizationCodeOAuthSession(input: {
   };
 }
 
-class ZCodeMcpAuthorizationCodeProvider implements OAuthClientProvider {
+class NekodeMcpAuthorizationCodeProvider implements OAuthClientProvider {
   private readonly adapterInstanceId?: string;
   private readonly callbackServer: LocalhostOAuthCallbackServer;
   private readonly config: McpAuthorizationCodeOAuthConfig;
-  private readonly credentialStore: SharedZCodeCredentialStore;
+  private readonly credentialStore: SharedNekodeCredentialStore;
   private readonly keyPrefix: string;
   private readonly logger?: Logger;
   private readonly onAuthorizationRequired?: (
@@ -139,7 +139,7 @@ class ZCodeMcpAuthorizationCodeProvider implements OAuthClientProvider {
     adapterInstanceId?: string;
     callbackServer: LocalhostOAuthCallbackServer;
     config: McpAuthorizationCodeOAuthConfig;
-    credentialStore: SharedZCodeCredentialStore;
+    credentialStore: SharedNekodeCredentialStore;
     keyPrefix: string;
     logger?: Logger;
     onAuthorizationRequired?: (context: McpOAuthAuthorizationContext) => Promise<void> | void;
@@ -166,7 +166,7 @@ class ZCodeMcpAuthorizationCodeProvider implements OAuthClientProvider {
 
   get clientMetadata(): OAuthClientMetadata {
     return {
-      client_name: this.config.clientName ?? `ZCode ${this.serverName}`,
+      client_name: this.config.clientName ?? `Nekode ${this.serverName}`,
       grant_types: ["authorization_code", "refresh_token"],
       redirect_uris: [this.redirectUrl],
       response_types: ["code"],
@@ -311,7 +311,7 @@ class ZCodeMcpAuthorizationCodeProvider implements OAuthClientProvider {
   }
 
   async invalidateCredentials(scope: "all" | "client" | "tokens" | "verifier" | "discovery") {
-    // 修复原因：过去 refresh 失败只在 SDK 内部分类，ZCode 侧不留任何痕迹，事后无法区分
+    // 修复原因：过去 refresh 失败只在 SDK 内部分类，Nekode 侧不留任何痕迹，事后无法区分
     // token 过期、被撤销、client mismatch 和服务端临时错误（见 docs/analysis 的可观测性缺口）。
     // SDK 不把 OAuth error code 传给 provider，但 invalidation scope 与之一一对应：
     // tokens ← invalid_grant；client/all ← invalid_client / unauthorized_client。

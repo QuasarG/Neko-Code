@@ -49,9 +49,9 @@ import {
 } from "@/feedback/feedbackSubmitSubmission.js";
 import type { IFeedbackService } from "@zcode/services";
 import type { IPlatformService } from "@zcode/shared";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useTabStore } from "@/store/TabStoreProvider.js";
-import { selectWorkspaceZCodeState, useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { selectWorkspaceNekodeState, useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 
 export { SubmitProgressView } from "@/feedback/FeedbackSubmitProgressView.js";
 export { readCurrentAgentModelContext } from "@/feedback/feedbackSubmitModelContext.js";
@@ -89,7 +89,7 @@ export function FeedbackSubmitForm({
   onViewTickets: () => void;
   onCancel: () => void;
 }) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const formatMessage = useCallback(
     (id: string, values?: Record<string, string>) => intl.formatMessage({ id }, values),
     [intl],
@@ -397,13 +397,13 @@ function useActiveFeedbackModelContext(): FeedbackAgentModelContext {
   const activeWorkspaceIdentity = useTabStore(
     (state) => state.activeWorkspaceIdentity ?? undefined,
   );
-  const workspaceZCodeState = useZCodeSessionStore((state) =>
+  const workspaceNekodeState = useNekodeSessionStore((state) =>
     activeWorkspacePath
-      ? selectWorkspaceZCodeState(state, activeWorkspacePath, activeWorkspaceIdentity)
+      ? selectWorkspaceNekodeState(state, activeWorkspacePath, activeWorkspaceIdentity)
       : null,
   );
   return useMemo(
-    () => readCurrentAgentModelContext(workspaceZCodeState?.configOptions),
-    [workspaceZCodeState?.configOptions],
+    () => readCurrentAgentModelContext(workspaceNekodeState?.configOptions),
+    [workspaceNekodeState?.configOptions],
   );
 }

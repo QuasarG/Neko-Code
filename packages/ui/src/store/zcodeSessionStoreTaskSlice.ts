@@ -1,21 +1,21 @@
 /* oxlint-disable eslint(max-lines) -- 当前文件承接 task 级状态切片，先保持最小改动修复草稿逻辑，后续再统一拆分 */
 import {
-  normalizeAgentProviderToZCodeAgent,
-  type ZCodeApiRetryStatus,
-  type ZCodeConfigOption,
-  type ZCodePermissionRequest,
-  type ZCodeElicitationRequest,
-  type ZCodeProvider,
-  type ZCodeTaskRuntimeStatus,
-  type ZCodeTaskMeta,
+  normalizeAgentProviderToNekodeAgent,
+  type NekodeApiRetryStatus,
+  type NekodeConfigOption,
+  type NekodePermissionRequest,
+  type NekodeElicitationRequest,
+  type NekodeProvider,
+  type NekodeTaskRuntimeStatus,
+  type NekodeTaskMeta,
 } from "@zcode/shared";
-import type { ZCodeUiError } from "@/lib/zcodeUiError.js";
+import type { NekodeUiError } from "@/lib/zcodeUiError.js";
 import { removeTaskFromHistory } from "@/lib/taskNavigationHistory.js";
 import { mergeTaskWithOptimisticMeta } from "@/lib/zcodeTaskMetaMerge.js";
 import type {
   ConfigOptionsStatus,
   ElicitationFormDraft,
-  ZCodeSessionStoreState,
+  NekodeSessionStoreState,
   TaskUsageState,
 } from "@/store/zcodeSessionStoreTypes.js";
 import { getDefaultWorkspaceState } from "@/store/zcodeSessionStoreTypes.js";
@@ -31,12 +31,12 @@ import {
 
 type SetFn = (
   partial:
-    | ZCodeSessionStoreState
-    | Partial<ZCodeSessionStoreState>
-    | ((state: ZCodeSessionStoreState) => ZCodeSessionStoreState | Partial<ZCodeSessionStoreState>),
+    | NekodeSessionStoreState
+    | Partial<NekodeSessionStoreState>
+    | ((state: NekodeSessionStoreState) => NekodeSessionStoreState | Partial<NekodeSessionStoreState>),
 ) => void;
 
-function sortTasksByUpdatedAt(tasks: readonly ZCodeTaskMeta[]): ZCodeTaskMeta[] {
+function sortTasksByUpdatedAt(tasks: readonly NekodeTaskMeta[]): NekodeTaskMeta[] {
   return [...tasks].sort((left, right) => {
     if (right.updatedAt !== left.updatedAt) {
       return right.updatedAt - left.updatedAt;
@@ -49,8 +49,8 @@ function sortTasksByUpdatedAt(tasks: readonly ZCodeTaskMeta[]): ZCodeTaskMeta[] 
 }
 
 function arePermissionOptionsEqual(
-  left: ZCodePermissionRequest["options"],
-  right: ZCodePermissionRequest["options"],
+  left: NekodePermissionRequest["options"],
+  right: NekodePermissionRequest["options"],
 ): boolean {
   if (left.length !== right.length) {
     return false;
@@ -71,8 +71,8 @@ function arePermissionOptionsEqual(
 }
 
 function arePermissionRequestsEquivalent(
-  left: ZCodePermissionRequest,
-  right: ZCodePermissionRequest,
+  left: NekodePermissionRequest,
+  right: NekodePermissionRequest,
 ): boolean {
   if (left === right) {
     return true;
@@ -175,13 +175,13 @@ function normalizeTaskContextWindow(contextWindow: number | null): number | null
 }
 
 function updateWorkspaceStateForIdentityScopedTaskState(
-  state: ZCodeSessionStoreState,
+  state: NekodeSessionStoreState,
   workspacePath: string,
   workspaceIdentity: string | undefined,
   updater: (
     current: ReturnType<typeof getDefaultWorkspaceState>,
   ) => ReturnType<typeof getDefaultWorkspaceState>,
-): Pick<ZCodeSessionStoreState, "workspaces"> {
+): Pick<NekodeSessionStoreState, "workspaces"> {
   const workspaceKey = resolveWorkspaceStateKey(workspacePath, workspaceIdentity);
   if (workspaceKey === workspacePath) {
     return updateWorkspaceState(state, workspacePath, updater);
@@ -200,10 +200,10 @@ export function createTaskSlice(set: SetFn) {
     setTaskRuntimeState: (
       workspacePath: string,
       taskId: string,
-      status: ZCodeTaskRuntimeStatus,
+      status: NekodeTaskRuntimeStatus,
       error?: string | null,
       workspaceIdentity?: string,
-      provider?: ZCodeProvider,
+      provider?: NekodeProvider,
     ) => {
       set((state) =>
         updateWorkspaceState(
@@ -309,7 +309,7 @@ export function createTaskSlice(set: SetFn) {
     setTaskApiRetryStatus: (
       workspacePath: string,
       taskId: string,
-      apiRetry: ZCodeApiRetryStatus | null,
+      apiRetry: NekodeApiRetryStatus | null,
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -334,7 +334,7 @@ export function createTaskSlice(set: SetFn) {
     setTaskConfigOptions: (
       workspacePath: string,
       taskId: string,
-      options: ZCodeConfigOption[],
+      options: NekodeConfigOption[],
       workspaceIdentity?: string,
       status: ConfigOptionsStatus = "ready",
     ) => {
@@ -376,7 +376,7 @@ export function createTaskSlice(set: SetFn) {
     setTaskPermissionRequest: (
       workspacePath: string,
       taskId: string,
-      request: ZCodePermissionRequest | null,
+      request: NekodePermissionRequest | null,
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -523,7 +523,7 @@ export function createTaskSlice(set: SetFn) {
     setTaskElicitationRequest: (
       workspacePath: string,
       taskId: string,
-      request: ZCodeElicitationRequest | null,
+      request: NekodeElicitationRequest | null,
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -709,7 +709,7 @@ export function createTaskSlice(set: SetFn) {
     setTaskError: (
       workspacePath: string,
       taskId: string,
-      error: ZCodeUiError | null,
+      error: NekodeUiError | null,
       workspaceIdentity?: string,
     ) => {
       set((state) =>
@@ -722,7 +722,7 @@ export function createTaskSlice(set: SetFn) {
               ...current.taskUiByTaskId,
               [taskId]: {
                 ...getTaskUiState(current, taskId),
-                // 完整错误对象之前只放在 ChatView/useZCodeChat 的本地 state。
+                // 完整错误对象之前只放在 ChatView/useNekodeChat 的本地 state。
                 // 一旦切换页面或任务，组件卸载后 traceId/code 就会一起丢失，只剩 taskRuntime.error 的纯文本。
                 // 这里改成按 task 写进 store，让错误提示能跟 plan/permission 一样跨页面恢复。
                 error,
@@ -737,8 +737,8 @@ export function createTaskSlice(set: SetFn) {
     initializeBackgroundTaskRuntime: (
       workspacePath: string,
       params: {
-        task: ZCodeTaskMeta;
-        provider: ZCodeProvider;
+        task: NekodeTaskMeta;
+        provider: NekodeProvider;
         activeInputId: string;
         workspaceIdentity?: string;
       },
@@ -764,7 +764,7 @@ export function createTaskSlice(set: SetFn) {
 
             return {
               ...current,
-              selectedProvider: normalizeAgentProviderToZCodeAgent(params.provider),
+              selectedProvider: normalizeAgentProviderToNekodeAgent(params.provider),
               // 性能优化：后台首发不需要先经历 optimistic -> cache -> runtime 多轮 set。
               // 合到一次写入可以削掉并发压测创建任务时的 renderer 订阅风暴。
               optimisticTaskListByTaskId: {
@@ -791,7 +791,7 @@ export function createTaskSlice(set: SetFn) {
 
     upsertOptimisticTaskListItem: (
       workspacePath: string,
-      task: ZCodeTaskMeta,
+      task: NekodeTaskMeta,
       workspaceIdentity?: string,
     ) => {
       set((state) =>

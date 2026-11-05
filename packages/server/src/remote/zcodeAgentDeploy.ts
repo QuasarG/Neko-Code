@@ -1,6 +1,6 @@
 import {
-  ZCODE_AGENT_RUNTIME,
-  ZCODE_AGENT_PROVIDER,
+  NEKODE_AGENT_RUNTIME,
+  NEKODE_AGENT_PROVIDER,
   type RemoteResourcePackageId,
 } from "@zcode/shared";
 import type { IRemoteBackend, RemoteEnvironment } from "@zcode/server/remote/backend.js";
@@ -12,7 +12,7 @@ import {
 } from "@zcode/server/remote/deployShared.js";
 import type { RemoteAssetInstaller } from "@zcode/server/remote/remoteAssetInstaller.js";
 import { buildWriteLiteralFileCommand } from "@zcode/server/remote/posixShell.js";
-import { deployDevelopmentZCodeAgentRuntime } from "@zcode/server/remote/zcodeAgentDevDeploy.js";
+import { deployDevelopmentNekodeAgentRuntime } from "@zcode/server/remote/zcodeAgentDevDeploy.js";
 import {
   buildRemoteAgentBundleWrapper,
   isRemoteAgentBundleWrapperCurrent,
@@ -36,14 +36,14 @@ import {
 
 const REMOTE_AGENT_RUNTIME_BASE = `${REMOTE_BASE}/agents`;
 
-export interface DeployZCodeAgentRuntimeOptions extends RemoteAssetDeployOptions {
+export interface DeployNekodeAgentRuntimeOptions extends RemoteAssetDeployOptions {
   platformArch: string;
   installer: RemoteAssetInstaller;
   selectedResourcePackageIds?: RemoteResourcePackageId[];
   force?: boolean;
 }
 
-function isSelectedZCodeAgentComponent(
+function isSelectedNekodeAgentComponent(
   componentId: string,
   selectedResourcePackageIds: readonly RemoteResourcePackageId[] | undefined,
 ): boolean {
@@ -53,7 +53,7 @@ function isSelectedZCodeAgentComponent(
   );
 }
 
-async function shouldSkipZCodeAgentDeploy(params: {
+async function shouldSkipNekodeAgentDeploy(params: {
   backend: IRemoteBackend;
   remoteBinaryPath: string;
   remoteBundlePath: string;
@@ -126,7 +126,7 @@ async function shouldSkipZCodeAgentDeploy(params: {
   }
 
   params.loggers.log(
-    `[zcode-agent-deploy] ${ZCODE_AGENT_PROVIDER}: 制品 SHA ${params.expectedArtifactSha256} 已部署，跳过`,
+    `[zcode-agent-deploy] ${NEKODE_AGENT_PROVIDER}: 制品 SHA ${params.expectedArtifactSha256} 已部署，跳过`,
   );
   return true;
 }
@@ -145,20 +145,20 @@ async function findMissingRemoteOfficialPluginAssetPaths(
 }
 
 /**
- * 部署 ZCode Agent runtime 到远程机器。
+ * 部署 Nekode Agent runtime 到远程机器。
  *
  * 生产态只用 manifest SHA 判断制品是否变化；语义版本不参与跳过决策。
  */
-export async function deployZCodeAgentRuntime(
+export async function deployNekodeAgentRuntime(
   backend: IRemoteBackend,
   env: RemoteEnvironment,
-  options: DeployZCodeAgentRuntimeOptions,
+  options: DeployNekodeAgentRuntimeOptions,
   loggers: DeployLoggers,
 ): Promise<void> {
-  const provider = ZCODE_AGENT_PROVIDER;
-  const runtime = ZCODE_AGENT_RUNTIME;
+  const provider = NEKODE_AGENT_PROVIDER;
+  const runtime = NEKODE_AGENT_RUNTIME;
   const componentId = provider;
-  if (!isSelectedZCodeAgentComponent(componentId, options.selectedResourcePackageIds)) {
+  if (!isSelectedNekodeAgentComponent(componentId, options.selectedResourcePackageIds)) {
     loggers.log(`[zcode-agent-deploy] ${provider}: 未选择资源包 ${componentId}，跳过检查和部署`);
     return;
   }
@@ -182,7 +182,7 @@ export async function deployZCodeAgentRuntime(
   );
 
   if (
-    await deployDevelopmentZCodeAgentRuntime(
+    await deployDevelopmentNekodeAgentRuntime(
       backend,
       {
         runtimeVersion: runtime.version,
@@ -209,7 +209,7 @@ export async function deployZCodeAgentRuntime(
   }
 
   if (
-    await shouldSkipZCodeAgentDeploy({
+    await shouldSkipNekodeAgentDeploy({
       backend,
       remoteBinaryPath,
       remoteBundlePath,

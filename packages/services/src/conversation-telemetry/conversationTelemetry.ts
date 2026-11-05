@@ -1,6 +1,6 @@
 import type { Event } from "@zcode/rpc";
 import type { ConversationTelemetryFact } from "@zcode/shared/zcode-protocol-v4";
-import type { IZCodeAgentService } from "#src/zcode-agent/zcodeAgent.js";
+import type { INekodeAgentService } from "#src/zcode-agent/zcodeAgent.js";
 
 export interface ConversationTelemetryWorkspaceTarget {
   workspacePath: string;
@@ -16,7 +16,7 @@ export interface IConversationTelemetryService {
 }
 
 export function createConversationTelemetryService(
-  zcodeAgentService: Pick<IZCodeAgentService, "onDynamicConversationTelemetryFact">,
+  zcodeAgentService: Pick<INekodeAgentService, "onDynamicConversationTelemetryFact">,
 ): IConversationTelemetryService {
   return {
     onFact: (target) =>

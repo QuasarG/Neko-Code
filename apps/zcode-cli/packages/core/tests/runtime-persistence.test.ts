@@ -53,7 +53,6 @@ import {
   type WorkspaceId,
 } from "@zcode/contracts";
 import { createTestAgentRuntime } from "./test-agent-runtime.js";
-import { resolveProjectMemoryRoot } from "../src/memory/project-root.js";
 import { buildUserContentFromTurn } from "../src/runtime/helpers/conversation.js";
 import { createExternalTurnFaultError } from "../src/runtime/helpers/turn-errors.js";
 import { createToolRegistry } from "../src/tool/registry.js";
@@ -383,255 +382,6 @@ describe("AgentRuntime session persistence", () => {
       partCount: 1,
       persistedMessagesReloadRequired: false,
     });
-  });
-
-  it("persists and restores the opaque workspace identity before Memory context initialization", async () => {
-    const sessionId = createSessionId("runtime-persistence-memory-workspace");
-    const persistedDirectory = "/tmp/zcode-runtime-persisted-memory-workspace";
-    const startupDirectory = "/tmp/zcode-runtime-stale-memory-workspace";
-    const cliStorageRoot = "/tmp/zcode-runtime-memory-storage/cli";
-    const workspaceIdentity = "ssh:example:/workspace/app";
-    const expectedMemoryRoot = resolveProjectMemoryRoot({
-      cliStorageRoot,
-      workspaceIdentity,
-      workspacePath: persistedDirectory,
-    });
-    const store = createRecordingSessionStore();
-    const memoryFileSystem = new MemoryFileSystem({});
-    const initialRequests: ModelInputMessage[][] = [];
-    const initialRuntime = createTestAgentRuntime(
-      sessionId,
-      {
-        memory: {
-          cliStorageRoot,
-          enabled: true,
-          use: true,
-          workspaceIdentity,
-        },
-        taskType: "selection_side_chat",
-        workingDirectory: persistedDirectory,
-      },
-      {
-        eventStore: createTestSessionEventStore(),
-        fileSystemPort: memoryFileSystem,
-        modelFactory: createTestModelFactory({
-          async generateText(request) {
-            initialRequests.push(request.messages);
-            return {
-              text: "initial answer",
-              finishReason: "stop",
-              usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
-            };
-          },
-        } as never),
-        sessionStore: store,
-      },
-    );
-
-    await initialRuntime.executeTurn("persist memory workspace");
-
-    expect(store.createdSessions[0]).toMatchObject({
-      directory: persistedDirectory,
-      taskType: "selection_side_chat",
-      workspaceID: workspaceIdentity,
-    });
-    expect(providerMessagesToText(initialRequests[0] ?? [])).toContain(expectedMemoryRoot);
-
-    const resumedRequests: ModelInputMessage[][] = [];
-    const resumedRuntime = createTestAgentRuntime(
-      sessionId,
-      {
-        memory: {
-          cliStorageRoot,
-          enabled: true,
-          use: true,
-          workspaceIdentity: "stale-workspace-identity",
-        },
-        taskType: "workflow_child",
-        workingDirectory: startupDirectory,
-      },
-      {
-        eventStore: createTestSessionEventStore(),
-        fileSystemPort: memoryFileSystem,
-        modelFactory: createTestModelFactory({
-          async generateText(request) {
-            resumedRequests.push(request.messages);
-            return {
-              text: "resumed answer",
-              finishReason: "stop",
-              usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
-            };
-          },
-        } as never),
-        sessionStore: store,
-      },
-    );
-
-    await resumedRuntime.resumeFromStore();
-    await resumedRuntime.executeTurn("continue persisted memory workspace");
-
-    const resumedRequestText = providerMessagesToText(resumedRequests[0] ?? []);
-    expect(resumedRequestText).toContain(expectedMemoryRoot);
-    expect(resumedRequestText).not.toContain("stale-workspace-identity");
-    expect(resumedRequestText).not.toContain(startupDirectory);
-  });
-
-  it("falls back to the persisted directory when the resumed session has no workspace identity", async () => {
-    const sessionId = createSessionId("runtime-persistence-memory-directory-fallback");
-    const persistedDirectory = "/tmp/zcode-runtime-persisted-memory-directory";
-    const cliStorageRoot = "/tmp/zcode-runtime-memory-storage/cli";
-    const expectedMemoryRoot = resolveProjectMemoryRoot({
-      cliStorageRoot,
-      workspacePath: persistedDirectory,
-    });
-    const store = createRecordingSessionStore();
-    const memoryFileSystem = new MemoryFileSystem({});
-    await store.createSession({
-      directory: persistedDirectory,
-      id: sessionId,
-      projectID: createProjectId("runtime-persistence-memory-directory-fallback"),
-      slug: "runtime-persistence-memory-directory-fallback",
-      taskType: "workflow_parent",
-      title: "memory directory fallback",
-      version: "test",
-    });
-    const requests: ModelInputMessage[][] = [];
-    const runtime = createTestAgentRuntime(
-      sessionId,
-      {
-        memory: {
-          cliStorageRoot,
-          enabled: true,
-          use: true,
-          workspaceIdentity: "stale-workspace-identity",
-        },
-        taskType: "workflow_child",
-        workingDirectory: "/tmp/zcode-runtime-stale-memory-directory",
-      },
-      {
-        eventStore: createTestSessionEventStore(),
-        fileSystemPort: memoryFileSystem,
-        modelFactory: createTestModelFactory({
-          async generateText(request) {
-            requests.push(request.messages);
-            return {
-              text: "resumed answer",
-              finishReason: "stop",
-              usage: { inputTokens: 1, outputTokens: 1, totalTokens: 2 },
-            };
-          },
-        } as never),
-        sessionStore: store,
-      },
-    );
-
-    await runtime.resumeFromStore();
-    await runtime.executeTurn("continue local memory workspace");
-
-    const requestText = providerMessagesToText(requests[0] ?? []);
-    expect(requestText).toContain(expectedMemoryRoot);
-    expect(requestText).not.toContain("stale-workspace-identity");
-  });
-
-  it("loads the current MEMORY.md read state after cold-resume history hydration", async () => {
-    const sessionId = createSessionId("runtime-persistence-current-memory-index-state");
-    const workingDirectory = "/tmp/zcode-runtime-current-memory-index-state";
-    const cliStorageRoot = "/tmp/zcode-runtime-current-memory-index-state-storage/cli";
-    const memoryRoot = resolveProjectMemoryRoot({
-      cliStorageRoot,
-      workspacePath: workingDirectory,
-    });
-    const indexPath = join(memoryRoot, "MEMORY.md");
-    const historicalIndex = "- [Old policy](old-policy.md) — old";
-    const currentIndex = "- [Current policy](current-policy.md) — current policy from disk";
-    const updatedIndex = `${currentIndex}\n- [New policy](new-policy.md) — newly added`;
-    const store = createRecordingSessionStore();
-    await store.createSession({
-      directory: workingDirectory,
-      id: sessionId,
-      projectID: createProjectId("runtime-persistence-current-memory-index-state"),
-      slug: "runtime-persistence-current-memory-index-state",
-      taskType: "interactive",
-      title: "current memory index state",
-      version: "test",
-    });
-    const assistantMessageId = createMessageId("assistant-historical-memory-index-read");
-    await store.saveMessage({
-      agent: "zcode-agent",
-      cost: 0,
-      id: assistantMessageId,
-      mode: "edit",
-      modelID: "model-test",
-      parentID: createMessageId("user-historical-memory-index-read"),
-      path: { cwd: workingDirectory, root: workingDirectory },
-      providerID: "provider-test",
-      role: "assistant",
-      sessionID: sessionId,
-      time: { created: 10 },
-      tokens: {
-        cache: { read: 0, write: 0 },
-        input: 0,
-        output: 0,
-        reasoning: 0,
-      },
-    });
-    await store.savePart({
-      callID: "tool-historical-memory-index-read",
-      id: createPartId("part-historical-memory-index-read"),
-      messageID: assistantMessageId,
-      sessionID: sessionId,
-      state: {
-        input: { file_path: indexPath },
-        metadata: {
-          readFileState: {
-            content: historicalIndex,
-            isPartialView: false,
-            mtimeMs: 1,
-            path: indexPath,
-            readAtMs: 10,
-            revisionId: `rev:${indexPath}:${historicalIndex.length}`,
-            schemaVersion: 1,
-            sizeBytes: Buffer.byteLength(historicalIndex, "utf8"),
-            tool: "Read",
-          },
-          schemaVersion: 1,
-        },
-        output: `1\t${historicalIndex}`,
-        status: "completed",
-        title: "Read",
-        time: { start: 9, end: 10 },
-      },
-      tool: "Read",
-      type: "tool",
-    });
-
-    const fileSystemPort = new MemoryFileSystem({ [indexPath]: currentIndex });
-    const runtime = createTestAgentRuntime(
-      sessionId,
-      {
-        memory: { cliStorageRoot, enabled: true, use: true },
-        mode: "edit",
-        workingDirectory: "/tmp/zcode-runtime-stale-memory-index-state",
-      },
-      {
-        eventStore: createTestSessionEventStore(),
-        fileSystemPort,
-        sessionStore: store,
-      },
-    );
-
-    const resumeResult = await runtime.resumeFromStore();
-    expect(fileSystemPort.readRequests).toEqual([{ maxBytes: undefined, path: indexPath }]);
-    expect(resumeResult.readFileStateRestoredCount).toBe(1);
-
-    const editResult = await runtime.getToolExecutor().execute({
-      id: createToolCallId("edit-current-memory-index-after-resume"),
-      input: { file_path: indexPath, new_string: updatedIndex, old_string: currentIndex },
-      name: "Edit",
-    });
-
-    expect(editResult.success).toBe(true);
-    expect(fileSystemPort.files[indexPath]).toBe(updatedIndex);
   });
 
   it("persists the latest AskUserQuestion auto-resolution state under a stable entry id", async () => {
@@ -2049,9 +1799,9 @@ describe("AgentRuntime session persistence", () => {
     await resumedRuntime.executeTurn("resumed prompt");
 
     const providerText = providerMessagesToText(resumedMessages);
-    expect(providerText).toContain("- Shell: zsh");
+    // 环境块现在是 system prompt 的当前事实，直接反映运行时 shell，不再追加漂移公告。
     expect(providerText).toContain("- Shell: CMD");
-    expect(providerText.indexOf("- Shell: zsh")).toBeLessThan(providerText.indexOf("- Shell: CMD"));
+    expect(providerText).not.toContain("- Shell: zsh");
     expect(providerText).toContain("The Bash tool shell is CMD.");
   });
 
@@ -2194,7 +1944,7 @@ describe("AgentRuntime session persistence", () => {
     const firstProviderText = providerMessagesToText(firstResumeMessages);
     const secondProviderText = providerMessagesToText(secondResumeMessages);
     const reminder = "The Bash tool shell is Git Bash.";
-    expect(firstProviderText).toContain("- Shell: CMD");
+    expect(firstProviderText).toContain("- Shell: Git Bash");
     expect(firstProviderText.match(new RegExp(escapeRegExp(reminder), "g")) ?? []).toHaveLength(1);
     expect(secondProviderText.match(new RegExp(escapeRegExp(reminder), "g")) ?? []).toHaveLength(1);
   });
@@ -2407,7 +2157,7 @@ describe("AgentRuntime session persistence", () => {
         source: "auto-detected",
       });
       const providerText = providerMessagesToText(resumedMessages);
-      expect(providerText).toContain("- Shell: bash");
+      expect(providerText).toContain("- Shell: zsh");
       expect(providerText).toContain("The Bash tool shell is zsh.");
     } finally {
       rmSync(tempRoot, { force: true, recursive: true });

@@ -6,7 +6,7 @@ import { pathToFileURL } from "node:url";
 const [repoRoot, phase, testHome] = process.argv.slice(2);
 assert(repoRoot && testHome && phase);
 assert(basename(testHome).startsWith("zcode-project-upgrade-"));
-for (const key of ["HOME", "USERPROFILE", "ZCODE_DATA_BASE_DIR"])
+for (const key of ["HOME", "USERPROFILE", "NEKODE_DATA_BASE_DIR"])
   assert.equal(
     resolve(process.env[key] ?? ""),
     resolve(testHome),

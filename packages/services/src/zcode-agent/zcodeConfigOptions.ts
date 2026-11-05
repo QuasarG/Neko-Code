@@ -1,17 +1,17 @@
 import type {
-  ZCodeConfigOption,
-  ZCodeMessageWithParts,
+  NekodeConfigOption,
+  NekodeMessageWithParts,
   ModelSelection,
-  ZCodeSessionMode,
-  ZCodeSessionSettingsState,
-  ZCodeSessionStateSnapshot,
-  ZCodeTaskModeInfo,
+  NekodeSessionMode,
+  NekodeSessionSettingsState,
+  NekodeSessionStateSnapshot,
+  NekodeTaskModeInfo,
 } from "@zcode/shared";
 import {
   formatModelPickerValue as formatSharedModelSelection,
-  getZCodeAgentAvailableModes as getSharedZCodeAgentAvailableModes,
-  normalizeAvailableZCodeMode as normalizeSharedAvailableZCodeMode,
-  zcodeSessionSettingsToZCodeConfigOptions,
+  getNekodeAgentAvailableModes as getSharedNekodeAgentAvailableModes,
+  normalizeAvailableNekodeMode as normalizeSharedAvailableNekodeMode,
+  zcodeSessionSettingsToNekodeConfigOptions,
 } from "@zcode/shared";
 
 export const MODEL_CONFIG_ID = "model";
@@ -23,7 +23,7 @@ export function formatModelPickerValue(ref: ModelSelection | undefined): string 
 }
 
 function resolveLatestMessageModelSelection(
-  messages: readonly ZCodeMessageWithParts[],
+  messages: readonly NekodeMessageWithParts[],
 ): ModelSelection | undefined {
   for (let index = messages.length - 1; index >= 0; index -= 1) {
     const model = messages[index]?.info.model;
@@ -35,7 +35,7 @@ function resolveLatestMessageModelSelection(
 }
 
 function resolveTaskMetaModelSelectionFromSnapshot(
-  snapshot: Pick<ZCodeSessionStateSnapshot, "messages" | "settings">,
+  snapshot: Pick<NekodeSessionStateSnapshot, "messages" | "settings">,
 ): ModelSelection | undefined {
   // 历史 resume 曾经可能用 app 当前默认模型覆盖 settings.current，
   // 但消息 info.model 仍保留真实使用的模型。task meta 是历史恢复 hint，
@@ -44,21 +44,21 @@ function resolveTaskMetaModelSelectionFromSnapshot(
 }
 
 export function formatTaskMetaModelSelectionFromSnapshot(
-  snapshot: Pick<ZCodeSessionStateSnapshot, "messages" | "settings">,
+  snapshot: Pick<NekodeSessionStateSnapshot, "messages" | "settings">,
 ): string {
   return formatModelPickerValue(resolveTaskMetaModelSelectionFromSnapshot(snapshot));
 }
 
-export function normalizeAvailableZCodeMode(mode: ZCodeSessionMode): string {
-  return normalizeSharedAvailableZCodeMode(mode);
+export function normalizeAvailableNekodeMode(mode: NekodeSessionMode): string {
+  return normalizeSharedAvailableNekodeMode(mode);
 }
 
-export function getZCodeAgentAvailableModes(): ZCodeTaskModeInfo[] {
-  return getSharedZCodeAgentAvailableModes();
+export function getNekodeAgentAvailableModes(): NekodeTaskModeInfo[] {
+  return getSharedNekodeAgentAvailableModes();
 }
 
-export function settingsToConfigOptions(settings: ZCodeSessionSettingsState): ZCodeConfigOption[] {
+export function settingsToConfigOptions(settings: NekodeSessionSettingsState): NekodeConfigOption[] {
   // service 侧曾经维护了一份三项 mode 白名单，edit 模式上线后没有同步，
   // 切换模式时 mode_update 会把 UI 菜单覆盖成 build/plan/yolo。这里统一复用 shared 的事实源。
-  return zcodeSessionSettingsToZCodeConfigOptions(settings);
+  return zcodeSessionSettingsToNekodeConfigOptions(settings);
 }

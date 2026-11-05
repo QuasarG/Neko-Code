@@ -31,7 +31,7 @@ import { prepareV4ConversationE2E } from "#e2e/helpers/v4-conversation";
 const MARKER = "E2E_SSH_PROBE_VALIDATION";
 const FIXTURE_ROOT = "/tmp/zcode-probe-validation";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/ssh-probe-validation",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/ssh-probe-validation",
 );
 const INVALID_CASES = [
   { mode: "empty", detail: "PLATFORM" },
@@ -49,16 +49,16 @@ const INVALID_CASES = [
 function fixtureShell(originalShell: string): string {
   return `#!/bin/sh
 case "$*" in
-  *__ZCODE_PROBE_PLATFORM__*)
+  *__NEKODE_PROBE_PLATFORM__*)
     mode=$(cat ${FIXTURE_ROOT}/mode)
     case "$mode" in
       empty) printf 'E2E_PROBE_EMPTY_OUTPUT\\n' >&2; exit 0 ;;
-      missing-platform) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_PLATFORM__$/ {n;s/.*//;}'; exit 0 ;;
-      missing-arch) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_ARCH__$/ {n;s/.*//;}'; exit 0 ;;
-      missing-root) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_ROOT__$/ {n;s/.*//;}'; exit 0 ;;
-      missing-installed) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_INSTALLED__$/ {N;d;}'; exit 0 ;;
-      invalid-installed) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_INSTALLED__$/ {n;s/.*/unknown/;}'; exit 0 ;;
-      missing-end) ${originalShell} "$@" | sed '/^__ZCODE_PROBE_END__$/d'; exit 0 ;;
+      missing-platform) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_PLATFORM__$/ {n;s/.*//;}'; exit 0 ;;
+      missing-arch) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_ARCH__$/ {n;s/.*//;}'; exit 0 ;;
+      missing-root) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_ROOT__$/ {n;s/.*//;}'; exit 0 ;;
+      missing-installed) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_INSTALLED__$/ {N;d;}'; exit 0 ;;
+      invalid-installed) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_INSTALLED__$/ {n;s/.*/unknown/;}'; exit 0 ;;
+      missing-end) ${originalShell} "$@" | sed '/^__NEKODE_PROBE_END__$/d'; exit 0 ;;
       uname-failure) PATH=${FIXTURE_ROOT}/bin:$PATH; export PATH ;;
     esac
     ;;
@@ -201,7 +201,7 @@ describe(`${MARKER}: 探测失败不伪装为系统不支持或未安装`, () =>
     expect(source.installState).toBe("installed");
     const currentBefore = await readRemoteContainerFile(
       container,
-      "/home/dev/.zcode/server/current.json",
+      "/home/dev/.nekode/server/current.json",
     );
     await disconnectRemoteSource(sourceId, MARKER);
     await writeRemoteContainerFile(container, `${FIXTURE_ROOT}/mode`, "missing-installed\n");
@@ -246,7 +246,7 @@ describe(`${MARKER}: 探测失败不伪装为系统不支持或未安装`, () =>
     expect(recovered.servers.find((item) => item.sourceServerId === sourceId)?.installState).toBe(
       "installed",
     );
-    expect(await readRemoteContainerFile(container, "/home/dev/.zcode/server/current.json")).toBe(
+    expect(await readRemoteContainerFile(container, "/home/dev/.nekode/server/current.json")).toBe(
       currentBefore,
     );
     const profile = recovered.profiles.find((item) => item.sourceServerId === sourceId)!;

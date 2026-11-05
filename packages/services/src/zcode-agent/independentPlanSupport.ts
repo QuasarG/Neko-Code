@@ -1,11 +1,11 @@
 import { zcodeProtocolMethods, zcodeRuntimeCapabilitiesSchema } from "@zcode/shared";
-import type { ZCodeProtocolClient } from "./zcodeProtocolClient.js";
+import type { NekodeProtocolClient } from "./zcodeProtocolClient.js";
 
 const checks = new WeakMap<object, Promise<void>>();
 
 /** Host 更新不代表远端 CLI 已更新；旧 CLI 会剥掉 Plan 字段，必须在发送前确认执行端。 */
 export function ensureIndependentPlanSupport(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<NekodeProtocolClient, "request">,
 ): Promise<void> {
   const cached = checks.get(client);
   if (cached) return cached;
@@ -25,7 +25,7 @@ export function ensureIndependentPlanSupport(
 const historyChecks = new WeakMap<object, Promise<boolean>>();
 /** 远端旧 CLI 的 strict subscribe 不接受新字段，能力确认后才转发。 */
 export function supportsHistoryFirst(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<NekodeProtocolClient, "request">,
 ): Promise<boolean> {
   const existing = historyChecks.get(client);
   if (existing) return existing;
@@ -43,7 +43,7 @@ export function supportsHistoryFirst(
 const genUiChecks = new WeakMap<object, Promise<void>>();
 /** 状态不能回退到拼接用户正文；不支持时保留草稿并拒绝发送。 */
 export function ensureGenUiContextSupport(
-  client: Pick<ZCodeProtocolClient, "request">,
+  client: Pick<NekodeProtocolClient, "request">,
 ): Promise<void> {
   const cached = genUiChecks.get(client);
   if (cached) return cached;

@@ -1,4 +1,4 @@
-import type { IZCodeAgentService } from "@zcode/services";
+import type { INekodeAgentService } from "@zcode/services";
 import {
   attributeHostProcessTree,
   createProcessResourceSampler,
@@ -12,7 +12,7 @@ import {
 } from "@zcode/shared";
 
 export interface CreateHostResourceUsageResponderOptions {
-  getAgentService: () => Pick<IZCodeAgentService, "collectLocalRuntimeChildProcesses"> | undefined;
+  getAgentService: () => Pick<INekodeAgentService, "collectLocalRuntimeChildProcesses"> | undefined;
   postMessage: (message: HostResourceUsageSnapshotResultResponse) => void;
   hostPid?: number;
   sampler?: ProcessResourceSampler;

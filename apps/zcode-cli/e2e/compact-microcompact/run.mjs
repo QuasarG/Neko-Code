@@ -14,7 +14,7 @@ import {
 import { parseArgs, resolveCaseNames } from "./args.mjs";
 import { writeJsonFile } from "./artifacts.mjs";
 import { formatError } from "./diagnostics.mjs";
-import { loadZCodeModules } from "./case-utils.mjs";
+import { loadNekodeModules } from "./case-utils.mjs";
 import { getCaseDefinitions } from "./suite-cases.mjs";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -50,14 +50,14 @@ async function main() {
       return;
     }
 
-    if (caseDefinitions.some((caseDef) => caseDef.requiresApiKey) && !process.env.ZCODE_API_KEY) {
+    if (caseDefinitions.some((caseDef) => caseDef.requiresApiKey) && !process.env.NEKODE_API_KEY) {
       keepTmp = true;
       throw new Error(
-        "ZCODE_API_KEY is required for real-provider compact E2E cases. Use --case=fake to run only local scripted cases.",
+        "NEKODE_API_KEY is required for real-provider compact E2E cases. Use --case=fake to run only local scripted cases.",
       );
     }
 
-    const modules = await loadZCodeModules(repoRoot);
+    const modules = await loadNekodeModules(repoRoot);
     const caseResults = [];
     for (const caseDef of caseDefinitions) {
       const caseRoot = join(runRoot, "cases", caseDef.name);

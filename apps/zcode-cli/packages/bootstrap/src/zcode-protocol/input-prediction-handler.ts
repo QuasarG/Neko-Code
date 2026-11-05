@@ -21,7 +21,7 @@ import {
   v4ConversationInputPredictionParamsSchema,
   type V4ConversationInputPredictionResult,
 } from "@zcode/shared/zcode-protocol-v4";
-import type { ZCodeProtocolSessionRecord } from "./server-types.js";
+import type { NekodeProtocolSessionRecord } from "./server-types.js";
 
 /** 终态结果缓存条数（跨会话共享）。 */
 const INPUT_PREDICTION_CACHE_MAX_ENTRIES = 16;
@@ -182,7 +182,7 @@ function visibleText(message: MessageWithParts): string {
 
 /** 生产 loader：会话必须驻留在本进程（手机正在看的会话一定驻留）。 */
 export function createInputPredictionSessionLoader(input: {
-  sessions: ReadonlyMap<string, ZCodeProtocolSessionRecord>;
+  sessions: ReadonlyMap<string, NekodeProtocolSessionRecord>;
   sessionStore?: SessionStorePort;
 }): ConversationInputPredictionHandlerDeps["loadSession"] {
   return async (sessionId) => {

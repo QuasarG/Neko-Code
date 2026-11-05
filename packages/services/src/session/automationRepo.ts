@@ -13,20 +13,18 @@ import {
   AUTOMATION_CREATE_LIMIT,
   AUTOMATION_CREATE_LIMIT_ERROR_CODE,
   resolveWorkspaceKey,
-  zcodeAutomationBotDeliveryTargetSchema,
   modelSelectionSchema,
   zcodeTaskModeSchema,
-  type ZCodeAutomation,
-  type ZCodeAutomationBotDeliveryTarget,
-  type ZCodeAutomationCreateParams,
-  type ZCodeAutomationDispatchStatus,
-  type ZCodeAutomationLifecycleStatus,
+  type NekodeAutomation,
+  type NekodeAutomationCreateParams,
+  type NekodeAutomationDispatchStatus,
+  type NekodeAutomationLifecycleStatus,
   type ModelSelection,
-  type ZCodeAutomationRun,
-  type ZCodeAutomationRunDispatchStatus,
-  type ZCodeAutomationRunOutcome,
-  type ZCodeAutomationTrigger,
-  type ZCodeAutomationUpdateParams,
+  type NekodeAutomationRun,
+  type NekodeAutomationRunDispatchStatus,
+  type NekodeAutomationRunOutcome,
+  type NekodeAutomationTrigger,
+  type NekodeAutomationUpdateParams,
 } from "@zcode/shared";
 import { getTasksIndexDatabasePath } from "#src/paths.js";
 import { runTasksDatabaseMigrations } from "#src/session/tasksDatabase/migrations.js";
@@ -111,11 +109,11 @@ interface AutomationRunRow {
 }
 
 export interface ClaimedManualAutomationRun {
-  automation: ZCodeAutomation;
-  run: ZCodeAutomationRun;
+  automation: NekodeAutomation;
+  run: NekodeAutomationRun;
 }
 
-function rowToAutomation(row: AutomationRow): ZCodeAutomation {
+function rowToAutomation(row: AutomationRow): NekodeAutomation {
   const modelSelection = readAutomationModelSelection(row);
   return {
     automationId: row.automation_id,
@@ -145,15 +143,15 @@ function rowToAutomation(row: AutomationRow): ZCodeAutomation {
     maxRuns: row.max_runs ?? undefined,
     endAt: row.end_at ?? undefined,
     scheduleRule: row.schedule_rule
-      ? (JSON.parse(row.schedule_rule) as ZCodeAutomation["scheduleRule"])
+      ? (JSON.parse(row.schedule_rule) as NekodeAutomation["scheduleRule"])
       : undefined,
     ...(row.schedule_edited_by_user === 1 ? { scheduleEditedByUser: true } : {}),
     runCount: row.run_count,
     enabled: row.enabled === 1,
-    lifecycleStatus: row.lifecycle_status as ZCodeAutomationLifecycleStatus,
+    lifecycleStatus: row.lifecycle_status as NekodeAutomationLifecycleStatus,
     nextRunAt: row.next_run_at ?? undefined,
     lastRunAt: row.last_run_at ?? undefined,
-    dispatchStatus: row.dispatch_status as ZCodeAutomationDispatchStatus,
+    dispatchStatus: row.dispatch_status as NekodeAutomationDispatchStatus,
     dispatchAttempts: row.dispatch_attempts,
     retryAt: row.retry_at ?? undefined,
     lastError: row.last_error ?? undefined,
@@ -162,13 +160,13 @@ function rowToAutomation(row: AutomationRow): ZCodeAutomation {
   };
 }
 
-function readAutomationModelSelection(row: AutomationRow): ZCodeAutomation["modelSelection"] {
+function readAutomationModelSelection(row: AutomationRow): NekodeAutomation["modelSelection"] {
   // 旧字段只能经过独立 importer；新字段损坏或明确清空时不能复活旧选择。
   return readSerializedModelSelection(row.model_selection);
 }
 
 function serializeAutomationModelSelection(
-  selection: ZCodeAutomation["modelSelection"],
+  selection: NekodeAutomation["modelSelection"],
 ): string | null {
   if (!selection) return null;
   const options = selection.options;
@@ -180,7 +178,7 @@ function serializeAutomationModelSelection(
   return JSON.stringify(parsed);
 }
 
-function normalizeAutomationMode(mode: string | null): ZCodeAutomation["mode"] | undefined {
+function normalizeAutomationMode(mode: string | null): NekodeAutomation["mode"] | undefined {
   const parsed = zcodeTaskModeSchema.safeParse(mode);
   return parsed.success ? parsed.data : undefined;
 }
@@ -193,17 +191,17 @@ function assertValidAutomationMode(mode: unknown): void {
   }
 }
 
-function rowToRun(row: AutomationRunRow): ZCodeAutomationRun {
+function rowToRun(row: AutomationRunRow): NekodeAutomationRun {
   const modelSelection = readSerializedModelSelection(row.model_selection);
   return {
     runId: row.run_id,
     automationId: row.automation_id,
     workspaceKey: row.workspace_key,
     scheduledAt: row.scheduled_at ?? undefined,
-    trigger: row.trigger as ZCodeAutomationTrigger,
+    trigger: row.trigger as NekodeAutomationTrigger,
     ...(modelSelection ? { modelSelection } : {}),
-    dispatchStatus: row.dispatch_status as ZCodeAutomationRunDispatchStatus,
-    outcome: (row.outcome as ZCodeAutomationRunOutcome | null) ?? undefined,
+    dispatchStatus: row.dispatch_status as NekodeAutomationRunDispatchStatus,
+    outcome: (row.outcome as NekodeAutomationRunOutcome | null) ?? undefined,
     sessionId: row.session_id ?? undefined,
     error: row.error ?? undefined,
     attempts: row.attempts,
@@ -245,7 +243,7 @@ export class AutomationRepo {
   private initializePromise: Promise<void> | null = null;
   // db 路径不能从进程级全局 _dataBaseDir（getTasksIndexDatabasePath）解析：
   // vitest threads 池会在同一进程并发跑多个测试文件，各文件的 setDataBaseDir(tempDir)
-  // 互相覆盖全局值，导致 repo 与裸 SQL 操作在并发窗口内写进真实库 ~/.zcode/v2（历史脏数据
+  // 互相覆盖全局值，导致 repo 与裸 SQL 操作在并发窗口内写进真实库 ~/.nekode/v2（历史脏数据
   // /tmp/ws 系列即因此污染）。改为构造期固定一份 dbPath，测试通过依赖注入传入临时库路径，
   // 生产路径不传则回退 getTasksIndexDatabasePath，向后兼容。
   private readonly resolvedDbPath: string | null;
@@ -326,9 +324,9 @@ export class AutomationRepo {
   // ---- 管理 CRUD ----
 
   async create(
-    params: ZCodeAutomationCreateParams,
-    options: { nextRunAt: number | null; lifecycleStatus?: ZCodeAutomationLifecycleStatus },
-  ): Promise<ZCodeAutomation> {
+    params: NekodeAutomationCreateParams,
+    options: { nextRunAt: number | null; lifecycleStatus?: NekodeAutomationLifecycleStatus },
+  ): Promise<NekodeAutomation> {
     assertValidAutomationMode(params.mode);
     await this.ensureReady();
     const now = Date.now();
@@ -360,7 +358,7 @@ export class AutomationRepo {
           created_at, updated_at
         ) VALUES (
           @automation_id, @title, @cron_expr, @prompt, @model, @provider, @model_selection,
-          @workspace_key, @workspace_path, @workspace_identity, @project_id, @host_id, @additional_directories, @target_task_id, @bot_delivery_target, 'local',
+          @workspace_key, @workspace_path, @workspace_identity, @project_id, @host_id, @additional_directories, @target_task_id, NULL, 'local',
           @recurring, @max_runs, @end_at, @schedule_rule, 0,
           0, @enabled, @lifecycle_status,
           @next_run_at, NULL, 0, NULL,
@@ -391,9 +389,6 @@ export class AutomationRepo {
                 z.array(z.string().min(1)).max(256).parse(params.additionalDirectories),
               ),
         target_task_id: params.targetTaskId ?? null,
-        bot_delivery_target: params.botDeliveryTarget
-          ? JSON.stringify(params.botDeliveryTarget)
-          : null,
         recurring: params.recurring ? 1 : 0,
         max_runs: params.maxRuns ?? null,
         end_at: params.endAt ?? null,
@@ -415,7 +410,7 @@ export class AutomationRepo {
   async list(scope?: {
     workspacePath?: string;
     workspaceIdentity?: string;
-  }): Promise<ZCodeAutomation[]> {
+  }): Promise<NekodeAutomation[]> {
     await this.ensureReady();
     const workspaceKey = scope?.workspacePath
       ? resolveWorkspaceKey({
@@ -449,25 +444,6 @@ export class AutomationRepo {
     return undefined;
   }
 
-  /**
-   * 仅供后台派发读取 Bot 回推目标；该内部来源信息不进入 automation 展示模型。
-   */
-  async getBotDeliveryTarget(
-    automationId: string,
-    workspaceKey?: string,
-  ): Promise<ZCodeAutomationBotDeliveryTarget | undefined> {
-    await this.ensureReady();
-    const raw = this.getRow(automationId, workspaceKey)?.bot_delivery_target;
-    if (!raw) return undefined;
-    try {
-      const parsed = zcodeAutomationBotDeliveryTargetSchema.safeParse(JSON.parse(raw));
-      return parsed.success ? parsed.data : undefined;
-    } catch {
-      // Bug 原因：历史/外部写入的脏 JSON 不能拖垮任务列表或 scheduler；无效来源按未配置处理。
-      return undefined;
-    }
-  }
-
   async hasTaskBinding(scope: {
     workspacePath: string;
     workspaceIdentity?: string;
@@ -489,7 +465,7 @@ export class AutomationRepo {
     return row !== undefined;
   }
 
-  async get(automationId: string, workspaceKey?: string): Promise<ZCodeAutomation | null> {
+  async get(automationId: string, workspaceKey?: string): Promise<NekodeAutomation | null> {
     await this.ensureReady();
     const row = this.getRow(automationId, workspaceKey);
     return row ? rowToAutomation(row) : null;
@@ -508,14 +484,14 @@ export class AutomationRepo {
    */
   async update(
     automationId: string,
-    params: ZCodeAutomationUpdateParams,
+    params: NekodeAutomationUpdateParams,
     options?: {
       nextRunAt?: number | null;
-      lifecycleStatus?: ZCodeAutomationLifecycleStatus;
+      lifecycleStatus?: NekodeAutomationLifecycleStatus;
       resetRetry?: boolean;
     },
     workspaceKey?: string,
-  ): Promise<ZCodeAutomation | null> {
+  ): Promise<NekodeAutomation | null> {
     assertValidAutomationMode(params.mode);
     await this.ensureReady();
     const existing = this.getRow(automationId, workspaceKey);
@@ -756,7 +732,7 @@ export class AutomationRepo {
    * single-flight 认领到期项：原子 running=0→1。同时回收认领超时（claimed_at 过期）的僵尸项。
    * due 判定同时看 next_run_at 与 retry_at，任一到期即 due。
    */
-  async claimDue(now: number): Promise<ZCodeAutomation[]> {
+  async claimDue(now: number): Promise<NekodeAutomation[]> {
     await this.ensureReady();
     const db = this.getDatabase();
     db.exec("BEGIN IMMEDIATE");
@@ -789,7 +765,7 @@ export class AutomationRepo {
             )`,
         )
         .all({ now }) as unknown as AutomationRow[];
-      const claimed: ZCodeAutomation[] = [];
+      const claimed: NekodeAutomation[] = [];
       const claim = db.prepare(
         `UPDATE automations
         SET running = 1, claimed_at = @now, dispatch_status = 'claimed', updated_at = @now
@@ -1217,7 +1193,7 @@ export class AutomationRepo {
     automationId: string;
     workspaceKey: string;
     scheduledAt: number | null;
-    trigger: ZCodeAutomationTrigger;
+    trigger: NekodeAutomationTrigger;
   }): Promise<void> {
     await this.ensureReady();
     const now = Date.now();
@@ -1245,7 +1221,7 @@ export class AutomationRepo {
     automationId: string;
     workspaceKey: string;
     scheduledAt: number | null;
-    trigger: ZCodeAutomationTrigger;
+    trigger: NekodeAutomationTrigger;
     modelSelection?: ModelSelection;
   }): Promise<void> {
     await this.ensureReady();
@@ -1302,7 +1278,7 @@ export class AutomationRepo {
   /** 派发结果回写 run（dispatched 回填 session_id / failed_to_dispatch 记 error）。 */
   async markRunDispatch(params: {
     runId: string;
-    dispatchStatus: ZCodeAutomationRunDispatchStatus;
+    dispatchStatus: NekodeAutomationRunDispatchStatus;
     sessionId?: string | null;
     error?: string | null;
   }): Promise<void> {
@@ -1392,7 +1368,7 @@ export class AutomationRepo {
   /** session runtime 回写运行结果（running / succeeded / failed / stopped）。 */
   async markRunOutcome(
     runId: string,
-    outcome: ZCodeAutomationRunOutcome,
+    outcome: NekodeAutomationRunOutcome,
     error?: string,
   ): Promise<void> {
     await this.ensureReady();
@@ -1419,7 +1395,7 @@ export class AutomationRepo {
     automationId: string;
     workspaceKey: string;
     scheduledAt: number | null;
-    trigger: ZCodeAutomationTrigger;
+    trigger: NekodeAutomationTrigger;
     reason: string;
   }): Promise<void> {
     await this.ensureReady();
@@ -1444,7 +1420,7 @@ export class AutomationRepo {
       });
   }
 
-  async listRuns(automationId: string, workspaceKey?: string): Promise<ZCodeAutomationRun[]> {
+  async listRuns(automationId: string, workspaceKey?: string): Promise<NekodeAutomationRun[]> {
     await this.ensureReady();
     const rows = this.getDatabase()
       .prepare(
@@ -1460,7 +1436,7 @@ export class AutomationRepo {
     return rows.map(rowToRun);
   }
 
-  async getRun(runId: string): Promise<ZCodeAutomationRun | null> {
+  async getRun(runId: string): Promise<NekodeAutomationRun | null> {
     await this.ensureReady();
     const row = this.getDatabase()
       .prepare(`SELECT * FROM automation_runs WHERE run_id = @run_id`)

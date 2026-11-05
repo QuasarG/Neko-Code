@@ -30,7 +30,7 @@ import { V4CapabilityUnsupportedError } from "../src/zcode-protocol-v4/commands/
 import { V4InteractionRegistry } from "../src/zcode-protocol-v4/interaction-registry.js";
 import { createProtocolInteractionBroker } from "../src/zcode-protocol/interaction-broker.js";
 import { PERMISSION_DENIED_BY_USER_CONTENT } from "../src/permission-options.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 import type {
   V4CommandCoreHost,
   V4SessionRecordView,
@@ -837,7 +837,7 @@ function makeBrokerContext(options?: {
     },
     requestClient,
     v4Interactions: registry,
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
   return {
     broker: createProtocolInteractionBroker(context),
     registry,
@@ -1443,7 +1443,7 @@ describe("broker × v4 竞速", () => {
           name: "release-check",
           description: "对本仓库做一次发布前检查",
           script: "return 1;",
-          path: "/repo/.zcode/workflows/release-check.dwf.ts",
+          path: "/repo/.nekode/workflows/release-check.dwf.ts",
           overwrite: true,
           scope: "project",
         },

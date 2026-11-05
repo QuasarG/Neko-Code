@@ -20,7 +20,7 @@ import {
   routedTopicWireFrameSchema,
   conversationTopicFrameSchema,
 } from "@zcode/shared/zcode-protocol-v4";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import {
   createRegistryBackedTestApp,
   createTestProviderRegistry,
@@ -35,10 +35,10 @@ describe("真实 Protocol/App/SQLite 的未绑定创建", () => {
     const apps: Awaited<ReturnType<typeof createRegistryBackedTestApp>>[] = [];
     // 未绑定创建必须明确使用空候选；公共测试 helper 会额外 seed 默认模型。
     let registry = new ProviderRegistry([]);
-    const server = new ZCodeProtocolAgentServer({
+    const server = new NekodeProtocolAgentServer({
       cwd: process.cwd(),
       sessionStore: store,
-      createZCodeApp: async (options) => {
+      createNekodeApp: async (options) => {
         const app = await createRegistryBackedTestApp({
           ...options,
           env: {},
@@ -198,10 +198,10 @@ describe.each(["desktop-continuous", "web-remote-replayable"] as const)(
         });
       const apps: Awaited<ReturnType<typeof createRegistryBackedTestApp>>[] = [];
       const legacyProviderResolveRequests: unknown[] = [];
-      const server = new ZCodeProtocolAgentServer({
+      const server = new NekodeProtocolAgentServer({
         cwd: process.cwd(),
         sessionStore: store,
-        createZCodeApp: async (options) => {
+        createNekodeApp: async (options) => {
           const app = await createRegistryBackedTestApp({
             ...options,
             env: {},

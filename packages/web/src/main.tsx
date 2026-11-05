@@ -15,7 +15,7 @@ import {
   AppErrorBoundary,
   ensurePendingTaskDraft,
   Root,
-  ZCodeIntlProvider,
+  NekodeIntlProvider,
   generateMobileDeviceFingerprint,
   installDocumentHiddenMotionPause,
   setStreamClientId,
@@ -286,7 +286,7 @@ function isWebOAuthCallback(params: URLSearchParams): boolean {
 }
 
 function renderWebAuthCallbackPage(): void {
-  document.title = "ZCode - Web Remote Control Sign In";
+  document.title = "Nekode - Web Remote Control Sign In";
   const callbackState = parseOAuthState(
     new URLSearchParams(window.location.search).get("state") ?? "",
   );
@@ -311,7 +311,7 @@ async function renderConversationSharePage(): Promise<void> {
   document.documentElement.lang = routeLocale;
   // 分享页必须设置 title：否则浏览器标签只显示 index.html 的通用标题。
   // 会话标题要等 preview 加载完，先给一个语言正确的兜底。
-  document.title = routeLocale === "zh-CN" ? "ZCode 会话分享" : "ZCode Conversation Share";
+  document.title = routeLocale === "zh-CN" ? "Nekode 会话分享" : "Nekode Conversation Share";
   const shareCode = resolveConversationShareCodeFromPath(window.location.pathname);
   if (!shareCode) {
     root.render(
@@ -324,7 +324,7 @@ async function renderConversationSharePage(): Promise<void> {
   }
 
   const endpointOrigin =
-    import.meta.env.VITE_ZCODE_BASE_URL?.trim().replace(/\/+$/u, "") || window.location.origin;
+    import.meta.env.VITE_NEKODE_BASE_URL?.trim().replace(/\/+$/u, "") || window.location.origin;
   const mockMode =
     import.meta.env.DEV && import.meta.env.VITE_CONVERSATION_SHARE_PREVIEW_MOCK === "true";
   // Share 加载失败不能只有通用 network 文案：需要区分 mock、endpoint 配置或跨域 fetch。
@@ -356,7 +356,7 @@ async function renderConversationSharePage(): Promise<void> {
     <ConversationShareLandingLoader
       shareCode={shareCode}
       client={client}
-      getAccessToken={() => getMockToken() ?? webAuthService.getZCodeJwtToken()}
+      getAccessToken={() => getMockToken() ?? webAuthService.getNekodeJwtToken()}
       onLogin={(provider) => {
         if (mockMode) {
           window.sessionStorage.setItem("zcode:share:mock-auth", "owner");
@@ -378,7 +378,7 @@ async function renderConversationSharePage(): Promise<void> {
 }
 
 function renderWebLoginPage(): void {
-  document.title = "ZCode - Web Remote Control Sign In";
+  document.title = "Nekode - Web Remote Control Sign In";
   root.render(<WebLoginPage onLogin={(provider) => remoteEntry.startLogin(provider)} />);
 }
 
@@ -411,7 +411,7 @@ const remoteEntry = new WebRemoteControlEntry({
     if (view.kind === "callback") renderWebAuthCallbackPage();
     else if (view.kind === "login") renderWebLoginPage();
     else if (view.kind === "devices") {
-      document.title = "ZCode - Web Remote Control";
+      document.title = "Nekode - Web Remote Control";
       root.render(
         <WebRemoteControlDeviceListPage
           view={view}
@@ -549,7 +549,7 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
     }),
     update: async () => {},
     updateDataBaseDir: async () => {},
-    // 个性化指令编辑的是桌面 Host 的 ~/.zcode/AGENTS.md；未连接 bridge 前没有本机 Host，明确报错。
+    // 个性化指令编辑的是桌面 Host 的 ~/.nekode/AGENTS.md；未连接 bridge 前没有本机 Host，明确报错。
     getUserInstructions: unsupported("settingService.getUserInstructions"),
     saveUserInstructions: unsupported("settingService.saveUserInstructions"),
   };
@@ -571,7 +571,7 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
   // Bugfix: 手机端只有断开的远程 workspace 时，不能为了进入任务首页强行创建 bridge。
   // 这里提供只读/空结果服务，吸收 Root 首屏 OAuth、模型供应商、Git、技能等后台初始化，
   // 避免断连这种预期状态被误报成未处理异常；真正聊天能力仍需重连成功后切到 bridge services。
-  const homeOnlyZCodeTaskService = createEmptyHomeOnlyService<RootServices["zcodeTaskService"]>({
+  const homeOnlyNekodeTaskService = createEmptyHomeOnlyService<RootServices["zcodeTaskService"]>({
     initialize: async () => ({ available: false }),
     releaseWorkspacePreparation: async () => {},
     checkCodexConnectivity: async () => ({ ok: true }),
@@ -662,12 +662,12 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
     broadcastService: createEmptyHomeOnlyService<RootServices["broadcastService"]>({
       send: async () => {},
     }),
-    zcodeTaskService: homeOnlyZCodeTaskService,
+    zcodeTaskService: homeOnlyNekodeTaskService,
     zcodeAgentService: createEmptyHomeOnlyService<RootServices["zcodeAgentService"]>({
       initialize: async (params: { workspacePath: string; workspaceIdentity?: string }) => ({
         available: false,
         workspaceKey: params.workspaceIdentity?.trim() || params.workspacePath,
-        reason: "ZCode agent service is not available before workspace bridge is connected.",
+        reason: "Nekode agent service is not available before workspace bridge is connected.",
       }),
       disposeAll: () => {},
     }),
@@ -678,7 +678,7 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       }) => ({
         available: false,
         workspaceKey: params.workspaceIdentity?.trim() || params.workspacePath,
-        reason: "ZCode session service is not available before workspace bridge is connected.",
+        reason: "Nekode session service is not available before workspace bridge is connected.",
       }),
     }),
     // 分享发布首期只属于 desktop local host；Web 首页和 /remote 不建立独立发布权威。
@@ -693,7 +693,6 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       cancel: async () => {},
       cleanup: async () => {},
     }),
-    botsService: createUnsupportedHomeOnlyService<RootServices["botsService"]>("botsService"),
     fileWatcherService: createEmptyHomeOnlyService<RootServices["fileWatcherService"]>({
       watch: async () => ({ dispose: () => {} }),
     }),
@@ -787,10 +786,6 @@ export function createHomeOnlyWebRemoteControlServices(): RootServices {
       loadHooks: async () => ({ hooks: [], hooksEnabled: false }),
       saveHooks: async () => undefined,
     }),
-    memoryService: createEmptyHomeOnlyService<RootServices["memoryService"]>({
-      loadMemory: async () => ({ memory: null }),
-      listProjectMemories: async () => [],
-    }),
     outputStyleService: createEmptyHomeOnlyService<RootServices["outputStyleService"]>({
       listStyles: async () => ({ styles: [] }),
       getUserStylesDirectory: async () => ({ path: "" }),
@@ -816,7 +811,7 @@ function renderWebRemoteControlLoading(
   state: WebRemoteControlTerminalTransportState,
   device: WebRemoteControlConnectingDevice,
 ): void {
-  document.title = "ZCode - Web Remote Control";
+  document.title = "Nekode - Web Remote Control";
   root.render(
     <WebRemoteControlLoadingScreen
       state={state}
@@ -1536,10 +1531,10 @@ async function bootstrapExternalRelayWebRemoteControl(
   ) => {
     if (terminated || versionGuard.isBlocked()) return;
     ready = true;
-    document.title = "ZCode - Web Remote Control";
+    document.title = "Nekode - Web Remote Control";
     root.render(
       <AppErrorBoundary key={bridge.bridgeSessionId}>
-        <ZCodeIntlProvider
+        <NekodeIntlProvider
           settingService={services.settingService}
           broadcastService={services.broadcastService}
           preferSettingServiceLocale
@@ -1620,7 +1615,7 @@ async function bootstrapExternalRelayWebRemoteControl(
             supportsEmbeddedBrowser={false}
             allowRemoteWorkspace={false}
           />
-        </ZCodeIntlProvider>
+        </NekodeIntlProvider>
       </AppErrorBoundary>,
     );
   };
@@ -1661,7 +1656,7 @@ async function bootstrapExternalRelayWebRemoteControl(
     currentWorkspaceKey = workspaceKey;
     currentTaskId = taskId;
     await updateMobileViewState(workspaceKey, taskId);
-    document.title = "ZCode - Web Remote Control";
+    document.title = "Nekode - Web Remote Control";
     if (terminated || versionGuard.isBlocked()) return;
     // Bug 原因：staging 合并 a861a83cbc 丢了这里的 ready 标记，home-only 挂载后每次配对状态抖动
     // 都会被 onStateChange 当成首屏重渲染加载页，配对恢复后再整页重挂，引导与本地状态全部丢失。
@@ -1669,7 +1664,7 @@ async function bootstrapExternalRelayWebRemoteControl(
     ready = true;
     root.render(
       <AppErrorBoundary key={`home-only-${workspaceKey}`}>
-        <ZCodeIntlProvider>
+        <NekodeIntlProvider>
           <Root
             composerClientNamespace={`mobile:${relayParams.deviceMid ?? relayParams.deviceSid}`}
             services={createHomeOnlyWebRemoteControlServices()}
@@ -1731,7 +1726,7 @@ async function bootstrapExternalRelayWebRemoteControl(
             supportsEmbeddedBrowser={false}
             allowRemoteWorkspace={false}
           />
-        </ZCodeIntlProvider>
+        </NekodeIntlProvider>
       </AppErrorBoundary>,
     );
   };
@@ -1829,11 +1824,11 @@ async function bootstrapWebApp() {
       onClose: () => {},
     });
     const platform = createWebPlatform();
-    document.title = "ZCode - Web + Server";
+    document.title = "Nekode - Web + Server";
 
     root.render(
       <AppErrorBoundary>
-        <ZCodeIntlProvider
+        <NekodeIntlProvider
           settingService={services.settingService}
           broadcastService={services.broadcastService}
         >
@@ -1849,7 +1844,7 @@ async function bootstrapWebApp() {
             supportsEmbeddedBrowser={false}
             allowRemoteWorkspace={false}
           />
-        </ZCodeIntlProvider>
+        </NekodeIntlProvider>
       </AppErrorBoundary>,
     );
   } catch (error) {

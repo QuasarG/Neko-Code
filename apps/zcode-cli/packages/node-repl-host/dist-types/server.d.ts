@@ -30,7 +30,7 @@ export declare function createInProcessNodeReplExecutor(): NodeReplExecutor;
 export declare function createNodeReplMcpRuntime(input?: {
     executeJs?: NodeReplExecutor;
     cuaRuntime?: ComputerUseRuntime;
-    /** ZCode 主进程浏览器 broker 的地址和 token；默认从环境变量读取（测试注入假 broker）。 */
+    /** Nekode 主进程浏览器 broker 的地址和 token；默认从环境变量读取（测试注入假 broker）。 */
     browserBrokerUpstream?: NodeReplBrowserBrokerUpstream;
     writeStderr?: (text: string) => void;
 }): NodeReplMcpRuntime;

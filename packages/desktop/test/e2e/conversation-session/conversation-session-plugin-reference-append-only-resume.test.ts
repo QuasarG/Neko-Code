@@ -30,7 +30,7 @@ import {
 const PROVIDER_ID = "e2e-plugin-reference-append-only";
 const PROVIDER_NAME = "Plugin Reference Append Only E2E";
 const MODEL_ID = "plugin-reference-append-only-model";
-const PLUGIN_STABLE_ID = "skill-creator@zcode-plugins-official";
+const PLUGIN_STABLE_ID = "zcode-guide@zcode-plugins-official";
 const U1_MARKER = "E2E_PLUGIN_APPEND_ONLY_U1";
 const U2_MARKER = "E2E_PLUGIN_APPEND_ONLY_U2";
 const U3_MARKER = "E2E_PLUGIN_APPEND_ONLY_U3_HOT";
@@ -72,7 +72,7 @@ describe("PLG13/PLG14 Plugin 引用多轮热/冷恢复 append-only", () => {
     await waitForSelectedModel(PROVIDER_ID, MODEL_ID);
 
     const u1Prompt =
-      `${U1_MARKER}: Use [@skill-creator](plugin://${PLUGIN_STABLE_ID}), ` +
+      `${U1_MARKER}: Use [@zcode-guide](plugin://${PLUGIN_STABLE_ID}), ` +
       `then reply with exactly "${A1_MARKER}".`;
     const request1 = await sendAndCapture(u1Prompt, U1_MARKER, A1_MARKER);
     const messages1 = readProviderMessages(request1.requestJson, "Req1");

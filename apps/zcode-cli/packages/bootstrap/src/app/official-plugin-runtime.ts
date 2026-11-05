@@ -1,11 +1,11 @@
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import {
-  ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
-  ZCODE_PLUGIN_HOST_COMMAND,
+  NEKODE_OFFICIAL_PLUGIN_MARKETPLACE,
+  NEKODE_PLUGIN_HOST_COMMAND,
   type McpServerConfig,
 } from "@zcode/contracts";
-import { ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
+import { NEKODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
 import {
   createOfficialPluginCacheRetryBudget,
   type OfficialPluginCacheRetryBudget,
@@ -34,7 +34,7 @@ export function createBundledMcpRuntimeConfig(input: {
     cwd: input.cwd,
     env: {
       ...input.env,
-      // 桌面打包态 process.execPath 是 ZCode Helper；缺少 Node 模式会误进 Electron main。
+      // 桌面打包态 process.execPath 是 Nekode Helper；缺少 Node 模式会误进 Electron main。
       ELECTRON_RUN_AS_NODE: "1",
     },
     timeoutMs: input.timeoutMs,
@@ -59,7 +59,7 @@ export function writeOfficialPluginRuntimeManifest(input: OfficialRuntimeManifes
   >;
   // skill-only / command-only 类型的 official plugin 不带 mcpServers，直接跳过 rewrite。
   // 之前这里无脑 asRecord(manifest.mcpServers) 会对 undefined 抛错，
-  // 把 seed 流程整个阻断，连带 listZCodeSkills 拉不出 plugin skill。
+  // 把 seed 流程整个阻断，连带 listNekodeSkills 拉不出 plugin skill。
   if (manifest.mcpServers === undefined) return;
   const mcpServers = asRecord(manifest.mcpServers);
   const hostPrefixArgs = officialPluginHostPrefixArgs();
@@ -87,17 +87,17 @@ export function writeOfficialPluginRuntimeManifest(input: OfficialRuntimeManifes
     // 文档插件使用 dist/server.mjs；统一覆盖成 dist/mcp/server.js 会导致启动失败。
     mcpServer.args = [
       ...hostPrefixArgs,
-      ...serverArgs.map((arg) => arg.replaceAll("${ZCODE_PLUGIN_ROOT}", input.rootPath)),
+      ...serverArgs.map((arg) => arg.replaceAll("${NEKODE_PLUGIN_ROOT}", input.rootPath)),
     ];
     mcpServer.env = {
       ...mcpServerEnv,
-      // 桌面打包态的 process.execPath 是 ZCode Helper。
+      // 桌面打包态的 process.execPath 是 Nekode Helper。
       // 官方插件 MCP server 缺少 Node 模式 env 时会误进 Electron main，触发 deep-link 注册等桌面副作用。
       ELECTRON_RUN_AS_NODE: "1",
       // 权威写入插件身份（pluginName@marketplace，来自本地 plugin registry，manifest/user env 不可覆盖）。
       // 其他 official plugin 仍带上不可伪造的 plugin identity；CUA broker 凭据由 shared
       // node_repl 的可信配置注入，不再写入独立 server。
-      [ZCODE_PLUGIN_ID_ENV_KEY]: `${input.pluginName}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
+      [NEKODE_PLUGIN_ID_ENV_KEY]: `${input.pluginName}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
     };
     mcpServers[serverKey] = mcpServer;
   }
@@ -115,12 +115,12 @@ export function writeOfficialPluginRuntimeManifest(input: OfficialRuntimeManifes
 }
 
 export function officialPluginHostPrefixArgs(): string[] | undefined {
-  if (isSeaRuntime()) return [ZCODE_PLUGIN_HOST_COMMAND];
+  if (isSeaRuntime()) return [NEKODE_PLUGIN_HOST_COMMAND];
 
   const entrypoint = process.argv[1];
   if (!entrypoint) return undefined;
 
-  return [...process.execArgv, resolve(entrypoint), ZCODE_PLUGIN_HOST_COMMAND];
+  return [...process.execArgv, resolve(entrypoint), NEKODE_PLUGIN_HOST_COMMAND];
 }
 
 function isSeaRuntime(): boolean {

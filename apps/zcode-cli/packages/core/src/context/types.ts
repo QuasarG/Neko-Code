@@ -11,6 +11,7 @@ import type {
   SkillLoadOutcome,
   UserInstructionsOptions,
 } from "@zcode/contracts";
+import type { NekoMemoryBook } from "@zcode/contracts/neko-memory";
 import type { AutoCompactPolicyConfig } from "../compact/index.js";
 import type { AgentProfile } from "../subagent/profile.js";
 
@@ -31,14 +32,15 @@ export type {
 export type ContextSource =
   | "cli_prefix" // CLI / 产品身份前缀
   | "identity" // Agent 基础描述
+  | "persona" // 人格包正文（NEKO persona）
   | "env_info" // 环境信息 (cwd, platform, git repo boolean)
   | "session_context" // git snapshot context
   | "model" // 当前执行模型身份
   | "skills" // 可用 skills
+  | "agent_listing" // 可用子 Agent 类型
   | "tools" // 工具定义
   | "request_user_context" // request-level user context provider-visible 组合块
   | "memory" // 长期 memory read path
-  | "current_date" // 当前日期
   | "custom_system_prompt" // 自定义 stable system body
   | "workflow_actor_identity" // 动态工作流子代理身份：契约 + persona 叠加
   | "subagent_agent_prompt" // 子 agent 专属身份/任务 prompt
@@ -46,7 +48,7 @@ export type ContextSource =
   | "dynamic_behavior" // 动态行为边界
   | "session_guidance" // 当前可用内置能力指导
   | "context_management" // 长上下文管理提示
-  | "desktop_context"; // ZCode Desktop 渲染与交互协议
+  | "desktop_context"; // Nekode Desktop 渲染与交互协议
 
 export type ContextInjectionTarget = "system" | "meta_user";
 
@@ -114,10 +116,12 @@ export interface ContextBuilderConfig {
   currentDate?: string;
   userInstructions?: ResolvedUserInstructions;
   projectContext?: ProjectContext;
-  memoryRoot?: string;
-  memoryIndexContent?: string;
+  /** Neko Memory v2：本会话可见的记忆书（空/缺席时不注入 Memory 段）。 */
+  memoryBooks?: readonly NekoMemoryBook[];
   skills?: SkillLoadOutcome;
   agentProfiles?: readonly AgentProfile[];
+  /** 已格式化好的子 Agent 类型清单；缺省时不注入。 */
+  agentListing?: string;
   embeddedSearchEnabled?: boolean;
   skillMetadataBudget?: number;
   customSystemPrompt?: string;

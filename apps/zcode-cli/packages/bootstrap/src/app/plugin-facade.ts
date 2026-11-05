@@ -1,20 +1,20 @@
 import type { ConfigResult } from "@zcode/adapters/config";
 import type { PluginLoadOutcome } from "@zcode/contracts";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
 import {
-  listZCodePlugins,
-  setZCodePluginEnabled,
-  uninstallZCodeMarketplacePlugin,
+  listNekodePlugins,
+  setNekodePluginEnabled,
+  uninstallNekodeMarketplacePlugin,
 } from "../plugins.js";
 import type {
-  ZCodeApp,
-  ZCodeAppOptions,
-  ZCodePluginSetResult,
-  ZCodePluginUninstallResult,
+  NekodeApp,
+  NekodeAppOptions,
+  NekodePluginSetResult,
+  NekodePluginUninstallResult,
 } from "./types.js";
 
 type PluginFacade = Pick<
-  ZCodeApp,
+  NekodeApp,
   "listPlugins" | "setPluginEnabled" | "uninstallPlugin"
 >;
 
@@ -40,12 +40,12 @@ function createPluginFacade(options: CreatePluginFacadeOptions): PluginFacade {
   });
 
   return {
-    listPlugins: async (): Promise<PluginLoadOutcome> => listZCodePlugins(commonOptions()),
+    listPlugins: async (): Promise<PluginLoadOutcome> => listNekodePlugins(commonOptions()),
     setPluginEnabled: async (
       plugin: string,
       enabled: boolean,
-    ): Promise<ZCodePluginSetResult> => {
-      const result = await setZCodePluginEnabled({
+    ): Promise<NekodePluginSetResult> => {
+      const result = await setNekodePluginEnabled({
         ...commonOptions(),
         enabled,
         plugin,
@@ -56,8 +56,8 @@ function createPluginFacade(options: CreatePluginFacadeOptions): PluginFacade {
       };
       return result;
     },
-    uninstallPlugin: async (plugin: string): Promise<ZCodePluginUninstallResult> => {
-      const removed = await uninstallZCodeMarketplacePlugin({
+    uninstallPlugin: async (plugin: string): Promise<NekodePluginUninstallResult> => {
+      const removed = await uninstallNekodeMarketplacePlugin({
         ...commonOptions(),
         pluginId: plugin,
       });
@@ -68,7 +68,7 @@ function createPluginFacade(options: CreatePluginFacadeOptions): PluginFacade {
         enabledPlugins = next;
         // 内置（官方）插件卸载是写 suppressedBuiltins 标记；同步本地抑制集合，
         // 否则同一会话内后续 list 会用启动时的旧集合，把它重新解析出来。
-        if (removed.marketplace === ZCODE_OFFICIAL_PLUGIN_MARKETPLACE) {
+        if (removed.marketplace === NEKODE_OFFICIAL_PLUGIN_MARKETPLACE) {
           if (!suppressedBuiltins.includes(removed.id)) {
             suppressedBuiltins = [...suppressedBuiltins, removed.id];
           }
@@ -81,7 +81,7 @@ function createPluginFacade(options: CreatePluginFacadeOptions): PluginFacade {
 
 export function createPluginFacadeForApp(input: {
   configResult: ConfigResult;
-  options: ZCodeAppOptions;
+  options: NekodeAppOptions;
   workingDirectory: string;
 }): PluginFacade {
   return createPluginFacade({

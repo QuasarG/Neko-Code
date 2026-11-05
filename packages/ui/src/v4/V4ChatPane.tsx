@@ -6,12 +6,12 @@ import type { ReactNode } from "react";
 import type {
   GitChangeSourceId,
   GitRepositorySummary,
-  ZCodeProvider,
-  ZCodeTaskChangeSummary,
+  NekodeProvider,
+  NekodeTaskChangeSummary,
 } from "@zcode/shared";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { AssistantPreviewCardsAutoOpenRequest } from "@/lib/assistantPreviewCards.js";
-import type { OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
+import type { OpenWorkflowsMain } from "@/lib/taskNavigationHistory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import type {
   OpenScopedPlanDetailSideTabRequest,
@@ -47,7 +47,7 @@ export interface V4ChatPaneProps {
   sessionId: string | null;
   /** 当前 workspace 主 pane 的打开入口，未提供时按 sidebar 统计。 */
   openTrigger?: SessionOpenTrigger;
-  provider?: ZCodeProvider;
+  provider?: NekodeProvider;
   onSessionCreated?: (sessionId: string) => void;
   /** deleteSession：删除当前会话后回到 draft。 */
   onSessionDeleted?: () => void;
@@ -57,13 +57,13 @@ export interface V4ChatPaneProps {
   gitDirtyFileCount?: number;
   gitWorktreeReviewSourceId?: GitChangeSourceId | null;
   gitWorktreeChangeSummary?: { added: number; removed: number } | null;
-  activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
+  activeTaskChangeSummary?: NekodeTaskChangeSummary | null;
   summaryPanelVariantOverride?: ChatViewSummaryPanelVariant | null;
   onSummaryPanelVariantOverrideChange?: (variant: ChatViewSummaryPanelVariant | null) => void;
   onRefreshGit?: () => void;
   onOpenGitReview?: (sourceId?: GitChangeSourceId) => void;
   onOpenBrowserUrl?: (url: string) => void;
-  onOpenAutomationsMain?: OpenAutomationsMain;
+  onOpenWorkflowsMain?: OpenWorkflowsMain;
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   onAutoOpenAssistantPptx?: (request: AssistantPreviewCardsAutoOpenRequest) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
@@ -113,7 +113,7 @@ export function V4ChatPane({
   onRefreshGit,
   onOpenGitReview,
   onOpenBrowserUrl,
-  onOpenAutomationsMain,
+  onOpenWorkflowsMain,
   onOpenCodeViewer,
   onAutoOpenAssistantPptx,
   onOpenFileLink,
@@ -179,7 +179,7 @@ export function V4ChatPane({
         onRefreshGit={onRefreshGit}
         onOpenGitReview={onOpenGitReview}
         onOpenBrowserUrl={onOpenBrowserUrl}
-        onOpenAutomationsMain={onOpenAutomationsMain}
+        onOpenWorkflowsMain={onOpenWorkflowsMain}
         onOpenCodeViewer={onOpenCodeViewer}
         onAutoOpenAssistantPptx={onAutoOpenAssistantPptx}
         onOpenFileLink={onOpenFileLink}

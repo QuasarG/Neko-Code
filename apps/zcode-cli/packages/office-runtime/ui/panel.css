@@ -1,6 +1,6 @@
 /*
- * Document viewer panel. Colours come from the host's style variables (ZCode passes its theme
- * tokens); the fallbacks are ZCode's own zai-light / zai-dark values. Popover, menu and input
+ * Document viewer panel. Colours come from the host's style variables (Nekode passes its theme
+ * tokens); the fallbacks are Nekode's own zai-light / zai-dark values. Popover, menu and input
  * fills have no host variable, so they are set per theme here.
  */
 :root {
@@ -109,7 +109,7 @@ button {
   outline: 2px solid var(--border-hover);
   outline-offset: 1px;
 }
-/* Like ZCode, fields show focus by their border only. */
+/* Like Nekode, fields show focus by their border only. */
 input:focus-visible,
 textarea:focus-visible {
   outline: none;
@@ -132,7 +132,7 @@ textarea:focus-visible {
   filter: opacity(0.6);
 }
 
-/* ZCode Button: ghost by default, 28 px, radius 6. */
+/* Nekode Button: ghost by default, 28 px, radius 6. */
 .btn {
   height: 28px;
   display: inline-flex;
@@ -217,7 +217,7 @@ kbd {
   position: relative;
 }
 
-/* Document bar: ZCode PreviewPane header (h-10, surface/30, bottom border). */
+/* Document bar: Nekode PreviewPane header (h-10, surface/30, bottom border). */
 .docbar {
   height: 40px;
   flex: none;
@@ -395,7 +395,7 @@ button.doctitle:hover,
   background: var(--hover);
 }
 
-/* Popover (selection bar, ask): ZCode popover with an arrow toward the anchor. */
+/* Popover (selection bar, ask): Nekode popover with an arrow toward the anchor. */
 .pop,
 .callout {
   position: absolute;
@@ -579,7 +579,7 @@ button.doctitle:hover,
   pointer-events: none;
 }
 
-/* Menus: ZCode dropdown. */
+/* Menus: Nekode dropdown. */
 .menu {
   position: absolute;
   z-index: 8;

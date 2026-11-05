@@ -1,9 +1,9 @@
-import type { ZCodeConfigOption } from "@zcode/shared";
+import type { NekodeConfigOption } from "@zcode/shared";
 
-export function applySelectedZCodeMode(
-  options: readonly ZCodeConfigOption[],
+export function applySelectedNekodeMode(
+  options: readonly NekodeConfigOption[],
   mode: string,
-): ZCodeConfigOption[] {
+): NekodeConfigOption[] {
   const normalizedMode = mode.trim();
   if (!normalizedMode) {
     return [...options];

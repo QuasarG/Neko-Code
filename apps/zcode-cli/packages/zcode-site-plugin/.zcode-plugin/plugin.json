@@ -1,9 +1,9 @@
 {
   "name": "zcode-site",
   "version": "0.4.2",
-  "description": "Publish new or throwaway web projects to ZCode Sites for a quick preview or share link, and manage the site.",
+  "description": "Publish new or throwaway web projects to Nekode Sites for a quick preview or share link, and manage the site.",
   "description_i18n": {
-    "en": "Publish new or throwaway web projects to ZCode Sites for a quick preview or share link. The Sites panel shows your sites, deployments, logs and usage.",
+    "en": "Publish new or throwaway web projects to Nekode Sites for a quick preview or share link. The Sites panel shows your sites, deployments, logs and usage.",
     "zh-CN": "把新项目或临时项目发布成站点，快速得到预览或分享链接；在部署面板查看站点、部署记录、日志和用量。"
   },
   "author": {
@@ -16,7 +16,7 @@
     "sites": {
       "type": "stdio",
       "command": "node",
-      "args": ["${ZCODE_PLUGIN_ROOT}/dist/server.mjs"],
+      "args": ["${NEKODE_PLUGIN_ROOT}/dist/server.mjs"],
       "auth": {
         "type": "zcode_official",
         "provider": "jwt_token"

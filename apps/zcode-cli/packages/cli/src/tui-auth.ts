@@ -24,7 +24,7 @@ export async function loginForTui(
     });
   }
 
-  const login = deps.loginZCodeCli ?? (await loadBootstrapModule()).loginZCodeCli;
+  const login = deps.loginNekodeCli ?? (await loadBootstrapModule()).loginNekodeCli;
   return await login({
     abortSignal: options?.abortSignal,
     env,
@@ -85,6 +85,6 @@ export async function logoutForTui(deps: RunDependencies) {
     });
   }
 
-  const logout = deps.logoutZCodeCli ?? (await loadBootstrapModule()).logoutZCodeCli;
+  const logout = deps.logoutNekodeCli ?? (await loadBootstrapModule()).logoutNekodeCli;
   return await logout({ env });
 }

@@ -71,7 +71,7 @@ export function createHighspeedHttpTransport(options: {
     // 而 HighspeedCardService.inFlightDraw 只在该 Promise settle 的 finally 里释放——后续所有发送都
     // 复用这个死 Promise、各等 1s 再降级，整个应用生命周期内不再发起新 draw、next_draw_at 也无法更新。
     // 这里给请求一个有界生命期，超时后 abort → reject 让 finally 得以执行；deadline 同时覆盖响应体
-    // 读取，服务端在 headers 之后停滞同样会被终止（与 bots/providers/providerRequest.ts 同一做法）。
+    // 读取，服务端在 headers 之后停滞同样会被终止。
     const controller = new AbortController();
     const deadline = setTimeout(() => {
       controller.abort(

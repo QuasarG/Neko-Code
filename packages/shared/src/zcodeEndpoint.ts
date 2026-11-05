@@ -1,7 +1,7 @@
-import type { ZCodeEnv } from "./env.js";
+import type { NekodeEnv } from "./env.js";
 
-export const DEFAULT_ZCODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
-export const TEST_ZCODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
+export const DEFAULT_NEKODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
+export const TEST_NEKODE_ENDPOINT_ORIGIN = "https://zcode.z.ai";
 export const CODING_PLAN_LOCAL_WEBVIEW_ORIGIN = "http://localhost:3000";
 export const DEFAULT_BIGMODEL_API_ORIGIN = "https://bigmodel.cn";
 export const TEST_BIGMODEL_API_ORIGIN = "https://bigmodel.cn";
@@ -14,7 +14,7 @@ export const TEST_ZAI_OAUTH_CLIENT_ID = "client_P8X5CMWmlaRO9gyO-KSqtg";
 export const DEFAULT_WEB_REMOTE_CONTROL_RELAY_WS_URL = "wss://zcode.z.ai/api/v1/remote/ws2";
 export const WEB_REMOTE_CONTROL_V4_MIN_APP_VERSION = "3.4.0";
 
-export interface BuildZCodeEndpointUrlsOptions {
+export interface BuildNekodeEndpointUrlsOptions {
   appVersion?: string;
 }
 
@@ -60,7 +60,7 @@ function isWebRemoteControlV4AppVersion(appVersion: string | undefined): boolean
   return prereleaseIdentifiers === undefined;
 }
 
-export interface ZCodeEndpointUrls {
+export interface NekodeEndpointUrls {
   origin: string;
   apiBaseUrl: string;
   remoteUrl: string;
@@ -73,18 +73,18 @@ export interface ZCodeEndpointUrls {
   zcodePlanBillingBalanceUrl: string;
 }
 
-export interface RuntimeZCodeEndpointEnv {
+export interface RuntimeNekodeEndpointEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
-  ZCODE_BASE_URL?: string;
-  ZCODE_ENDPOINT_ORIGIN?: string;
-  ZCODE_TEST_BASE_URL?: string;
-  ZCODE_PRODUCTION_BASE_URL?: string;
+  NEKODE_ENV?: string;
+  NEKODE_BASE_URL?: string;
+  NEKODE_ENDPOINT_ORIGIN?: string;
+  NEKODE_TEST_BASE_URL?: string;
+  NEKODE_PRODUCTION_BASE_URL?: string;
 }
 
 export interface RuntimeBigModelApiEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
+  NEKODE_ENV?: string;
   BIGMODEL_API_BASE_URL?: string;
   BIGMODEL_TEST_API_BASE_URL?: string;
   BIGMODEL_PRODUCTION_API_BASE_URL?: string;
@@ -92,7 +92,7 @@ export interface RuntimeBigModelApiEnv {
 
 export interface RuntimeZaiEndpointEnv {
   [key: string]: string | undefined;
-  ZCODE_ENV?: string;
+  NEKODE_ENV?: string;
   ZAI_OAUTH_ORIGIN?: string;
   ZAI_TEST_OAUTH_ORIGIN?: string;
   ZAI_PRODUCTION_OAUTH_ORIGIN?: string;
@@ -106,12 +106,12 @@ export interface RuntimeZaiEndpointEnv {
 }
 
 export interface RuntimeProductEndpointEnv
-  extends RuntimeZCodeEndpointEnv, RuntimeBigModelApiEnv, RuntimeZaiEndpointEnv {}
+  extends RuntimeNekodeEndpointEnv, RuntimeBigModelApiEnv, RuntimeZaiEndpointEnv {}
 
 export interface RuntimeProductEndpointConfig {
-  zcodeEnv: ZCodeEnv;
+  zcodeEnv: NekodeEnv;
   zcodeEndpointOrigin: string;
-  zcodeEndpointUrls: ZCodeEndpointUrls;
+  zcodeEndpointUrls: NekodeEndpointUrls;
   zaiOAuthOrigin: string;
   zaiBusinessBaseUrl: string;
   zaiOAuthClientId: string;
@@ -126,24 +126,24 @@ function readRuntimeEnvValue(
   return value ? value : undefined;
 }
 
-function readRuntimeZCodeEnvScopedValue(
+function readRuntimeNekodeEnvScopedValue(
   env: Record<string, string | undefined>,
-  zcodeEnv: ZCodeEnv,
+  zcodeEnv: NekodeEnv,
   testKey: string,
   productionKey: string,
 ): string | undefined {
   return readRuntimeEnvValue(env, zcodeEnv === "production" ? productionKey : testKey);
 }
 
-export function normalizeZCodeEndpointOrigin(value: string): string {
+export function normalizeNekodeEndpointOrigin(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) {
-    throw new Error("ZCode endpoint origin is empty");
+    throw new Error("Nekode endpoint origin is empty");
   }
 
   const parsed = new URL(trimmed);
   if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
-    throw new Error("ZCode endpoint origin must use http or https");
+    throw new Error("Nekode endpoint origin must use http or https");
   }
   return parsed.origin;
 }
@@ -160,10 +160,10 @@ export function isTrustedCodingPlanWebviewOrigin(
 ): boolean {
   if (!value) return false;
   try {
-    const origin = normalizeZCodeEndpointOrigin(value);
+    const origin = normalizeNekodeEndpointOrigin(value);
     if (
-      origin === DEFAULT_ZCODE_ENDPOINT_ORIGIN ||
-      origin === TEST_ZCODE_ENDPOINT_ORIGIN ||
+      origin === DEFAULT_NEKODE_ENDPOINT_ORIGIN ||
+      origin === TEST_NEKODE_ENDPOINT_ORIGIN ||
       origin === CODING_PLAN_LOCAL_WEBVIEW_ORIGIN
     ) {
       return true;
@@ -175,8 +175,8 @@ export function isTrustedCodingPlanWebviewOrigin(
   }
 }
 
-export function resolveZCodeEndpointOrigin(options?: {
-  env?: ZCodeEnv;
+export function resolveNekodeEndpointOrigin(options?: {
+  env?: NekodeEnv;
   envBaseOrigin?: string | null;
   overrideOrigin?: string | null;
 }): string {
@@ -184,52 +184,52 @@ export function resolveZCodeEndpointOrigin(options?: {
   const envBaseOrigin = options?.envBaseOrigin?.trim();
   if (env === "production") {
     return envBaseOrigin
-      ? normalizeZCodeEndpointOrigin(envBaseOrigin)
-      : DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+      ? normalizeNekodeEndpointOrigin(envBaseOrigin)
+      : DEFAULT_NEKODE_ENDPOINT_ORIGIN;
   }
 
   const overrideOrigin = options?.overrideOrigin?.trim();
   if (overrideOrigin) {
-    return normalizeZCodeEndpointOrigin(overrideOrigin);
+    return normalizeNekodeEndpointOrigin(overrideOrigin);
   }
 
-  return envBaseOrigin ? normalizeZCodeEndpointOrigin(envBaseOrigin) : TEST_ZCODE_ENDPOINT_ORIGIN;
+  return envBaseOrigin ? normalizeNekodeEndpointOrigin(envBaseOrigin) : TEST_NEKODE_ENDPOINT_ORIGIN;
 }
 
-export function resolveRuntimeZCodeEnv(env: RuntimeZCodeEndpointEnv = {}): ZCodeEnv {
-  // 独立 CLI / 服务测试未注入 ZCODE_ENV 时默认生产域；桌面测试包会显式下发 ZCODE_ENV=test。
-  return env.ZCODE_ENV?.trim().toLowerCase() === "test" ? "test" : "production";
+export function resolveRuntimeNekodeEnv(env: RuntimeNekodeEndpointEnv = {}): NekodeEnv {
+  // 独立 CLI / 服务测试未注入 NEKODE_ENV 时默认生产域；桌面测试包会显式下发 NEKODE_ENV=test。
+  return env.NEKODE_ENV?.trim().toLowerCase() === "test" ? "test" : "production";
 }
 
-export function resolveRuntimeZCodeEndpointOrigin(
-  env: RuntimeZCodeEndpointEnv = {},
+export function resolveRuntimeNekodeEndpointOrigin(
+  env: RuntimeNekodeEndpointEnv = {},
   options?: { overrideOrigin?: string | null },
 ): string {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
   const scopedBaseOrigin =
     zcodeEnv === "production"
-      ? readRuntimeEnvValue(env, "ZCODE_PRODUCTION_BASE_URL")
-      : readRuntimeEnvValue(env, "ZCODE_TEST_BASE_URL");
+      ? readRuntimeEnvValue(env, "NEKODE_PRODUCTION_BASE_URL")
+      : readRuntimeEnvValue(env, "NEKODE_TEST_BASE_URL");
 
-  return resolveZCodeEndpointOrigin({
+  return resolveNekodeEndpointOrigin({
     env: zcodeEnv,
     envBaseOrigin:
-      readRuntimeEnvValue(env, "ZCODE_BASE_URL") ??
-      readRuntimeEnvValue(env, "ZCODE_ENDPOINT_ORIGIN") ??
+      readRuntimeEnvValue(env, "NEKODE_BASE_URL") ??
+      readRuntimeEnvValue(env, "NEKODE_ENDPOINT_ORIGIN") ??
       scopedBaseOrigin,
     overrideOrigin: options?.overrideOrigin,
   });
 }
 
-export function buildRuntimeZCodeEndpointUrls(
-  env: RuntimeZCodeEndpointEnv = {},
-): ZCodeEndpointUrls {
-  return buildZCodeEndpointUrls(resolveRuntimeZCodeEndpointOrigin(env));
+export function buildRuntimeNekodeEndpointUrls(
+  env: RuntimeNekodeEndpointEnv = {},
+): NekodeEndpointUrls {
+  return buildNekodeEndpointUrls(resolveRuntimeNekodeEndpointOrigin(env));
 }
 
-export function buildRuntimeZCodeApiUrl(env: RuntimeZCodeEndpointEnv = {}, path: string): string {
+export function buildRuntimeNekodeApiUrl(env: RuntimeNekodeEndpointEnv = {}, path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${resolveRuntimeZCodeEndpointOrigin(env)}${normalizedPath}`;
+  return `${resolveRuntimeNekodeEndpointOrigin(env)}${normalizedPath}`;
 }
 
 export function resolveWebRemoteControlRelayWsUrl(options?: {
@@ -242,7 +242,7 @@ export function resolveWebRemoteControlRelayWsUrl(options?: {
   }
 
   const origin = new URL(
-    normalizeZCodeEndpointOrigin(options?.endpointOrigin?.trim() || DEFAULT_ZCODE_ENDPOINT_ORIGIN),
+    normalizeNekodeEndpointOrigin(options?.endpointOrigin?.trim() || DEFAULT_NEKODE_ENDPOINT_ORIGIN),
   );
   origin.protocol = origin.protocol === "https:" ? "wss:" : "ws:";
   origin.pathname = "/api/v1/remote/ws2";
@@ -250,7 +250,7 @@ export function resolveWebRemoteControlRelayWsUrl(options?: {
 }
 
 export function resolveBigModelApiOrigin(env: RuntimeBigModelApiEnv = {}): string {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
   const scopedBaseOrigin =
     zcodeEnv === "production"
       ? readRuntimeEnvValue(env, "BIGMODEL_PRODUCTION_API_BASE_URL")
@@ -258,7 +258,7 @@ export function resolveBigModelApiOrigin(env: RuntimeBigModelApiEnv = {}): strin
   const fallbackOrigin =
     zcodeEnv === "production" ? DEFAULT_BIGMODEL_API_ORIGIN : TEST_BIGMODEL_API_ORIGIN;
 
-  return normalizeZCodeEndpointOrigin(
+  return normalizeNekodeEndpointOrigin(
     readRuntimeEnvValue(env, "BIGMODEL_API_BASE_URL") ?? scopedBaseOrigin ?? fallbackOrigin,
   );
 }
@@ -269,7 +269,7 @@ export function buildBigModelApiUrl(env: RuntimeBigModelApiEnv = {}, path: strin
 }
 
 export function buildBigModelCodingPlanPersonalManageUrl(env: RuntimeBigModelApiEnv = {}): string {
-  // 修复原因：BigModel Coding Plan 管理页要跟随 ZCODE_ENV；
+  // 修复原因：BigModel Coding Plan 管理页要跟随 NEKODE_ENV；
   // 测试环境如果继续写死 bigmodel.cn，会把测试账号带到生产套餐页。
   return buildBigModelApiUrl(env, "/coding-plan/personal/overview");
 }
@@ -279,8 +279,8 @@ export function buildBigModelCodingPlanTeamManageUrl(env: RuntimeBigModelApiEnv 
 }
 
 export function resolveZaiOAuthOrigin(env: RuntimeZaiEndpointEnv = {}): string {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
-  const scopedOrigin = readRuntimeZCodeEnvScopedValue(
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
+  const scopedOrigin = readRuntimeNekodeEnvScopedValue(
     env,
     zcodeEnv,
     "ZAI_TEST_OAUTH_ORIGIN",
@@ -289,14 +289,14 @@ export function resolveZaiOAuthOrigin(env: RuntimeZaiEndpointEnv = {}): string {
   const fallbackOrigin =
     zcodeEnv === "production" ? DEFAULT_ZAI_OAUTH_ORIGIN : TEST_ZAI_OAUTH_ORIGIN;
 
-  return normalizeZCodeEndpointOrigin(
+  return normalizeNekodeEndpointOrigin(
     readRuntimeEnvValue(env, "ZAI_OAUTH_ORIGIN") ?? scopedOrigin ?? fallbackOrigin,
   );
 }
 
 export function resolveZaiBusinessBaseUrl(env: RuntimeZaiEndpointEnv = {}): string {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
-  const scopedOrigin = readRuntimeZCodeEnvScopedValue(
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
+  const scopedOrigin = readRuntimeNekodeEnvScopedValue(
     env,
     zcodeEnv,
     "ZAI_TEST_BUSINESS_BASE_URL",
@@ -305,14 +305,14 @@ export function resolveZaiBusinessBaseUrl(env: RuntimeZaiEndpointEnv = {}): stri
   const fallbackOrigin =
     zcodeEnv === "production" ? DEFAULT_ZAI_BUSINESS_BASE_URL : TEST_ZAI_BUSINESS_BASE_URL;
 
-  return normalizeZCodeEndpointOrigin(
+  return normalizeNekodeEndpointOrigin(
     readRuntimeEnvValue(env, "ZAI_BUSINESS_BASE_URL") ?? scopedOrigin ?? fallbackOrigin,
   );
 }
 
 export function resolveZaiOAuthClientId(env: RuntimeZaiEndpointEnv = {}): string {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
-  const scopedClientId = readRuntimeZCodeEnvScopedValue(
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
+  const scopedClientId = readRuntimeNekodeEnvScopedValue(
     env,
     zcodeEnv,
     "ZAI_TEST_OAUTH_CLIENT_ID",
@@ -331,7 +331,7 @@ export function resolveZaiOAuthClientId(env: RuntimeZaiEndpointEnv = {}): string
 
 export function buildZaiOAuthUrl(origin: string, path: string): string {
   const normalizedPath = path.startsWith("/") ? path : `/${path}`;
-  return `${normalizeZCodeEndpointOrigin(origin)}${normalizedPath}`;
+  return `${normalizeNekodeEndpointOrigin(origin)}${normalizedPath}`;
 }
 
 export function buildRuntimeZaiOAuthUrl(env: RuntimeZaiEndpointEnv = {}, path: string): string {
@@ -346,13 +346,13 @@ export function buildRuntimeZaiBusinessUrl(env: RuntimeZaiEndpointEnv = {}, path
 export function resolveRuntimeProductEndpointConfig(
   env: RuntimeProductEndpointEnv = {},
 ): RuntimeProductEndpointConfig {
-  const zcodeEnv = resolveRuntimeZCodeEnv(env);
-  const zcodeEndpointOrigin = resolveRuntimeZCodeEndpointOrigin(env);
+  const zcodeEnv = resolveRuntimeNekodeEnv(env);
+  const zcodeEndpointOrigin = resolveRuntimeNekodeEndpointOrigin(env);
 
   return {
     zcodeEnv,
     zcodeEndpointOrigin,
-    zcodeEndpointUrls: buildZCodeEndpointUrls(zcodeEndpointOrigin),
+    zcodeEndpointUrls: buildNekodeEndpointUrls(zcodeEndpointOrigin),
     zaiOAuthOrigin: resolveZaiOAuthOrigin(env),
     zaiBusinessBaseUrl: resolveZaiBusinessBaseUrl(env),
     zaiOAuthClientId: resolveZaiOAuthClientId(env),
@@ -360,11 +360,11 @@ export function resolveRuntimeProductEndpointConfig(
   };
 }
 
-export function buildZCodeEndpointUrls(
+export function buildNekodeEndpointUrls(
   origin: string,
-  options: BuildZCodeEndpointUrlsOptions = {},
-): ZCodeEndpointUrls {
-  const normalizedOrigin = normalizeZCodeEndpointOrigin(origin);
+  options: BuildNekodeEndpointUrlsOptions = {},
+): NekodeEndpointUrls {
+  const normalizedOrigin = normalizeNekodeEndpointOrigin(origin);
   const parsed = new URL(normalizedOrigin);
   const wsProtocol = parsed.protocol === "https:" ? "wss:" : "ws:";
   const wsOrigin = `${wsProtocol}//${parsed.host}`;
@@ -385,7 +385,7 @@ export function buildZCodeEndpointUrls(
   };
 }
 
-export function rewriteZCodeEndpointUrl(input: string | URL, endpointOrigin: string): string | URL {
+export function rewriteNekodeEndpointUrl(input: string | URL, endpointOrigin: string): string | URL {
   const originalUrl = typeof input === "string" ? input : input.toString();
   let parsed: URL;
   try {
@@ -393,12 +393,12 @@ export function rewriteZCodeEndpointUrl(input: string | URL, endpointOrigin: str
   } catch {
     return input;
   }
-  const sourceOrigin = DEFAULT_ZCODE_ENDPOINT_ORIGIN;
+  const sourceOrigin = DEFAULT_NEKODE_ENDPOINT_ORIGIN;
   if (parsed.origin !== sourceOrigin) {
     return input;
   }
 
-  const targetOrigin = normalizeZCodeEndpointOrigin(endpointOrigin);
+  const targetOrigin = normalizeNekodeEndpointOrigin(endpointOrigin);
   if (targetOrigin === sourceOrigin) {
     return input;
   }

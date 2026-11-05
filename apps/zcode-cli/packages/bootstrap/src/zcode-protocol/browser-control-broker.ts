@@ -8,8 +8,8 @@ import {
 import {
   protocolTraceFromTraceContext,
   requireSession,
-  type ZCodeProtocolAgentServerContext,
-  type ZCodeProtocolClientRequestOptions,
+  type NekodeProtocolAgentServerContext,
+  type NekodeProtocolClientRequestOptions,
 } from "./server-types.js";
 
 /**
@@ -42,11 +42,11 @@ interface ProtocolBrowserBrokerState {
 }
 
 const brokerStateByContext = new WeakMap<
-  ZCodeProtocolAgentServerContext,
+  NekodeProtocolAgentServerContext,
   ProtocolBrowserBrokerState
 >();
 
-function brokerState(context: ZCodeProtocolAgentServerContext): ProtocolBrowserBrokerState {
+function brokerState(context: NekodeProtocolAgentServerContext): ProtocolBrowserBrokerState {
   let state = brokerStateByContext.get(context);
   if (!state) {
     state = {
@@ -64,11 +64,11 @@ function brokerState(context: ZCodeProtocolAgentServerContext): ProtocolBrowserB
  * ProtocolBrowserControlBroker —— agent 侧 BrowserControlPort 实现。
  *
  * browser-client 的 agent.browsers.* 每个调用经此把一条 BrowserCommand 变成
- * ZCode Protocol 的 interaction/browserExecute 反向请求，由 app（host→main webview/CDP）
- * 执行并返回结果。与 permission broker 并列注入（server-operations 的 createWorkspaceZCodeApp options）。
+ * Nekode Protocol 的 interaction/browserExecute 反向请求，由 app（host→main webview/CDP）
+ * 执行并返回结果。与 permission broker 并列注入（server-operations 的 createWorkspaceNekodeApp options）。
  */
 export function createProtocolBrowserControlBroker(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
 ): BrowserControlPort {
   const state = brokerState(context);
   const { connectionsBySession, childSessionParents } = state;
@@ -323,7 +323,7 @@ export function createProtocolBrowserControlBroker(
 }
 
 function buildBrowserRequestContext(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   state: ProtocolBrowserBrokerState,
   input: {
     sessionId: string;
@@ -365,7 +365,7 @@ function buildBrowserRequestContext(
 function buildRequestOptions(
   traceContext: TraceContext | undefined,
   signal: AbortSignal | undefined,
-): ZCodeProtocolClientRequestOptions {
+): NekodeProtocolClientRequestOptions {
   return {
     ...(signal ? { signal } : {}),
     ...(traceContext ? { trace: protocolTraceFromTraceContext(traceContext) } : {}),

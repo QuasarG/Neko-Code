@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { ZCodeProvider } from "@zcode/shared";
+import type { NekodeProvider } from "@zcode/shared";
 import { logger } from "@/logger.js";
 import { shouldEnableWorkspaceRpc } from "@/lib/workspaceRpcAvailability.js";
-import { useZCodeTaskService } from "@/hooks/useZCodeTaskService.js";
+import { useNekodeTaskService } from "@/hooks/useNekodeTaskService.js";
 import { useRemoteWorkspaceSessionStore } from "@/store/remoteWorkspaceSessionStore.js";
 import { useResolvedRemoteWorkspaceSessionId } from "@/hooks/useResolvedRemoteWorkspaceSessionId.js";
-import type { IZCodeTaskService } from "@zcode/services";
+import type { INekodeTaskService } from "@zcode/services";
 
 interface WorkspaceProviderConfigFileState {
   path: string | null;
@@ -38,28 +38,28 @@ const INITIAL_STATE: WorkspaceProviderConfigFileState = {
 
 type WorkspaceProviderConfigServiceScope = "workspace" | "base";
 
-export function resolveWorkspaceProviderConfigZCodeService(params: {
+export function resolveWorkspaceProviderConfigNekodeService(params: {
   configuredServiceScope: WorkspaceProviderConfigServiceScope;
-  workspaceZCodeService: IZCodeTaskService;
-  baseZCodeService: IZCodeTaskService | null;
+  workspaceNekodeService: INekodeTaskService;
+  baseNekodeService: INekodeTaskService | null;
   remoteSessionId: string | null;
-}): IZCodeTaskService | null {
+}): INekodeTaskService | null {
   if (params.configuredServiceScope === "workspace") {
-    return params.workspaceZCodeService;
+    return params.workspaceNekodeService;
   }
 
-  if (params.baseZCodeService) {
-    return params.baseZCodeService;
+  if (params.baseNekodeService) {
+    return params.baseNekodeService;
   }
 
-  // Bugfix: 远程 workspace 下如果误回退到 workspaceZCodeService，
+  // Bugfix: 远程 workspace 下如果误回退到 workspaceNekodeService，
   // “前往配置”会读到远端绝对路径（如 /root/...），本机无法正确打开。
-  // 这里在远程会话里严格要求 baseZCodeService，就绪前先等待，不再冒险走错误 fallback。
+  // 这里在远程会话里严格要求 baseNekodeService，就绪前先等待，不再冒险走错误 fallback。
   if (params.remoteSessionId) {
     return null;
   }
 
-  return params.workspaceZCodeService;
+  return params.workspaceNekodeService;
 }
 
 /**
@@ -69,7 +69,7 @@ export function resolveWorkspaceProviderConfigZCodeService(params: {
  */
 export function useWorkspaceProviderConfigFile(
   workspacePath: string,
-  provider: ZCodeProvider,
+  provider: NekodeProvider,
   preferredRemoteSessionId?: string | null,
   workspaceIdentity?: string,
   options?: {
@@ -77,7 +77,7 @@ export function useWorkspaceProviderConfigFile(
     enabled?: boolean;
   },
 ) {
-  const workspaceZCodeService = useZCodeTaskService(
+  const workspaceNekodeService = useNekodeTaskService(
     workspacePath,
     preferredRemoteSessionId,
     workspaceIdentity,
@@ -89,23 +89,23 @@ export function useWorkspaceProviderConfigFile(
     preferredRemoteSessionId,
     workspaceIdentity,
   );
-  const baseZCodeService = useRemoteWorkspaceSessionStore(
+  const baseNekodeService = useRemoteWorkspaceSessionStore(
     (state) => state.baseServices?.zcodeTaskService ?? null,
   );
   const workspaceRpcEnabled = shouldEnableWorkspaceRpc({
     workspaceIdentity,
     remoteSessionId,
   });
-  const zcodeTaskService = resolveWorkspaceProviderConfigZCodeService({
+  const zcodeTaskService = resolveWorkspaceProviderConfigNekodeService({
     configuredServiceScope,
-    workspaceZCodeService,
-    baseZCodeService,
+    workspaceNekodeService,
+    baseNekodeService,
     remoteSessionId,
   });
   const zcodeServiceScope =
     configuredServiceScope === "base"
       ? "base"
-      : remoteSessionId && workspaceZCodeService !== baseZCodeService
+      : remoteSessionId && workspaceNekodeService !== baseNekodeService
         ? "remote"
         : "base";
   const [state, setState] =
@@ -123,7 +123,7 @@ export function useWorkspaceProviderConfigFile(
     if (!workspacePath || !enabled || !workspaceRpcEnabled) {
       requestVersionRef.current += 1;
       // Bugfix: 恢复断连远端 workspace 时，provider 配置路径读取不能抢在 remote session
-      // 绑定前访问断连代理，否则会把 ZCODE_REMOTE_WORKSPACE_DISCONNECTED 记录成配置读取失败。
+      // 绑定前访问断连代理，否则会把 NEKODE_REMOTE_WORKSPACE_DISCONNECTED 记录成配置读取失败。
       setState({
         path: null,
         exists: false,

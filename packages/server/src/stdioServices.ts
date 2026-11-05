@@ -1,17 +1,17 @@
-import { createLocalServices, type ZCodeAgentCommandResolver } from "@zcode/services/node";
+import { createLocalServices, type NekodeAgentCommandResolver } from "@zcode/services/node";
 import type { IChannel } from "@zcode/rpc";
 import {
   parseServiceAuthorityMode,
-  ZCODE_REMOTE_HTTP_PROXY_ENV_KEY,
-  ZCODE_REMOTE_NO_PROXY_ENV_KEY,
-  ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
+  NEKODE_REMOTE_HTTP_PROXY_ENV_KEY,
+  NEKODE_REMOTE_NO_PROXY_ENV_KEY,
+  NEKODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY,
 } from "@zcode/shared";
 
 export interface CreateStdioServicesOptions {
   topicResourceRelayChannel?: () => IChannel;
   env?: Record<string, string | undefined>;
   zcodeBuiltinProviderConfigFilePath: string;
-  zcodeAgentCommandResolver?: ZCodeAgentCommandResolver;
+  zcodeAgentCommandResolver?: NekodeAgentCommandResolver;
 }
 
 export interface RemoteAgentNetworkOptions {
@@ -22,12 +22,12 @@ export interface RemoteAgentNetworkOptions {
 export function resolveRemoteAgentNetworkFromEnv(
   env: Record<string, string | undefined>,
 ): RemoteAgentNetworkOptions | undefined {
-  if (env[ZCODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY]?.trim() !== "1") {
+  if (env[NEKODE_REMOTE_RUNTIME_NETWORK_AUTHORITY_ENV_KEY]?.trim() !== "1") {
     return undefined;
   }
   return {
-    httpProxy: env[ZCODE_REMOTE_HTTP_PROXY_ENV_KEY]?.trim() || undefined,
-    noProxy: env[ZCODE_REMOTE_NO_PROXY_ENV_KEY]?.trim() || undefined,
+    httpProxy: env[NEKODE_REMOTE_HTTP_PROXY_ENV_KEY]?.trim() || undefined,
+    noProxy: env[NEKODE_REMOTE_NO_PROXY_ENV_KEY]?.trim() || undefined,
   };
 }
 

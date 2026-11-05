@@ -196,6 +196,8 @@ const TRANSCRIPT_DERIVED_EVENT_TYPES = new Set<string>([
   SessionEventType.SubagentSpawned,
   SessionEventType.SubagentMessage,
   SessionEventType.SubagentStopped,
+  // 记忆注入行由 transcript 的隐藏提醒重新合成；durable 事件与合成事件只保留一份。
+  SessionEventType.ContextInjected,
 ]);
 
 const HOOK_LIFECYCLE_EVENT_TYPES = new Set<string>([

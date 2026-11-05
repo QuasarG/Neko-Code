@@ -8,13 +8,13 @@ import {
 /* eslint-disable max-lines -- Hooks 页面聚合 Scope、插件投影、搜索与配置写入流程。 */
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { Plus } from "lucide-react";
-import type { Hook, HookConfig, ZCodeInstalledPluginSummary, ZCodePluginInfo } from "@zcode/shared";
+import type { Hook, HookConfig, NekodeInstalledPluginSummary, NekodePluginInfo } from "@zcode/shared";
 import type { IHooksService } from "@zcode/services";
 import { Button } from "@/components/ui/button.js";
 import { toast } from "@/components/ui/toast.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useConfigWorkspaceServicesResolution as useWorkspaceServicesResolution } from "@/workspace-config-catalog/index.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { invalidateDeferredDraftSessionForRuntimeChange } from "@/lib/zcodeDraftSkillInvalidation.js";
 import { useHooksStore } from "@/store/hooksStore.js";
 import { usePluginManagementStore } from "@/store/pluginManagementStore.js";
@@ -52,12 +52,12 @@ function isEditableHook(hook: Hook): boolean {
 // 里的只读工作区 Hook」。它们不是外部格式兼容导入源，塞进 Legacy 会让 Import 按钮
 // 必然失败（importHook 拒绝 source=zcode），也违反「只读但可逐条 Trust」的约定。
 // 这类行应留在 Installed 分组，由信任状态门控 Switch，走行内 Trust 流程。
-export function isReadOnlyZCodeHook(hook: Hook): boolean {
+export function isReadOnlyNekodeHook(hook: Hook): boolean {
   return hook.editable === false && (hook.location?.source ?? "zcode") === "zcode";
 }
 
 function isInCompatibilitySection(hook: Hook): boolean {
-  return !isEditableHook(hook) && !isReadOnlyZCodeHook(hook);
+  return !isEditableHook(hook) && !isReadOnlyNekodeHook(hook);
 }
 
 /**
@@ -126,8 +126,8 @@ export function resolveHookScopeTarget(
 }
 
 export function buildPluginHookRows(
-  plugins: readonly Pick<ZCodePluginInfo, "enabled" | "hookDetails" | "id" | "name">[],
-  installedPlugins: readonly Pick<ZCodeInstalledPluginSummary, "id" | "scope">[],
+  plugins: readonly Pick<NekodePluginInfo, "enabled" | "hookDetails" | "id" | "name">[],
+  installedPlugins: readonly Pick<NekodeInstalledPluginSummary, "id" | "scope">[],
   scopeMetadataKnown: boolean,
 ): PluginHookRow[] {
   const scopeByPluginId = new Map(
@@ -157,7 +157,7 @@ export function filterPluginHooksByScope(
 }
 
 export function HooksSection({ workspacePath, workspaceIdentity }: HooksSectionProps) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const confirmDialog = useConfirmDialog();
   const hooksState = useHooksStore();
   const plugins = usePluginManagementStore((state) => state.plugins);
@@ -221,7 +221,7 @@ export function HooksSection({ workspacePath, workspaceIdentity }: HooksSectionP
   const hooksService = useMemo<IHooksService>(() => {
     if (activeScope !== "user") return targetHooksService;
     // Bug 原因：User scope 需要一个路径作 RPC 锚点（本机项目或设备 home），但该路径不是 project。
-    // 强制 user-only 合同，避免把锚点误当 workspace 并覆盖其 .zcode/config.json。
+    // 强制 user-only 合同，避免把锚点误当 workspace 并覆盖其 .nekode/config.json。
     return {
       loadHooks: (params) => targetHooksService.loadHooks({ ...params, scope: "user" }),
       saveHooks: (params) => targetHooksService.saveHooks({ ...params, scope: "user" }),
@@ -250,7 +250,7 @@ export function HooksSection({ workspacePath, workspaceIdentity }: HooksSectionP
     () =>
       hooksState.hooks.filter(
         (hook) =>
-          (isEditableHook(hook) || isReadOnlyZCodeHook(hook)) &&
+          (isEditableHook(hook) || isReadOnlyNekodeHook(hook)) &&
           (hook.location?.scope ?? "user") === activeScope,
       ),
     [activeScope, hooksState.hooks],

@@ -1,8 +1,6 @@
 import { getLocalTtftObserver } from "@/v4/telemetry/local-ttft/contract.js";
 import { GenUiMessageResponse } from "@/gen-ui/index.js";
 import { ConversationUserInputBubble } from "@/v4/ConversationUserInputBubble.js";
-import { expandTopicInputMessages } from "@/v4/topicInputMessages.js";
-import { ConnectedBotGroupDeliveryAction } from "@/v4/BotGroupDeliveryAction.js";
 /* oxlint-disable eslint(max-lines) -- v4 逐行 row 渲染分发集中收口（每种 row 一个 memo 叶子 + timelineMarker 分隔线），拆分会打散行类型对照。 */
 import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import {
@@ -17,6 +15,7 @@ import {
 } from "react";
 import {
   ArchiveIcon,
+  BracesIcon,
   ArrowRightLeftIcon,
   CheckIcon,
   Clock,
@@ -31,6 +30,7 @@ import {
   TrendingUpDownIcon,
   XIcon,
 } from "lucide-react";
+import { useInjectionPanelStore } from "@/v4/injectionPanelStore.js";
 import { parseAutomationRunId } from "@zcode/shared";
 import {
   TID_V4_EDIT,
@@ -100,7 +100,7 @@ import {
 } from "@/ToolCallBlocks/renderers/createWorkflowHoleInput.js";
 import { ToolCallBlock } from "@/ToolCallBlocks.js";
 import { resolveWorkflowRunOpenToolCallId } from "@/v4/workflowRunCardJoin.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
 import { runUserAction, runUserActionAsync } from "@/lib/userActionTelemetry.js";
@@ -136,8 +136,11 @@ import { ConversationSelectionReferenceChip } from "@/v4/composer/ConversationSe
 import { PptxElementReferenceChip } from "@/v4/composer/PptxElementReferenceChip.js";
 import { useOpenPptxElementReference } from "@/v4/composer/useOpenPptxElementReference.js";
 import { ConversationFileRewindDialog } from "@/v4/ConversationFileRewindDialog.js";
-import { BotGroupSourceLabel } from "@/v4/BotGroupSourceLabel.js";
-import { splitUserInputEpilogue } from "@/v4/ConversationUserInputEpilogue.js";
+import {
+  ConversationUserInputEpilogue,
+  splitUserInputEpilogue,
+  splitUserInputInjectionEpilogue,
+} from "@/v4/ConversationUserInputEpilogue.js";
 import { ConversationHookDetailsAction } from "@/v4/ConversationHookDetailsAction.js";
 import { formatModelChangeLabel } from "@/v4/composer/modelTriggerDisplay.js";
 import { formatMessageTimeLabel } from "@/v4/messageTimeLabel.js";
@@ -322,7 +325,7 @@ const UserInputAttachmentList = memo(function UserInputAttachmentList({
   readAttachment?: NonNullable<ConversationRowRenderContext["readAttachment"]>;
   readAttachmentRange?: NonNullable<ConversationRowRenderContext["readAttachmentRange"]>;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const [previewIndex, setPreviewIndex] = useState(0);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [failedRefs, setFailedRefs] = useState<ReadonlySet<string>>(() => new Set());
@@ -927,6 +930,14 @@ const UserInputAttachmentList = memo(function UserInputAttachmentList({
   );
 });
 
+/** 旧会话注入块的条数：顶层标签数，至少算一条。 */
+function countInjectionBlocks(text: string): number {
+  const count = text.match(
+    /<(?:message_time|runtime_activity|runtime_memory|checkpoint|memory_hint|scratch_pending)(?:\s|>)/gu,
+  )?.length;
+  return Math.max(1, count ?? 0);
+}
+
 const SingleUserInputRowView = memo(function SingleUserInputRowView({
   row,
   context,
@@ -940,10 +951,27 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
   editWorkspaceRewindAvailability?: EditWorkspaceRewindAvailability;
   status?: string;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   // 引擎尾注折叠：正文只到 epilogueStart，
   // 之后的引擎文本折进气泡底部的披露。提示词上下文解析也只看正文——尾注里没有用户引用。
-  const { body: bodyText, epilogue } = splitUserInputEpilogue(row.text, row.epilogueStart);
+  const engineSplit = splitUserInputEpilogue(row.text, row.epilogueStart);
+  // 迁移会话仍把 message_time/runtime_memory 等 Neko 注入块拼在用户正文尾部；
+  // 同一个底部披露把它们也从正文里切出去，不再当普通聊天文本渲染。
+  const injectionSplit = splitUserInputInjectionEpilogue(engineSplit.body);
+  const bodyText = injectionSplit.body;
+  // 迁移会话把 Neko 注入块拼在用户正文尾部；它们和新会话的 contextInjection 走同一个
+  // 气泡按钮入口，不再用正文下方的展开披露。
+  const legacyInjection = injectionSplit.epilogue;
+  const rowInjectionText =
+    [
+      ...(row.contextInjection?.map((item) => item.text) ?? []),
+      ...(legacyInjection ? [legacyInjection] : []),
+    ].join("\n\n") || undefined;
+  const rowInjectionCount =
+    (row.contextInjection?.length ?? 0) +
+    (legacyInjection ? countInjectionBlocks(legacyInjection) : 0);
+  // 气泡底部披露只留给引擎尾注（工作流/子代理），Neko 注入已经上移到操作行。
+  const epilogue = engineSplit.epilogue;
   const parsedPrompt = useMemo(
     () => ({
       ...parseComposerPromptContexts(bodyText, {
@@ -1024,7 +1052,7 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
     codeCommentContexts.length > 0 ||
     webElementContexts.length > 0 ||
     pptxElementReferences.length > 0 ||
-    (!row.botGroupSource && conversationSelections.length > 0);
+    conversationSelections.length > 0;
   // Bug 根因：旧逻辑只接受 schedule runId，导致用户点击「立即运行」产生的 manual run
   // 没有来源标识。两种合法 automation runId 都应展示；普通会话输入仍因解析失败而不展示。
   const isScheduledAutomationPrompt = parseAutomationRunId(row.sourceCommandId ?? "") !== null;
@@ -1307,12 +1335,6 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
           <span>{intl.formatMessage({ id: "chat.message.sentByScheduledTask" })}</span>
         </div>
       ) : null}
-      {row.botGroupSource ? (
-        // 群来源原先插在材料与正文之间，割裂同一输入；统一放在材料之前。
-        <div data-v4-user-input-source="true" className="mb-2 flex min-w-0 max-w-full">
-          <BotGroupSourceLabel source={row.botGroupSource} />
-        </div>
-      ) : null}
 
       {hasAttachmentArea ? (
         <div
@@ -1320,14 +1342,6 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
           data-testid={testId(TID_V4_ROW_ATTACHMENTS, String(row.rowId))}
           className="mb-2 flex max-w-xl flex-col items-end gap-2"
         >
-          {row.botGroupSource && conversationSelections.length > 0 ? (
-            <div data-v4-user-input-quotes="true" className="flex max-w-full justify-end">
-              <ConversationSelectionReferenceChip
-                references={conversationSelections}
-                contentAlign="end"
-              />
-            </div>
-          ) : null}
           {hasMediaAttachments ? (
             <div
               data-v4-user-input-media-attachments="true"
@@ -1371,12 +1385,10 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
                 contentAlign="end"
                 onOpen={context.onOpenCodeViewer ? openPptxElementReference : undefined}
               />
-              {!row.botGroupSource ? (
-                <ConversationSelectionReferenceChip
-                  references={conversationSelections}
-                  contentAlign="end"
-                />
-              ) : null}
+              <ConversationSelectionReferenceChip
+                references={conversationSelections}
+                contentAlign="end"
+              />
               <PluginUiModelContextChip contexts={pluginUiContexts} contentAlign="end" />
             </div>
           ) : null}
@@ -1388,7 +1400,6 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
         // 气泡保留 flex item 的自动宽度；宿主至少 624px 时再以 36rem 封顶并保留 48px 余量。
         <ConversationUserInputBubble
           text={visibleText}
-          contentParts={row.botGroupSource?.contentParts}
           rowId={row.rowId}
           epilogue={epilogue}
           attachments={row.attachments}
@@ -1435,10 +1446,26 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
         )}
       >
         <CopyRowAction
-          text={row.text}
+          text={bodyText}
           rowId={row.rowId}
           label={intl.formatMessage({ id: "chat.message.copy" })}
         />
+        {rowInjectionCount > 0 ? (
+          <MessageAction
+            label={`记忆投递 · ${rowInjectionCount} 条`}
+            tooltip="查看本轮注入内容"
+            onClick={() =>
+              useInjectionPanelStore.getState().show({
+                title: `记忆投递 · ${rowInjectionCount} 条`,
+                text: rowInjectionText ?? "",
+                parentSessionId: context.sessionId ?? "",
+                rowId: String(row.rowId),
+              })
+            }
+          >
+            <BracesIcon aria-hidden="true" className="size-3.5" />
+          </MessageAction>
+        ) : null}
         {onEdit && row.entityId ? (
           <MessageAction
             label={intl.formatMessage({ id: "chat.message.edit" })}
@@ -1457,25 +1484,8 @@ const SingleUserInputRowView = memo(function SingleUserInputRowView({
 const UserInputRowView = memo(function UserInputRowView(
   props: ComponentProps<typeof SingleUserInputRowView>,
 ) {
-  const rows = useMemo(() => expandTopicInputMessages(props.row), [props.row]);
-  if (rows.length === 1) return <SingleUserInputRowView {...props} row={rows[0]!} />;
-  return (
-    <div className="flex min-w-0 flex-col gap-3" data-v4-topic-messages="true">
-      {rows.map((row) => (
-        <div
-          key={row.botGroupSource!.messageId}
-          data-topic-message-id={row.botGroupSource!.messageId}
-        >
-          {/* 多条原文共用一个已接收输入，不能把局部编辑误当作替换整批。 */}
-          <SingleUserInputRowView {...props} row={row} onEdit={undefined} />
-        </div>
-      ))}
-    </div>
-  );
+  return <SingleUserInputRowView {...props} />;
 });
-
-// memo 组件的数组默认值必须是模块级常量：内联 [] 每次渲染都是新引用，会让 memo 比较失效。
-const EMPTY_SOURCE_COMMAND_IDS: readonly string[] = [];
 
 export const ConversationAssistantTextActions = memo(function ConversationAssistantTextActions({
   rowId,
@@ -1487,7 +1497,6 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   hookInvocations,
   sessionId,
   turnId,
-  sourceCommandIds = EMPTY_SOURCE_COMMAND_IDS,
   onFork,
   onFeedbackChange,
   className,
@@ -1501,13 +1510,12 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
   hookInvocations?: readonly HookInvocationRow[];
   sessionId?: string | null;
   turnId?: string;
-  sourceCommandIds?: readonly string[];
   onFork?: (target: ConversationRowTarget) => void;
   onRetry?: (target: ConversationRowTarget) => void;
   onFeedbackChange?: AssistantFeedbackHandler;
   className?: string;
 }) {
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const platform = useOptionalPlatform();
   const [localFeedback, setLocalFeedback] = useState<AssistantMessageFeedback | null>(feedback);
   const copyLabel = intl.formatMessage({ id: "chat.message.copy" });
@@ -1645,9 +1653,6 @@ export const ConversationAssistantTextActions = memo(function ConversationAssist
       {timeLabel ? (
         <span className="select-none text-ui-sm text-foreground-subtlest">{timeLabel}</span>
       ) : null}
-      {turnId ? (
-        <ConnectedBotGroupDeliveryAction turnId={turnId} sourceCommandIds={sourceCommandIds} />
-      ) : null}
     </MessageActions>
   );
 });
@@ -1752,7 +1757,7 @@ const AssistantTextRowView = memo(function AssistantTextRowView({
         <GenUiMessageResponse
           completed={row.state === "complete"}
           messageKey={`${row.rowId}:${row.entityId ?? ""}`}
-          renderZCodeFileCitations
+          renderNekodeFileCitations
           streaming={streaming}
           workspacePath={context.workspacePath}
           workspaceIdentity={context.workspaceIdentity}
@@ -1987,7 +1992,7 @@ const TimelineMarkerRowView = memo(function TimelineMarkerRowView({
   row: TimelineMarkerRow;
   context: ConversationRowRenderContext;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const marker = row.marker;
   const modelSelectionView = context.modelSelectionView ?? null;
@@ -2098,6 +2103,22 @@ const TimelineMarkerRowView = memo(function TimelineMarkerRowView({
     }
     return () => onNavigate(marker.parentSessionId, marker.parentRowId);
   }, [marker, onNavigate]);
+
+  if (marker.type === "contextInjection") {
+    // 记忆注入不是用户输入：只给一枚默认收起的披露块，保留原文供核对。
+    return (
+      <RowShell rowId={row.rowId} className="px-4 py-1">
+        <div
+          data-row-kind="timelineMarker"
+          data-marker-type="contextInjection"
+          data-source={marker.source}
+          data-status="applied"
+        >
+          <ConversationUserInputEpilogue text={marker.text} />
+        </div>
+      </RowShell>
+    );
+  }
 
   if (!view) {
     return null;
@@ -2276,7 +2297,7 @@ const ToolCallRowView = memo(function ToolCallRowView({
           onOpenCodeViewer={context.onOpenCodeViewer}
           onOpenFileLink={context.onOpenFileLink}
           onOpenBrowserUrl={context.onOpenBrowserUrl}
-          onOpenAutomationsMain={context.onOpenAutomationsMain}
+          onOpenWorkflowsMain={context.onOpenWorkflowsMain}
           onOpenPlanDetail={
             context.onOpenPlanDetail && context.sessionId
               ? (request) =>

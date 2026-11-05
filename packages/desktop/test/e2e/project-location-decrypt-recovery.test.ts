@@ -48,7 +48,7 @@ describe("项目位置缓存局部恢复", () => {
 
   it("自动重建坏位置；503 保留登录；服务恢复后通过设置刷新成功", async function () {
     this.timeout(180_000);
-    const baseUrl = process.env.ZCODE_E2E_ACCESS_TOKEN_401_URL;
+    const baseUrl = process.env.NEKODE_E2E_ACCESS_TOKEN_401_URL;
     if (!baseUrl) throw new Error("缺少项目位置恢复 fixture");
     const status = async () => (await (await fetch(`${baseUrl}/__e2e/status`)).json()) as Status;
     const before = await readCredentials();
@@ -128,7 +128,7 @@ describe("项目位置缓存局部恢复", () => {
       networkFailurePreservedLogin: true,
     });
     await browser.saveScreenshot(
-      `${process.env.ZCODE_E2E_ARTIFACT_DIR}/project-location-recovered.png`,
+      `${process.env.NEKODE_E2E_ARTIFACT_DIR}/project-location-recovered.png`,
     );
   });
 });

@@ -11,15 +11,16 @@ import {
 } from "@zcode/adapters/mcp";
 import {
   zcodeProtocolNotifications,
-  type ZCodeMcpResourceSample,
-  type ZCodeMcpTelemetryEvent,
+  type NekodeMcpResourceSample,
+  type NekodeMcpTelemetryEvent,
 } from "@zcode/shared";
+import { guardNekodeRoot } from "@zcode/shared/node";
 import { createNodeSessionDataFiles, type SqliteSessionStore } from "@zcode/adapters/storage";
 import { traceContextToLogContext, createRootTraceContext } from "@zcode/contracts";
 import type { McpPort, ModelSelection } from "@zcode/contracts";
 import type { PresentationSurface } from "@zcode/core";
-import type { RunZCodeProtocolAgentOptions, ZCodeAppOptions } from "./app/types.js";
-import { createZCodeApp } from "./app/create-app.js";
+import type { RunNekodeProtocolAgentOptions, NekodeAppOptions } from "./app/types.js";
+import { createNekodeApp } from "./app/create-app.js";
 import {
   createNodeReplBrowserBroker,
   type NodeReplBrowserBroker,
@@ -30,12 +31,12 @@ import {
 } from "./zcode-protocol/storage-startup.js";
 import { closeSessionStore, getSessionDbPath } from "./app/session-store.js";
 import { resolveMcpNodeFallbackProvider } from "./app/mcp-node-fallback.js";
-import { getCliStorageRoot, getProjectMemoryRoot } from "./app/paths.js";
+import { getCliStorageRoot } from "./app/paths.js";
 import { startProcessProviderRegistryRuntime } from "./app/process-provider-registry-runtime.js";
 import { scheduleStartupLogRetentionCleanup } from "./log-retention.js";
 import { resolveProcessProviderEndpointRoutingPort } from "./provider-endpoint-routing.js";
 import { StartupTimer, startupNow } from "./startup-logging.js";
-import { installZCodeProtocolAiSdkWarningLogger } from "./zcode-protocol/ai-sdk-warning-logger.js";
+import { installNekodeProtocolAiSdkWarningLogger } from "./zcode-protocol/ai-sdk-warning-logger.js";
 import {
   createOfficialCommandAuthHeadersPort,
   createOfficialMcpAuthHeadersPort,
@@ -48,21 +49,21 @@ import {
 import {
   createOfficialMcpTrustedOriginRegistry,
   OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV,
-  ZCODE_WORKSPACE_IDENTITY_ENV,
-  resolveRuntimeZCodeEndpointOrigin,
+  NEKODE_WORKSPACE_IDENTITY_ENV,
+  resolveRuntimeNekodeEndpointOrigin,
 } from "@zcode/shared";
-import { ZCodeProtocolAgentServer } from "./zcode-protocol/server.js";
-import { ZCodeProtocolNdjsonConnection } from "./zcode-protocol/transport.js";
+import { NekodeProtocolAgentServer } from "./zcode-protocol/server.js";
+import { NekodeProtocolNdjsonConnection } from "./zcode-protocol/transport.js";
 import { cleanupProtocolRuntime } from "./zcode-protocol/runtime-cleanup.js";
 import { startProtocolResourceSampler } from "./zcode-protocol/resource-sampler.js";
 import { acquireProtocolStartupResource } from "./zcode-protocol/startup-resource.js";
-import { prepareZCodeTelemetryEnv, shutdownZCodeTelemetry } from "./telemetry-bootstrap.js";
-import type { ZCodeProcessResourceSampler } from "./process-resource-sampler.js";
+import { prepareNekodeTelemetryEnv, shutdownNekodeTelemetry } from "./telemetry-bootstrap.js";
+import type { NekodeProcessResourceSampler } from "./process-resource-sampler.js";
 
 export function applyProtocolPresentationSurface(
-  options: Omit<ZCodeAppOptions, "providerRegistry">,
+  options: Omit<NekodeAppOptions, "providerRegistry">,
   presentationSurface: PresentationSurface,
-): Omit<ZCodeAppOptions, "providerRegistry"> {
+): Omit<NekodeAppOptions, "providerRegistry"> {
   return {
     ...options,
     runtimeConfig: {
@@ -78,10 +79,10 @@ export function applyProtocolPresentationSurface(
  * 旧 workspace snapshot 不再参与 Provider 和 Model 执行。
  */
 export function applyProtocolProviderRegistry(
-  options: Omit<ZCodeAppOptions, "providerRegistry">,
-  providerRegistry: ZCodeAppOptions["providerRegistry"],
+  options: Omit<NekodeAppOptions, "providerRegistry">,
+  providerRegistry: NekodeAppOptions["providerRegistry"],
   configuredDefaultModelSelection?: ModelSelection,
-): ZCodeAppOptions {
+): NekodeAppOptions {
   return {
     ...options,
     providerRegistry,
@@ -89,8 +90,8 @@ export function applyProtocolProviderRegistry(
   };
 }
 
-export async function runZCodeProtocolAgent(
-  options: RunZCodeProtocolAgentOptions = {},
+export async function runNekodeProtocolAgent(
+  options: RunNekodeProtocolAgentOptions = {},
 ): Promise<void> {
   if (options.prepareStorageOnly) {
     const config = createConfig({ env: options.env });
@@ -115,7 +116,7 @@ export async function runZCodeProtocolAgent(
     ...traceContextToLogContext(traceContext),
     module: "bootstrap.zcode_protocol",
   });
-  installZCodeProtocolAiSdkWarningLogger(logger);
+  installNekodeProtocolAiSdkWarningLogger(logger);
   const startupTimer = new StartupTimer(
     logger,
     {
@@ -125,22 +126,22 @@ export async function runZCodeProtocolAgent(
     },
     startupStartedAt,
   );
-  startupTimer.start("ZCode Protocol agent startup started", {
+  startupTimer.start("Nekode Protocol agent startup started", {
     context: { version: options.version },
     event: "zcode_protocol.startup.started",
     stage: "start",
   });
 
   let sessionStore: SqliteSessionStore | undefined;
-  let serverForCleanup: ZCodeProtocolAgentServer | undefined;
+  let serverForCleanup: NekodeProtocolAgentServer | undefined;
   let nodeReplBrowserBroker: NodeReplBrowserBroker | undefined;
   let officialCommandEndpoint: OfficialCommandEndpoint | undefined;
   let mcpConnectionPool: McpConnectionPool | undefined;
   let mcpPort: McpPort | undefined;
   let mcpTelemetryTracker: McpTelemetryTracker | undefined;
-  let mcpResourceSink: ((samples: ZCodeMcpResourceSample[]) => void) | undefined;
-  let mcpTelemetrySink: ((event: ZCodeMcpTelemetryEvent) => void) | undefined;
-  let processResourceSampler: ZCodeProcessResourceSampler | undefined;
+  let mcpResourceSink: ((samples: NekodeMcpResourceSample[]) => void) | undefined;
+  let mcpTelemetrySink: ((event: NekodeMcpTelemetryEvent) => void) | undefined;
+  let processResourceSampler: NekodeProcessResourceSampler | undefined;
   let providerRegistryRuntime:
     | Awaited<ReturnType<typeof startProcessProviderRegistryRuntime>>
     | undefined;
@@ -182,15 +183,15 @@ export async function runZCodeProtocolAgent(
     const telemetryEnv = await acquireProtocolStartupResource({
       signal: options.lifecycle?.signal,
       logger,
-      disposeLate: () => shutdownZCodeTelemetry(),
+      disposeLate: () => shutdownNekodeTelemetry(),
       create: () =>
-        prepareZCodeTelemetryEnv(runtimeEnv, {
+        prepareNekodeTelemetryEnv(runtimeEnv, {
           cliVersion: options.version,
-          productVersion: options.env?.ZCODE_APP_VERSION,
+          productVersion: options.env?.NEKODE_APP_VERSION,
           runtimeSurface,
         }),
     });
-    const telemetryDeviceMid = telemetryEnv.ZCODE_TELEMETRY_DEVICE_MID;
+    const telemetryDeviceMid = telemetryEnv.NEKODE_TELEMETRY_DEVICE_MID;
     mcpTelemetryTracker =
       configResult.config.features.mcp === false
         ? undefined
@@ -213,10 +214,10 @@ export async function runZCodeProtocolAgent(
     // 返回结构化权限错误，stdio 则把 reason 下发给插件。连接与工具发现都不受影响。
     let officialMcpAuthContext: OfficialMcpAuthRequestContext | undefined;
     // stdio 官方 MCP 没有 url 可供校验，targetOrigin 只能由宿主给出。
-    // 与下面 trustedOrigins 的 resolveZCodeApiOrigin 必须是同一个表达式，否则两侧判定分叉。
-    const resolveZCodeApiOrigin = (): string =>
-      resolveRuntimeZCodeEndpointOrigin(options.env ?? process.env);
-    const workspaceIdentity = (options.env ?? process.env)[ZCODE_WORKSPACE_IDENTITY_ENV]?.trim();
+    // 与下面 trustedOrigins 的 resolveNekodeApiOrigin 必须是同一个表达式，否则两侧判定分叉。
+    const resolveNekodeApiOrigin = (): string =>
+      resolveRuntimeNekodeEndpointOrigin(options.env ?? process.env);
+    const workspaceIdentity = (options.env ?? process.env)[NEKODE_WORKSPACE_IDENTITY_ENV]?.trim();
     const officialMcpAuth = {
       authHeadersPort: createOfficialMcpAuthHeadersPort({
         resolveContext: () => officialMcpAuthContext,
@@ -235,13 +236,13 @@ export async function runZCodeProtocolAgent(
           };
         },
       }),
-      resolveZCodeApiOrigin,
+      resolveNekodeApiOrigin,
       ...(workspaceIdentity ? { workspaceIdentity } : {}),
-      // 信任判定只看一条：目标 origin 等于当前 ZCode API origin（https）。pluginId 不参与。
+      // 信任判定只看一条：目标 origin 等于当前 Nekode API origin（https）。pluginId 不参与。
       // origin 运行时解析（跟随 production/test 与自建环境），不硬编码域名。
       trustedOrigins: createOfficialMcpTrustedOriginRegistry({
         devTrustedOriginsRaw: (options.env ?? process.env)[OFFICIAL_MCP_DEV_TRUSTED_ORIGINS_ENV],
-        resolveZCodeApiOrigin,
+        resolveNekodeApiOrigin,
       }),
     };
     // 官方插件命令进程的代理端点（技术方案 5.8）：CLI 不持有凭证，端点每个请求向 host 现取
@@ -252,8 +253,8 @@ export async function runZCodeProtocolAgent(
         resolveContext: () => officialMcpAuthContext,
         logger,
       }).resolveHeaders,
-      resolveZCodeApiOrigin,
-      appVersion: endpointEnv.ZCODE_APP_VERSION?.trim() || options.version,
+      resolveNekodeApiOrigin,
+      appVersion: endpointEnv.NEKODE_APP_VERSION?.trim() || options.version,
       fetch: createMcpTransportFetch({ env: endpointEnv, network: configResult.config.network }),
       logger,
     });
@@ -287,7 +288,9 @@ export async function runZCodeProtocolAgent(
               caCertFile: configResult.config.network.caCertFile,
             },
             nodeFallback: resolveMcpNodeFallbackProvider({
-              cliStorageRoot: getCliStorageRoot(resolvePath(configResult.config.storage.dir)),
+              cliStorageRoot: getCliStorageRoot(
+                guardNekodeRoot(resolvePath(configResult.config.storage.dir)),
+              ),
               logger,
             }),
             officialMcpAuth,
@@ -296,14 +299,16 @@ export async function runZCodeProtocolAgent(
           });
     mcpPort = mcpConnectionPool?.acquireLease({ leaseId: "protocol-settings" });
     const activeProviderRegistryRuntime = providerRegistryRuntime;
-    const protocolCliStorageRoot = getCliStorageRoot(resolvePath(configResult.config.storage.dir));
+    const protocolCliStorageRoot = getCliStorageRoot(
+      guardNekodeRoot(resolvePath(configResult.config.storage.dir)),
+    );
     const modelSelectionFacade = createNodeModelSelectionFacade(
       activeProviderRegistryRuntime.runtime.registryService,
     );
     options.lifecycle?.signal.throwIfAborted();
-    const server = (serverForCleanup = new ZCodeProtocolAgentServer({
-      createZCodeApp: (appOptions = {}) =>
-        createZCodeApp({
+    const server = (serverForCleanup = new NekodeProtocolAgentServer({
+      createNekodeApp: (appOptions = {}) =>
+        createNekodeApp({
           ...applyProtocolProviderRegistry(
             applyProtocolPresentationSurface(appOptions, presentationSurface),
             activeProviderRegistryRuntime.runtime.registryService,
@@ -320,7 +325,7 @@ export async function runZCodeProtocolAgent(
           env: {
             ...telemetryEnv,
             ...appOptions.env,
-            ...(telemetryDeviceMid ? { ZCODE_TELEMETRY_DEVICE_MID: telemetryDeviceMid } : {}),
+            ...(telemetryDeviceMid ? { NEKODE_TELEMETRY_DEVICE_MID: telemetryDeviceMid } : {}),
           },
           ...(nodeReplBrowserBroker ? { nodeReplBrowserBroker } : {}),
           ...(mcpConnectionPool
@@ -347,9 +352,6 @@ export async function runZCodeProtocolAgent(
       sessionStore,
       sessionDataFiles: createNodeSessionDataFiles({
         cliStorageRoot: protocolCliStorageRoot,
-        // 与会话运行时的记忆解析同一函数，删除的正是 CLI 读写的那个目录。
-        memoryRoot: ({ workspacePath, workspaceIdentity }) =>
-          getProjectMemoryRoot(protocolCliStorageRoot, workspacePath, workspaceIdentity),
       }),
       syncAccountProviderConfig: activeProviderRegistryRuntime.syncAccountProviderConfig,
       refreshProviderRegistry: async (reason) => {
@@ -372,7 +374,7 @@ export async function runZCodeProtocolAgent(
         create: () => broker.ready,
       });
     }
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       signal: options.lifecycle?.signal,
       clearPostResponseMessages: () => server.clearPostResponseMessages(),
       handleMessage: (message) => server.handleMessage(message),
@@ -403,7 +405,7 @@ export async function runZCodeProtocolAgent(
       (message) => connection.send(message),
       logger,
     );
-    startupTimer.complete("ZCode Protocol agent startup completed", {
+    startupTimer.complete("Nekode Protocol agent startup completed", {
       event: "zcode_protocol.startup.completed",
       stage: "total",
     });
@@ -413,7 +415,7 @@ export async function runZCodeProtocolAgent(
     options.lifecycle?.requestShutdown(
       error instanceof Error ? error : new Error("Protocol runtime failed", { cause: error }),
     );
-    startupTimer.fail("ZCode Protocol agent startup failed", error, {
+    startupTimer.fail("Nekode Protocol agent startup failed", error, {
       event: "zcode_protocol.startup.failed",
       stage: "total",
     });
@@ -438,7 +440,7 @@ export async function runZCodeProtocolAgent(
       sessionStore,
       providerRegistryRuntime,
     });
-    logger.info("ZCode Protocol agent shutdown completed", {
+    logger.info("Nekode Protocol agent shutdown completed", {
       ...traceContextToLogContext(traceContext),
       event: "zcode_protocol.shutdown.completed",
       module: "bootstrap.zcode_protocol",
@@ -451,7 +453,7 @@ function resolveProtocolRuntimeSurface(
   env: NodeJS.ProcessEnv,
 ): "desktop_local_host" | "remote_workspace_host" {
   // Bug 根因：入口曾无条件覆盖 Host 注入值，远程 SSH/WSL/容器 Trace 被归入本地 Desktop。
-  return env.ZCODE_TELEMETRY_RUNTIME_SURFACE?.trim() === "remote_workspace_host"
+  return env.NEKODE_TELEMETRY_RUNTIME_SURFACE?.trim() === "remote_workspace_host"
     ? "remote_workspace_host"
     : "desktop_local_host";
 }

@@ -9,7 +9,7 @@ The cloud runs Node.js 24 on Debian 12 (glibc 2.36), x86-64. Install the stage's
 
 ## Cross-install
 
-Copy `package.json` and the lockfile into the stage, then inside `.zcode-site/stage`:
+Copy `package.json` and the lockfile into the stage, then inside `.nekode-site/stage`:
 
 ```
 npm install --omit=dev --no-audit --no-fund --os=linux --cpu=x64 --libc=glibc

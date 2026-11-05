@@ -18,7 +18,7 @@ const readArg = (flag) => {
 const target = resolveVerificationTarget(readArg("--target"));
 const archive = join(packageRoot, "dist-release", `zcode-server-${target}.tar.gz`);
 const containerName = `zcode-proxy-stdio-${process.pid}`;
-const image = process.env.ZCODE_PROXY_STDIO_IMAGE ?? "node:24-bookworm-slim";
+const image = process.env.NEKODE_PROXY_STDIO_IMAGE ?? "node:24-bookworm-slim";
 
 function run(command, args, options = {}) {
   return new Promise((resolvePromise, rejectPromise) => {
@@ -63,17 +63,17 @@ try {
     [
       "mkdir -p /tmp/zcode-bootstrap",
       "tar -xzf /tmp/zcode-server.tar.gz -C /tmp/zcode-bootstrap --strip-components=1",
-      "/tmp/zcode-bootstrap/bin/zcode update --from-archive /tmp/zcode-server.tar.gz --server-root /root/.zcode/server --json",
-      "ZCODE_SERVER_SKIP_SERVICE_REGISTRATION=1 /root/.zcode/server/bin/zcode serve --daemon --server-root /root/.zcode/server --json",
+      "/tmp/zcode-bootstrap/bin/zcode update --from-archive /tmp/zcode-server.tar.gz --server-root /root/.nekode/server --json",
+      "NEKODE_SERVER_SKIP_SERVICE_REGISTRATION=1 /root/.nekode/server/bin/zcode serve --daemon --server-root /root/.nekode/server --json",
     ].join(" && "),
   ]);
   const statusResult = await run("docker", [
     "exec",
     containerName,
-    "/root/.zcode/server/bin/zcode",
+    "/root/.nekode/server/bin/zcode",
     "status",
     "--server-root",
-    "/root/.zcode/server",
+    "/root/.nekode/server",
     "--json",
   ]);
   const status = JSON.parse(statusResult.stdout.toString("utf8").trim().split("\n").pop());
@@ -82,7 +82,7 @@ try {
     "exec",
     containerName,
     "cat",
-    "/root/.zcode/server/run/ingress-token",
+    "/root/.nekode/server/run/ingress-token",
   ]);
   const token = tokenResult.stdout.toString("utf8").trim();
   assert(token.length >= 32, "ingress token exists");
@@ -109,11 +109,11 @@ try {
       "exec",
       "-i",
       containerName,
-      "/root/.zcode/server/bin/zcode",
+      "/root/.nekode/server/bin/zcode",
       "server",
       "proxy-stdio",
       "--server-root",
-      "/root/.zcode/server",
+      "/root/.nekode/server",
     ],
     { input: request },
   );

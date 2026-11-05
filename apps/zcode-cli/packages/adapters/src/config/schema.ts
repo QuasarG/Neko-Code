@@ -34,13 +34,8 @@ const featuresSchema = z.object({
   compact: z.boolean().optional(),
   rewind: z.boolean().optional(),
   subagent: z.boolean().optional(),
-  memory: z.boolean().optional(),
   skill: z.boolean().optional(),
   mcp: z.boolean().optional(),
-});
-
-const memorySchema = z.object({
-  use: z.boolean().optional(),
 });
 
 const mcpServerBaseSchema = {
@@ -288,7 +283,7 @@ export const hooksSchema = z
   })
   .strict();
 
-export const ZCodeConfigFileSchema = z
+export const NekodeConfigFileSchema = z
   .object({
     $schema: z.string().optional(),
     modelStream: modelStreamSchema.optional(),
@@ -296,7 +291,6 @@ export const ZCodeConfigFileSchema = z
     storage: storageSchema.optional(),
     network: networkSchema.optional(),
     features: featuresSchema.optional(),
-    memory: memorySchema.optional(),
     mcp: mcpSchema.optional(),
     plugins: pluginsSchema.optional(),
     skills: skillsSchema.optional(),
@@ -312,7 +306,7 @@ export const ZCodeConfigFileSchema = z
 
 // 项目曾复用用户配置 schema，可改写代理、CA 和插件存储根目录。只开放扩展声明，
 // 在校验前剔除运行参数，防止新增用户字段自动向项目开放，也避免无效的禁用字段拖垮 MCP/Hook。
-const projectConfigFileSchema = ZCodeConfigFileSchema.pick({
+const projectConfigFileSchema = NekodeConfigFileSchema.pick({
   mcp: true,
   hooks: true,
   skill: true,
@@ -334,7 +328,7 @@ const projectConfigFileSchema = ZCodeConfigFileSchema.pick({
   })
   .strip();
 
-export type ZCodeConfigFile = z.infer<typeof ZCodeConfigFileSchema>;
+export type NekodeConfigFile = z.infer<typeof NekodeConfigFileSchema>;
 
 type SkillCommandOverrideMap = Record<string, { enable?: boolean }>;
 
@@ -381,13 +375,13 @@ function normalizeMcpServerConfigInput(value: unknown): unknown {
   }
   delete server.enable;
 
-  // External MCP configs may carry provider-specific timeout fields. ZCode does not migrate
+  // External MCP configs may carry provider-specific timeout fields. Nekode does not migrate
   // those values, but the strict runtime schema should still accept old imported entries.
   delete server.timeout;
   delete server.startup_timeout_sec;
 
   if (server.type === "remote") {
-    // 外部 Agent 配置常把 HTTP MCP 标记为 remote；ZCode 运行态协议类型是 http。
+    // 外部 Agent 配置常把 HTTP MCP 标记为 remote；Nekode 运行态协议类型是 http。
     server.type = "http";
   } else if (typeof server.type !== "string") {
     // app 管理层把 command 形态视为默认 stdio；CLI 也需要同样推断，
@@ -418,7 +412,7 @@ export function parseConfigFileToRuntimePatchWithDiagnostics(
 ): ParseConfigFileResult {
   const diagnostics: ConfigDiagnostic[] = [];
   const normalized = normalizeConfigFileInput(value, diagnostics);
-  const parsed = (scope === "project" ? projectConfigFileSchema : ZCodeConfigFileSchema).parse(
+  const parsed = (scope === "project" ? projectConfigFileSchema : NekodeConfigFileSchema).parse(
     normalized,
   );
   return {
@@ -427,7 +421,7 @@ export function parseConfigFileToRuntimePatchWithDiagnostics(
   };
 }
 
-function parsedConfigFileToRuntimePatch(parsed: ZCodeConfigFile): RuntimeConfigPatch {
+function parsedConfigFileToRuntimePatch(parsed: NekodeConfigFile): RuntimeConfigPatch {
   const config: RuntimeConfigPatch = {};
   if (parsed.modelStream) config.modelStream = parsed.modelStream;
 
@@ -435,7 +429,6 @@ function parsedConfigFileToRuntimePatch(parsed: ZCodeConfigFile): RuntimeConfigP
   if (parsed.storage) config.storage = parsed.storage;
   if (parsed.network) config.network = parsed.network;
   if (parsed.features) config.features = parsed.features;
-  if (parsed.memory) config.memory = parsed.memory;
   if (parsed.mcp) config.mcp = parsed.mcp;
   if (parsed.plugins) config.plugins = normalizePluginConfig(parsed.plugins);
   const skillsConfig = parseSkillsRuntimeConfig(parsed.skills);
@@ -456,7 +449,7 @@ function parsedConfigFileToRuntimePatch(parsed: ZCodeConfigFile): RuntimeConfigP
 }
 
 function normalizePluginConfig(
-  plugins: ZCodeConfigFile["plugins"],
+  plugins: NekodeConfigFile["plugins"],
 ): NonNullable<RuntimeConfigPatch["plugins"]> {
   if (!plugins) return {};
   const enabledPlugins = plugins.enabledPlugins ? { ...plugins.enabledPlugins } : undefined;
@@ -557,7 +550,7 @@ function readPositiveNumber(value: unknown): number | undefined {
 }
 
 function parseSkillsRuntimeConfig(
-  skills: ZCodeConfigFile["skills"],
+  skills: NekodeConfigFile["skills"],
 ): RuntimeConfigPatch["skills"] | undefined {
   if (!skills) return undefined;
   const next: NonNullable<RuntimeConfigPatch["skills"]> = {};
@@ -571,7 +564,7 @@ function parseSkillsRuntimeConfig(
 }
 
 function parseSkillOverridesFromPluralSkills(
-  skills: ZCodeConfigFile["skills"],
+  skills: NekodeConfigFile["skills"],
 ): SkillCommandOverrideMap | undefined {
   if (!skills) return undefined;
   const overrides: SkillCommandOverrideMap = {};

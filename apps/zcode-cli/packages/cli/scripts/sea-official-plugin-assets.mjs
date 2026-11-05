@@ -182,14 +182,6 @@ export const officialSeaPlugins = [
   },
   {
     marketplace: "zcode-plugins-official",
-    name: "skill-creator",
-    packageName: "@zcode/skill-creator-plugin",
-    requiresRuntime: false,
-    rootPath: join("packages", "skill-creator-plugin"),
-    version: "0.1.0",
-  },
-  {
-    marketplace: "zcode-plugins-official",
     name: "plugin-creator",
     packageName: "@zcode/plugin-creator-plugin",
     requiresRuntime: false,

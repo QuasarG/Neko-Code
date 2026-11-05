@@ -55,7 +55,7 @@ import {
   type ExecutionRunOptions,
   windowsPathToGitBashPath,
 } from "@zcode/contracts";
-import { ZCODE_NO_PROXY_ENV_KEY, ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
+import { NEKODE_NO_PROXY_ENV_KEY, NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY } from "@zcode/shared";
 
 const POSIX_BASH_PATH =
   process.platform === "win32"
@@ -1441,8 +1441,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           `exec ${JSON.stringify(POSIX_BASH_PATH!)} "$@"`,
           "",
         ].join("\n"),
@@ -1456,7 +1456,7 @@ describe("NodeExecutionAdapter", () => {
             ...process.env,
             HOME: home,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
         const result = await adapter.run({
@@ -1604,8 +1604,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           `exec ${JSON.stringify(POSIX_BASH_PATH!)} "$@"`,
           "",
         ].join("\n"),
@@ -1619,7 +1619,7 @@ describe("NodeExecutionAdapter", () => {
             ...process.env,
             HOME: home,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
 
@@ -1687,7 +1687,7 @@ describe("NodeExecutionAdapter", () => {
       await writeFile(
         join(home, ".bashrc"),
         [
-          'if [ "$SHELL" = "$ZCODE_EXPECTED_SHELL" ] && [ "$GIT_EDITOR" = "true" ]; then',
+          'if [ "$SHELL" = "$NEKODE_EXPECTED_SHELL" ] && [ "$GIT_EDITOR" = "true" ]; then',
           "  alias zcode_env_overlay_alias='printf env-overlay-ok'",
           "fi",
           "",
@@ -1707,7 +1707,7 @@ describe("NodeExecutionAdapter", () => {
             GIT_EDITOR: "stale-editor",
             HOME: home,
             SHELL: "/bin/fish",
-            ZCODE_EXPECTED_SHELL: shellWrapper,
+            NEKODE_EXPECTED_SHELL: shellWrapper,
           },
         });
 
@@ -1756,8 +1756,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           `exec ${JSON.stringify(POSIX_BASH_PATH!)} "$@"`,
           "",
         ].join("\n"),
@@ -1771,7 +1771,7 @@ describe("NodeExecutionAdapter", () => {
             ...process.env,
             HOME: home,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
 
@@ -1845,8 +1845,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           "if [ \"$1\" = '-c' ] && [ \"$2\" = '-l' ] && printf '%s' \"$3\" | grep -q 'SNAPSHOT_FILE='; then",
           "  sleep 0.2",
           "fi",
@@ -1862,7 +1862,7 @@ describe("NodeExecutionAdapter", () => {
           processEnv: {
             ...process.env,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
 
@@ -1927,8 +1927,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           "if [ \"$1\" = '-c' ] && [ \"$2\" = '-l' ] && printf '%s' \"$3\" | grep -q 'SNAPSHOT_FILE='; then",
           "  sleep 0.2",
           "fi",
@@ -1944,7 +1944,7 @@ describe("NodeExecutionAdapter", () => {
           processEnv: {
             ...process.env,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
         const controller = new AbortController();
@@ -2001,8 +2001,8 @@ describe("NodeExecutionAdapter", () => {
         shellWrapper,
         [
           "#!/usr/bin/env bash",
-          'printf \'%q \' "$@" >> "$ZCODE_TEST_SHELL_LOG"',
-          "printf '\\n' >> \"$ZCODE_TEST_SHELL_LOG\"",
+          'printf \'%q \' "$@" >> "$NEKODE_TEST_SHELL_LOG"',
+          "printf '\\n' >> \"$NEKODE_TEST_SHELL_LOG\"",
           "if [ \"$1\" = '-c' ] && [ \"$2\" = '-l' ] && printf '%s' \"$3\" | grep -q 'SNAPSHOT_FILE='; then",
           "  exit 42",
           "fi",
@@ -2018,7 +2018,7 @@ describe("NodeExecutionAdapter", () => {
           processEnv: {
             ...process.env,
             SHELL: shellWrapper,
-            ZCODE_TEST_SHELL_LOG: shellLog,
+            NEKODE_TEST_SHELL_LOG: shellLog,
           },
         });
 
@@ -2061,7 +2061,7 @@ describe("NodeExecutionAdapter", () => {
 
       await mkdir(home, { recursive: true });
       await mkdir(child, { recursive: true });
-      await writeFile(join(home, ".bashrc"), 'zcode_cd_child() { cd "$ZCODE_TEST_CHILD"; }\n');
+      await writeFile(join(home, ".bashrc"), 'zcode_cd_child() { cd "$NEKODE_TEST_CHILD"; }\n');
 
       try {
         const adapter = new NodeExecutionAdapter({
@@ -2070,7 +2070,7 @@ describe("NodeExecutionAdapter", () => {
             ...process.env,
             HOME: home,
             SHELL: POSIX_BASH_PATH!,
-            ZCODE_TEST_CHILD: child,
+            NEKODE_TEST_CHILD: child,
           },
         });
 
@@ -2329,8 +2329,8 @@ describe("NodeExecutionAdapter", () => {
   it("applies cwd and env overlay through spawn options", async () => {
     const adapter = new NodeExecutionAdapter();
     const cwd = await realpath(await mkdtemp(join(tmpdir(), "zcode-exec-")));
-    const previousUnsetValue = process.env.ZCODE_EXEC_UNSET;
-    process.env.ZCODE_EXEC_UNSET = "remove-me";
+    const previousUnsetValue = process.env.NEKODE_EXEC_UNSET;
+    process.env.NEKODE_EXEC_UNSET = "remove-me";
 
     try {
       const result = await adapter.run({
@@ -2342,8 +2342,8 @@ describe("NodeExecutionAdapter", () => {
             [
               "process.stdout.write(JSON.stringify({",
               "cwd: process.cwd(),",
-              "value: process.env.ZCODE_EXEC_TEST,",
-              "unset: process.env.ZCODE_EXEC_UNSET ?? null",
+              "value: process.env.NEKODE_EXEC_TEST,",
+              "unset: process.env.NEKODE_EXEC_UNSET ?? null",
               "}))",
             ].join(""),
           ],
@@ -2352,9 +2352,9 @@ describe("NodeExecutionAdapter", () => {
         env: {
           base: "inherit",
           set: {
-            ZCODE_EXEC_TEST: "yes",
+            NEKODE_EXEC_TEST: "yes",
           },
-          unset: ["ZCODE_EXEC_UNSET"],
+          unset: ["NEKODE_EXEC_UNSET"],
         },
       });
       const parsed = JSON.parse(result.stdout.text) as {
@@ -2369,9 +2369,9 @@ describe("NodeExecutionAdapter", () => {
       expect(parsed.unset).toBeNull();
     } finally {
       if (previousUnsetValue === undefined) {
-        delete process.env.ZCODE_EXEC_UNSET;
+        delete process.env.NEKODE_EXEC_UNSET;
       } else {
-        process.env.ZCODE_EXEC_UNSET = previousUnsetValue;
+        process.env.NEKODE_EXEC_UNSET = previousUnsetValue;
       }
       await rm(cwd, { force: true, recursive: true });
     }
@@ -2391,7 +2391,7 @@ describe("NodeExecutionAdapter", () => {
         processEnv: {
           Path: "C:\\base-bin",
           TEMP: "C:\\Temp",
-          ZCODE_KEEP: "yes",
+          NEKODE_KEEP: "yes",
         },
       },
     );
@@ -2399,7 +2399,7 @@ describe("NodeExecutionAdapter", () => {
     expect(env.PATH).toBe("C:\\next-bin");
     expect(env.Path).toBeUndefined();
     expect(env.TEMP).toBeUndefined();
-    expect(env.ZCODE_KEEP).toBe("yes");
+    expect(env.NEKODE_KEEP).toBe("yes");
   });
 
   it("injects configured network egress variables for subprocesses", () => {
@@ -2467,7 +2467,7 @@ describe("NodeExecutionAdapter", () => {
       network: {},
       platform: "linux",
       processEnv: {
-        [ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
+        [NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
           NODE_EXTRA_CA_CERTS: "/tmp/shell-ca.pem",
           http_proxy: "http://shell-proxy:8080",
           no_proxy: ".example.test",
@@ -2479,7 +2479,7 @@ describe("NodeExecutionAdapter", () => {
     });
 
     expect(env.NODE_ENV).toBeUndefined();
-    expect(env[ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
+    expect(env[NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
     expect(env.HTTP_PROXY).toBeUndefined();
     expect(env.http_proxy).toBe("http://shell-proxy:8080");
     expect(env.NO_PROXY).toBeUndefined();
@@ -2498,7 +2498,7 @@ describe("NodeExecutionAdapter", () => {
         network: {},
         platform: "linux",
         processEnv: {
-          [ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
+          [NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]: JSON.stringify({
             HTTP_PROXY: "http://shell-proxy:8080",
             NODE_EXTRA_CA_CERTS: "/tmp/shell-ca.pem",
           }),
@@ -2506,12 +2506,12 @@ describe("NodeExecutionAdapter", () => {
       },
     );
 
-    expect(env[ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
+    expect(env[NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY]).toBeUndefined();
     expect(env.HTTP_PROXY).toBeUndefined();
     expect(env.NODE_EXTRA_CA_CERTS).toBeUndefined();
   });
 
-  it("derives subprocess proxy and CA env from explicit ZCode runtime keys", () => {
+  it("derives subprocess proxy and CA env from explicit Nekode runtime keys", () => {
     const env = buildExecutionEnv(
       {
         base: "empty",
@@ -2520,9 +2520,9 @@ describe("NodeExecutionAdapter", () => {
         network: {},
         platform: "linux",
         processEnv: {
-          ZCODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
-          ZCODE_HTTP_PROXY: "127.0.0.1:8888",
-          [ZCODE_NO_PROXY_ENV_KEY]: "localhost,127.0.0.1",
+          NEKODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
+          NEKODE_HTTP_PROXY: "127.0.0.1:8888",
+          [NEKODE_NO_PROXY_ENV_KEY]: "localhost,127.0.0.1",
         },
       },
     );
@@ -3427,7 +3427,7 @@ describe("NodeExecutionAdapter", () => {
 
   it("delivers a large stdin payload when the child consumes it", async () => {
     const adapter = new NodeExecutionAdapter();
-    const stdin = "你好, ZCode!\n".repeat(100_000);
+    const stdin = "你好, Nekode!\n".repeat(100_000);
 
     const result = await adapter.run({
       command: {
@@ -4633,12 +4633,12 @@ describe("NodeExecutionAdapter", () => {
     }
   });
 
-  it("uses the ZCode storage root for persisted output when no output root is injected", async () => {
+  it("uses the Nekode storage root for persisted output when no output root is injected", async () => {
     const storageRoot = await mkdtemp(join(tmpdir(), "zcode-exec-storage-root-"));
     const adapter = new NodeExecutionAdapter({
       processEnv: {
         ...process.env,
-        ZCODE_STORAGE_DIR: storageRoot,
+        NEKODE_STORAGE_DIR: storageRoot,
       },
     });
 

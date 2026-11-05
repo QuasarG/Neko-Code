@@ -9,8 +9,8 @@ import { evaluateGuest } from "./guest-evaluation.js";
 import { clickHostPoint } from "./pointer-input.js";
 
 const [root, profile, node, cli] = process.argv.slice(2) as [string, string, string, string];
-if (process.env.ZCODE_FIXTURE_CDP_PORT)
-  app.commandLine.appendSwitch("remote-debugging-port", process.env.ZCODE_FIXTURE_CDP_PORT);
+if (process.env.NEKODE_FIXTURE_CDP_PORT)
+  app.commandLine.appendSwitch("remote-debugging-port", process.env.NEKODE_FIXTURE_CDP_PORT);
 app.setPath("userData", profile);
 protocol.registerSchemesAsPrivileged([PLUGIN_SANDBOX_PRIVILEGED_SCHEME]);
 app.on("window-all-closed", () => {});
@@ -20,7 +20,7 @@ app
     const env = await managedEnvironment(root, node, cli);
     const results: Record<string, boolean | string> = {};
     try {
-      if (!process.env.ZCODE_PHOTOCRAFT_ONLY) {
+      if (!process.env.NEKODE_PHOTOCRAFT_ONLY) {
         const admitted: Array<{ win: BrowserWindow; guest: WebContents }> = [];
         // 先打开外壳但没有任何会话卡片/订阅，再让真实模型调用返回 UI 工具结果。
         for (const source of ["admission-first", "admission-second"]) {
@@ -345,7 +345,7 @@ app
           removed: true,
         });
       }
-      if (process.env.ZCODE_PHOTOCRAFT_SERVER) {
+      if (process.env.NEKODE_PHOTOCRAFT_SERVER) {
         // 仅此隔离 workspace 内的真实插件测试批准工具，仍经过生产 Agent 权限链路。
         env.agent.client.onRequest((request) => {
           if (request.method === "interaction/requestPermission")
@@ -355,7 +355,7 @@ app
           join(root, "photocraft-workspace"),
           "photocraft",
           {
-            serverScript: process.env.ZCODE_PHOTOCRAFT_SERVER,
+            serverScript: process.env.NEKODE_PHOTOCRAFT_SERVER,
             resourceUri: "ui://photocraft/panel.html",
             surface: "editor",
           },

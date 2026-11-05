@@ -1,5 +1,5 @@
 import { cn } from "@/components/lib/utils.js";
-import { ZCodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
+import { NekodeStartupLogoBadge } from "@/root/RootStartupLoading.js";
 
 export function WindowsTopLeftLogo({
   className,
@@ -18,14 +18,14 @@ export function WindowsTopLeftLogo({
     >
       <span
         role="img"
-        aria-label="ZCode"
+        aria-label="Nekode"
         data-testid="settings-logo"
         className={cn(
           "pointer-events-none flex size-5 items-center justify-center select-none",
           imageClassName,
         )}
       >
-        <ZCodeStartupLogoBadge size="titlebar" animated={false} />
+        <NekodeStartupLogoBadge size="titlebar" animated={false} />
       </span>
     </div>
   );

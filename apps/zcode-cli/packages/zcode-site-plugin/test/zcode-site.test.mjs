@@ -12,8 +12,8 @@ import { packStage } from "../scripts/stage.mjs";
 
 // CLI 只认 agent 注入的官方命令端点（技术方案 5.8）；身份头和版本头由端点补，CLI 不带。
 const ENV = {
-  ZCODE_OFFICIAL_ENDPOINT: "/tmp/zcode-official-test.sock",
-  ZCODE_OFFICIAL_ENDPOINT_TOKEN: "session-token",
+  NEKODE_OFFICIAL_ENDPOINT: "/tmp/zcode-official-test.sock",
+  NEKODE_OFFICIAL_ENDPOINT_TOKEN: "session-token",
 };
 
 class FakeSites {
@@ -86,11 +86,11 @@ class FakeSites {
     if (this.endpointNetworkError) {
       return Response.json(
         { code: 2007, msg: "x", data: null, logid: "" },
-        { status: 502, headers: { "X-ZCode-Official-Endpoint-Error": "network" } },
+        { status: 502, headers: { "X-Nekode-Official-Endpoint-Error": "network" } },
       );
     }
     assert.equal(init.headers.Authorization, "Bearer session-token");
-    assert.equal(init.headers["X-ZCode-App-Version"], undefined);
+    assert.equal(init.headers["X-Nekode-App-Version"], undefined);
     assert.equal(init.headers["X-Bigmodel-Authorization"], undefined);
     const { pathname } = new URL(url);
     const body = typeof init.body === "string" ? JSON.parse(init.body) : init.body;
@@ -241,7 +241,7 @@ test("first deploy creates and binds a site, then later deploys reuse it", async
     linuxBinaries: 0,
   });
   assert.ok(r.lines.some((l) => l.event === "log" && l.message === "publishing"));
-  const binding = JSON.parse(await readFile(join(cwd, ".zcode-site.json"), "utf8"));
+  const binding = JSON.parse(await readFile(join(cwd, ".nekode-site.json"), "utf8"));
   assert.deepEqual(binding, { siteId: fake.sites[0].id, domainLabel: fake.sites[0].domainLabel });
 
   const again = await run(fake, cwd, "deploy", "stage", "--quiet");
@@ -367,7 +367,7 @@ test("local and auth errors", async () => {
   const expired = await run(fake, cwd, "usage");
   assert.equal(expired.code, 2);
   assert.equal(expired.error.code, 3101);
-  assert.match(expired.error.hint, /sign in to ZCode again/);
+  assert.match(expired.error.hint, /sign in to Nekode again/);
 
   const noEnv = await main(["usage"], {
     env: {},
@@ -432,7 +432,7 @@ test("status, rename, offline and online use the bound site", async () => {
   const site = fake.site();
   const cwd = await project();
   await writeFile(
-    join(cwd, ".zcode-site.json"),
+    join(cwd, ".nekode-site.json"),
     JSON.stringify({ siteId: site.id, domainLabel: site.domainLabel }),
   );
 
@@ -451,7 +451,7 @@ test("badge hide needs a plan that can remove the badge", async () => {
   const site = fake.site();
   const cwd = await project();
   await writeFile(
-    join(cwd, ".zcode-site.json"),
+    join(cwd, ".nekode-site.json"),
     JSON.stringify({ siteId: site.id, domainLabel: site.domainLabel }),
   );
 
@@ -529,7 +529,7 @@ test("a name that fails content review gets 3611 and nothing is linked", async (
   assert.equal(r.error.code, 3611);
   assert.match(r.error.hint, /--name/);
   assert.equal(fake.deployments.length, 0);
-  await assert.rejects(readFile(join(cwd, ".zcode-site.json")));
+  await assert.rejects(readFile(join(cwd, ".nekode-site.json")));
 
   // 改名不通过时名称不变。
   assert.equal((await run(fake, cwd, "deploy", "stage", "--name", "good")).code, 0);

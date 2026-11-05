@@ -10,7 +10,7 @@ import {
   zcodeProtocolSessionMethodContracts,
 } from "@zcode/shared";
 import { listMcpServers } from "../src/zcode-protocol/mcp.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 describe("mcp protocol contracts", () => {
   it("registers mcp/list", () => {
@@ -114,7 +114,7 @@ describe("mcp protocol contracts", () => {
           headers: [],
           oauth: {
             type: "authorization_code",
-            clientName: "ZCode",
+            clientName: "Nekode",
             redirectPath: "/oauth/callback/mcp/figma",
             scope: "mcp:connect",
           },
@@ -126,7 +126,7 @@ describe("mcp protocol contracts", () => {
       name: "figma",
       oauth: {
         type: "authorization_code",
-        clientName: "ZCode",
+        clientName: "Nekode",
         redirectPath: "/oauth/callback/mcp/figma",
         scope: "mcp:connect",
       },
@@ -139,8 +139,8 @@ describe("mcp protocol contracts", () => {
 describe("mcp/list connection revalidation", () => {
   it("asks the pool to revalidate on the default connect mode and skips it for status mode", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-mcp-list-revalidate-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "cli");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "cli");
     const connectConfiguredServers = vi.fn(async () => ({ statuses: {}, tools: [] }));
     const status = vi.fn(async () => ({}));
     const mcpPort = {
@@ -154,7 +154,7 @@ describe("mcp/list connection revalidation", () => {
     } as unknown as McpPort;
     const context = {
       deps: { env: process.env, mcpPort },
-    } as unknown as ZCodeProtocolAgentServerContext;
+    } as unknown as NekodeProtocolAgentServerContext;
     const params = {
       mcpServers: [],
       workspace: { workspaceKey: root, workspacePath: root },
@@ -171,18 +171,18 @@ describe("mcp/list connection revalidation", () => {
       await listMcpServers(context, { ...params, mode: "status" });
       expect(connectConfiguredServers).not.toHaveBeenCalled();
     } finally {
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });
 });
 
-import { convertToZCodeAgentMcpServer, zcodeProtocolMcpServerSchema } from "@zcode/shared";
+import { convertToNekodeAgentMcpServer, zcodeProtocolMcpServerSchema } from "@zcode/shared";
 import { protocolMcpServersToRuntimeMcpConfig } from "../src/zcode-protocol/protocol-mcp-config.js";
 
 it("preserves workspace provenance and cwd from Host DTO to runtime; rejects arbitrary runtime source", () => {
-  const dto = convertToZCodeAgentMcpServer(
+  const dto = convertToNekodeAgentMcpServer(
     "probe",
     { type: "stdio", command: "node", cwd: "tools", args: ["server.mjs"], env: { TEST: "1" } },
     "workspace",

@@ -1,17 +1,17 @@
 /* eslint-disable max-lines -- workspace 模型协议与兼容请求处理仍集中在本文件。 */
 import { createInMemorySessionEventStore } from "@zcode/adapters/storage";
-import type { ModelSelection } from "@zcode/contracts";
+import type { ModelSelection, WorkspaceId } from "@zcode/contracts";
 import {
   zcodeProviderTestModelConnectivityParamsSchema,
   zcodeWorkspaceReadPresentationParamsSchema,
-  type ZCodeWorkspaceRef,
+  type NekodeWorkspaceRef,
 } from "@zcode/shared";
-import type { ZCodeApp, ZCodeAppOptions } from "../app/types.js";
+import type { NekodeApp, NekodeAppOptions } from "../app/types.js";
 import { listProtocolSlashCommands } from "./slash-commands.js";
 import {
   parseParams,
-  type ZCodeProtocolAgentServerContext,
-  type ZCodeProtocolSessionRecord,
+  type NekodeProtocolAgentServerContext,
+  type NekodeProtocolSessionRecord,
 } from "./server-types.js";
 import { runSessionModelConfigMutation } from "../zcode-protocol-v4/model-config-mutation.js";
 import { createProviderRuntimeHeadersPort } from "./provider-runtime-headers.js";
@@ -19,7 +19,7 @@ import { offPeakLifecycleNotificationSchema } from "@zcode/shared";
 import { V4_NOTIFICATIONS } from "@zcode/shared/zcode-protocol-v4";
 
 export async function readWorkspacePresentation(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
 ) {
   const params = parseParams(zcodeWorkspaceReadPresentationParamsSchema, rawParams);
@@ -37,7 +37,7 @@ export async function readWorkspacePresentation(
 }
 
 export async function testProviderModelConnectivity(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   abortSignal?: AbortSignal,
 ) {
@@ -50,7 +50,7 @@ export async function testProviderModelConnectivity(
   );
   const app =
     active?.app ??
-    (await createWorkspaceZCodeApp(context, params.workspace, {
+    (await createWorkspaceNekodeApp(context, params.workspace, {
       env: context.deps.env,
       eventStore: createInMemorySessionEventStore(),
       runtimeConfig: { workingDirectory: params.workspace.workspacePath },
@@ -68,14 +68,14 @@ export async function testProviderModelConnectivity(
   }
 }
 
-export async function createWorkspaceZCodeApp(
-  context: ZCodeProtocolAgentServerContext,
-  workspace: ZCodeWorkspaceRef,
-  options: Omit<ZCodeAppOptions, "providerRegistry">,
-): Promise<ZCodeApp> {
+export async function createWorkspaceNekodeApp(
+  context: NekodeProtocolAgentServerContext,
+  workspace: NekodeWorkspaceRef,
+  options: Omit<NekodeAppOptions, "providerRegistry">,
+): Promise<NekodeApp> {
   const providerRuntimeHeadersPort =
     options.providerRuntimeHeadersPort ?? createProviderRuntimeHeadersPort(context, workspace);
-  return context.deps.createZCodeApp({
+  return context.deps.createNekodeApp({
     ...options,
     onOffPeakLifecycleEvent: (event) =>
       context.notify({
@@ -87,7 +87,7 @@ export async function createWorkspaceZCodeApp(
     providerRuntimeHeadersPort,
     runtimeConfig: {
       ...options.runtimeConfig,
-      // createZCodeApp 会把 workingDirectory 规范化为执行 cwd。把协议入口的
+      // createNekodeApp 会把 workingDirectory 规范化为执行 cwd。把协议入口的
       // workspacePath 单独注入 runtime，session 持久化才能保留本地 workspaceKey 的路径表示。
       workspacePath: workspace.workspacePath,
       // 远端 session 是 shared-host CUA 的第二层隔离边界：不能只传 workspacePath/identity，
@@ -95,12 +95,7 @@ export async function createWorkspaceZCodeApp(
       // 放在这个 helper 里而不是各调用点，是为了两条 session 创建路径都拿到同一份隔离键。
       ...(workspace.remoteSessionId ? { remoteSessionId: workspace.remoteSessionId } : {}),
       ...(workspace.workspaceIdentity
-        ? {
-            memory: {
-              ...options.runtimeConfig?.memory,
-              workspaceIdentity: workspace.workspaceIdentity,
-            },
-          }
+        ? { workspaceIdentity: workspace.workspaceIdentity as WorkspaceId }
         : {}),
       // Electron/Protocol 主会话之前没有像 CLI/TUI 那样显式开启模型流式，
       // 导致主 turn 退回 generateText 非流式请求，遇到返回 SSE 的兼容端点会按 JSON 解析失败。
@@ -110,16 +105,16 @@ export async function createWorkspaceZCodeApp(
 }
 
 export function hasSessionModelProvider(
-  _context: ZCodeProtocolAgentServerContext,
-  record: Pick<ZCodeProtocolSessionRecord, "app" | "workspace">,
+  _context: NekodeProtocolAgentServerContext,
+  record: Pick<NekodeProtocolSessionRecord, "app" | "workspace">,
   providerId: string,
 ): boolean {
   return record.app.listModels().some((model) => model.ref.providerId === providerId);
 }
 
 async function ensureSessionModelAvailableUnlocked(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ): Promise<boolean> {
   // 存量模型失效时不能静默改成 Registry 第一项覆盖用户选择；失效选择保持未绑定，
   // 由恢复/Composer 的选择校验和首发门禁处理；这里不能再写入另一份默认模型事实。
@@ -130,8 +125,8 @@ async function ensureSessionModelAvailableUnlocked(
 }
 
 export async function ensureSessionModelAvailable(
-  context: ZCodeProtocolAgentServerContext,
-  record: ZCodeProtocolSessionRecord,
+  context: NekodeProtocolAgentServerContext,
+  record: NekodeProtocolSessionRecord,
 ): Promise<boolean> {
   return runSessionModelConfigMutation(record.app, () =>
     ensureSessionModelAvailableUnlocked(context, record),
@@ -139,8 +134,8 @@ export async function ensureSessionModelAvailable(
 }
 
 export function resolveSessionModelContextWindow(
-  _context: ZCodeProtocolAgentServerContext,
-  record: Pick<ZCodeProtocolSessionRecord, "app" | "workspace" | "restoredModelSelection">,
+  _context: NekodeProtocolAgentServerContext,
+  record: Pick<NekodeProtocolSessionRecord, "app" | "workspace" | "restoredModelSelection">,
 ): number | undefined {
   // 缺档位会让恢复选择暂不绑定 Runtime，但模型身份仍可只读查询容量，不能伪造 20 万。
   const selection = record.app.runtime.getSessionModelSelection() ?? record.restoredModelSelection;

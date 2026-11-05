@@ -50,7 +50,7 @@ const fakeEvents = [
 ];
 
 const createDeps = (): RunDependencies => ({
-  createZCodeApp: () =>
+  createNekodeApp: () =>
     ({
       getModel: () => "openai/gpt-test",
       getThoughtLevel: () => "medium",
@@ -78,7 +78,7 @@ const createDeps = (): RunDependencies => ({
       runtime: { registryService: {} },
     }) as never,
   // Stand-in for the bootstrap mapper: the bootstrap module is not loaded when
-  // createZCodeApp is injected, so streaming needs this to be injectable too.
+  // createNekodeApp is injected, so streaming needs this to be injectable too.
   mapSessionEvent: ((event: { id: string; type: string }) => ({
     eventId: event.id,
     type: event.type,

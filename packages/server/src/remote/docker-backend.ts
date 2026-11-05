@@ -1,7 +1,7 @@
 import { spawn, execFile } from "node:child_process";
 import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
-import type { DockerConnectOptions, PublicZCodeErrorCode } from "@zcode/shared";
+import type { DockerConnectOptions, PublicNekodeErrorCode } from "@zcode/shared";
 import type {
   IRemoteBackend,
   RemoteEnvironment,
@@ -92,7 +92,7 @@ export class DockerBackend implements IRemoteBackend {
     const parentDir = this.dirname(resolvedRemotePath);
 
     // 上传流不会帮我们创建父目录。
-    // 如果直接写入 `~/.zcode/server/...` 这类首次连接路径，上传会因为目录不存在而失败。
+    // 如果直接写入 `~/.nekode/server/...` 这类首次连接路径，上传会因为目录不存在而失败。
     // 先显式 `mkdir -p`，再由容器当前用户写入目标文件，和 SSH/WSL 保持一致。
     await this.execSimple(`mkdir -p ${quotePosixShellArg(parentDir)}`);
 
@@ -292,7 +292,7 @@ export class DockerBackend implements IRemoteBackend {
               ? `当前系统未检测到可用的 Docker 环境：${detail}`
               : "当前系统未检测到可用的 Docker 环境",
           ),
-          { code: "remote-connection-unknown" satisfies PublicZCodeErrorCode },
+          { code: "remote-connection-unknown" satisfies PublicNekodeErrorCode },
         );
       });
     }

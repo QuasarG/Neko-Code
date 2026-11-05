@@ -1,6 +1,5 @@
 import { cloneMessageForFork } from "../src/runtime/helpers/steering.js";
 import { createMessageId, createSessionId } from "@zcode/contracts";
-import { findLatestMemoryRecallQuery } from "../src/memory/recall/index.js";
 import { buildPostCompactRuntimeEntries } from "../src/runtime/helpers/compact.js";
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
@@ -358,18 +357,6 @@ it("preserves raw markers through compact preserved history and model capability
   expect(JSON.stringify(history.toRuntimeEntries())).not.toContain("The user sent a new message");
 });
 
-it("keeps Memory queries on raw human input after coordinator, peer and task events", () => {
-  const entries = [
-    base[0]!,
-    marked("user_steer", "new human question"),
-    marked("coordinator_input"),
-    marked("subagent_reply"),
-    marked("task_notification"),
-  ];
-  expect(findLatestMemoryRecallQuery(entries)).toBe("new human question");
-  buildProviderRequestMessages({ entries });
-  expect(findLatestMemoryRecallQuery(entries)).toBe("new human question");
-});
 
 it("preserves marker and timing through serialized fork copies and rewind branch selection", async () => {
   const messages = ["user_steer", "subagent_reply_steer", "task_notification"].map(

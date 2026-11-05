@@ -2,37 +2,37 @@
 // 与 plugins.ts（安装/市场/启停等管理面）分文件：本查询是会话/草稿 Picker 的只读投影，
 // 且 plugins.ts 已接近 max-lines 门禁。
 import {
-  ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
+  NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID,
   zcodeProtocolNotifications,
   zcodePluginsReferenceCatalogParamsSchema,
   zcodePluginsResolveSuggestedReferenceParamsSchema,
-  type ZCodePluginReferenceCatalogEntry,
-  type ZCodePluginDiagnostic as SharedPluginDiagnostic,
-  type ZCodePluginsReferenceCatalogResult,
-  type ZCodePluginsResolveSuggestedReferenceResult,
+  type NekodePluginReferenceCatalogEntry,
+  type NekodePluginDiagnostic as SharedPluginDiagnostic,
+  type NekodePluginsReferenceCatalogResult,
+  type NekodePluginsResolveSuggestedReferenceResult,
 } from "@zcode/shared";
 import type { PluginReferenceCatalogEntry } from "@zcode/contracts";
 import { buildPluginReferenceCatalog } from "@zcode/core";
 import {
   enrichCachedClaudeMarketplaceIconsForOverview,
-  getZCodePluginsOverview,
-  resolveZCodePlugins,
-  updateZCodePluginMarketplace,
+  getNekodePluginsOverview,
+  resolveNekodePlugins,
+  updateNekodePluginMarketplace,
 } from "../plugins.js";
 import {
   parseParams,
   requireSession,
-  type ZCodeProtocolAgentServerContext,
+  type NekodeProtocolAgentServerContext,
 } from "./server-types.js";
 
 // Picker 权威：带 sessionId → 该 Session 创建时冻结的 identity catalog（session-owned）；
 // 不带 → workspace 当前 catalog（新建草稿）。session 不存在时按协议错误 fail closed，
 // 禁止静默回退 workspace authority——否则草稿/会话两种权威会被混淆。
 export async function getPluginReferenceCatalog(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   includeCategory = false,
-): Promise<ZCodePluginsReferenceCatalogResult> {
+): Promise<NekodePluginsReferenceCatalogResult> {
   const params = parseParams(zcodePluginsReferenceCatalogParamsSchema, rawParams);
   if (params.sessionId) {
     const record = requireSession(context, params.sessionId);
@@ -46,7 +46,7 @@ export async function getPluginReferenceCatalog(
         .plugins.map((entry) => toReferenceCatalogEntry(entry, displayByPluginId, includeCategory)),
     };
   }
-  const outcome = resolveZCodePlugins({
+  const outcome = resolveNekodePlugins({
     workingDirectory: params.workspace.workspacePath,
   });
   const displayByPluginId = resolveReferenceListingDisplayByPluginId(
@@ -60,15 +60,15 @@ export async function getPluginReferenceCatalog(
   };
 }
 
-const SUGGESTED_PLUGIN_MARKETPLACE = ZCODE_OFFICIAL_PLUGIN_MARKETPLACE_ID;
+const SUGGESTED_PLUGIN_MARKETPLACE = NEKODE_OFFICIAL_PLUGIN_MARKETPLACE_ID;
 const SUGGESTED_PLUGIN_MARKETPLACE_REFRESH_TIMEOUT_MS = 10_000;
 
 /** 推荐 Prompt 的安装前可信解析；missing 必须先刷新官方目录，失败时禁止旧快照安装。 */
 export async function resolveSuggestedPluginReference(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
   signal?: AbortSignal,
-): Promise<ZCodePluginsResolveSuggestedReferenceResult> {
+): Promise<NekodePluginsResolveSuggestedReferenceResult> {
   const params = parseParams(zcodePluginsResolveSuggestedReferenceParamsSchema, rawParams);
   const stableId = params.stableId.trim();
   const at = stableId.lastIndexOf("@");
@@ -99,7 +99,7 @@ export async function resolveSuggestedPluginReference(
 
   const workingDirectory = params.workspace.workspacePath;
   const readState = () => {
-    const outcome = resolveZCodePlugins({ logger: context.logger, workingDirectory });
+    const outcome = resolveNekodePlugins({ logger: context.logger, workingDirectory });
     const entry = buildPluginReferenceCatalog(outcome.plugins).plugins.find(
       (candidate) => candidate.pluginId === stableId,
     );
@@ -154,7 +154,7 @@ export async function resolveSuggestedPluginReference(
   let refreshTimedOut = false;
   let refreshTimeout: ReturnType<typeof setTimeout> | undefined;
   try {
-    const refreshRequest = updateZCodePluginMarketplace({
+    const refreshRequest = updateNekodePluginMarketplace({
       abortSignal: refreshController.signal,
       logger: context.logger,
       marketplace: SUGGESTED_PLUGIN_MARKETPLACE,
@@ -197,7 +197,7 @@ export async function resolveSuggestedPluginReference(
 
   const afterRefresh = readState();
   if (afterRefresh.entry) return toResult(afterRefresh.entry);
-  const overview = getZCodePluginsOverview({ logger: context.logger, workingDirectory });
+  const overview = getNekodePluginsOverview({ logger: context.logger, workingDirectory });
   const candidate = overview.availablePlugins.find((item) => item.id === stableId);
   if (
     !candidate ||
@@ -239,7 +239,7 @@ function resolveReferenceListingDisplayByPluginId(
   workspacePath: string,
 ): Map<string, PluginReferenceListingDisplay> {
   enrichCachedClaudeMarketplaceIconsForOverview({ workingDirectory: workspacePath });
-  const overview = getZCodePluginsOverview({ workingDirectory: workspacePath });
+  const overview = getNekodePluginsOverview({ workingDirectory: workspacePath });
   const displayByPluginId = new Map<string, PluginReferenceListingDisplay>();
   for (const plugin of [
     ...overview.availablePlugins,
@@ -273,7 +273,7 @@ function toReferenceCatalogEntry(
   entry: PluginReferenceCatalogEntry,
   displayByPluginId: ReadonlyMap<string, PluginReferenceListingDisplay>,
   includeCategory = false,
-): ZCodePluginReferenceCatalogEntry {
+): NekodePluginReferenceCatalogEntry {
   const display = displayByPluginId.get(entry.pluginId);
   return {
     ...(includeCategory ? { category: display?.category ?? "other" } : {}),

@@ -103,7 +103,7 @@ vi.mock("../src/app/create-app.js", async (importOriginal) => {
   const original = await importOriginal<typeof import("../src/app/create-app.js")>();
   return {
     ...original,
-    async createZCodeApp(options: Parameters<typeof original.createZCodeApp>[0]) {
+    async createNekodeApp(options: Parameters<typeof original.createNekodeApp>[0]) {
       if (telemetryMocks.emitToolOnAppCreate)
         options.onToolExecResource?.({
           platform: "linux",
@@ -118,7 +118,7 @@ vi.mock("../src/app/create-app.js", async (importOriginal) => {
         });
       if (telemetryMocks.emitToolOnAppCreate)
         throw new Error("test app completed telemetry handoff");
-      return original.createZCodeApp(options);
+      return original.createNekodeApp(options);
     },
   };
 });
@@ -129,9 +129,9 @@ vi.mock("@zcode/telemetry", async (importOriginal) => ({
   shutdownPreparedModelTelemetry: telemetryMocks.shutdownPreparedModelTelemetry,
 }));
 
-import { runZCodeProtocolAgent } from "../src/zcode-protocol-entrypoint.js";
+import { runNekodeProtocolAgent } from "../src/zcode-protocol-entrypoint.js";
 
-describe("ZCode Protocol telemetry lifecycle", () => {
+describe("Nekode Protocol telemetry lifecycle", () => {
   afterEach(() => {
     vi.clearAllMocks();
     telemetryMocks.emitMcpOnStart = false;
@@ -249,13 +249,13 @@ async function runProtocolAgent(
         }) + "\n",
       );
     else input.end();
-    await runZCodeProtocolAgent({
+    await runNekodeProtocolAgent({
       env: {
-        ZCODE_LOG_DIR: join(root, "log"),
-        ZCODE_SESSION_DB_PATH: join(root, "session.sqlite"),
-        ZCODE_STORAGE_DIR: root,
+        NEKODE_LOG_DIR: join(root, "log"),
+        NEKODE_SESSION_DB_PATH: join(root, "session.sqlite"),
+        NEKODE_STORAGE_DIR: root,
         ...providerEnv,
-        ...(runtimeSurface ? { ZCODE_TELEMETRY_RUNTIME_SURFACE: runtimeSurface } : {}),
+        ...(runtimeSurface ? { NEKODE_TELEMETRY_RUNTIME_SURFACE: runtimeSurface } : {}),
       },
       input,
       output: new Writable({

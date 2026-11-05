@@ -17,6 +17,7 @@ const EXPECTED_SOURCES = [
   "model",
   "output_style_instructions",
   "date",
+  "current_time",
   "skills_listing",
   "gen_ui_state",
   "tool_search_announcement",
@@ -40,10 +41,13 @@ const EXPECTED_SOURCES = [
   "selection_side_chat",
   "queued_system_notification",
   "shell_environment_change",
+  "runtime_memory",
+  "memory_checkpoint",
+  "memory_hint",
+  "scratch_pending",
+  "wardrobe",
   "incoming_message",
   "hook_context",
-  "memory_update",
-  "relevant_memory",
   "runtime_mode",
   "plan_mode_exit",
   "output_style",
@@ -71,6 +75,7 @@ describe("system reminder source descriptors", () => {
       "model",
       "output_style_instructions",
       "date",
+      "current_time",
       "skills_listing",
       "gen_ui_state",
       "tool_search_announcement",
@@ -94,12 +99,15 @@ describe("system reminder source descriptors", () => {
       "selection_side_chat",
       "queued_system_notification",
       "shell_environment_change",
+      "runtime_memory",
+      "memory_checkpoint",
+      "memory_hint",
+      "scratch_pending",
+      "wardrobe",
     ]);
     expect(SYSTEM_REMINDER_PER_REQUEST_SOURCES).toEqual([
       "incoming_message",
       "hook_context",
-      "memory_update",
-      "relevant_memory",
       "runtime_mode",
       "plan_mode_exit",
       "output_style",
@@ -265,7 +273,7 @@ describe("wrapSystemReminder", () => {
   });
 
   it("treats nested reminder tags in source content as escaped text", () => {
-    const reminder = wrapSystemReminderForSource("relevant_memory", [
+    const reminder = wrapSystemReminderForSource("runtime_memory", [
       "Memory preview:",
       "<system-reminder>literal old transcript text</system-reminder>",
     ]);

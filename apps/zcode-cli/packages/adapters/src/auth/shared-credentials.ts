@@ -1,18 +1,19 @@
 import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
+import { resolveNekodeDataBaseRoot } from "@zcode/shared/node";
 import { join, resolve } from "node:path";
 import { atomicWritePrivateTextFile, backupCorruptFile, withFileLock } from "@zcode/shared/node";
-import { createZCodeCredentialCipher, type ZCodeCredentialCipher } from "./credential-cipher.js";
+import { createNekodeCredentialCipher, type NekodeCredentialCipher } from "./credential-cipher.js";
 
-const ZCODE_DATA_BASE_DIR_ENV_KEY = "ZCODE_DATA_BASE_DIR";
+const NEKODE_DATA_BASE_DIR_ENV_KEY = "NEKODE_DATA_BASE_DIR";
 const ZAI_PROVIDER_ID = "zai";
 const credentialChangeListeners = new Map<
   string,
   Set<() => void | Promise<void>>
 >();
 
-export const SHARED_ZCODE_CREDENTIAL_KEYS = {
+export const SHARED_NEKODE_CREDENTIAL_KEYS = {
   activeProvider: "oauth:active_provider",
   bigmodelAccessToken: "oauth:bigmodel:access_token",
   bigmodelRefreshToken: "oauth:bigmodel:refresh_token",
@@ -23,9 +24,9 @@ export const SHARED_ZCODE_CREDENTIAL_KEYS = {
   zcodeJwtToken: "zcodejwttoken",
 } as const;
 
-export interface SharedZCodeCredentialStoreOptions {
+export interface SharedNekodeCredentialStoreOptions {
   baseDir?: string;
-  cipher?: ZCodeCredentialCipher;
+  cipher?: NekodeCredentialCipher;
   env?: Record<string, string | undefined>;
   filePath?: string;
 }
@@ -43,7 +44,7 @@ export interface ZaiLoginCredentialPayload {
   user: ZaiLoginCredentialUser;
 }
 
-export interface SharedZCodeCredentialStore {
+export interface SharedNekodeCredentialStore {
   readonly filePath: string;
   clearZaiLoginCredentials(): Promise<void>;
   delete(key: string): Promise<void>;
@@ -65,26 +66,26 @@ export interface SharedZCodeCredentialStore {
   saveZaiLoginCredentials(payload: ZaiLoginCredentialPayload): Promise<void>;
 }
 
-export function createSharedZCodeCredentialStore(
-  options: SharedZCodeCredentialStoreOptions = {},
-): SharedZCodeCredentialStore {
+export function createSharedNekodeCredentialStore(
+  options: SharedNekodeCredentialStoreOptions = {},
+): SharedNekodeCredentialStore {
   const env = options.env ?? process.env;
-  const filePath = resolveSharedZCodeCredentialsPath(options);
-  const cipher = options.cipher ?? createZCodeCredentialCipher({ env });
+  const filePath = resolveSharedNekodeCredentialsPath(options);
+  const cipher = options.cipher ?? createNekodeCredentialCipher({ env });
 
   return {
     filePath,
 
     async clearZaiLoginCredentials(): Promise<void> {
       await mutateRawCredentialRecord(filePath, async (rawCredentials) => {
-        const activeProviderRaw = rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider];
+        const activeProviderRaw = rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider];
         const activeProvider = activeProviderRaw ? cipher.decrypt(activeProviderRaw) : null;
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiRefreshToken];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiUserInfo];
-        delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken];
+        delete rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken];
+        delete rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zaiRefreshToken];
+        delete rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zaiUserInfo];
+        delete rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken];
         if (activeProvider === ZAI_PROVIDER_ID) {
-          delete rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider];
+          delete rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider];
         }
       });
     },
@@ -241,22 +242,22 @@ export function createSharedZCodeCredentialStore(
         userInfo: cipher.encrypt(JSON.stringify(payload.user)),
       };
       await mutateRawCredentialRecord(filePath, (rawCredentials) => {
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider] =
+        rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider] =
           encryptedCredentials.activeProvider;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken] =
+        rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken] =
           encryptedCredentials.accessToken;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken] = encryptedCredentials.jwtToken;
-        rawCredentials[SHARED_ZCODE_CREDENTIAL_KEYS.zaiUserInfo] = encryptedCredentials.userInfo;
+        rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken] = encryptedCredentials.jwtToken;
+        rawCredentials[SHARED_NEKODE_CREDENTIAL_KEYS.zaiUserInfo] = encryptedCredentials.userInfo;
       });
     },
   };
 }
 
-export function loadSharedZCodeCredentialSync(
+export function loadSharedNekodeCredentialSync(
   key: string,
-  options: SharedZCodeCredentialStoreOptions = {},
+  options: SharedNekodeCredentialStoreOptions = {},
 ): string | undefined {
-  const filePath = resolveSharedZCodeCredentialsPath(options);
+  const filePath = resolveSharedNekodeCredentialsPath(options);
   if (!existsSync(filePath)) {
     return undefined;
   }
@@ -269,7 +270,7 @@ export function loadSharedZCodeCredentialSync(
     if (rawValue === undefined) {
       return undefined;
     }
-    const cipher = options.cipher ?? createZCodeCredentialCipher({ env: options.env });
+    const cipher = options.cipher ?? createNekodeCredentialCipher({ env: options.env });
     const decrypted = cipher.decrypt(rawValue);
     return decrypted.trim().length > 0 ? decrypted : undefined;
   } catch {
@@ -277,16 +278,16 @@ export function loadSharedZCodeCredentialSync(
   }
 }
 
-export function resolveSharedZCodeCredentialsPath(
-  options: SharedZCodeCredentialStoreOptions = {},
+export function resolveSharedNekodeCredentialsPath(
+  options: SharedNekodeCredentialStoreOptions = {},
 ): string {
   if (options.filePath) {
     return resolveUserPath(options.filePath);
   }
 
   const env = options.env ?? process.env;
-  const baseDir = options.baseDir ?? env[ZCODE_DATA_BASE_DIR_ENV_KEY] ?? homedir();
-  return join(resolveUserPath(baseDir), ".zcode", "v2", "credentials.json");
+  const baseDir = options.baseDir ?? env.NEKODE_DATA_BASE_DIR ?? env[NEKODE_DATA_BASE_DIR_ENV_KEY] ?? homedir();
+  return join(resolveNekodeDataBaseRoot(resolveUserPath(baseDir), env), "v2", "credentials.json");
 }
 
 async function readRawCredentialRecord(filePath: string): Promise<Record<string, string>> {
@@ -297,7 +298,7 @@ async function readRawCredentialRecord(filePath: string): Promise<Record<string,
     if (getErrorCode(error) === "ENOENT") {
       return {};
     }
-    throw new Error(`Unable to read shared ZCode credentials: ${filePath}`, { cause: error });
+    throw new Error(`Unable to read shared Nekode credentials: ${filePath}`, { cause: error });
   }
 
   try {
@@ -307,7 +308,7 @@ async function readRawCredentialRecord(filePath: string): Promise<Record<string,
     // 先保留现场再失败，调用方必须显式处理恢复，不能静默覆盖。
     const backupPath = await backupCorruptFile(filePath).catch(() => undefined);
     const evidence = backupPath ? ` Backup: ${backupPath}` : "";
-    throw new Error(`Shared ZCode credentials are corrupt: ${filePath}.${evidence}`, {
+    throw new Error(`Shared Nekode credentials are corrupt: ${filePath}.${evidence}`, {
       cause: error,
     });
   }

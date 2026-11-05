@@ -5,22 +5,22 @@ import { basename, dirname, resolve } from "node:path";
 import type { ProviderConfigLayerSnapshot, ProviderSource } from "@zcode/provider";
 import { atomicWritePrivateTextFile, withFileLock } from "@zcode/shared/node";
 import {
-  decodeZCodeBuiltinRelease,
-  encodeZCodeBuiltinRelease,
-  serializeZCodeBuiltinRelease,
-  type ZCodeBuiltinRelease,
+  decodeNekodeBuiltinRelease,
+  encodeNekodeBuiltinRelease,
+  serializeNekodeBuiltinRelease,
+  type NekodeBuiltinRelease,
 } from "./zcode-builtin-release.js";
 
-export interface NodeZCodeBuiltinProviderConfigSourceOptions {
+export interface NodeNekodeBuiltinProviderConfigSourceOptions {
   readonly bundledFilePath: string;
   readonly activeFilePath?: string;
   readonly watch?: boolean;
 }
 
-export type ApplyZCodeBuiltinReleaseResult = "updated" | "unchanged" | "stale";
+export type ApplyNekodeBuiltinReleaseResult = "updated" | "unchanged" | "stale";
 
 /** Bundled、Active/LKG 与 Remote 共用同一 Release，并最终发布为现有 Config Snapshot。 */
-export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<ProviderConfigLayerSnapshot> {
+export class NodeNekodeBuiltinProviderConfigSource implements ProviderSource<ProviderConfigLayerSnapshot> {
   readonly #bundledFilePath: string;
   readonly #activeFilePath: string;
   readonly #sourceKey: string;
@@ -31,9 +31,9 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
   #watchRefresh = Promise.resolve();
   #disposed = false;
 
-  constructor(options: NodeZCodeBuiltinProviderConfigSourceOptions) {
+  constructor(options: NodeNekodeBuiltinProviderConfigSourceOptions) {
     const bundledFilePath = options.bundledFilePath.trim();
-    if (!bundledFilePath) throw new Error("ZCode Built-in bundledFilePath 不能为空");
+    if (!bundledFilePath) throw new Error("Nekode Built-in bundledFilePath 不能为空");
     this.#bundledFilePath = bundledFilePath;
     this.#activeFilePath = options.activeFilePath?.trim() || bundledFilePath;
     // 旧标识只有发布序号，不同 Endpoint 同序号会让 Registry 误复用上一来源。
@@ -48,7 +48,7 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
 
   async read(): Promise<ProviderConfigLayerSnapshot> {
     this.#assertNotDisposed();
-    let release: ZCodeBuiltinRelease;
+    let release: NekodeBuiltinRelease;
     try {
       await this.#ensureWatcher();
       release = await withFileLock(this.#activeFilePath, () => this.#readAndMaterializeLocked());
@@ -64,7 +64,7 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
     return snapshotFromRelease(release, this.#sourceKey);
   }
 
-  async applyRemoteRelease(release: ZCodeBuiltinRelease): Promise<ApplyZCodeBuiltinReleaseResult> {
+  async applyRemoteRelease(release: NekodeBuiltinRelease): Promise<ApplyNekodeBuiltinReleaseResult> {
     this.#assertNotDisposed();
     await this.#ensureWatcher();
     const result = await withFileLock(this.#activeFilePath, async () => {
@@ -73,10 +73,10 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
       this.#assertNotDisposed();
       if (release.revision < current.revision) return "stale" as const;
       if (release.revision === current.revision) {
-        if (serializeZCodeBuiltinRelease(release) === serializeZCodeBuiltinRelease(current)) {
+        if (serializeNekodeBuiltinRelease(release) === serializeNekodeBuiltinRelease(current)) {
           return "unchanged" as const;
         }
-        throw new Error(`ZCode Built-in 相同 revision ${release.revision} 对应不同内容`);
+        throw new Error(`Nekode Built-in 相同 revision ${release.revision} 对应不同内容`);
       }
       await this.#writeActiveLocked(release);
       this.#observedSignature = signatureOf(release);
@@ -100,7 +100,7 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
     this.#listeners.clear();
   }
 
-  async #readAndMaterializeLocked(): Promise<ZCodeBuiltinRelease> {
+  async #readAndMaterializeLocked(): Promise<NekodeBuiltinRelease> {
     const [bundled, active] = await Promise.all([
       readBundledReleaseCandidate(this.#bundledFilePath),
       this.#activeFilePath === this.#bundledFilePath
@@ -115,11 +115,11 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
     return selected;
   }
 
-  async #writeActiveLocked(release: ZCodeBuiltinRelease): Promise<void> {
+  async #writeActiveLocked(release: NekodeBuiltinRelease): Promise<void> {
     this.#assertNotDisposed();
     await atomicWritePrivateTextFile(
       this.#activeFilePath,
-      JSON.stringify(encodeZCodeBuiltinRelease(release), null, 2),
+      JSON.stringify(encodeNekodeBuiltinRelease(release), null, 2),
     );
   }
 
@@ -156,18 +156,18 @@ export class NodeZCodeBuiltinProviderConfigSource implements ProviderSource<Prov
   }
 
   #assertNotDisposed(): void {
-    if (this.#disposed) throw new Error("NodeZCodeBuiltinProviderConfigSource 已 dispose");
+    if (this.#disposed) throw new Error("NodeNekodeBuiltinProviderConfigSource 已 dispose");
   }
 }
 
-export function createNodeZCodeBuiltinProviderConfigSource(
-  options: NodeZCodeBuiltinProviderConfigSourceOptions,
-): NodeZCodeBuiltinProviderConfigSource {
-  return new NodeZCodeBuiltinProviderConfigSource(options);
+export function createNodeNekodeBuiltinProviderConfigSource(
+  options: NodeNekodeBuiltinProviderConfigSourceOptions,
+): NodeNekodeBuiltinProviderConfigSource {
+  return new NodeNekodeBuiltinProviderConfigSource(options);
 }
 
 interface ReleaseCandidate {
-  readonly release?: ZCodeBuiltinRelease;
+  readonly release?: NekodeBuiltinRelease;
   readonly error?: unknown;
 }
 
@@ -180,7 +180,7 @@ interface ReleaseCandidate {
  * 用模块级缓存而非实例字段，是因为 Endpoint 切换会新建 Source 实例，也要能读到同一基线。
  * Worker 把 Host 的 Active 当作 Bundled 读取时，这里等价于最近一次成功读取的 LKG。
  */
-const lastValidBundledReleaseByPath = new Map<string, ZCodeBuiltinRelease>();
+const lastValidBundledReleaseByPath = new Map<string, NekodeBuiltinRelease>();
 
 async function readBundledReleaseCandidate(filePath: string): Promise<ReleaseCandidate> {
   const key = resolve(filePath);
@@ -197,7 +197,7 @@ async function readBundledReleaseCandidate(filePath: string): Promise<ReleaseCan
 
 async function readReleaseCandidate(filePath: string): Promise<ReleaseCandidate> {
   try {
-    return { release: decodeZCodeBuiltinRelease(JSON.parse(await readFile(filePath, "utf8"))) };
+    return { release: decodeNekodeBuiltinRelease(JSON.parse(await readFile(filePath, "utf8"))) };
   } catch (error) {
     // Bug 原因：ENOENT 曾直接返回 null，两份文件都缺失时 AggregateError 的错误列表为空，
     // 日志只剩“均不可用”而没有路径。缺失同样是无效候选，保留原始错误供汇总报告。
@@ -208,24 +208,24 @@ async function readReleaseCandidate(filePath: string): Promise<ReleaseCandidate>
 function selectReleaseCandidate(
   bundled: ReleaseCandidate | null,
   active: ReleaseCandidate | null,
-): ZCodeBuiltinRelease {
+): NekodeBuiltinRelease {
   if (
     bundled?.release &&
     active?.release &&
     bundled.release.revision === active.release.revision &&
-    serializeZCodeBuiltinRelease(bundled.release) !== serializeZCodeBuiltinRelease(active.release)
+    serializeNekodeBuiltinRelease(bundled.release) !== serializeNekodeBuiltinRelease(active.release)
   ) {
     // 同 revision 冲突属于 Active 缓存失效，不能反向使可信 Bundled 无法启动。
     // 返回 Bundled 后调用方会在能够写入时原子替换 Active。
     return bundled.release;
   }
   const valid = [bundled?.release, active?.release].filter(
-    (candidate): candidate is ZCodeBuiltinRelease => candidate !== undefined,
+    (candidate): candidate is NekodeBuiltinRelease => candidate !== undefined,
   );
   if (valid.length === 0) {
     throw new AggregateError(
       [bundled?.error, active?.error].filter((error) => error !== undefined),
-      "Bundled 与 Active ZCode Built-in Release 均不可用",
+      "Bundled 与 Active Nekode Built-in Release 均不可用",
     );
   }
   return valid.reduce((newest, candidate) =>
@@ -234,7 +234,7 @@ function selectReleaseCandidate(
 }
 
 function snapshotFromRelease(
-  release: ZCodeBuiltinRelease,
+  release: NekodeBuiltinRelease,
   sourceKey: string,
 ): ProviderConfigLayerSnapshot {
   return Object.freeze({
@@ -245,8 +245,8 @@ function snapshotFromRelease(
   });
 }
 
-function signatureOf(release: ZCodeBuiltinRelease): string {
-  return `${release.revision}:${serializeZCodeBuiltinRelease(release)}`;
+function signatureOf(release: NekodeBuiltinRelease): string {
+  return `${release.revision}:${serializeNekodeBuiltinRelease(release)}`;
 }
 
 function isFileNotFound(error: unknown): boolean {

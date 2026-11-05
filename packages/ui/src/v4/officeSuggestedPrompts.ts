@@ -309,41 +309,21 @@ export const officeSuggestedPrompts: RecommendedPrompt[] = [
     },
   },
   {
-    id: "official-15",
-    category: "utility",
-    iconUrl: "https://cdn-zcode.z.ai/zcode/official-plugin/assets/skill-creator/icon.png",
-    label: {
-      cn: "把我经常重复的工作流程做成一个可复用的技能",
-      en: "Turn my recurring workflow into a reusable skill.",
-    },
-    prompt: {
-      cn: "把我经常重复的工作流程做成一个可复用的技能",
-      en: "Turn my recurring workflow into a reusable skill.",
-    },
-    plugin: {
-      stableId: "skill-creator@zcode-plugins-official",
-      label: {
-        cn: "技能创建器",
-        en: "skill-creator",
-      },
-    },
-  },
-  {
     id: "official-16",
     category: "utility",
     iconUrl: "https://cdn-zcode.z.ai/zcode/official-plugin/assets/zcode-guide/icon.png",
     label: {
-      cn: "帮我检查当前的 ZCode 配置，看看有哪些可以调整",
-      en: "Review my ZCode configuration and suggest useful adjustments.",
+      cn: "帮我检查当前的 Nekode 配置，看看有哪些可以调整",
+      en: "Review my Nekode configuration and suggest useful adjustments.",
     },
     prompt: {
-      cn: "帮我检查当前的 ZCode 配置，看看有哪些可以调整",
-      en: "Review my ZCode configuration and suggest useful adjustments.",
+      cn: "帮我检查当前的 Nekode 配置，看看有哪些可以调整",
+      en: "Review my Nekode configuration and suggest useful adjustments.",
     },
     plugin: {
       stableId: "zcode-guide@zcode-plugins-official",
       label: {
-        cn: "ZCode 使用指南",
+        cn: "Nekode 使用指南",
         en: "zcode-guide",
       },
     },

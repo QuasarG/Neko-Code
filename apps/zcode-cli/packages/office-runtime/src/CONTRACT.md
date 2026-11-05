@@ -28,7 +28,7 @@ This runtime builds the viewer panels of several plugins. Each built-in plugin p
 sequenceDiagram
   participant A as Agent
   participant S as Server (DocumentOwner)
-  participant H as ZCode host
+  participant H as Nekode host
   participant P as Panel
   A->>S: open_document / show_in_viewer
   S-->>H: ViewerSnapshot {document, reveal{targets, seq}}

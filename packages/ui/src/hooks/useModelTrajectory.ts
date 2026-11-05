@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ZCodeModelTrajectory } from "@zcode/services";
+import type { NekodeModelTrajectory } from "@zcode/services";
 import { logger } from "@/logger.js";
-import { useZCodeTaskService } from "@/hooks/useZCodeTaskService.js";
+import { useNekodeTaskService } from "@/hooks/useNekodeTaskService.js";
 
 export interface ModelTrajectoryState {
   loading: boolean;
-  data: ZCodeModelTrajectory | null;
+  data: NekodeModelTrajectory | null;
   error: string | null;
 }
 
@@ -33,7 +33,7 @@ export function useModelTrajectory(
   taskId: string | null,
   workspaceIdentity?: string,
 ): ModelTrajectoryState & { refresh: () => void } {
-  const zcodeTaskService = useZCodeTaskService(workspacePath, undefined, workspaceIdentity);
+  const zcodeTaskService = useNekodeTaskService(workspacePath, undefined, workspaceIdentity);
   const [state, setState] = useState<ModelTrajectoryState>(INITIAL_STATE);
   const [reloadToken, setReloadToken] = useState(0);
   const requestVersionRef = useRef(0);

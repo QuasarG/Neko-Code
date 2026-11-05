@@ -1,12 +1,12 @@
-import { DEFAULT_ZCODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
+import { DEFAULT_NEKODE_ENDPOINT_ORIGIN } from "./zcodeEndpoint.js";
 
-export const ZCODE_SOURCE_HEADERS = {
-  "User-Agent": "ZCode/unknown",
-  "HTTP-Referer": DEFAULT_ZCODE_ENDPOINT_ORIGIN,
+export const NEKODE_SOURCE_HEADERS = {
+  "User-Agent": "Nekode/unknown",
+  "HTTP-Referer": DEFAULT_NEKODE_ENDPOINT_ORIGIN,
   "X-Title": "Z Code@electron",
 } as const;
 
-export interface BuildZCodeSourceHeadersFromContextOptions {
+export interface BuildNekodeSourceHeadersFromContextOptions {
   appVersion?: string;
   arch?: string;
   clientLanguage?: string;
@@ -19,7 +19,7 @@ export interface BuildZCodeSourceHeadersFromContextOptions {
   sourceTitle?: string;
 }
 
-export function normalizeZCodeSourceHeaderValue(value: string | undefined): string | undefined {
+export function normalizeNekodeSourceHeaderValue(value: string | undefined): string | undefined {
   const trimmed = value?.trim();
   if (!trimmed || !/^[\x20-\x7e]+$/.test(trimmed)) {
     return undefined;
@@ -27,26 +27,26 @@ export function normalizeZCodeSourceHeaderValue(value: string | undefined): stri
   return trimmed;
 }
 
-export function buildZCodeSourceHeadersFromContext(
-  options: BuildZCodeSourceHeadersFromContextOptions = {},
+export function buildNekodeSourceHeadersFromContext(
+  options: BuildNekodeSourceHeadersFromContextOptions = {},
 ): Record<string, string> {
-  const appVersion = normalizeZCodeSourceHeaderValue(options.appVersion);
-  const arch = normalizeZCodeSourceHeaderValue(options.arch);
-  const clientLanguage = normalizeZCodeSourceHeaderValue(options.clientLanguage) ?? "unknown";
-  const clientTimezone = normalizeZCodeSourceHeaderValue(options.clientTimezone) ?? "unknown";
-  const deviceMid = normalizeZCodeSourceHeaderValue(options.deviceMid);
+  const appVersion = normalizeNekodeSourceHeaderValue(options.appVersion);
+  const arch = normalizeNekodeSourceHeaderValue(options.arch);
+  const clientLanguage = normalizeNekodeSourceHeaderValue(options.clientLanguage) ?? "unknown";
+  const clientTimezone = normalizeNekodeSourceHeaderValue(options.clientTimezone) ?? "unknown";
+  const deviceMid = normalizeNekodeSourceHeaderValue(options.deviceMid);
   const endpointOrigin =
-    normalizeZCodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_ZCODE_ENDPOINT_ORIGIN;
-  const osVersion = normalizeZCodeSourceHeaderValue(options.osVersion);
-  const platform = normalizeZCodeSourceHeaderValue(options.platform);
-  const releaseChannel = normalizeZCodeSourceHeaderValue(options.releaseChannel);
-  const sourceTitle = normalizeZCodeSourceHeaderValue(options.sourceTitle) ?? "electron";
+    normalizeNekodeSourceHeaderValue(options.endpointOrigin) ?? DEFAULT_NEKODE_ENDPOINT_ORIGIN;
+  const osVersion = normalizeNekodeSourceHeaderValue(options.osVersion);
+  const platform = normalizeNekodeSourceHeaderValue(options.platform);
+  const releaseChannel = normalizeNekodeSourceHeaderValue(options.releaseChannel);
+  const sourceTitle = normalizeNekodeSourceHeaderValue(options.sourceTitle) ?? "electron";
 
   return {
-    ...ZCODE_SOURCE_HEADERS,
+    ...NEKODE_SOURCE_HEADERS,
     "HTTP-Referer": endpointOrigin,
-    "User-Agent": `ZCode/${appVersion ?? "unknown"}`,
-    ...(appVersion ? { "X-ZCode-App-Version": appVersion } : {}),
+    "User-Agent": `Nekode/${appVersion ?? "unknown"}`,
+    ...(appVersion ? { "X-Nekode-App-Version": appVersion } : {}),
     "X-Title": `Z Code@${sourceTitle}`,
     ...(platform && arch ? { "X-Platform": `${platform}-${arch}` } : {}),
     ...(releaseChannel ? { "X-Release-Channel": releaseChannel } : {}),

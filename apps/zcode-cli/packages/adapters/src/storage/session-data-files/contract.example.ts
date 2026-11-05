@@ -5,7 +5,6 @@ import type { SessionDataFilesPort } from "./contract.js";
 
 export function createExampleSessionDataFiles(
   sessions: Record<string, number>,
-  memory: Record<string, number> = {},
 ): SessionDataFilesPort {
   const take = (store: Record<string, number>, key: string) => {
     const bytes = store[key] ?? 0;
@@ -15,7 +14,7 @@ export function createExampleSessionDataFiles(
   return {
     measureSession: async (sessionId) => sessions[sessionId] ?? 0,
     removeSession: async (sessionId) => take(sessions, sessionId),
-    measureMemory: async ({ workspacePath }) => memory[workspacePath] ?? 0,
-    removeMemory: async ({ workspacePath }) => take(memory, workspacePath),
+    measureMemory: async () => 0,
+    removeMemory: async () => 0,
   };
 }

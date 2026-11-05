@@ -46,10 +46,10 @@ import {
 import { createNodeCustomCommandAdapter } from "../src/commands/index.js";
 import { createNodeSkillAdapter } from "../src/skills/index.js";
 import {
-  ZCODE_AGENT_CA_CERT_ENV_KEY,
-  ZCODE_HTTP_PROXY_ENV_KEY,
-  ZCODE_NO_PROXY_ENV_KEY,
-  ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
+  NEKODE_AGENT_CA_CERT_ENV_KEY,
+  NEKODE_HTTP_PROXY_ENV_KEY,
+  NEKODE_NO_PROXY_ENV_KEY,
+  NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
 } from "@zcode/shared";
 
 const execFileAsync = promisify(execFile);
@@ -200,9 +200,9 @@ describe("NodePluginAdapter", () => {
           pluginCount: 0,
         },
       ]);
-      vi.stubEnv("ZCODE_HTTP_PROXY", "");
+      vi.stubEnv("NEKODE_HTTP_PROXY", "");
       vi.stubEnv(
-        ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
+        NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY,
         JSON.stringify({ HTTP_PROXY: await listenServer(proxy) }),
       );
 
@@ -429,11 +429,11 @@ describe("NodePluginAdapter", () => {
     }
   });
 
-  it("injects explicit ZCode proxy env into marketplace Git commands", () => {
+  it("injects explicit Nekode proxy env into marketplace Git commands", () => {
     const env = buildMarketplaceGitEnv({
-      [ZCODE_AGENT_CA_CERT_ENV_KEY]: "/tmp/root-ca.pem",
-      [ZCODE_HTTP_PROXY_ENV_KEY]: "127.0.0.1:7890",
-      [ZCODE_NO_PROXY_ENV_KEY]: "localhost,127.0.0.1",
+      [NEKODE_AGENT_CA_CERT_ENV_KEY]: "/tmp/root-ca.pem",
+      [NEKODE_HTTP_PROXY_ENV_KEY]: "127.0.0.1:7890",
+      [NEKODE_NO_PROXY_ENV_KEY]: "localhost,127.0.0.1",
       PATH: "/usr/bin:/bin",
       http_proxy: "http://ambient-proxy:8080",
     });
@@ -469,8 +469,8 @@ describe("NodePluginAdapter", () => {
     try {
       // Suppressed built-in seeded at TWO versions (mirrors an upgrade that left an old dir).
       for (const version of ["0.1.0", "0.2.0"]) {
-        await writePluginManifest(join(officialCacheRoot, "skill-creator", version), {
-          name: "skill-creator",
+        await writePluginManifest(join(officialCacheRoot, "zcode-guide", version), {
+          name: "zcode-guide",
           version,
         });
       }
@@ -486,7 +486,7 @@ describe("NodePluginAdapter", () => {
           enabled: true,
           enabledPlugins: {},
           options: {},
-          suppressedBuiltins: ["skill-creator@zcode-plugins-official"],
+          suppressedBuiltins: ["zcode-guide@zcode-plugins-official"],
         },
         env: {},
         storageRoot,
@@ -494,7 +494,7 @@ describe("NodePluginAdapter", () => {
       });
 
       expect(
-        outcome.plugins.find((plugin) => plugin.id === "skill-creator@zcode-plugins-official"),
+        outcome.plugins.find((plugin) => plugin.id === "zcode-guide@zcode-plugins-official"),
       ).toBeUndefined();
       expect(
         outcome.plugins.find((plugin) => plugin.id === "document-skills@zcode-plugins-official"),
@@ -571,10 +571,10 @@ describe("NodePluginAdapter", () => {
   // collides with a suppressed string must NOT be dropped.
   it("does not suppress inline plugins that share a suppressed built-in's name", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-plugin-suppress-inline-guard-"));
-    const pluginRoot = join(dir, "skill-creator-inline");
+    const pluginRoot = join(dir, "zcode-guide-inline");
 
     try {
-      await writePluginManifest(pluginRoot, { name: "skill-creator" });
+      await writePluginManifest(pluginRoot, { name: "zcode-guide" });
 
       const outcome = discoverNodePluginsSync({
         config: {
@@ -582,16 +582,16 @@ describe("NodePluginAdapter", () => {
           enabled: true,
           enabledPlugins: {},
           options: {},
-          // Same bare name, but the inline id is skill-creator@inline — different from the
+          // Same bare name, but the inline id is zcode-guide@inline — different from the
           // official id, so the inline plugin must survive.
-          suppressedBuiltins: ["skill-creator@zcode-plugins-official", "skill-creator@inline"],
+          suppressedBuiltins: ["zcode-guide@zcode-plugins-official", "zcode-guide@inline"],
         },
         env: {},
         storageRoot: join(dir, "storage"),
         workingDirectory: join(dir, "workspace"),
       });
 
-      expect(outcome.plugins.find((plugin) => plugin.id === "skill-creator@inline")).toMatchObject({
+      expect(outcome.plugins.find((plugin) => plugin.id === "zcode-guide@inline")).toMatchObject({
         source: "inline",
       });
     } finally {
@@ -706,7 +706,7 @@ describe("NodePluginAdapter", () => {
 
       const known = ensureDefaultPluginMarketplaces(storageRoot);
 
-      // 默认市场现在有两个：claude-plugins-official（已有记录不被覆盖）+ 唯一 ZCode
+      // 默认市场现在有两个：claude-plugins-official（已有记录不被覆盖）+ 唯一 Nekode
       // 官方市场 zcode-plugins-official（缺失时补种）。
       expect(known).toHaveLength(2);
       const claude = known.find((record) => record.id === "claude-plugins-official");
@@ -833,10 +833,10 @@ describe("NodePluginAdapter", () => {
             "ios-simulator": {
               command: "bun",
               args: ["${CLAUDE_PLUGIN_ROOT}/src/mcp/server.ts"],
-              cwd: "${ZCODE_PROJECT_DIR}",
+              cwd: "${NEKODE_PROJECT_DIR}",
               env: {
                 IOS_SIM_DEFAULT_DEVICE: "${user_config.default_device}",
-                IOS_SIM_PLUGIN_DATA: "${ZCODE_PLUGIN_DATA}",
+                IOS_SIM_PLUGIN_DATA: "${NEKODE_PLUGIN_DATA}",
               },
             },
           },
@@ -1431,7 +1431,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=Nekode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1455,7 +1455,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=Nekode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1480,7 +1480,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=Nekode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1574,7 +1574,7 @@ describe("NodePluginAdapter", () => {
         "git",
         [
           "-c",
-          "user.name=ZCode Test",
+          "user.name=Nekode Test",
           "-c",
           "user.email=zcode-test@example.com",
           "commit",
@@ -1881,9 +1881,9 @@ describe("NodePluginAdapter", () => {
 
     try {
       const proxyBaseUrl = await listenLoopbackServer(proxy);
-      vi.stubEnv(ZCODE_HTTP_PROXY_ENV_KEY, "");
-      vi.stubEnv(ZCODE_NO_PROXY_ENV_KEY, "");
-      vi.stubEnv(ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, JSON.stringify({ HTTP_PROXY: proxyBaseUrl }));
+      vi.stubEnv(NEKODE_HTTP_PROXY_ENV_KEY, "");
+      vi.stubEnv(NEKODE_NO_PROXY_ENV_KEY, "");
+      vi.stubEnv(NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, JSON.stringify({ HTTP_PROXY: proxyBaseUrl }));
 
       const sourceUrl = "http://127.0.0.2/captured-proxy.zip";
       resolved = await resolveZipPluginSource({
@@ -1927,7 +1927,7 @@ describe("NodePluginAdapter", () => {
         response.end();
       });
       const originBaseUrl = await listenLoopbackServer(origin);
-      vi.stubEnv(ZCODE_NO_PROXY_ENV_KEY, "127.0.0.1");
+      vi.stubEnv(NEKODE_NO_PROXY_ENV_KEY, "127.0.0.1");
 
       resolved = await resolveZipPluginSource({
         headers: { "x-zcode-channel": "internal" },
@@ -1952,7 +1952,7 @@ describe("NodePluginAdapter", () => {
 
     try {
       const originBaseUrl = await listenLoopbackServer(origin);
-      vi.stubEnv(ZCODE_NO_PROXY_ENV_KEY, "127.0.0.1");
+      vi.stubEnv(NEKODE_NO_PROXY_ENV_KEY, "127.0.0.1");
 
       await expect(
         resolveZipPluginSource({
@@ -2430,7 +2430,7 @@ describe("NodePluginAdapter", () => {
           pluginCount: 0,
         },
       ]);
-      vi.stubEnv("ZCODE_GIT_BINARY", join(dir, "missing-git"));
+      vi.stubEnv("NEKODE_GIT_BINARY", join(dir, "missing-git"));
 
       expect(await updateMarketplace({ marketplace: "credential-market", storageRoot })).toEqual(
         [],
@@ -2683,19 +2683,19 @@ describe("NodePluginAdapter", () => {
         },
       ]);
       for (const key of [
-        ZCODE_HTTP_PROXY_ENV_KEY,
+        NEKODE_HTTP_PROXY_ENV_KEY,
         "HTTP_PROXY",
         "HTTPS_PROXY",
         "ALL_PROXY",
         "http_proxy",
         "https_proxy",
         "all_proxy",
-        ZCODE_AGENT_CA_CERT_ENV_KEY,
+        NEKODE_AGENT_CA_CERT_ENV_KEY,
         "NODE_EXTRA_CA_CERTS",
       ]) {
         vi.stubEnv(key, "");
       }
-      vi.stubEnv(ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, "{}");
+      vi.stubEnv(NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, "{}");
       vi.stubGlobal(
         "fetch",
         vi.fn(async () => new Response("[]", { status: 200 })),
@@ -2867,19 +2867,19 @@ describe("NodePluginAdapter", () => {
         },
       ]);
       for (const key of [
-        ZCODE_HTTP_PROXY_ENV_KEY,
+        NEKODE_HTTP_PROXY_ENV_KEY,
         "HTTP_PROXY",
         "HTTPS_PROXY",
         "ALL_PROXY",
         "http_proxy",
         "https_proxy",
         "all_proxy",
-        ZCODE_AGENT_CA_CERT_ENV_KEY,
+        NEKODE_AGENT_CA_CERT_ENV_KEY,
         "NODE_EXTRA_CA_CERTS",
       ]) {
         vi.stubEnv(key, "");
       }
-      vi.stubEnv(ZCODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, "{}");
+      vi.stubEnv(NEKODE_TOOL_ENV_PASSTHROUGH_ENV_KEY, "{}");
       vi.stubGlobal(
         "fetch",
         vi.fn(async () => new Response("[]", { status: 200 })),
@@ -3497,7 +3497,7 @@ describe("NodePluginAdapter", () => {
             risky: {
               command: "node",
               env: {
-                TOKEN: "${ZCODE_MISSING_TOKEN}",
+                TOKEN: "${NEKODE_MISSING_TOKEN}",
               },
             },
           },
@@ -3762,7 +3762,7 @@ describe("NodePluginAdapter", () => {
           local: {
             command: "node",
             env: {
-              TOKEN: "${ZCODE_PLUGIN_TOKEN}",
+              TOKEN: "${NEKODE_PLUGIN_TOKEN}",
             },
           },
         },
@@ -3983,7 +3983,7 @@ describe("NodePluginAdapter", () => {
     }
   });
 
-  it("prefers Claude manifest over Codex manifest when no ZCode manifest exists", async () => {
+  it("prefers Claude manifest over Codex manifest when no Nekode manifest exists", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-codex-plugin-"));
     const pluginRoot = join(dir, "multi-manifest");
 
@@ -4086,7 +4086,7 @@ describe("NodePluginAdapter", () => {
   });
 
   // Bugfix 回归（差一层目录）：Claude 插件规范里 manifest skills 数组项指向「技能目录本身」
-  // （项内直接是 SKILL.md），此前 ZCode 把每项当作技能根去项下找子目录，扫描恒为空。
+  // （项内直接是 SKILL.md），此前 Nekode 把每项当作技能根去项下找子目录，扫描恒为空。
   it("discovers skills for plugin manifest skills array entries pointing at skill directories", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-plugin-array-skills-"));
     const pluginRoot = join(dir, "mattpocock");
@@ -4854,7 +4854,7 @@ async function writeTripletPluginFixture(
           command: "node",
           env: {
             PLUGIN_DATA: "${CLAUDE_PLUGIN_DATA}",
-            PROJECT_DIR: "${ZCODE_PROJECT_DIR}",
+            PROJECT_DIR: "${NEKODE_PROJECT_DIR}",
           },
         },
       },

@@ -1,6 +1,6 @@
 import { localRuntimeNetworkCapture } from "#src/zcode-agent/localRuntimeNetworkCapture.js";
-import { resolveZCodeAgentSpawnCwd } from "#src/zcode-agent/zcodeAgentSpawnCwd.js";
-import type { ZCodeAgentStorageStartupSnapshot } from "#src/zcode-agent/zcodeAgent.js";
+import { resolveNekodeAgentSpawnCwd } from "#src/zcode-agent/zcodeAgentSpawnCwd.js";
+import type { NekodeAgentStorageStartupSnapshot } from "#src/zcode-agent/zcodeAgent.js";
 /* eslint-disable max-lines -- zcodeAgentProcessManager 集中维护 agent 子进程启动、复用、超时回收和 runtime identity，拆分会扩大进程生命周期状态同步面 */
 import { spawn } from "node:child_process";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
@@ -9,37 +9,37 @@ import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { Emitter } from "@zcode/rpc";
 import { GEN_UI_OUTPUT_DIRECTORY, GEN_UI_OUTPUT_ROOT_ENV } from "@zcode/shared/node";
-import { getAppConfigDir, getZCodeDataRootDir } from "#src/paths.js";
+import { getAppConfigDir, getNekodeDataRootDir } from "#src/paths.js";
 import {
-  parseZCodeProcessDiagnostic,
-  ZCODE_AGENT_LIFECYCLE_LOG_MARKER,
-  ZCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
-  ZCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
-  ZCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
+  parseNekodeProcessDiagnostic,
+  NEKODE_AGENT_LIFECYCLE_LOG_MARKER,
+  NEKODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
+  NEKODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
+  NEKODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
 } from "@zcode/shared/process-diagnostic";
 import {
-  ZCODE_AGENT_RUNTIME,
-  ZCODE_AGENT_PROVIDER,
-  ZCODE_RUNTIME_ENV_KEY,
+  NEKODE_AGENT_RUNTIME,
+  NEKODE_AGENT_PROVIDER,
+  NEKODE_RUNTIME_ENV_KEY,
   resolveWorkspaceKey,
-  resolveZCodeRuntimeEnv,
-  sanitizeZCodeRuntimeEnv,
+  resolveNekodeRuntimeEnv,
+  sanitizeNekodeRuntimeEnv,
 } from "@zcode/shared";
 import {
-  findZCodeAgentRuntimeBinary,
-  findZCodeAgentRuntimeNodeBundle,
+  findNekodeAgentRuntimeBinary,
+  findNekodeAgentRuntimeNodeBundle,
 } from "../runtime-tools/providerRuntimeResolver.js";
 import { isEffectiveDevelopmentNodeEnv } from "#src/runtime-tools/nodeEnv.js";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
-import { ZCodeProtocolClient } from "./zcodeProtocolClient.js";
-import { ZCodeStdioTransport } from "./zcodeStdioTransport.js";
-import { readZCodeStdioTapDevState } from "./zcodeStdioTapDevConfig.js";
-import type { ZCodeAgentPresentationSurface } from "./zcodeAgentPresentationSurface.js";
+import { NekodeProtocolClient } from "./zcodeProtocolClient.js";
+import { NekodeStdioTransport } from "./zcodeStdioTransport.js";
+import { readNekodeStdioTapDevState } from "./zcodeStdioTapDevConfig.js";
+import type { NekodeAgentPresentationSurface } from "./zcodeAgentPresentationSurface.js";
 import { shouldSpawnInDetachedProcessGroup } from "../process/processTreeTerminator.js";
 import type { RuntimeProcessLifecycleReporter } from "../process/runtimeProcessLifecycle.js";
 import { buildAgentWorkspaceIdentityEnv } from "../runtime-tools/agentProxyEnv.js";
 
-export interface ZCodeAgentCommand {
+export interface NekodeAgentCommand {
   /** 本地配套 CLI bundle 的存储专用 Worker 入口；远端/自定义命令不推断能力。 */
   storagePreparationEntry?: string;
   /** 本次部署的 Agent 支持迁移前的启动通知；旧自定义命令保持原协议。 */
@@ -50,16 +50,16 @@ export interface ZCodeAgentCommand {
   env?: Record<string, string>;
 }
 
-export interface ZCodeAgentCommandResolverContext {
-  presentationSurface?: ZCodeAgentPresentationSurface;
+export interface NekodeAgentCommandResolverContext {
+  presentationSurface?: NekodeAgentPresentationSurface;
   workspacePath: string;
   workspaceIdentity?: string;
   workspaceKey: string;
 }
 
-export type ZCodeAgentCommandResolver = (
-  context: ZCodeAgentCommandResolverContext,
-) => Promise<ZCodeAgentCommand | null> | ZCodeAgentCommand | null;
+export type NekodeAgentCommandResolver = (
+  context: NekodeAgentCommandResolverContext,
+) => Promise<NekodeAgentCommand | null> | NekodeAgentCommand | null;
 
 type RuntimeWorkspace = { workspacePath: string; workspaceIdentity?: string };
 const SHARED_TASK_RUNTIME_KEY = "shared-local-tasks";
@@ -68,12 +68,12 @@ interface RuntimeBinding {
   processKey: string;
 }
 
-export interface ZCodeAgentProcessManagerOptions {
+export interface NekodeAgentProcessManagerOptions {
   /** Host 项目事实决定首次分配；运行中的绑定不随项目移动改变。 */
   useSharedTaskRuntime?: (workspace: RuntimeWorkspace) => Promise<boolean>;
 
-  commandResolver?: ZCodeAgentCommandResolver;
-  presentationSurface?: ZCodeAgentPresentationSurface;
+  commandResolver?: NekodeAgentCommandResolver;
+  presentationSurface?: NekodeAgentPresentationSurface;
   requestTimeoutMs?: number;
   processLifecycleReporter?: RuntimeProcessLifecycleReporter;
   /**
@@ -117,8 +117,8 @@ export interface ZCodeAgentProcessManagerOptions {
   }) => Promise<void> | void;
 }
 
-interface ManagedZCodeAgentProcess {
-  client: ZCodeProtocolClient;
+interface ManagedNekodeAgentProcess {
+  client: NekodeProtocolClient;
   child: ChildProcessWithoutNullStreams;
   cleanupPromise?: Promise<void>;
   exitDiagnosticsCompleted: Promise<void>;
@@ -127,7 +127,7 @@ interface ManagedZCodeAgentProcess {
   idleTimer?: ReturnType<typeof setTimeout>;
   readyAt?: number;
   readyReported: boolean;
-  runtimeIdentity: ZCodeAgentRuntimeIdentity;
+  runtimeIdentity: NekodeAgentRuntimeIdentity;
   runtimeInstanceId: string;
   spawned: boolean;
   startedAt: number;
@@ -197,8 +197,8 @@ if (coverageDirectory) {
 export function buildE2EAgentCoverageEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): Record<string, string> {
-  const artifactDir = env.ZCODE_E2E_ARTIFACT_DIR?.trim();
-  if (env.ZCODE_E2E_COVERAGE !== "1" || !artifactDir) {
+  const artifactDir = env.NEKODE_E2E_ARTIFACT_DIR?.trim();
+  if (env.NEKODE_E2E_COVERAGE !== "1" || !artifactDir) {
     return {};
   }
   const directory = resolve(artifactDir, "coverage", "raw", "cli");
@@ -219,20 +219,20 @@ export function buildE2EAgentCoverageEnv(
  * 首个 getClient 重新拉起）。v4 订阅（sessions-index/workspace-config/conversation）
  * 都活在 CLI 进程内存里，进程换代即失效——订阅方收到本事件后必须重发 subscribe。
  */
-export interface ZCodeAgentRuntimeRestartedEvent {
+export interface NekodeAgentRuntimeRestartedEvent {
   workspaceKey: string;
-  runtimeIdentity: ZCodeAgentRuntimeIdentity;
+  runtimeIdentity: NekodeAgentRuntimeIdentity;
 }
 
-export interface ZCodeAgentRuntimeLifecycleEvent {
+export interface NekodeAgentRuntimeLifecycleEvent {
   workspacePath: string;
   workspaceIdentity?: string;
   workspaceKey: string;
-  runtimeIdentity: ZCodeAgentRuntimeIdentity;
+  runtimeIdentity: NekodeAgentRuntimeIdentity;
   state: "available" | "unavailable";
 }
 
-export interface ZCodeAgentRuntimeIdentity {
+export interface NekodeAgentRuntimeIdentity {
   generation: number;
   identity: string;
   processId?: number;
@@ -241,7 +241,7 @@ export interface ZCodeAgentRuntimeIdentity {
   lane?: string;
 }
 
-interface ZCodeAgentSpawnPreflight {
+interface NekodeAgentSpawnPreflight {
   command: string;
   args: string[];
   requestedCwd: string;
@@ -315,7 +315,7 @@ function parseArgsJson(raw: string | undefined): string[] | undefined {
   }
   const parsed = JSON.parse(trimmed) as unknown;
   if (!Array.isArray(parsed) || parsed.some((item) => typeof item !== "string")) {
-    throw new Error("ZCODE_AGENT_SERVER_ARGS_JSON must be a JSON string array");
+    throw new Error("NEKODE_AGENT_SERVER_ARGS_JSON must be a JSON string array");
   }
   return parsed;
 }
@@ -335,18 +335,18 @@ function findUpward(relativePath: string): string | null {
   }
 }
 
-async function buildZCodeAgentSpawnPreflight(
-  command: ZCodeAgentCommand,
+async function buildNekodeAgentSpawnPreflight(
+  command: NekodeAgentCommand,
   workspacePath: string,
   spawnFallbackCwd?: string,
-): Promise<ZCodeAgentSpawnPreflight> {
+): Promise<NekodeAgentSpawnPreflight> {
   const commandPathKind = isAbsolute(command.command) ? "absolute" : "path-search";
   const requestedCwd = command.cwd ?? workspacePath;
   const {
     cwd,
     usedFallback: shouldUseWorkspaceFallback,
     cwdExists,
-  } = await resolveZCodeAgentSpawnCwd({ requestedCwd, workspacePath, spawnFallbackCwd });
+  } = await resolveNekodeAgentSpawnCwd({ requestedCwd, workspacePath, spawnFallbackCwd });
   return {
     command: command.command,
     args: command.args ?? [],
@@ -365,13 +365,13 @@ async function buildZCodeAgentSpawnPreflight(
   };
 }
 
-function resolveBundledWorkspaceZCodeAgentCommand(
-  context: ZCodeAgentCommandResolverContext,
-): ZCodeAgentCommand | null {
+function resolveBundledWorkspaceNekodeAgentCommand(
+  context: NekodeAgentCommandResolverContext,
+): NekodeAgentCommand | null {
   const distEntrypoint = findUpward("apps/zcode-cli/packages/cli/dist/zcode.cjs");
   if (distEntrypoint) {
     const useBytecode =
-      process.versions.electron && process.env.ZCODE_DESKTOP_AGENT_BYTECODE === "1";
+      process.versions.electron && process.env.NEKODE_DESKTOP_AGENT_BYTECODE === "1";
     const entrypoint = useBytecode
       ? join(dirname(distEntrypoint), "zcode.bytecode.cjs")
       : distEntrypoint;
@@ -403,30 +403,30 @@ function resolveBundledWorkspaceZCodeAgentCommand(
   };
 }
 
-function resolveDeployedZCodeAgentBinaryCommand(
-  context: ZCodeAgentCommandResolverContext,
-): ZCodeAgentCommand | null {
-  // 旧 resolver 只识别 ZCODE_AGENT_SERVER_COMMAND env 和 monorepo 源码树。
-  // SSH 远端把 zcode-server.cjs 单文件部署到 ~/.zcode/server/，宿主进程的 cwd 不在仓库内、
-  // env 也不会被 ssh exec 继承，即使 zcode-agent 已经部署到 ~/.zcode/server/agents/glm/，
-  // resolver 也找不到，第一次 getClient 就抛 "ZCode agent server command is not configured"。
-  // 这里复用 findZCodeAgentRuntimeBinary 的候选链（含 GLM_BINARY_PATH env、
-  // packagedResourcesPath、~/.zcode/server/agents/glm、bundled-agents 等），
+function resolveDeployedNekodeAgentBinaryCommand(
+  context: NekodeAgentCommandResolverContext,
+): NekodeAgentCommand | null {
+  // 旧 resolver 只识别 NEKODE_AGENT_SERVER_COMMAND env 和 monorepo 源码树。
+  // SSH 远端把 zcode-server.cjs 单文件部署到 ~/.nekode/server/，宿主进程的 cwd 不在仓库内、
+  // env 也不会被 ssh exec 继承，即使 zcode-agent 已经部署到 ~/.nekode/server/agents/glm/，
+  // resolver 也找不到，第一次 getClient 就抛 "Nekode agent server command is not configured"。
+  // 这里复用 findNekodeAgentRuntimeBinary 的候选链（含 GLM_BINARY_PATH env、
+  // packagedResourcesPath、~/.nekode/server/agents/glm、bundled-agents 等），
   // 把已部署的原生 binary 当成最终兜底，远端/桌面打包形态都能命中。
-  const binaryPath = findZCodeAgentRuntimeBinary();
+  const binaryPath = findNekodeAgentRuntimeBinary();
   if (!binaryPath) {
     return null;
   }
   return {
     command: binaryPath,
-    args: ZCODE_AGENT_RUNTIME.spawnArgs,
+    args: NEKODE_AGENT_RUNTIME.spawnArgs,
     cwd: context.workspacePath,
   };
 }
 
-function resolveElectronRuntimeZCodeAgentCommand(
-  context: ZCodeAgentCommandResolverContext,
-): ZCodeAgentCommand | null {
+function resolveElectronRuntimeNekodeAgentCommand(
+  context: NekodeAgentCommandResolverContext,
+): NekodeAgentCommand | null {
   // 桌面打包态：host 跑在 Electron utility process 里，process.execPath 指向 Electron Helper，
   // 它内置的 Node runtime 与 zcode-cli 目标版本一致（Electron 41 = Node 24.x）。
   // 这里直接用 app 自带的 Electron Node 执行打进 resources/glm 的 zcode.cjs，
@@ -436,13 +436,13 @@ function resolveElectronRuntimeZCodeAgentCommand(
   if (!process.versions.electron) {
     return null;
   }
-  const bundlePath = findZCodeAgentRuntimeNodeBundle();
+  const bundlePath = findNekodeAgentRuntimeNodeBundle();
   if (!bundlePath) {
     return null;
   }
   return {
     command: process.execPath,
-    args: [bundlePath, ...ZCODE_AGENT_RUNTIME.spawnArgs],
+    args: [bundlePath, ...NEKODE_AGENT_RUNTIME.spawnArgs],
     storagePreparationEntry: bundlePath,
     cwd: context.workspacePath,
     // 关键：必须以纯 Node 模式启动，否则子进程会被当成 Electron/Chromium 子进程卡在 GPU 初始化。
@@ -450,16 +450,16 @@ function resolveElectronRuntimeZCodeAgentCommand(
   };
 }
 
-export function resolveDefaultZCodeAgentCommand(
-  context: ZCodeAgentCommandResolverContext,
-): ZCodeAgentCommand | null {
-  const command = process.env.ZCODE_AGENT_SERVER_COMMAND?.trim();
+export function resolveDefaultNekodeAgentCommand(
+  context: NekodeAgentCommandResolverContext,
+): NekodeAgentCommand | null {
+  const command = process.env.NEKODE_AGENT_SERVER_COMMAND?.trim();
   if (command) {
     return applyPresentationSurfaceToCommand(
       {
         command,
-        args: parseArgsJson(process.env.ZCODE_AGENT_SERVER_ARGS_JSON) ?? ["app-server", "--stdio"],
-        cwd: process.env.ZCODE_AGENT_SERVER_CWD?.trim() || context.workspacePath,
+        args: parseArgsJson(process.env.NEKODE_AGENT_SERVER_ARGS_JSON) ?? ["app-server", "--stdio"],
+        cwd: process.env.NEKODE_AGENT_SERVER_CWD?.trim() || context.workspacePath,
       },
       context.presentationSurface,
     );
@@ -468,20 +468,20 @@ export function resolveDefaultZCodeAgentCommand(
   // 顺序：env 显式覆盖 → monorepo dev 源码/dist（dev 改源码立刻生效，不会被远端历史装的 native binary
   // 抢先匹配）→ 桌面打包态 Electron Node runtime 跑 zcode.cjs → 已部署 native binary（远端 SSH 兜底）。
   const bundled =
-    resolveBundledWorkspaceZCodeAgentCommand(context) ??
-    resolveElectronRuntimeZCodeAgentCommand(context);
+    resolveBundledWorkspaceNekodeAgentCommand(context) ??
+    resolveElectronRuntimeNekodeAgentCommand(context);
   return applyPresentationSurfaceToCommand(
     bundled
       ? { ...bundled, supportsStorageStartup: true }
-      : resolveDeployedZCodeAgentBinaryCommand(context),
+      : resolveDeployedNekodeAgentBinaryCommand(context),
     context.presentationSurface,
   );
 }
 
 function applyPresentationSurfaceToCommand(
-  command: ZCodeAgentCommand | null,
-  presentationSurface: ZCodeAgentCommandResolverContext["presentationSurface"],
-): ZCodeAgentCommand | null {
+  command: NekodeAgentCommand | null,
+  presentationSurface: NekodeAgentCommandResolverContext["presentationSurface"],
+): NekodeAgentCommand | null {
   if (!command || presentationSurface !== "desktop") {
     return command;
   }
@@ -512,18 +512,18 @@ function applyPresentationSurfaceToCommand(
   };
 }
 
-export function wrapZCodeAgentCommandWithStdioTapDevProxy(
-  command: ZCodeAgentCommand,
+export function wrapNekodeAgentCommandWithStdioTapDevProxy(
+  command: NekodeAgentCommand,
   workspaceKey: string,
-): ZCodeAgentCommand {
-  const tapState = readZCodeStdioTapDevState();
+): NekodeAgentCommand {
+  const tapState = readNekodeStdioTapDevState();
   if (!tapState.enabled) {
     return command;
   }
 
   const tapScript = findUpward("scripts/dev/zcode-stdio-tap.mjs");
   if (!tapScript) {
-    debugLog("ZCode stdio tap proxy enabled but script not found");
+    debugLog("Nekode stdio tap proxy enabled but script not found");
     return command;
   }
 
@@ -550,14 +550,14 @@ export function wrapZCodeAgentCommandWithStdioTapDevProxy(
   };
 }
 
-export class ZCodeAgentProcessManager {
+export class NekodeAgentProcessManager {
   private readonly bindings = new Map<string, RuntimeBinding>();
   private readonly bindingFlights = new Map<string, Promise<RuntimeBinding>>();
   private readonly closing = new Map<string, Promise<void>>();
-  private readonly useSharedTaskRuntime: ZCodeAgentProcessManagerOptions["useSharedTaskRuntime"];
-  private readonly processesByWorkspaceKey = new Map<string, ManagedZCodeAgentProcess>();
-  private readonly ownedProcesses = new Set<ManagedZCodeAgentProcess>();
-  private readonly startingByWorkspaceKey = new Map<string, Promise<ZCodeProtocolClient>>();
+  private readonly useSharedTaskRuntime: NekodeAgentProcessManagerOptions["useSharedTaskRuntime"];
+  private readonly processesByWorkspaceKey = new Map<string, ManagedNekodeAgentProcess>();
+  private readonly ownedProcesses = new Set<ManagedNekodeAgentProcess>();
+  private readonly startingByWorkspaceKey = new Map<string, Promise<NekodeProtocolClient>>();
   private readonly restartGenerationByWorkspaceKey = new Map<string, number>();
   private readonly runtimeGenerationByWorkspaceKey = new Map<string, number>();
   private readonly availableRuntimeIdentityByWorkspaceKey = new Map<string, string>();
@@ -567,14 +567,14 @@ export class ZCodeAgentProcessManager {
   >();
   private readonly storageStartupEmitter = new Emitter<{
     workspaceKey: string;
-    snapshot: ZCodeAgentStorageStartupSnapshot;
+    snapshot: NekodeAgentStorageStartupSnapshot;
   }>();
   readonly onStorageStartupChanged = this.storageStartupEmitter.event;
 
   getStorageStartupState(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): ZCodeAgentStorageStartupSnapshot | null {
+  }): NekodeAgentStorageStartupSnapshot | null {
     const managed = this.processesByWorkspaceKey.get(this.processKey(params));
     return managed
       ? {
@@ -584,28 +584,28 @@ export class ZCodeAgentProcessManager {
       : null;
   }
 
-  private readonly commandResolver: ZCodeAgentCommandResolver;
-  private readonly presentationSurface: ZCodeAgentProcessManagerOptions["presentationSurface"];
+  private readonly commandResolver: NekodeAgentCommandResolver;
+  private readonly presentationSurface: NekodeAgentProcessManagerOptions["presentationSurface"];
   private readonly requestTimeoutMs: number | undefined;
   private readonly processLifecycleReporter: RuntimeProcessLifecycleReporter | undefined;
-  private readonly resolveSpawnEnv: ZCodeAgentProcessManagerOptions["resolveSpawnEnv"];
-  private readonly waitForSpawnAdmission: ZCodeAgentProcessManagerOptions["waitForSpawnAdmission"];
+  private readonly resolveSpawnEnv: NekodeAgentProcessManagerOptions["resolveSpawnEnv"];
+  private readonly waitForSpawnAdmission: NekodeAgentProcessManagerOptions["waitForSpawnAdmission"];
   private readonly spawnFallbackCwd: string | undefined;
   private readonly lane: string | undefined;
   private readonly idleTimeoutMs: number | undefined;
-  private readonly runtimeRestartedEmitter = new Emitter<ZCodeAgentRuntimeRestartedEvent>();
-  private readonly runtimeLifecycleEmitter = new Emitter<ZCodeAgentRuntimeLifecycleEvent>();
+  private readonly runtimeRestartedEmitter = new Emitter<NekodeAgentRuntimeRestartedEvent>();
+  private readonly runtimeLifecycleEmitter = new Emitter<NekodeAgentRuntimeLifecycleEvent>();
   private disposeAllInFlight: Promise<void> | undefined;
   private disposed = false;
 
-  /** 进程换代通知（generation>1 时触发）；v4 订阅方据此重订，见 ZCodeAgentRuntimeRestartedEvent。 */
+  /** 进程换代通知（generation>1 时触发）；v4 订阅方据此重订，见 NekodeAgentRuntimeRestartedEvent。 */
   readonly onRuntimeRestarted = this.runtimeRestartedEmitter.event;
   /** 进程真实 spawn 后 available，当前 protocol client 关闭后 unavailable。 */
   readonly onRuntimeLifecycle = this.runtimeLifecycleEmitter.event;
 
-  constructor(options?: ZCodeAgentProcessManagerOptions) {
+  constructor(options?: NekodeAgentProcessManagerOptions) {
     this.useSharedTaskRuntime = options?.useSharedTaskRuntime;
-    this.commandResolver = options?.commandResolver ?? resolveDefaultZCodeAgentCommand;
+    this.commandResolver = options?.commandResolver ?? resolveDefaultNekodeAgentCommand;
     this.presentationSurface = options?.presentationSurface;
     this.requestTimeoutMs = options?.requestTimeoutMs;
     this.processLifecycleReporter = options?.processLifecycleReporter;
@@ -640,9 +640,9 @@ export class ZCodeAgentProcessManager {
       const shared = await (!params.workspaceIdentity
         ? this.useSharedTaskRuntime?.(params)
         : false);
-      if (this.disposed) throw new Error("ZCode agent process manager is disposed.");
+      if (this.disposed) throw new Error("Nekode agent process manager is disposed.");
       if (this.bindingFlights.get(key) !== flight)
-        throw new Error("ZCode agent workspace allocation was cancelled.");
+        throw new Error("Nekode agent workspace allocation was cancelled.");
       const binding = {
         workspace: {
           workspacePath: params.workspacePath,
@@ -680,7 +680,7 @@ export class ZCodeAgentProcessManager {
       .map((entry) => entry.workspace);
   }
 
-  private publishAvailable(managed: ManagedZCodeAgentProcess, binding: RuntimeBinding): void {
+  private publishAvailable(managed: ManagedNekodeAgentProcess, binding: RuntimeBinding): void {
     if (!managed.spawned || managed.exited || managed.client.isDisposed) return;
     const workspaceKey = resolveWorkspaceKey(binding.workspace);
     if (
@@ -713,11 +713,11 @@ export class ZCodeAgentProcessManager {
       callback(reporter);
     } catch (error) {
       // 进程生命周期上报是旁路观测，临时失败不得阻断 agent 启动或回收。
-      warnLog("ZCode agent process lifecycle reporter failed", error);
+      warnLog("Nekode agent process lifecycle reporter failed", error);
     }
   }
 
-  private clearIdleTimer(managed: ManagedZCodeAgentProcess): void {
+  private clearIdleTimer(managed: ManagedNekodeAgentProcess): void {
     if (managed.idleTimer) {
       clearTimeout(managed.idleTimer);
       delete managed.idleTimer;
@@ -729,7 +729,7 @@ export class ZCodeAgentProcessManager {
    * 主动回收整棵进程树（含挂在其下的 MCP 子进程）。归因为 expected/idle-timeout，
    * 不会被监控当作崩溃。到点时有新请求在飞则什么都不做，等下一次归零重新计时。
    */
-  private scheduleIdleReclaim(workspaceKey: string, managed: ManagedZCodeAgentProcess): void {
+  private scheduleIdleReclaim(workspaceKey: string, managed: ManagedNekodeAgentProcess): void {
     if (!this.idleTimeoutMs || this.disposed || managed.exited) {
       return;
     }
@@ -749,7 +749,7 @@ export class ZCodeAgentProcessManager {
       ) {
         return;
       }
-      log("ZCode agent process idle timeout; reclaiming", {
+      log("Nekode agent process idle timeout; reclaiming", {
         workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -770,7 +770,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private recordTerminationIntent(
-    managed: ManagedZCodeAgentProcess,
+    managed: ManagedNekodeAgentProcess,
     reason: AgentProcessCleanupReason,
   ): void {
     if (managed.firstCleanupReason) {
@@ -790,7 +790,7 @@ export class ZCodeAgentProcessManager {
     };
   }
 
-  private reportRuntimeUnavailable(managed: ManagedZCodeAgentProcess): void {
+  private reportRuntimeUnavailable(managed: ManagedNekodeAgentProcess): void {
     for (const binding of this.bindings.values()) {
       if (binding.processKey !== managed.runtimeIdentity.workspaceKey) continue;
       const workspaceKey = resolveWorkspaceKey(binding.workspace);
@@ -809,7 +809,7 @@ export class ZCodeAgentProcessManager {
     }
   }
 
-  private reportRuntimeReady(managed: ManagedZCodeAgentProcess): void {
+  private reportRuntimeReady(managed: ManagedNekodeAgentProcess): void {
     if (
       !managed.spawned ||
       managed.exited ||
@@ -823,7 +823,7 @@ export class ZCodeAgentProcessManager {
     this.reportProcessLifecycle((reporter) =>
       reporter.onReady?.({
         pid: managed.child.pid!,
-        provider: ZCODE_AGENT_PROVIDER,
+        provider: NEKODE_AGENT_PROVIDER,
         ...(this.lane ? { lane: this.lane } : {}),
         workspacePath: managed.workspace.workspacePath,
         readyAt: managed.readyAt!,
@@ -835,7 +835,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private cleanupManagedProcess(
-    managed: ManagedZCodeAgentProcess,
+    managed: ManagedNekodeAgentProcess,
     reason: AgentProcessCleanupReason,
     options: { reportError?: boolean } = {},
   ): Promise<void> {
@@ -856,7 +856,7 @@ export class ZCodeAgentProcessManager {
         // 否则 Host 会提前释放所有权，关闭调用方看不到最后一条诊断。
         await managed.exitDiagnosticsCompleted;
         cleanupCompleted = true;
-        log("ZCode agent process cleanup completed", {
+        log("Nekode agent process cleanup completed", {
           workspaceKey: managed.runtimeIdentity.workspaceKey,
           pid: managed.child.pid,
           runtimeIdentity: managed.runtimeIdentity.identity,
@@ -880,7 +880,7 @@ export class ZCodeAgentProcessManager {
       if (options.reportError === false) {
         return;
       }
-      errorLog("ZCode agent process cleanup failed", {
+      errorLog("Nekode agent process cleanup failed", {
         workspaceKey: managed.runtimeIdentity.workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -891,7 +891,7 @@ export class ZCodeAgentProcessManager {
     return cleanupPromise;
   }
 
-  private async cleanupManagedProcessForShutdown(managed: ManagedZCodeAgentProcess): Promise<void> {
+  private async cleanupManagedProcessForShutdown(managed: ManagedNekodeAgentProcess): Promise<void> {
     await this.cleanupManagedProcessWithRetry(
       managed,
       "manager-dispose",
@@ -901,7 +901,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private cleanupManagedProcessWithRetry(
-    managed: ManagedZCodeAgentProcess,
+    managed: ManagedNekodeAgentProcess,
     reason: AgentProcessCleanupReason,
     retryReason: AgentProcessCleanupReason,
     retryScope: string,
@@ -925,7 +925,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private async performCleanupManagedProcessWithRetry(
-    managed: ManagedZCodeAgentProcess,
+    managed: ManagedNekodeAgentProcess,
     reason: AgentProcessCleanupReason,
     retryReason: AgentProcessCleanupReason,
     retryScope: string,
@@ -939,7 +939,7 @@ export class ZCodeAgentProcessManager {
       // 残留。restart/app quit 都不能把这种中间态暴露给调用方，需重试一次并复用
       // transport 内部快照；真实残留会在第二次 cleanup 继续抛出。
       const cleanupError = firstError as NodeJS.ErrnoException;
-      warnLog(`ZCode agent process cleanup retrying during ${retryScope}`, {
+      warnLog(`Nekode agent process cleanup retrying during ${retryScope}`, {
         workspaceKey: managed.runtimeIdentity.workspaceKey,
         pid: managed.child.pid,
         runtimeIdentity: managed.runtimeIdentity.identity,
@@ -951,7 +951,7 @@ export class ZCodeAgentProcessManager {
       try {
         await this.cleanupManagedProcess(managed, retryReason, { reportError: false });
       } catch (finalError) {
-        errorLog("ZCode agent process cleanup failed", {
+        errorLog("Nekode agent process cleanup failed", {
           workspaceKey: managed.runtimeIdentity.workspaceKey,
           pid: managed.child.pid,
           runtimeIdentity: managed.runtimeIdentity.identity,
@@ -967,9 +967,9 @@ export class ZCodeAgentProcessManager {
   async getClient(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): Promise<ZCodeProtocolClient> {
+  }): Promise<NekodeProtocolClient> {
     if (this.disposed) {
-      throw new Error("ZCode agent process manager is disposed.");
+      throw new Error("Nekode agent process manager is disposed.");
     }
     const binding = await this.bind(params);
     const workspaceKey = binding.processKey;
@@ -988,11 +988,11 @@ export class ZCodeAgentProcessManager {
     const starting = this.startingByWorkspaceKey.get(workspaceKey);
     if (starting) {
       const waitStartedAt = Date.now();
-      log("ZCode agent process start already in progress", {
+      log("Nekode agent process start already in progress", {
         workspaceKey,
       });
       const client = await starting;
-      log("ZCode agent process start wait completed", {
+      log("Nekode agent process start wait completed", {
         workspaceKey,
         durationMs: Date.now() - waitStartedAt,
       });
@@ -1012,7 +1012,7 @@ export class ZCodeAgentProcessManager {
     }
     controllers.add(admissionAbortController);
     const startPromise = this.startClient(
-      workspaceKey === SHARED_TASK_RUNTIME_KEY ? { workspacePath: getZCodeDataRootDir() } : params,
+      workspaceKey === SHARED_TASK_RUNTIME_KEY ? { workspacePath: getNekodeDataRootDir() } : params,
       workspaceKey,
       startGeneration,
       admissionAbortController.signal,
@@ -1043,7 +1043,7 @@ export class ZCodeAgentProcessManager {
   getExistingClient(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): ZCodeProtocolClient | undefined {
+  }): NekodeProtocolClient | undefined {
     const managed = this.processesByWorkspaceKey.get(this.processKey(params));
     return managed && !managed.child.killed && !managed.client.isDisposed
       ? managed.client
@@ -1056,14 +1056,14 @@ export class ZCodeAgentProcessManager {
     workspacePath: string;
     workspaceIdentity?: string;
     lane?: string;
-    client: ZCodeProtocolClient;
+    client: NekodeProtocolClient;
   }> {
     const result: Array<{
       pid: number;
       workspacePath: string;
       workspaceIdentity?: string;
       lane?: string;
-      client: ZCodeProtocolClient;
+      client: NekodeProtocolClient;
     }> = [];
     for (const managed of this.processesByWorkspaceKey.values()) {
       if (managed.exited || managed.child.killed || typeof managed.child.pid !== "number") continue;
@@ -1083,7 +1083,7 @@ export class ZCodeAgentProcessManager {
   /** Agent service 首次通过 provider/model 门禁后调用；同一 runtime 只上报一次。 */
   markReady(
     params: { workspacePath: string; workspaceIdentity?: string },
-    client: ZCodeProtocolClient,
+    client: NekodeProtocolClient,
   ): void {
     const managed = this.processesByWorkspaceKey.get(this.processKey(params));
     if (!managed || managed.client !== client || managed.readyAt != null || managed.exited) {
@@ -1103,7 +1103,7 @@ export class ZCodeAgentProcessManager {
     workspaceKey: string,
     startGeneration: number,
     admissionSignal: AbortSignal,
-  ): Promise<ZCodeProtocolClient> {
+  ): Promise<NekodeProtocolClient> {
     const startStartedAt = Date.now();
     const resolveCommandStartedAt = Date.now();
     const command = await this.commandResolver({
@@ -1114,14 +1114,14 @@ export class ZCodeAgentProcessManager {
     const resolveCommandDurationMs = Date.now() - resolveCommandStartedAt;
     if (!command) {
       throw new Error(
-        "ZCode agent server command is not configured. Set ZCODE_AGENT_SERVER_COMMAND before integration.",
+        "Nekode agent server command is not configured. Set NEKODE_AGENT_SERVER_COMMAND before integration.",
       );
     }
     if (admissionSignal.aborted) {
-      throw admissionSignal.reason ?? new Error("ZCode agent process start was cancelled.");
+      throw admissionSignal.reason ?? new Error("Nekode agent process start was cancelled.");
     }
-    const effectiveCommand = wrapZCodeAgentCommandWithStdioTapDevProxy(command, workspaceKey);
-    log("ZCode agent command resolved", {
+    const effectiveCommand = wrapNekodeAgentCommandWithStdioTapDevProxy(command, workspaceKey);
+    log("Nekode agent command resolved", {
       workspaceKey,
       command: command.command,
       effectiveCommand: effectiveCommand.command,
@@ -1138,15 +1138,15 @@ export class ZCodeAgentProcessManager {
     if (this.disposed) {
       // app 正在关闭时，启动中的 warmup 可能刚完成 command/env resolve。
       // 这时继续 spawn 会绕过 disposeAllAndWait 的快照，重新制造一个无人托管的 agent 进程。
-      throw new Error("ZCode agent process manager is disposed.");
+      throw new Error("Nekode agent process manager is disposed.");
     }
     if ((this.restartGenerationByWorkspaceKey.get(workspaceKey) ?? 0) !== startGeneration) {
       // 切模型会重启单个 workspace。旧启动请求如果在重启后才恢复，
       // 不能继续 spawn 并写回进程池，否则新配置会被旧 agent 覆盖。
-      throw new Error("ZCode agent process start was cancelled.");
+      throw new Error("Nekode agent process start was cancelled.");
     }
     // cwd 探测也让出事件循环，必须放在最终 admission 与销毁/代际检查之前。
-    const spawnPreflight = await buildZCodeAgentSpawnPreflight(
+    const spawnPreflight = await buildNekodeAgentSpawnPreflight(
       effectiveCommand,
       params.workspacePath,
       this.spawnFallbackCwd,
@@ -1156,15 +1156,15 @@ export class ZCodeAgentProcessManager {
     // 再等待并复查代际，不能只依赖第一次 admission。
     await this.waitForSpawnAdmission?.({ ...params, workspaceKey, signal: admissionSignal });
     if (this.disposed) {
-      throw new Error("ZCode agent process manager is disposed.");
+      throw new Error("Nekode agent process manager is disposed.");
     }
     if ((this.restartGenerationByWorkspaceKey.get(workspaceKey) ?? 0) !== startGeneration) {
-      throw new Error("ZCode agent process start was cancelled.");
+      throw new Error("Nekode agent process start was cancelled.");
     }
-    // app 以本地开发方式启动时，让 agent 子进程也带上 ZCODE_RUNTIME_ENV=development；
-    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 ZCode 运行模式或泄漏到 Bash 工具。
-    const runtimeEnv = resolveZCodeRuntimeEnv(process.env);
-    log("ZCode agent spawn preflight", {
+    // app 以本地开发方式启动时，让 agent 子进程也带上 NEKODE_RUNTIME_ENV=development；
+    // 不再传 NODE_ENV，避免用户 shell/runtime 变量影响 Nekode 运行模式或泄漏到 Bash 工具。
+    const runtimeEnv = resolveNekodeRuntimeEnv(process.env);
+    log("Nekode agent spawn preflight", {
       workspaceKey,
       spawnPreflight,
     });
@@ -1175,8 +1175,8 @@ export class ZCodeAgentProcessManager {
       // 关闭时才能按进程树整体回收；Windows 保持非 detached，交给 taskkill /T 处理。
       detached: shouldSpawnInDetachedProcessGroup(),
       env: {
-        ...sanitizeZCodeRuntimeEnv(process.env),
-        [ZCODE_RUNTIME_ENV_KEY]: runtimeEnv,
+        ...sanitizeNekodeRuntimeEnv(process.env),
+        [NEKODE_RUNTIME_ENV_KEY]: runtimeEnv,
         ...spawnEnv,
         ...effectiveCommand.env,
         // 生成文件根目录由执行端 Host 唯一决定，保证 Agent 写入与 Host 读取授权一致。
@@ -1189,16 +1189,16 @@ export class ZCodeAgentProcessManager {
     });
     const startedAt = Date.now();
     const stderrTail = createAgentStderrTail();
-    const transport = new ZCodeStdioTransport(child, {
+    const transport = new NekodeStdioTransport(child, {
       onStderrLine: (line) => {
-        const diagnostic = parseZCodeProcessDiagnostic(line);
+        const diagnostic = parseNekodeProcessDiagnostic(line);
         if (diagnostic && typeof child.pid === "number") {
           // 根因：只保存 exit tail 会漏掉存活 runtime 的异常；此旁路不依赖 debug 开关。
           // 身份绑定创建时的 child，不能查当前 workspace，避免重启后的迟到事件串进程。
           this.reportProcessLifecycle((reporter) =>
             reporter.onException?.({
               pid: child.pid!,
-              provider: ZCODE_AGENT_PROVIDER,
+              provider: NEKODE_AGENT_PROVIDER,
               ...(this.lane ? { lane: this.lane } : {}),
               workspacePath: params.workspacePath,
               runtimeGeneration,
@@ -1208,17 +1208,17 @@ export class ZCodeAgentProcessManager {
                 // 脱敏占位符可能比原文长，必须再次限长，避免 IPC schema 拒绝合法异常。
                 name: redactAgentDiagnostic(diagnostic.name).slice(
                   0,
-                  ZCODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
+                  NEKODE_PROCESS_DIAGNOSTIC_NAME_MAX_CHARS,
                 ),
                 message: redactAgentDiagnostic(diagnostic.message).slice(
                   0,
-                  ZCODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
+                  NEKODE_PROCESS_DIAGNOSTIC_MESSAGE_MAX_CHARS,
                 ),
                 ...(diagnostic.stack !== undefined
                   ? {
                       stack: redactAgentDiagnostic(diagnostic.stack).slice(
                         0,
-                        ZCODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
+                        NEKODE_PROCESS_DIAGNOSTIC_STACK_MAX_CHARS,
                       ),
                     }
                   : {}),
@@ -1235,7 +1235,7 @@ export class ZCodeAgentProcessManager {
       // 拥有的独立 PGID；异常 root exit 后 cleanup 仍可按组回收同组后代。
       ...(process.platform !== "win32" && child.pid ? { ownedProcessGroupId: child.pid } : {}),
     });
-    const client = new ZCodeProtocolClient(transport, {
+    const client = new NekodeProtocolClient(transport, {
       requireStorageStartup: effectiveCommand.supportsStorageStartup,
       requestTimeoutMs: this.requestTimeoutMs,
     });
@@ -1249,7 +1249,7 @@ export class ZCodeAgentProcessManager {
     this.runtimeGenerationByWorkspaceKey.set(workspaceKey, runtimeGeneration);
     // 生命周期事件关联只需要本次 runtime 的不透明身份，不能复用包含 workspaceKey 的协议 identity。
     const runtimeInstanceId = `agent-${randomUUID()}`;
-    const runtimeIdentity: ZCodeAgentRuntimeIdentity = {
+    const runtimeIdentity: NekodeAgentRuntimeIdentity = {
       generation: runtimeGeneration,
       identity: this.lane
         ? `${workspaceKey}:${runtimeGeneration}:${child.pid ?? "unknown"}:${this.lane}`
@@ -1259,7 +1259,7 @@ export class ZCodeAgentProcessManager {
       workspaceKey,
     };
     const exitDiagnostics = Promise.withResolvers<void>();
-    const managed: ManagedZCodeAgentProcess = {
+    const managed: ManagedNekodeAgentProcess = {
       child,
       client,
       exited: false,
@@ -1316,7 +1316,7 @@ export class ZCodeAgentProcessManager {
         this.reportProcessLifecycle((reporter) =>
           reporter.onSpawn({
             pid: child.pid!,
-            provider: ZCODE_AGENT_PROVIDER,
+            provider: NEKODE_AGENT_PROVIDER,
             ...(this.lane ? { lane: this.lane } : {}),
             workspacePath: params.workspacePath,
             command: effectiveCommand.command,
@@ -1328,7 +1328,7 @@ export class ZCodeAgentProcessManager {
         );
       }
       this.reportRuntimeReady(managed);
-      log("ZCode agent process started", {
+      log("Nekode agent process started", {
         workspaceKey,
         command: effectiveCommand.command,
         cwd: spawnPreflight.cwd,
@@ -1338,7 +1338,7 @@ export class ZCodeAgentProcessManager {
     });
     child.once("error", (error) => {
       errorLog(
-        `ZCode agent process error${this.processLifecycleReporter?.onError ? ` ${ZCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
+        `Nekode agent process error${this.processLifecycleReporter?.onError ? ` ${NEKODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
         {
           workspaceKey,
           pid: child.pid,
@@ -1353,7 +1353,7 @@ export class ZCodeAgentProcessManager {
       this.reportProcessLifecycle((reporter) =>
         reporter.onError?.({
           pid: typeof child.pid === "number" ? child.pid : null,
-          provider: ZCODE_AGENT_PROVIDER,
+          provider: NEKODE_AGENT_PROVIDER,
           ...(this.lane ? { lane: this.lane } : {}),
           workspacePath: params.workspacePath,
           command: effectiveCommand.command,
@@ -1396,14 +1396,14 @@ export class ZCodeAgentProcessManager {
         };
         // 之前日志只有新的 "process started"，缺少旧 pid 的退出轨迹。
         // agent native crash 后 UI 只会看到 protocol close/Session is not active，无法判断是崩溃还是主动重启。
-        log("ZCode agent process exited", exitContext);
+        log("Nekode agent process exited", exitContext);
         if (terminationKind === "unexpected") {
           // Agent 顶层异常只写 stderr 并以非零 code 退出；stderr 过去仅走开发态
           // debug，生产日志只剩 code=1，无法还原异常。不能只按非零 code 判断：signal crash
           // 和长期运行的 Agent 自行 exit 0 同样是非预期退出。
           // 已有独立生命周期事件，显式标记包装日志，避免 Electron 将其再计为 JS 异常。
           errorLog(
-            `ZCode agent process exited unexpectedly${this.processLifecycleReporter ? ` ${ZCODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
+            `Nekode agent process exited unexpectedly${this.processLifecycleReporter ? ` ${NEKODE_AGENT_LIFECYCLE_LOG_MARKER}` : ""}`,
             {
               ...exitContext,
               stderr,
@@ -1414,7 +1414,7 @@ export class ZCodeAgentProcessManager {
           this.reportProcessLifecycle((reporter) =>
             reporter.onExit({
               pid: child.pid!,
-              provider: ZCODE_AGENT_PROVIDER,
+              provider: NEKODE_AGENT_PROVIDER,
               ...(this.lane ? { lane: this.lane } : {}),
               workspacePath: params.workspacePath,
               exitCode: code,
@@ -1443,7 +1443,7 @@ export class ZCodeAgentProcessManager {
       }
       if (event.method === "workspace/cancelGenerateText") {
         warnLog(
-          "ZCode agent cancel notification timed out; keeping client (best-effort control plane)",
+          "Nekode agent cancel notification timed out; keeping client (best-effort control plane)",
           {
             workspaceKey,
             method: event.method,
@@ -1454,7 +1454,7 @@ export class ZCodeAgentProcessManager {
         );
         return;
       }
-      warnLog("ZCode agent request timed out; disposing stale protocol client", {
+      warnLog("Nekode agent request timed out; disposing stale protocol client", {
         workspaceKey,
         method: event.method,
         requestId: event.requestId,
@@ -1475,7 +1475,7 @@ export class ZCodeAgentProcessManager {
     });
     client.onClose(() => {
       const wasActiveClient = this.processesByWorkspaceKey.get(workspaceKey) === managed;
-      log("ZCode agent protocol client closed", {
+      log("Nekode agent protocol client closed", {
         workspaceKey,
         pid: child.pid,
         runtimeIdentity: runtimeIdentity.identity,
@@ -1502,13 +1502,13 @@ export class ZCodeAgentProcessManager {
   async getRuntimeIdentity(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-  }): Promise<ZCodeAgentRuntimeIdentity> {
+  }): Promise<NekodeAgentRuntimeIdentity> {
     const workspaceKey = this.processKey(params);
     const managed = this.processesByWorkspaceKey.get(workspaceKey);
     // runtime identity 是查询接口，旧实现却复用了启动型 getClient，
     // 导致 provider 保存等被动探测按 workspace 数量隐式 spawn Agent CLI。
     if (!managed || managed.exited || managed.child.killed) {
-      throw new Error("ZCode agent runtime identity is unavailable.");
+      throw new Error("Nekode agent runtime identity is unavailable.");
     }
     return { ...managed.runtimeIdentity, workspaceKey: resolveWorkspaceKey(params) };
   }
@@ -1529,7 +1529,7 @@ export class ZCodeAgentProcessManager {
         : {
             available: false,
             workspaceKey,
-            reason: "ZCODE_AGENT_SERVER_COMMAND is not configured",
+            reason: "NEKODE_AGENT_SERVER_COMMAND is not configured",
           };
     } catch (error) {
       return {
@@ -1586,7 +1586,7 @@ export class ZCodeAgentProcessManager {
 
   private abortPendingStarts(
     workspaceKey: string,
-    reason = new Error("ZCode agent process start was cancelled."),
+    reason = new Error("Nekode agent process start was cancelled."),
   ): void {
     const controllers = this.startAdmissionAbortControllersByWorkspaceKey.get(workspaceKey);
     if (!controllers) {
@@ -1598,7 +1598,7 @@ export class ZCodeAgentProcessManager {
   }
 
   private abortAllPendingStarts(
-    reason = new Error("ZCode agent process manager is disposed."),
+    reason = new Error("Nekode agent process manager is disposed."),
   ): void {
     for (const workspaceKey of this.startAdmissionAbortControllersByWorkspaceKey.keys()) {
       this.abortPendingStarts(workspaceKey, reason);

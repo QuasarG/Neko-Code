@@ -2,17 +2,17 @@
 // 返回已启用插件清单 `ui.surfaces[]` 的合法条目。与 plugin-reference-catalog.ts 同因分文件：plugins.ts 已近门禁。
 import {
   zcodePluginsListUiSurfacesParamsSchema,
-  type ZCodePluginUiSurface,
-  type ZCodePluginsListUiSurfacesResult,
+  type NekodePluginUiSurface,
+  type NekodePluginsListUiSurfacesResult,
 } from "@zcode/shared";
 import type { PluginMetadata } from "@zcode/contracts";
-import { resolveZCodePlugins } from "../plugins.js";
-import { parseParams, type ZCodeProtocolAgentServerContext } from "./server-types.js";
+import { resolveNekodePlugins } from "../plugins.js";
+import { parseParams, type NekodeProtocolAgentServerContext } from "./server-types.js";
 
 export function listPluginUiSurfacesFromPlugins(
   plugins: readonly PluginMetadata[],
-): ZCodePluginUiSurface[] {
-  const surfaces: ZCodePluginUiSurface[] = [];
+): NekodePluginUiSurface[] {
+  const surfaces: NekodePluginUiSurface[] = [];
   for (const plugin of plugins) {
     // 禁用插件没有运行时 MCP，入口不可用；解析仍保留在 metadata 里供管理页展示。
     if (!plugin.enabled) continue;
@@ -33,11 +33,11 @@ export function listPluginUiSurfacesFromPlugins(
 }
 
 export async function listPluginUiSurfaces(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodePluginsListUiSurfacesResult> {
+): Promise<NekodePluginsListUiSurfacesResult> {
   const params = parseParams(zcodePluginsListUiSurfacesParamsSchema, rawParams);
-  const outcome = resolveZCodePlugins({
+  const outcome = resolveNekodePlugins({
     logger: context.logger,
     workingDirectory: params.workspace.workspacePath,
   });

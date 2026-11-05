@@ -2,21 +2,21 @@
 // 与 Skills Settings 管理接口分离：这里的 sessionId 决定 authority，不提供启停/删除能力。
 import {
   zcodeSkillsReferenceCatalogParamsSchema,
-  type ZCodeSkillReferenceCatalogEntry,
-  type ZCodeSkillsReferenceCatalogResult,
+  type NekodeSkillReferenceCatalogEntry,
+  type NekodeSkillsReferenceCatalogResult,
 } from "@zcode/shared";
 import type { SkillLoadOutcome, SkillMetadata } from "@zcode/contracts";
-import { listZCodeSkills } from "../skills.js";
+import { listNekodeSkills } from "../skills.js";
 import {
   parseParams,
   requireSession,
-  type ZCodeProtocolAgentServerContext,
+  type NekodeProtocolAgentServerContext,
 } from "./server-types.js";
 
 export async function getSkillReferenceCatalog(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   rawParams: unknown,
-): Promise<ZCodeSkillsReferenceCatalogResult> {
+): Promise<NekodeSkillsReferenceCatalogResult> {
   const params = parseParams(zcodeSkillsReferenceCatalogParamsSchema, rawParams);
   if (params.sessionId) {
     const record = requireSession(context, params.sessionId);
@@ -27,7 +27,7 @@ export async function getSkillReferenceCatalog(
   // 旧 UI cache 只在 workspace 首次挂载时扫描，用户从文件系统手动新增
   // Skill 后，新建对话仍停在旧快照。草稿请求在 Agent 侧复用 CLI 正式发现配置，
   // 每次新打开引用面板都读取当前 workspace catalog。
-  const outcome = await listZCodeSkills({
+  const outcome = await listNekodeSkills({
     env: context.deps.env,
     includeVisualize: true,
     logger: context.logger,
@@ -37,9 +37,9 @@ export async function getSkillReferenceCatalog(
 }
 
 function toResult(
-  authority: ZCodeSkillsReferenceCatalogResult["authority"],
+  authority: NekodeSkillsReferenceCatalogResult["authority"],
   outcome: SkillLoadOutcome,
-): ZCodeSkillsReferenceCatalogResult {
+): NekodeSkillsReferenceCatalogResult {
   return {
     authority,
     // 内置技能包（bundled-skills.ts）不进引用面板：它由内置命令（`/workflow`）加载，不是用户
@@ -50,7 +50,7 @@ function toResult(
   };
 }
 
-function toReferenceCatalogEntry(skill: SkillMetadata): ZCodeSkillReferenceCatalogEntry {
+function toReferenceCatalogEntry(skill: SkillMetadata): NekodeSkillReferenceCatalogEntry {
   const scope =
     skill.source === "plugin" ? "plugin" : skill.scope === "project" ? "workspace" : "user";
   return {

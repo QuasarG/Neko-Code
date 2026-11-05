@@ -1,5 +1,5 @@
 import { logger } from "@/logger.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 
 interface DeferredDraftRuntimeChangeParams {
   logScope: string;
@@ -16,7 +16,7 @@ export async function invalidateDeferredDraftSessionForRuntimeChange(
   }
 
   const workspaceIdentity = params.workspaceIdentity?.trim() || undefined;
-  const store = useZCodeSessionStore.getState();
+  const store = useNekodeSessionStore.getState();
   // V4 pane 是预热会话的唯一 owner；设置操作只发失效版本，不直接关闭会话。
   store.invalidateDraftRuntime(params.workspacePath, workspaceIdentity);
   logger.info(`[${params.logScope}] invalidated draft runtime capabilities`, {

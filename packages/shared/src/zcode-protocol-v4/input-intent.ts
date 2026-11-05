@@ -1,6 +1,5 @@
 import { genUiModelContextSchema } from "../gen-ui/contract.js";
 import { conversationQuotesSchema } from "../conversationSelection.js";
-import { botGroupInputSourceSchema } from "../bots.js";
 // CLI admission 后的自包含输入事实。
 // queue / guide / runtime / transcript 只能携带同一个 intent，不允许各层重建字段。
 import { z } from "zod";
@@ -66,7 +65,6 @@ export const conversationInputDispatchSchema = z
 export const conversationInputIntentSchema = z
   .object({
     inputOrigin: z.enum(["desktop", "mobile"]).optional(),
-    botGroupSource: botGroupInputSourceSchema.optional(),
     conversationQuotes: conversationQuotesSchema.optional(),
     sourceCommandId: z.string().min(1),
     queueItemId: z.string().min(1),

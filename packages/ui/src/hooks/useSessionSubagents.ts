@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ZCodeSessionEndedSubagent, ZCodeSessionSubagentsResult } from "@zcode/shared";
+import type { NekodeSessionEndedSubagent, NekodeSessionSubagentsResult } from "@zcode/shared";
 import { useServices } from "@/hooks/useServices.js";
 import { logger } from "@/logger.js";
 
@@ -8,7 +8,7 @@ const MAX_PAGE_SIZE = 100;
 
 export interface SessionSubagentsViewState {
   revision: number;
-  ended: ZCodeSessionSubagentsResult["ended"];
+  ended: NekodeSessionSubagentsResult["ended"];
   error: string | null;
   loading: boolean;
 }
@@ -23,9 +23,9 @@ function emptyState(): SessionSubagentsViewState {
 }
 
 export function mergeEndedSubagentPages(
-  current: readonly ZCodeSessionEndedSubagent[],
-  incoming: readonly ZCodeSessionEndedSubagent[],
-): ZCodeSessionEndedSubagent[] {
+  current: readonly NekodeSessionEndedSubagent[],
+  incoming: readonly NekodeSessionEndedSubagent[],
+): NekodeSessionEndedSubagent[] {
   const currentIds = new Set(current.map((item) => item.childSessionId));
   return [...current, ...incoming.filter((item) => !currentIds.has(item.childSessionId))];
 }
@@ -61,7 +61,7 @@ export function useSessionSubagents(options: {
   const enabled = options.enabled !== false && Boolean(options.sessionId);
 
   const requestPage = useCallback(
-    (endedLimit: number, endedCursor?: string): Promise<ZCodeSessionSubagentsResult> => {
+    (endedLimit: number, endedCursor?: string): Promise<NekodeSessionSubagentsResult> => {
       if (!options.sessionId) return Promise.reject(new Error("session_id_missing"));
       if (typeof zcodeAgentService?.listSessionSubagents !== "function") {
         return Promise.resolve({

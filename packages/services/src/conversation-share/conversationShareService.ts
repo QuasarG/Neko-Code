@@ -23,18 +23,18 @@ import {
   extractConversationPreviewFileReferences,
   type ConversationPreviewArtifactCandidate,
   localizeConversationShareUrl,
-  resolveRuntimeZCodeEndpointOrigin,
+  resolveRuntimeNekodeEndpointOrigin,
 } from "@zcode/shared";
 import type { ConversationRow } from "@zcode/shared/zcode-protocol-v4";
 import {
   PROTOCOL_V4_LIMITS,
-  ZCODE_ATTACHMENT_FAULT_CODES,
-  readZCodeAttachmentFaultCode,
+  NEKODE_ATTACHMENT_FAULT_CODES,
+  readNekodeAttachmentFaultCode,
 } from "@zcode/shared/zcode-protocol-v4";
 import { Emitter } from "@zcode/rpc";
 
-import type { IZCodeAgentService } from "../zcode-agent/zcodeAgent.js";
-import type { IZCodeSessionService } from "#src/zcode-session/zcodeSession.js";
+import type { INekodeAgentService } from "../zcode-agent/zcodeAgent.js";
+import type { INekodeSessionService } from "#src/zcode-session/zcodeSession.js";
 import { getConversationWorkspaceDir } from "#src/paths.js";
 import { createServiceLogger, type ServiceLogger } from "#src/logger/serviceLogger.js";
 import {
@@ -176,7 +176,7 @@ export interface ConversationShareServiceOptions {
   confirmPollTimeoutMs?: number;
   now?: () => number;
   sleep?: (delayMs: number) => Promise<void>;
-  zcodeSessionService?: Pick<IZCodeSessionService, "createSession" | "listSessions">;
+  zcodeSessionService?: Pick<INekodeSessionService, "createSession" | "listSessions">;
   download?: (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
   /** 单个 artifact 下载的超时（含读 body）；缺省 120s。 */
   downloadTimeoutMs?: number;
@@ -188,7 +188,7 @@ export interface ConversationShareServiceOptions {
 
 type ConversationShareAgentService = ShareWorkflowReader &
   Pick<
-    IZCodeAgentService,
+    INekodeAgentService,
     | "conversationRowsRangeV4"
     | "conversationFileChangesV4"
     | "conversationAttachmentReadV4"
@@ -508,11 +508,11 @@ function allowedArtifactFor(
  * 仅在 fault 码缺席时保留一条 errno 文本兜底，用于尚未带结构化码的旧 zcode-cli。
  */
 function isDefiniteMissingAttachment(error: unknown): boolean {
-  const faultCode = readZCodeAttachmentFaultCode(error);
+  const faultCode = readNekodeAttachmentFaultCode(error);
   if (faultCode) {
     return (
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatNotFound ||
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.statNotFile
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatNotFound ||
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.statNotFile
     );
   }
   const message = error instanceof Error ? error.message : String(error);
@@ -520,13 +520,13 @@ function isDefiniteMissingAttachment(error: unknown): boolean {
 }
 
 function isAttachmentAuthorizationError(error: unknown): boolean {
-  const faultCode = readZCodeAttachmentFaultCode(error);
+  const faultCode = readNekodeAttachmentFaultCode(error);
   if (faultCode) {
     return (
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatNotAuthorized ||
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareReadNotAuthorized ||
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatConnectionUntrusted ||
-      faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatNotAuthorized ||
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareReadNotAuthorized ||
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatConnectionUntrusted ||
+      faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareReadConnectionUntrusted
     );
   }
   const message = error instanceof Error ? error.message : String(error);
@@ -535,10 +535,10 @@ function isAttachmentAuthorizationError(error: unknown): boolean {
 
 /** 附件体积超出协议/通道可承载范围：选择阶段就应作为确定阻断呈现。 */
 function isAttachmentTooLargeError(error: unknown): boolean {
-  const faultCode = readZCodeAttachmentFaultCode(error);
+  const faultCode = readNekodeAttachmentFaultCode(error);
   return (
-    faultCode === ZCODE_ATTACHMENT_FAULT_CODES.shareStatTooLarge ||
-    faultCode === ZCODE_ATTACHMENT_FAULT_CODES.previewTooLarge
+    faultCode === NEKODE_ATTACHMENT_FAULT_CODES.shareStatTooLarge ||
+    faultCode === NEKODE_ATTACHMENT_FAULT_CODES.previewTooLarge
   );
 }
 
@@ -668,7 +668,7 @@ export class ConversationShareService implements IConversationShareService {
     Emitter<ConversationShareImportProgress>
   >();
   private readonly zcodeSessionService?: Pick<
-    IZCodeSessionService,
+    INekodeSessionService,
     "createSession" | "listSessions"
   >;
   private readonly download: (url: string, init?: { signal?: AbortSignal }) => Promise<Response>;
@@ -712,15 +712,15 @@ export class ConversationShareService implements IConversationShareService {
     this.conversationWorkspaceRoot =
       options.conversationWorkspaceRoot ?? getConversationWorkspaceDir();
     // 兜底写死生产站 https://zcode.z.ai/cn/share，于是测试环境（API base 走
-    // 配置的 ZCode origin）导入后回链仍指向生产站，点分割线打开的是另一个环境的分享。
-    // 改用与 API base 同一个环境解析器（buildRuntimeZCodeApiUrl 也走它），保证同环境。
-    // 优先级不变：显式 option > ZCODE_CONVERSATION_SHARE_WEB_URL > 按环境推导。
+    // 配置的 Nekode origin）导入后回链仍指向生产站，点分割线打开的是另一个环境的分享。
+    // 改用与 API base 同一个环境解析器（buildRuntimeNekodeApiUrl 也走它），保证同环境。
+    // 优先级不变：显式 option > NEKODE_CONVERSATION_SHARE_WEB_URL > 按环境推导。
     this.shareWebUrl = (
       options.shareWebUrl ??
-      process.env.ZCODE_CONVERSATION_SHARE_WEB_URL ??
-      `${resolveRuntimeZCodeEndpointOrigin(process.env)}/cn/share`
+      process.env.NEKODE_CONVERSATION_SHARE_WEB_URL ??
+      `${resolveRuntimeNekodeEndpointOrigin(process.env)}/cn/share`
     ).replace(/\/+$/u, "");
-    this.importIndexPath = join(this.conversationWorkspaceRoot, ".zcode-share-imports.json");
+    this.importIndexPath = join(this.conversationWorkspaceRoot, ".nekode-share-imports.json");
     this.logger = options.logger ?? createServiceLogger("conversation-share");
     this.completedImportsLoaded = this.loadCompletedImportIndex();
     if (this.zcodeSessionService) {
@@ -1463,9 +1463,9 @@ export class ConversationShareService implements IConversationShareService {
         : this.conversationWorkspaceRoot;
     const workspaceIdentity =
       input.targetWorkspaceIdentity && !remoteTarget ? input.targetWorkspaceIdentity : undefined;
-    const shareRoot = join(workspacePath, ".zcode-share");
+    const shareRoot = join(workspacePath, ".nekode-share");
     const importRoot = join(shareRoot, sanitizeFileSegment(continuation.share.share_id));
-    const markerPath = join(importRoot, ".zcode-share-import.json");
+    const markerPath = join(importRoot, ".nekode-share-import.json");
     const stagingPath = join(importRoot, ".share-import-staging");
     const finalArtifactsPath = join(importRoot, "shared-artifacts");
     const conversationPath = join(importRoot, "shared-conversation.json");
@@ -1622,7 +1622,7 @@ export class ConversationShareService implements IConversationShareService {
         await writeFile(join(stagingPath, fileName), bytes);
         installedArtifacts.push({
           artifactId: artifact.artifact_id,
-          workspaceRelativePath: `.zcode-share/${sanitizeFileSegment(continuation.share.share_id)}/shared-artifacts/${fileName}`,
+          workspaceRelativePath: `.nekode-share/${sanitizeFileSegment(continuation.share.share_id)}/shared-artifacts/${fileName}`,
           displayName: artifact.display_name,
           mimeType: artifact.mime_type,
           sha256: artifact.sha256,
@@ -1783,7 +1783,7 @@ export class ConversationShareService implements IConversationShareService {
   /**
    * 按 contextId 找回导入时落盘的公开 rows。
    *
-   * 目录名用的是 share_id 而不是 contextId（二者不等价），所以扫 .zcode-share/ 下各
+   * 目录名用的是 share_id 而不是 contextId（二者不等价），所以扫 .nekode-share/ 下各
    * importRoot 并比对文件内的 contextId —— 不额外维护索引，历史导入也能被读到。
    * 内容来自磁盘，属跨存储边界，必须过 schema 再交给渲染层。
    */
@@ -1791,7 +1791,7 @@ export class ConversationShareService implements IConversationShareService {
     workspacePath: string;
     contextId: string;
   }): Promise<ImportedConversationShare | null> {
-    const shareRoot = join(input.workspacePath, ".zcode-share");
+    const shareRoot = join(input.workspacePath, ".nekode-share");
     let entries: Dirent[];
     try {
       entries = await readdir(shareRoot, { withFileTypes: true });
@@ -2310,12 +2310,12 @@ export class ConversationShareService implements IConversationShareService {
     await this.completedImportsLoaded;
     // 只扫描默认 conversation workspace 的 import-owned 子目录；其它 workspace 的 marker
     // 在下一次带 target 的导入请求中处理，避免启动期枚举并触碰用户项目目录。
-    const shareRoot = join(this.conversationWorkspaceRoot, ".zcode-share");
+    const shareRoot = join(this.conversationWorkspaceRoot, ".nekode-share");
     const imports = await readdir(shareRoot, { withFileTypes: true }).catch(() => []);
     for (const entry of imports) {
       if (!entry.isDirectory()) continue;
       const importRoot = join(shareRoot, entry.name);
-      const markerPath = join(importRoot, ".zcode-share-import.json");
+      const markerPath = join(importRoot, ".nekode-share-import.json");
       let marker: {
         sessionId?: unknown;
         shareCode?: unknown;

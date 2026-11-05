@@ -6,7 +6,7 @@ import type { StartupTimer } from "../startup-logging.js";
 import { resolveOfficialPluginRoots } from "./bundled-plugins.js";
 import { DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS } from "./official-plugin-definitions.js";
 import { getPluginStorageRoot } from "./paths.js";
-import type { ZCodeAppOptions } from "./types.js";
+import type { NekodeAppOptions } from "./types.js";
 import { filterVisualizeSkillRoots } from "./visualize-skill-gate.js";
 
 export function resolveStartupPlugins(input: {
@@ -14,7 +14,7 @@ export function resolveStartupPlugins(input: {
   configResult: ConfigResult;
   env?: NodeJS.ProcessEnv;
   logger?: Logger;
-  options: Pick<ZCodeAppOptions, "officialPluginRoots" | "pluginStorageRoot" | "includeVisualize">;
+  options: Pick<NekodeAppOptions, "officialPluginRoots" | "pluginStorageRoot" | "includeVisualize">;
   startupTimer: StartupTimer;
   workingDirectory: string;
 }): PluginLoadOutcome {
@@ -29,10 +29,10 @@ export function resolveStartupPlugins(input: {
       storageRoot: pluginStorageRoot,
       suppressedBuiltins: new Set(input.configResult.config.plugins.suppressedBuiltins),
     }),
-    // defaultEnabled 的 official plugin (如 skill-creator) 只有在这里
+    // defaultEnabled 的 official plugin (如 zcode-guide) 只有在这里
     // 把名单传给 discoverNodePluginsSync 才会真正默认开启。CLI 子命令路径
-    // (resolveZCodePlugins) 和应用启动路径都要传，否则 `/skill skill-creator` 在会话里
-    // 报 "Skill not found: skill-creator"，但 `zcode plugins list` 却显示它是 enabled。
+    // (resolveNekodePlugins) 和应用启动路径都要传，否则 `/skill <name>` 在会话里
+    // 报 "Skill not found"，但 `zcode plugins list` 却显示它是 enabled。
     officialPluginsEnabledByDefault: DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS,
     storageRoot: pluginStorageRoot,
     workingDirectory: input.workingDirectory,
@@ -41,7 +41,7 @@ export function resolveStartupPlugins(input: {
     pluginOutcome.skillRoots,
     input.options.includeVisualize,
   );
-  input.startupTimer.mark("ZCode plugins resolved", {
+  input.startupTimer.mark("Nekode plugins resolved", {
     context: {
       commandRootCount: pluginOutcome.commandRoots.length,
       diagnosticCount: pluginOutcome.diagnostics.length,
@@ -67,7 +67,7 @@ export function startAppStartup(input: {
   resume: boolean;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.start("ZCode app startup started", {
+  input.startupTimer.start("Nekode app startup started", {
     context: {
       hasInjectedModelAdapter: input.hasInjectedModelAdapter,
       resume: input.resume,
@@ -81,7 +81,7 @@ export function markConfigurationLoaded(input: {
   configResult: ConfigResult;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.mark("ZCode app configuration loaded", {
+  input.startupTimer.mark("Nekode app configuration loaded", {
     context: {
       configSourceEnv: input.configResult.sources.env,
       configSourceProject: input.configResult.sources.project.loaded,
@@ -99,7 +99,7 @@ export function markStorageAdaptersInitialized(input: {
   startupTimer: StartupTimer;
   storageRoot: string;
 }): void {
-  input.startupTimer.mark("ZCode storage adapters initialized", {
+  input.startupTimer.mark("Nekode storage adapters initialized", {
     context: {
       hasInjectedArtifactStore: input.hasInjectedArtifactStore,
       hasInjectedSessionStore: input.hasInjectedSessionStore,
@@ -118,7 +118,7 @@ export function markMcpAdapterInitialized(input: {
   startupTimer: StartupTimer;
   trustedMcpServerCount: number;
 }): void {
-  input.startupTimer.mark("ZCode MCP adapter initialized", {
+  input.startupTimer.mark("Nekode MCP adapter initialized", {
     context: {
       hasInjectedMcpPort: input.hasInjectedMcpPort,
       mcpEnabled: input.mcpEnabled,
@@ -135,7 +135,7 @@ export function markRuntimeConstructed(input: {
   sessionId: string;
   startupTimer: StartupTimer;
 }): void {
-  input.startupTimer.mark("ZCode runtime constructed", {
+  input.startupTimer.mark("Nekode runtime constructed", {
     context: {
       hasInjectedModelAdapter: input.hasInjectedModelAdapter,
       sessionId: input.sessionId,
@@ -150,7 +150,7 @@ export function completeAppStartup(input: {
   startupTimer: StartupTimer;
   workingDirectory: string;
 }): void {
-  input.startupTimer.complete("ZCode app startup completed", {
+  input.startupTimer.complete("Nekode app startup completed", {
     context: {
       sessionId: input.sessionId,
       workingDirectory: input.workingDirectory,

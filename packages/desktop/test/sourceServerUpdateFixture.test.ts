@@ -40,8 +40,8 @@ it("更新 fixture 解除 staged 硬链接，不能污染另一 case 的公共 a
     await writeFile(publicDescriptor, descriptor);
     await link(archive, join(release, "zcode-server-linux-x64.tar.gz"));
     await link(publicDescriptor, join(release, "source-server-release.json"));
-    vi.stubEnv("ZCODE_E2E_RUN_ID", "r3-server-fixture");
-    vi.stubEnv("ZCODE_E2E_ARTIFACT_DIR", join(root, "artifacts"));
+    vi.stubEnv("NEKODE_E2E_RUN_ID", "r3-server-fixture");
+    vi.stubEnv("NEKODE_E2E_ARTIFACT_DIR", join(root, "artifacts"));
     const result = await prepareSourceServerUpdateArchive(sha, "E2E_UPDATE", { desktopRoot });
     expect(result.newSha).not.toBe(sha);
     expect(await readFile(archive)).toEqual(original);

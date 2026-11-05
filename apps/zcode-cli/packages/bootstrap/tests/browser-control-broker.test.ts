@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from "vitest";
 import { zcodeProtocolMethods } from "@zcode/shared";
 import { createProtocolBrowserControlBroker } from "../src/zcode-protocol/browser-control-broker.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 const IAB_DESCRIPTOR = {
   id: "iab-runtime-1",
   generation: 1,
   type: "iab" as const,
-  name: "ZCode In-app Browser",
+  name: "Nekode In-app Browser",
   capabilities: {
     browser: [{ id: "visibility", description: "Browser visibility control" }],
     tab: [{ id: "cdp", description: "Controlled CDP commands" }],
@@ -24,7 +24,7 @@ function createContext(
     workspaceKey?: string;
     workspacePath?: string;
   } = {},
-): ZCodeProtocolAgentServerContext {
+): NekodeProtocolAgentServerContext {
   const sessionId = options.sessionId ?? "sess-1";
   const workspacePath = options.workspacePath ?? "/repo";
   return {
@@ -43,7 +43,7 @@ function createContext(
         },
       ],
     ]),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("createProtocolBrowserControlBroker", () => {
@@ -155,7 +155,7 @@ describe("createProtocolBrowserControlBroker", () => {
     const context = {
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext;
+    } as unknown as NekodeProtocolAgentServerContext;
     const broker = createProtocolBrowserControlBroker(context);
 
     await expect(broker.list({ sessionId: "missing-session" })).rejects.toThrow(

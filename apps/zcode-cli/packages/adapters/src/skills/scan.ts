@@ -20,7 +20,7 @@
 // 文件接触点都要记得校验（文件级链接、跨盘符 relative 谓词、manifest 失败回退均成
 // 缺口）。收敛为单一规则：插件扫描一律不跟随符号链接——根自身、子目录候选、
 // SKILL.md 文件三个粒度全部拒绝链接（拒绝即无逃逸，无需判定链接指向何处）。
-// 用户级技能根（~/.zcode/skills 的 symlink 导入是受支持功能）保持默认跟随。
+// 用户级技能根（~/.nekode/skills 的 symlink 导入是受支持功能）保持默认跟随。
 
 import { lstatSync, readdirSync, statSync } from "node:fs";
 import { lstat, readdir, stat } from "node:fs/promises";
@@ -34,6 +34,12 @@ export interface ScanSkillFilesOptions {
    * 链接即拒绝逃逸，无需 realpath 判定指向。
    */
   followSymbolicLinks?: boolean;
+  /**
+   * 是否支持一层分组目录（root/<分类>/<技能>/SKILL.md；分类目录可为整目录软链）。
+   * 默认 false：插件与既有布局只认 root/<技能>/SKILL.md。用户/项目级技能根传 true；
+   * 分组目录名作为技能 category 的来源之一（frontmatter 声明优先）。
+   */
+  allowGroupedDirectory?: boolean;
 }
 
 /**
@@ -45,6 +51,7 @@ export async function scanSkillFilesUnderRoot(
   options: ScanSkillFilesOptions = {},
 ): Promise<string[]> {
   const followSymlinks = options.followSymbolicLinks ?? true;
+  const allowGroupedDirectory = options.allowGroupedDirectory ?? false;
   // 根自身是链接（含 junction）时，插件扫描直接判空。
   if (!followSymlinks && (await isSymbolicLink(rootPath))) return [];
 
@@ -68,6 +75,32 @@ export async function scanSkillFilesUnderRoot(
     // 不是技能目录，拼出来的路径不存在；parseSkill 本会静默跳过，但计数与
     // 组件枚举都消费该结果，不校验会把「不存在的技能」算进来。
     const candidate = join(rootPath, entry.name, SKILL_FILE_NAME);
+    if (await isLoadableSkillFile(candidate, followSymlinks)) {
+      files.push(candidate);
+      continue;
+    }
+    if (!allowGroupedDirectory) continue;
+    files.push(...(await scanGroupedSkillDirectory(join(rootPath, entry.name), followSymlinks)));
+  }
+  return files;
+}
+
+/** 分组目录下钻：收集 <分类>/<技能>/SKILL.md；分类目录本身不是技能，可为软链。 */
+async function scanGroupedSkillDirectory(
+  groupDir: string,
+  followSymlinks: boolean,
+): Promise<string[]> {
+  const groupInfo = await stat(groupDir).catch((error) => {
+    throwIfUnexpectedScanError(error);
+    return null;
+  });
+  if (!groupInfo?.isDirectory()) return [];
+  const files: string[] = [];
+  for (const sub of await readdir(groupDir, { withFileTypes: true })) {
+    const walkable = sub.isDirectory() || (followSymlinks && sub.isSymbolicLink());
+    if (!walkable) continue;
+    if (!shouldWalkSkillDirectoryEntry(sub.name)) continue;
+    const candidate = join(groupDir, sub.name, SKILL_FILE_NAME);
     if (await isLoadableSkillFile(candidate, followSymlinks)) files.push(candidate);
   }
   return files;
@@ -79,6 +112,7 @@ export function scanSkillFilesUnderRootSync(
   options: ScanSkillFilesOptions = {},
 ): string[] {
   const followSymlinks = options.followSymbolicLinks ?? true;
+  const allowGroupedDirectory = options.allowGroupedDirectory ?? false;
   if (!followSymlinks && isSymbolicLinkSync(rootPath)) return [];
 
   const rootInfo = statSyncOrNull(rootPath);
@@ -93,6 +127,26 @@ export function scanSkillFilesUnderRootSync(
     if (!walkable) continue;
     if (!shouldWalkSkillDirectoryEntry(entry.name)) continue;
     const candidate = join(rootPath, entry.name, SKILL_FILE_NAME);
+    if (isLoadableSkillFileSync(candidate, followSymlinks)) {
+      files.push(candidate);
+      continue;
+    }
+    if (!allowGroupedDirectory) continue;
+    files.push(...scanGroupedSkillDirectorySync(join(rootPath, entry.name), followSymlinks));
+  }
+  return files;
+}
+
+/** scanGroupedSkillDirectory 的同步变体，错误契约相同。 */
+function scanGroupedSkillDirectorySync(groupDir: string, followSymlinks: boolean): string[] {
+  const groupInfo = statSyncOrNull(groupDir);
+  if (!groupInfo?.isDirectory()) return [];
+  const files: string[] = [];
+  for (const sub of readdirSync(groupDir, { withFileTypes: true })) {
+    const walkable = sub.isDirectory() || (followSymlinks && sub.isSymbolicLink());
+    if (!walkable) continue;
+    if (!shouldWalkSkillDirectoryEntry(sub.name)) continue;
+    const candidate = join(groupDir, sub.name, SKILL_FILE_NAME);
     if (isLoadableSkillFileSync(candidate, followSymlinks)) files.push(candidate);
   }
   return files;

@@ -1,5 +1,4 @@
 import { conversationQuotesSchema } from "../conversationSelection.js";
-import { botGroupInputSourceSchema } from "../bots.js";
 // ConversationRow：行类型自包含。
 // 三条结构性规则：row 自包含（渲染任一行不需看别的行）；
 // 结构变化换整行（row.upserted），文本增长用 append（row.delta）；turn 是 row 上的标签不是容器。
@@ -8,10 +7,7 @@ import { highspeedMessageMetaSchema } from "../highspeed.js";
 import { executionOutputPreviewSchema } from "../execution-output-preview.js";
 import { timestampSchema } from "./core.js";
 import { conversationInputSourceSchema } from "./input-intent.js";
-import {
-  backgroundResultOriginMetaSchema,
-  workflowLaunchMetaSchema,
-} from "./workflow-row-meta.js";
+import { backgroundResultOriginMetaSchema, workflowLaunchMetaSchema } from "./workflow-row-meta.js";
 import { attachmentRefSchema } from "./attachment-ref.js";
 
 // RowBase。rowId：session 内单调、永不复用、事件日志的确定性纯函数。
@@ -118,12 +114,13 @@ export const userInputRowSchema = z.object({
   ...rowBaseFields,
   kind: z.literal("userInput"),
   inputOrigin: z.enum(["desktop", "mobile"]).optional(),
-  botGroupSource: botGroupInputSourceSchema.optional(),
   conversationQuotes: conversationQuotesSchema.optional(),
   text: z.string(),
   // text 从此下标起是引擎附加文本（dwf ask 尾注 /
   // nudge），GUI 把它折进默认收起的披露；0 = 整条都是；缺席 = 无（老转录、非工作流会话）。
   epilogueStart: z.number().int().nonnegative().optional(),
+  // 运行时注入（记忆四块）：归到本轮用户气泡内折叠展示，不再单独占时间线行。
+  contextInjection: z.array(z.object({ source: z.string(), text: z.string() })).optional(),
   // workflowLaunch：中枢直接启动轮的用户可见行。
   // 消息文本仍进 text（旧客户端 / TUI 的降级呈现就是那句规范英文）；新客户端用下方
   // workflowLaunch 元数据画轮尾 run 卡而非气泡。闭集加值的偏斜同 turnHeader.origin 注释。
@@ -400,6 +397,13 @@ export const timelineMarkerPayloadSchema = z.union([
     attempt: z.number(),
     reasonCode: z.string(),
   }),
+  // 运行时隐藏提醒（记忆注入）的可折叠正文行；不是用户输入，不参与轮次计数。
+  z.object({
+    type: z.literal("contextInjection"),
+    source: z.string(),
+    text: z.string(),
+    messageId: z.string().optional(),
+  }),
   // workspace 域动作在时间线上的回执。
   z.object({
     type: z.literal("checkpointRestored"),
@@ -413,7 +417,7 @@ export type TimelineMarkerPayload = z.infer<typeof timelineMarkerPayloadSchema>;
  * 落位语义由 CLI 投影裁决，UI 只按 lane 装配、不得按 marker type 自行推断。
  * - assistantWork：assistant 工作活动（compact），进「已工作」折叠组；
  * - turnTailBoundary：轮尾边界（goalVerify/forkNotice），留轮结尾不折叠；
- * - lightBoundary：轮顶轻边界（modelChange），渲染在 user 输入之前。
+ * - lightBoundary：轮顶轻边界（modelChange / contextInjection），渲染在 user 输入之前。
  * optional = 老 snapshot 兼容（缺省时 UI 按 marker type 回落映射）。
  */
 export const timelineMarkerLaneSchema = z.enum([

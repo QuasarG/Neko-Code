@@ -10,7 +10,7 @@ import {
 } from "@zcode/adapters/storage";
 import { createWorkspaceHookTrustRecords } from "@zcode/core";
 import { SessionEventType, type ExecutionPort } from "@zcode/contracts";
-import { createRegistryBackedTestApp as createZCodeApp } from "./helpers/registry-backed-test-app.js";
+import { createRegistryBackedTestApp as createNekodeApp } from "./helpers/registry-backed-test-app.js";
 
 const roots: string[] = [];
 
@@ -18,7 +18,7 @@ afterEach(async () => {
   await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })));
 });
 
-describe("createZCodeApp workspace Hook admission", () => {
+describe("createNekodeApp workspace Hook admission", () => {
   it("首次 activation 等待 Trust store load；pending blocked，exact pretrust 后执行同一 snapshot", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-workspace-hook-runtime-"));
     roots.push(root);
@@ -26,11 +26,11 @@ describe("createZCodeApp workspace Hook admission", () => {
     const userConfigPath = join(root, "home", "config.json");
     const storageRoot = join(root, "storage");
     await mkdir(join(workspace, ".git"), { recursive: true });
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".nekode"), { recursive: true });
     await mkdir(join(root, "home"), { recursive: true });
     await writeFile(userConfigPath, JSON.stringify({ storage: { dir: storageRoot } }));
     await writeFile(
-      join(workspace, ".zcode", "config.json"),
+      join(workspace, ".nekode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -51,7 +51,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const blockedSessionStore = await createSqliteSessionStore({
       dbPath: ":memory:",
     });
-    const blockedApp = await createZCodeApp({
+    const blockedApp = await createNekodeApp({
       env: {},
       eventStore: blockedEvents,
       executionPort: executionPort(blockedCommands),
@@ -105,7 +105,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const trustedSessionStore = await createSqliteSessionStore({
       dbPath: ":memory:",
     });
-    const trustedApp = await createZCodeApp({
+    const trustedApp = await createNekodeApp({
       env: {},
       eventStore: trustedEvents,
       executionPort: executionPort(trustedCommands),
@@ -142,11 +142,11 @@ describe("createZCodeApp workspace Hook admission", () => {
     const userConfigPath = join(root, "home", "config.json");
     const storageRoot = join(root, "storage");
     await mkdir(join(workspace, ".git"), { recursive: true });
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".nekode"), { recursive: true });
     await mkdir(join(root, "home"), { recursive: true });
     await writeFile(userConfigPath, JSON.stringify({ storage: { dir: storageRoot } }));
     await writeFile(
-      join(workspace, ".zcode", "config.json"),
+      join(workspace, ".nekode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -178,7 +178,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const commands: string[] = [];
     const events = createInMemorySessionEventStore();
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       eventStore: events,
       executionPort: executionPort(commands),
@@ -224,11 +224,11 @@ describe("createZCodeApp workspace Hook admission", () => {
     const userConfigPath = join(root, "home", "config.json");
     const storageRoot = join(root, "storage");
     await mkdir(join(workspace, ".git"), { recursive: true });
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".nekode"), { recursive: true });
     await mkdir(join(root, "home"), { recursive: true });
     await writeFile(userConfigPath, JSON.stringify({ storage: { dir: storageRoot } }));
     await writeFile(
-      join(workspace, ".zcode", "config.json"),
+      join(workspace, ".nekode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -242,7 +242,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const commands: string[] = [];
     const eventStore = createInMemorySessionEventStore();
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       eventStore,
       executionPort: executionPort(commands),
@@ -349,11 +349,11 @@ describe("createZCodeApp workspace Hook admission", () => {
     const userConfigPath = join(root, "home", "config.json");
     const storageRoot = join(root, "storage");
     await mkdir(join(workspace, ".git"), { recursive: true });
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".nekode"), { recursive: true });
     await mkdir(join(root, "home"), { recursive: true });
     await writeFile(userConfigPath, JSON.stringify({ storage: { dir: storageRoot } }));
     await writeFile(
-      join(workspace, ".zcode", "config.json"),
+      join(workspace, ".nekode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -380,7 +380,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const commands: string[] = [];
     const eventStore = createInMemorySessionEventStore();
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       eventStore,
       executionPort: executionPort(commands),
@@ -434,11 +434,11 @@ describe("createZCodeApp workspace Hook admission", () => {
     const userConfigPath = join(root, "home", "config.json");
     const storageRoot = join(root, "storage");
     await mkdir(join(workspace, ".git"), { recursive: true });
-    await mkdir(join(workspace, ".zcode"), { recursive: true });
+    await mkdir(join(workspace, ".nekode"), { recursive: true });
     await mkdir(join(root, "home"), { recursive: true });
     await writeFile(userConfigPath, JSON.stringify({ storage: { dir: storageRoot } }));
     await writeFile(
-      join(workspace, ".zcode", "config.json"),
+      join(workspace, ".nekode", "config.json"),
       JSON.stringify({
         hooks: {
           enabled: true,
@@ -455,7 +455,7 @@ describe("createZCodeApp workspace Hook admission", () => {
     const commands: string[] = [];
     const eventStore = createInMemorySessionEventStore();
     const sessionStore = await createSqliteSessionStore({ dbPath: ":memory:" });
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       env: {},
       eventStore,
       executionPort: executionPort(commands),

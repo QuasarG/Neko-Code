@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, readdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { createSharedZCodeCredentialStore } from "../src/auth/shared-credentials.js";
+import { createSharedNekodeCredentialStore } from "../src/auth/shared-credentials.js";
 import {
   deletePendingAuthorizationIfOwned,
   loadPendingAuthorization,
@@ -132,8 +132,8 @@ describe("MCP OAuth authorization lease", () => {
 describe("MCP OAuth pending authorization record", () => {
   it("only lets the owning attempt delete the pending record", async () => {
     const credentialsPath = await createCredentialsPath();
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-pending-secret" },
+    const credentialStore = createSharedNekodeCredentialStore({
+      env: { NEKODE_CREDENTIAL_SECRET: "mcp-oauth-pending-secret" },
       filePath: credentialsPath,
     });
     await publishPendingAuthorization(credentialStore, KEY_PREFIX, {
@@ -162,8 +162,8 @@ describe("MCP OAuth pending authorization record", () => {
 
   it("hides an expired pending record without deleting it", async () => {
     const credentialsPath = await createCredentialsPath();
-    const credentialStore = createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: "mcp-oauth-pending-expiry-secret" },
+    const credentialStore = createSharedNekodeCredentialStore({
+      env: { NEKODE_CREDENTIAL_SECRET: "mcp-oauth-pending-expiry-secret" },
       filePath: credentialsPath,
     });
     await publishPendingAuthorization(credentialStore, KEY_PREFIX, {

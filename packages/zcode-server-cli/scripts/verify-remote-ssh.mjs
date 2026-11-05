@@ -143,7 +143,7 @@ async function main() {
   );
 
   log("install archive through bootstrap bin/zcode");
-  const serverRoot = "/root/.zcode/server";
+  const serverRoot = "/root/.nekode/server";
   const remoteArchive = `/root/zcode-server-${target}.tar.gz`;
   const { stdout: installOutput } = await ssh(
     `/root/zcode-bootstrap/bin/zcode update --from-archive ${remoteArchive} --server-root ${serverRoot} --json`,

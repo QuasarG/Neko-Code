@@ -4,7 +4,6 @@ import type { AgentPermissionMode } from "./subagents-types.js";
 import type {
   AgentProfile,
   AgentProfileSource,
-  AgentMemoryScope,
   AgentProfileParseDiagnostic,
 } from "./subagent-profile.js";
 
@@ -27,8 +26,6 @@ const VALID_PERMISSION_MODES = new Set<AgentPermissionMode>([
   "dontAsk",
   "plan",
 ]);
-
-const VALID_MEMORY_SCOPES = new Set<AgentMemoryScope>(["user", "project", "local"]);
 
 export function parseAgentProfileFromMarkdown(input: {
   content: string;
@@ -63,15 +60,6 @@ export function parseAgentProfileFromMarkdown(input: {
   // child runtime 提升到 bypass/yolo；权限模式只接受用户级或受信插件配置。
   const permissionMode = input.source === "project" ? undefined : parsedPermissionMode;
   const maxTurns = normalizePositiveInteger(frontmatter.maxTurns);
-  const memory = parseAgentMemoryScope(frontmatter.memory);
-  const memoryDiagnostic =
-    frontmatter.memory !== undefined && memory === undefined
-      ? {
-          code: "agent_invalid_memory_scope",
-          message: `Agent frontmatter memory must be user, project, or local: ${input.path ?? "<inline>"}`,
-          path: input.path,
-        }
-      : undefined;
   if (mcpServers === null) {
     return {
       diagnostic: {
@@ -83,7 +71,6 @@ export function parseAgentProfileFromMarkdown(input: {
   }
 
   return {
-    ...(memoryDiagnostic ? { diagnostic: memoryDiagnostic } : {}),
     profile: {
       name,
       description,
@@ -94,7 +81,6 @@ export function parseAgentProfileFromMarkdown(input: {
       ...(color ? { color } : {}),
       ...(permissionMode ? { permissionMode } : {}),
       ...(maxTurns ? { maxTurns } : {}),
-      ...(memory ? { memory } : {}),
       ...optionalList("tools", frontmatter.tools),
       ...optionalList("disallowedTools", frontmatter.disallowedTools),
       ...optionalList("skills", frontmatter.skills),
@@ -103,12 +89,6 @@ export function parseAgentProfileFromMarkdown(input: {
       ...(mcpServers === undefined ? {} : { mcpServers }),
     },
   };
-}
-
-function parseAgentMemoryScope(value: unknown): AgentMemoryScope | undefined {
-  return typeof value === "string" && VALID_MEMORY_SCOPES.has(value as AgentMemoryScope)
-    ? (value as AgentMemoryScope)
-    : undefined;
 }
 
 function missingRequiredDiagnostic(

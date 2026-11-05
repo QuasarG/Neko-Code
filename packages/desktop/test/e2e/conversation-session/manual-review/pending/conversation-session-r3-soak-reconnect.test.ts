@@ -36,7 +36,7 @@ import { openWorkspaceDraftFromSidebar } from "../../../helpers/workspace-agent-
 
 const CASE_MARKER = "E2E_R3_SOAK_RECONNECT";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-soak-reconnect",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-soak-reconnect",
 );
 const ROUNDS = Number(process.env.R3_SOAK_ROUNDS?.trim() || "50");
 

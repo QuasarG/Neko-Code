@@ -3,12 +3,12 @@ import { useCallback, useMemo, useRef, type CSSProperties, type ReactNode } from
 import type {
   GitChangeSourceId,
   GitRepositorySummary,
-  ZCodeProvider,
-  ZCodeTaskChangeSummary,
+  NekodeProvider,
+  NekodeTaskChangeSummary,
 } from "@zcode/shared";
 import type { CodeViewerSource } from "@/lib/codeViewer.js";
 import type { AssistantPreviewCardsAutoOpenRequest } from "@/lib/assistantPreviewCards.js";
-import type { OpenAutomationsMain } from "@/lib/taskNavigationHistory.js";
+import type { OpenWorkflowsMain } from "@/lib/taskNavigationHistory.js";
 import type { MessageFileLinkTarget } from "@/components/ai-elements/message.js";
 import type {
   OpenScopedSubagentSideTabRequest,
@@ -70,7 +70,7 @@ export interface V4WorkspaceChatAreaProps {
   /** primary pane 绑定的 CLI session（既有选择态 activeTaskId）；null = draft。 */
   sessionId: string | null;
   activeSelectionSideChatSessionId?: string | null;
-  provider?: ZCodeProvider;
+  provider?: NekodeProvider;
   /** primary pane createSession/fork 后接入既有选择路径（handleSelectTask）。 */
   onSessionCreated?: (sessionId: string) => void;
   /** primary pane 会话删除后回 draft（shell 起新草稿）。 */
@@ -88,14 +88,14 @@ export interface V4WorkspaceChatAreaProps {
   gitDirtyFileCount?: number;
   gitWorktreeReviewSourceId?: GitChangeSourceId | null;
   gitWorktreeChangeSummary?: { added: number; removed: number } | null;
-  activeTaskChangeSummary?: ZCodeTaskChangeSummary | null;
+  activeTaskChangeSummary?: NekodeTaskChangeSummary | null;
   summaryPanelVariantOverride?: ChatViewSummaryPanelVariant | null;
   onSummaryPanelVariantOverrideChange?: (variant: ChatViewSummaryPanelVariant | null) => void;
   onRefreshGit?: () => void;
   onOpenGitReview?: (sourceId?: GitChangeSourceId) => void;
   onPaneActiveSessionChange?: (scope: PaneWorkspaceScope, sessionId: string) => void;
   onOpenBrowserUrl?: (url: string) => void;
-  onOpenAutomationsMain?: OpenAutomationsMain;
+  onOpenWorkflowsMain?: OpenWorkflowsMain;
   onOpenCodeViewer?: (source: CodeViewerSource) => void;
   onAutoOpenAssistantPptx?: (request: AssistantPreviewCardsAutoOpenRequest) => void;
   onOpenFileLink?: (target: MessageFileLinkTarget) => void;
@@ -159,7 +159,7 @@ export function V4WorkspaceChatArea({
   onOpenGitReview,
   onPaneActiveSessionChange,
   onOpenBrowserUrl,
-  onOpenAutomationsMain,
+  onOpenWorkflowsMain,
   onOpenCodeViewer,
   onAutoOpenAssistantPptx,
   onOpenFileLink,
@@ -287,7 +287,7 @@ export function V4WorkspaceChatArea({
       onRefreshGit,
       onOpenGitReview,
       onOpenBrowserUrl,
-      onOpenAutomationsMain,
+      onOpenWorkflowsMain,
       onOpenCodeViewer,
       onAutoOpenAssistantPptx,
       onOpenFileLink,
@@ -335,7 +335,7 @@ export function V4WorkspaceChatArea({
       onRefreshGit,
       onOpenGitReview,
       onOpenBrowserUrl,
-      onOpenAutomationsMain,
+      onOpenWorkflowsMain,
       onOpenCodeViewer,
       onAutoOpenAssistantPptx,
       onOpenFileLink,

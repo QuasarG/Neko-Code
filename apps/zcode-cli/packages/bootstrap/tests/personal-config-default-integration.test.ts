@@ -3,8 +3,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import type { SharedZCodeCredentialStore } from "@zcode/adapters/auth";
-import { createSharedZCodeCredentialStore } from "@zcode/adapters/auth";
+import type { SharedNekodeCredentialStore } from "@zcode/adapters/auth";
+import { createSharedNekodeCredentialStore } from "@zcode/adapters/auth";
 import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
 import { ProviderConfig } from "@zcode/provider";
 import { configureCodingPlanApiKey } from "../src/auth-login.js";
@@ -24,9 +24,9 @@ describe("Todo104 CLI 同文件默认选择", () => {
     directories.push(directory);
     const personalPath = join(directory, "injected-personal.json");
     const env = {
-      ZCODE_CREDENTIAL_SECRET: "todo104-fixture-only",
-      ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
-      ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
+      NEKODE_CREDENTIAL_SECRET: "todo104-fixture-only",
+      NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
+      NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
         new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
       ),
     };
@@ -43,7 +43,7 @@ describe("Todo104 CLI 同文件默认选择", () => {
           config: new ProviderConfig({ personalModelIds: ["model-a"] }),
         }),
       }));
-      const credentialStore = createSharedZCodeCredentialStore({
+      const credentialStore = createSharedNekodeCredentialStore({
         baseDir: join(directory, "credentials"),
         env,
       });
@@ -92,13 +92,13 @@ describe("Todo104 CLI 同文件默认选择", () => {
     const oldInput = JSON.stringify({ model: "fixture/model-a" });
     await writeFile(legacyPath, oldInput);
     const env = {
-      ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
+      NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
         new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
       ),
-      ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
+      NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
     };
     // 不读取测试机账号凭据，只有迁移和正式文件读写参与本用例。
-    const credentialStore = { loadMany: async () => ({}) } as unknown as SharedZCodeCredentialStore;
+    const credentialStore = { loadMany: async () => ({}) } as unknown as SharedNekodeCredentialStore;
     const standalone = await startProcessProviderRegistryRuntime(env, {
       standalone: { legacyCliUserConfigFilePath: legacyPath, credentialStore },
     });

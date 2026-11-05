@@ -11,7 +11,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog.js";
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
-import { DesktopCommandIds, ZCODE_VERSION } from "@zcode/shared";
+import { DesktopCommandIds, NEKODE_VERSION } from "@zcode/shared";
 /* eslint-disable max-lines -- Source/Profile/迁移三类管理操作共享同一 Host 快照和错误状态。 */
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -54,7 +54,7 @@ import { cn } from "@/components/lib/utils.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
 import { useSourceServerManagementSnapshot } from "@/hooks/useSourceServerManagementSnapshot.js";
 import { useSourceServerOperationLogs } from "@/hooks/useSourceServerOperationLogs.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { SourceServerMigrationReportPanel } from "@/settings/SourceServerMigrationReportPanel.js";
 import {
   resolveSourceServerUpdatePercent,
@@ -271,7 +271,7 @@ export function SourceServerManagementPanel({
   onHideProjectDeviceNamesChange?: (hidden: boolean) => void;
 }) {
   const background = useRemoteConnectionProgress();
-  const { intl, locale } = useZCodeIntl();
+  const { intl, locale } = useNekodeIntl();
   const confirmDialog = useConfirmDialog();
   const platform = useOptionalPlatform();
   const deferredUpdates = useDeferredSourceServerUpdates();
@@ -627,7 +627,7 @@ export function SourceServerManagementPanel({
       const confirmed = await confirmDialog(
         getSourceServerReinstallConfirmation({
           source: server.displayName,
-          version: ZCODE_VERSION,
+          version: NEKODE_VERSION,
           formatMessage: intl.formatMessage,
         }),
       );
@@ -1129,7 +1129,7 @@ export function SourceServerManagementPanel({
                     deviceBusy,
                     installState: server.installState,
                     lastSeenVersion: server.lastSeenVersion,
-                    localVersion: ZCODE_VERSION,
+                    localVersion: NEKODE_VERSION,
                   })
                 : ({ visible: false } as const);
               const actionBusy =

@@ -12,7 +12,7 @@ import {
   ModelPropertiesConfig,
   ProviderRegistry,
 } from "@zcode/provider";
-import { createRegistryBackedTestApp as createZCodeApp } from "./helpers/registry-backed-test-app.js";
+import { createRegistryBackedTestApp as createNekodeApp } from "./helpers/registry-backed-test-app.js";
 import { readWorkflowScriptDocument } from "../src/app/script-workflow-meta.js";
 import { runScriptWorkflowChild } from "../src/app/script-workflow-process.js";
 import { createScriptWorkflowToolPort } from "../src/app/script-workflow-tool-port.js";
@@ -121,9 +121,9 @@ describe("script workflow runtime", () => {
     }
   });
 
-  it("resolves named Workflow tool scripts from project .zcode/workflows", async () => {
+  it("resolves named Workflow tool scripts from project .nekode/workflows", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-workflow-name-"));
-    const workflowDir = join(tempRoot, ".zcode", "workflows");
+    const workflowDir = join(tempRoot, ".nekode", "workflows");
     const sourcePath = join(workflowDir, "review.workflow.js");
     await mkdir(workflowDir, { recursive: true });
     await writeFile(sourcePath, minimalWorkflowScript("review"), "utf8");
@@ -247,7 +247,7 @@ describe("script workflow runtime", () => {
 
   it("persists child sessions before linking workflow activities", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-workflow-child-session-"));
-    const workflowDir = join(tempRoot, ".zcode", "workflows");
+    const workflowDir = join(tempRoot, ".nekode", "workflows");
     const shellDir = join(tempRoot, "bin");
     const scriptPath = join(workflowDir, "child-session.workflow.js");
     const zshPath = join(shellDir, "zsh");
@@ -284,7 +284,7 @@ describe("script workflow runtime", () => {
     const requestTexts: string[] = [];
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {
           PATH: shellDir,
           SHELL: join(shellDir, "fish"),
@@ -344,7 +344,7 @@ describe("script workflow runtime", () => {
       scriptPath,
       `export const meta = { name: "owned", description: "Close owned child" }; return await agent("Wait for cancellation");`,
     );
-    const app = await createZCodeApp({
+    const app = await createNekodeApp({
       modelExecutor: {
         setModelIoFullRetentionEnabled() {},
         async generateText(request: { abortSignal?: AbortSignal }) {
@@ -415,7 +415,7 @@ describe("script workflow runtime", () => {
     );
 
     try {
-      const app = await createZCodeApp({
+      const app = await createNekodeApp({
         env: {},
         modelAdapter: {
           addStatusSink() {},
@@ -637,7 +637,7 @@ it("legacy workflow keeps a successful activity when child cleanup fails, then r
       };
       return child;
     });
-  const app = await createZCodeApp({
+  const app = await createNekodeApp({
     skipUserConfig: true,
     sessionStore: store,
     runtimeConfig: { workingDirectory: root },

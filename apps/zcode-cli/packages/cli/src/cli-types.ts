@@ -8,38 +8,38 @@ import type {
 import type {
   createDefaultProviderEndpointRoutingPort,
   createModelAdapter,
-  createZCodeApp,
+  createNekodeApp,
   CreateDefaultProviderEndpointRoutingPortOptions,
   CreateModelAdapterOptions,
   configureCodingPlanApiKey,
   ConfigureCodingPlanApiKeyOptions,
-  inspectZCodeSkill,
+  inspectNekodeSkill,
   inspectWorkspaceHookTrust,
   grantWorkspaceHookTrust,
   revokeWorkspaceHookTrustCli,
-  inspectZCodeCustomCommand,
-  InspectZCodeCustomCommandOptions,
-  InspectZCodeSkillOptions,
-  loginZCodeCli,
+  inspectNekodeCustomCommand,
+  InspectNekodeCustomCommandOptions,
+  InspectNekodeSkillOptions,
+  loginNekodeCli,
   loginBigmodelCodingPlan,
   LoginBigmodelCodingPlanOptions,
-  LoginZCodeCliOptions,
-  listZCodeCustomCommands,
-  ListZCodeCustomCommandsOptions,
-  loadZCodeCustomCommand,
-  listZCodeSessions,
-  listZCodeSkills,
-  ListZCodeSessionsOptions,
-  ListZCodeSkillsOptions,
-  logoutZCodeCli,
-  LogoutZCodeCliOptions,
+  LoginNekodeCliOptions,
+  listNekodeCustomCommands,
+  ListNekodeCustomCommandsOptions,
+  loadNekodeCustomCommand,
+  listNekodeSessions,
+  listNekodeSkills,
+  ListNekodeSessionsOptions,
+  ListNekodeSkillsOptions,
+  logoutNekodeCli,
+  LogoutNekodeCliOptions,
   resolveLatestSession,
   ResolveLatestSessionOptions,
-  RunZCodeProtocolAgentOptions,
-  prepareZCodeTelemetryEnv,
+  RunNekodeProtocolAgentOptions,
+  prepareNekodeTelemetryEnv,
   startProcessProviderRegistryRuntime,
-  shutdownZCodeTelemetry,
-  ZCodeAppOptions,
+  shutdownNekodeTelemetry,
+  NekodeAppOptions,
 } from "@zcode/bootstrap";
 import type { CliEnv, DotenvLoadResult, LoadCliDotenvOptions } from "./env.js";
 import type { PluginsCommandOverrides } from "./plugins-command.js";
@@ -50,7 +50,7 @@ export type BootstrapModule = typeof import("@zcode/bootstrap");
 
 export interface RunDependencies extends PluginsCommandOverrides {
   migrateStorage?: () => Promise<import("@zcode/shared/sqlite-migrations").MigrationResult>;
-  protocolLifecycle?: RunZCodeProtocolAgentOptions["lifecycle"];
+  protocolLifecycle?: RunNekodeProtocolAgentOptions["lifecycle"];
   protocolInput?: NodeJS.ReadableStream;
   createManagedCdpBrowserRuntime?: (
     options?: ManagedCdpBrowserRuntimeOptions,
@@ -61,26 +61,26 @@ export interface RunDependencies extends PluginsCommandOverrides {
   createProviderEndpointRoutingPort?: (
     options: CreateDefaultProviderEndpointRoutingPortOptions,
   ) => ReturnType<typeof createDefaultProviderEndpointRoutingPort>;
-  createZCodeApp?: (
-    options?: ZCodeAppOptions,
-  ) => Awaited<ReturnType<typeof createZCodeApp>> | ReturnType<typeof createZCodeApp>;
+  createNekodeApp?: (
+    options?: NekodeAppOptions,
+  ) => Awaited<ReturnType<typeof createNekodeApp>> | ReturnType<typeof createNekodeApp>;
   /**
    * Session-event shaper for --output-format stream-json. Defaults to the
    * bootstrap module's, which is also what the protocol server uses; injectable
-   * so a caller that supplies its own `createZCodeApp` (tests, embedders) can
+   * so a caller that supplies its own `createNekodeApp` (tests, embedders) can
    * still stream, since the bootstrap module is not loaded on that path.
    */
   mapSessionEvent?: BootstrapModule["mapSessionEvent"];
   cwd?: () => string;
   env?: CliEnv;
-  inspectSkill?: (options: InspectZCodeSkillOptions) => ReturnType<typeof inspectZCodeSkill>;
+  inspectSkill?: (options: InspectNekodeSkillOptions) => ReturnType<typeof inspectNekodeSkill>;
   inspectWorkspaceHookTrust?: typeof inspectWorkspaceHookTrust;
   grantWorkspaceHookTrust?: typeof grantWorkspaceHookTrust;
   revokeWorkspaceHookTrustCli?: typeof revokeWorkspaceHookTrustCli;
   inspectCustomCommand?: (
-    options: InspectZCodeCustomCommandOptions,
-  ) => ReturnType<typeof inspectZCodeCustomCommand>;
-  loginZCodeCli?: (options?: LoginZCodeCliOptions) => ReturnType<typeof loginZCodeCli>;
+    options: InspectNekodeCustomCommandOptions,
+  ) => ReturnType<typeof inspectNekodeCustomCommand>;
+  loginNekodeCli?: (options?: LoginNekodeCliOptions) => ReturnType<typeof loginNekodeCli>;
   loginBigmodelCodingPlan?: (
     options?: LoginBigmodelCodingPlanOptions,
   ) => ReturnType<typeof loginBigmodelCodingPlan>;
@@ -88,19 +88,19 @@ export interface RunDependencies extends PluginsCommandOverrides {
     options: ConfigureCodingPlanApiKeyOptions,
   ) => ReturnType<typeof configureCodingPlanApiKey>;
   loadDotenv?: (options?: LoadCliDotenvOptions) => DotenvLoadResult;
-  prepareZCodeTelemetryEnv?: typeof prepareZCodeTelemetryEnv;
+  prepareNekodeTelemetryEnv?: typeof prepareNekodeTelemetryEnv;
   projectConfigPath?: string;
-  listSessions?: (options: ListZCodeSessionsOptions) => ReturnType<typeof listZCodeSessions>;
+  listSessions?: (options: ListNekodeSessionsOptions) => ReturnType<typeof listNekodeSessions>;
   listCustomCommands?: (
-    options: ListZCodeCustomCommandsOptions,
-  ) => ReturnType<typeof listZCodeCustomCommands>;
+    options: ListNekodeCustomCommandsOptions,
+  ) => ReturnType<typeof listNekodeCustomCommands>;
   loadCustomCommand?: (
-    options: InspectZCodeCustomCommandOptions,
-  ) => ReturnType<typeof loadZCodeCustomCommand>;
+    options: InspectNekodeCustomCommandOptions,
+  ) => ReturnType<typeof loadNekodeCustomCommand>;
   // headless slash 路由要和 app facade 的保留名 gate 用同一个判据；默认取 bootstrap 的，
   // 注入点只为让单测不必拉起整个 bootstrap 模块。见 prompt-command.ts。
-  isReservedSlashCommandName?: BootstrapModule["isReservedZCodeSlashCommandName"];
-  listSkills?: (options: ListZCodeSkillsOptions) => ReturnType<typeof listZCodeSkills>;
+  isReservedSlashCommandName?: BootstrapModule["isReservedNekodeSlashCommandName"];
+  listSkills?: (options: ListNekodeSkillsOptions) => ReturnType<typeof listNekodeSkills>;
   logger?: Logger;
   readClipboardImage?: TuiReadClipboardImage;
   writeClipboardText?: TuiWriteClipboardText;
@@ -108,8 +108,8 @@ export interface RunDependencies extends PluginsCommandOverrides {
     options: ResolveLatestSessionOptions,
   ) => ReturnType<typeof resolveLatestSession>;
   resolveWorkspaceGitBranch?: typeof resolveWorkspaceGitBranch;
-  logoutZCodeCli?: (options?: LogoutZCodeCliOptions) => ReturnType<typeof logoutZCodeCli>;
-  runZCodeProtocolAgent?: (options?: RunZCodeProtocolAgentOptions) => Promise<void>;
+  logoutNekodeCli?: (options?: LogoutNekodeCliOptions) => ReturnType<typeof logoutNekodeCli>;
+  runNekodeProtocolAgent?: (options?: RunNekodeProtocolAgentOptions) => Promise<void>;
   runTui?: typeof import("@zcode/tui").runTui;
   skipUserConfig?: boolean;
   userConfigPath?: string;
@@ -117,7 +117,7 @@ export interface RunDependencies extends PluginsCommandOverrides {
   shutdownCleanupTimeoutMs?: number;
   shutdownProcess?: CliShutdownProcess;
   startProcessProviderRegistryRuntime?: typeof startProcessProviderRegistryRuntime;
-  shutdownZCodeTelemetry?: typeof shutdownZCodeTelemetry;
+  shutdownNekodeTelemetry?: typeof shutdownNekodeTelemetry;
 }
 
 export type CliPermissionMode = "build" | "plan" | "edit" | "yolo" | "guarded";
@@ -133,7 +133,7 @@ export interface CliTargetRequest {
   replaceExisting: boolean;
 }
 
-export type ModeCapableApp = Awaited<ReturnType<typeof createZCodeApp>> & {
+export type ModeCapableApp = Awaited<ReturnType<typeof createNekodeApp>> & {
   getMode?: () => CliRuntimeMode;
   setLocale?: (locale: UiLocale) => Promise<{ locale: "en-US" | "zh-CN" }>;
   setMode?: (mode: CliRuntimeMode) => Promise<{ mode: CliRuntimeMode }>;

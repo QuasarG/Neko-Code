@@ -1,5 +1,5 @@
 ---
-description: Show the logs of a ZCode Sites deployment and explain any failure.
+description: Show the logs of a Nekode Sites deployment and explain any failure.
 argument-hint: "[deployment id]"
 skills: site-deploy
 ---

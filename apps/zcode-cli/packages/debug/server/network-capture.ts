@@ -128,8 +128,8 @@ export class NetworkCaptureService {
     const caCertPath = join(this.caDir, "certs", "ca.pem");
     const env: Record<string, string> = url
       ? {
-          ZCODE_HTTP_PROXY: url,
-          ZCODE_AGENT_CA_CERT: caCertPath,
+          NEKODE_HTTP_PROXY: url,
+          NEKODE_AGENT_CA_CERT: caCertPath,
         }
       : {};
 
@@ -306,12 +306,12 @@ export function disabledNetworkCaptureStatus(): NetworkCaptureStatus {
 export function createNetworkCaptureServiceFromEnv(
   env: NodeJS.ProcessEnv = process.env,
 ): NetworkCaptureService | undefined {
-  if (isDisabled(env.ZCODE_DEBUG_NETWORK_CAPTURE)) return undefined;
+  if (isDisabled(env.NEKODE_DEBUG_NETWORK_CAPTURE)) return undefined;
   return new NetworkCaptureService({
-    host: env.ZCODE_DEBUG_NETWORK_HOST || undefined,
-    port: parsePositiveInteger(env.ZCODE_DEBUG_NETWORK_PORT) ?? DEFAULT_PORT,
-    caDir: env.ZCODE_DEBUG_NETWORK_CA_DIR || undefined,
-    maxEntries: parsePositiveInteger(env.ZCODE_DEBUG_NETWORK_MAX_ENTRIES) ?? DEFAULT_MAX_ENTRIES,
+    host: env.NEKODE_DEBUG_NETWORK_HOST || undefined,
+    port: parsePositiveInteger(env.NEKODE_DEBUG_NETWORK_PORT) ?? DEFAULT_PORT,
+    caDir: env.NEKODE_DEBUG_NETWORK_CA_DIR || undefined,
+    maxEntries: parsePositiveInteger(env.NEKODE_DEBUG_NETWORK_MAX_ENTRIES) ?? DEFAULT_MAX_ENTRIES,
   });
 }
 

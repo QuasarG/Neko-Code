@@ -5,12 +5,12 @@
 // Workspace presentation 水合只提供 mode 与 slash commands；模型候选、能力和首选值
 // 统一来自目标 Host ModelSelectionView。
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ZCODE_AGENT_PROVIDER, resolveExecutionState } from "@zcode/shared";
+import { NEKODE_AGENT_PROVIDER, resolveExecutionState } from "@zcode/shared";
 import type {
-  ZCodeConfigOption,
+  NekodeConfigOption,
   ModelSelection,
-  ZCodeProvider,
-  ZCodeSlashCommand,
+  NekodeProvider,
+  NekodeSlashCommand,
 } from "@zcode/shared";
 import type { SessionConfigState } from "@zcode/shared/zcode-protocol-v4";
 import type { IModelSelectionService } from "@zcode/services";
@@ -20,8 +20,8 @@ import {
   type ModelSelectionRead,
 } from "@/hooks/useModelSelectionView.js";
 import { submissionModeSchema } from "@zcode/shared/zcode-protocol-v4";
-import { prepareWorkspaceWithZCodeSessionService } from "@/hooks/useWorkspacePrepare.js";
-import { useZCodeSessionService } from "@/hooks/useZCodeSessionService.js";
+import { prepareWorkspaceWithNekodeSessionService } from "@/hooks/useWorkspacePrepare.js";
+import { useNekodeSessionService } from "@/hooks/useNekodeSessionService.js";
 import { useSettings } from "@/hooks/useSettingService.js";
 import { parseModelPickerValue } from "@/lib/zcodeSessionProjection.js";
 import { resolveDraftInitialModelSelection } from "@/lib/composerRecent.js";
@@ -37,7 +37,7 @@ import {
 } from "@/v4/composer/composerDraftStore.js";
 import { resolveAppFollowupMode } from "@/v4/composer/followupModeSettings.js";
 import { logger } from "@/logger.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 
 /** 目录水合单飞（per workspaceKey）：draft、已有 session 和严格模式双挂载共享一次 RPC。 */
 const workspaceCatalogHydrationFlights = new Map<string, Promise<void>>();
@@ -63,9 +63,9 @@ export function applyDraftModelSelection(
 }
 
 export function shouldHydrateWorkspaceCatalog(params: {
-  configOptions: readonly ZCodeConfigOption[];
+  configOptions: readonly NekodeConfigOption[];
   sessionId: string | null;
-  slashCommands: readonly ZCodeSlashCommand[];
+  slashCommands: readonly NekodeSlashCommand[];
 }): boolean {
   const hasModePresentation = params.configOptions.some(
     (option) => option.category === "mode" && option.type === "select",
@@ -154,7 +154,7 @@ function hasSameComposerDraftContent(left: V4ComposerDraft, right: V4ComposerDra
 export function useDraftConfigControl(params: {
   workspacePath: string;
   workspaceIdentity?: string;
-  provider?: ZCodeProvider;
+  provider?: NekodeProvider;
   /** 会话切换恢复文字/模型，权限和 Plan 使用当前快照。 */
   sessionId: string | null;
   /** 仅匹配当前 Session 的首份投影可用作初始化；null 表示还没恢复完成。 */
@@ -173,20 +173,20 @@ export function useDraftConfigControl(params: {
     modelSelectionService,
   } = params;
   const workspaceKey = workspaceIdentity?.trim() || workspacePath;
-  const displayProvider = provider ?? ZCODE_AGENT_PROVIDER;
-  const zcodeSessionService = useZCodeSessionService(workspacePath, null, workspaceIdentity);
+  const displayProvider = provider ?? NEKODE_AGENT_PROVIDER;
+  const zcodeSessionService = useNekodeSessionService(workspacePath, null, workspaceIdentity);
   const { settings: sharedSettings } = useSettings();
   const appFollowupMode = resolveAppFollowupMode(sharedSettings);
   const scopeId = sessionId ?? V4_DRAFT_SCOPE_ROOT;
   const clientNamespace = useComposerClientNamespace();
-  const draftProjectId = useZCodeSessionStore(
+  const draftProjectId = useNekodeSessionStore(
     (state) => state.workspaces[workspaceKey]?.draftProjectId,
   );
   const rootScope = useMemo(
     () => resolveComposerScope(draftProjectId, workspaceIdentity, clientNamespace),
     [draftProjectId, workspaceIdentity, clientNamespace],
   );
-  const draftFocusVersion = useZCodeSessionStore((state) =>
+  const draftFocusVersion = useNekodeSessionStore((state) =>
     sessionId === null ? (state.workspaces[workspaceKey]?.draftFocusVersion ?? 0) : 0,
   );
   // New Task 可以复用同一个 pane；无文字时必须重新取 Recent，不能只清磁盘留旧内存。
@@ -196,7 +196,7 @@ export function useDraftConfigControl(params: {
     draftFocusVersion,
     sessionId === null ? composerScopeKey(rootScope) : null,
   ]);
-  const navigationInitialization = useZCodeSessionStore((state) => {
+  const navigationInitialization = useNekodeSessionStore((state) => {
     const workspace = state.workspaces[workspaceKey];
     return workspace?.activeTaskId === sessionId &&
       workspace?.composerInitialization?.taskId === sessionId
@@ -340,11 +340,11 @@ export function useDraftConfigControl(params: {
   draftConfigRef.current = draftConfig;
   const createDraftPersistence = useCallback(
     (targetScopeId = stateRef.current.promotedSessionId ?? scopeId) => {
-      const workspace = useZCodeSessionStore
+      const workspace = useNekodeSessionStore
         .getState()
         .getWorkspaceState(workspacePath, workspaceIdentity);
       return (value: V4ComposerDraft) => {
-        const current = useZCodeSessionStore
+        const current = useNekodeSessionStore
           .getState()
           .getWorkspaceState(workspacePath, workspaceIdentity);
         // Bug 根因：自动保存不再触发父级 render 后，旧闭包可能把已关闭的分组归属写回来。
@@ -413,7 +413,7 @@ export function useDraftConfigControl(params: {
   }, []);
   useEffect(() => {
     if (navigationInitialization)
-      useZCodeSessionStore
+      useNekodeSessionStore
         .getState()
         .consumeComposerInitialization(workspacePath, navigationInitialization, workspaceIdentity);
   }, [scopeKey, navigationInitialization, workspacePath, workspaceIdentity]);
@@ -423,7 +423,7 @@ export function useDraftConfigControl(params: {
       stateRef.current.scopeKey === scopeKey &&
       stateRef.current.incarnation === incarnation &&
       (sessionId !== null ||
-        (useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+        (useNekodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
           .draftFocusVersion ?? 0) === draftFocusVersion),
     [scopeKey, incarnation, sessionId, workspacePath, workspaceIdentity, draftFocusVersion],
   );
@@ -806,7 +806,7 @@ export function useDraftConfigControl(params: {
   // 目录已 ready（reload/广播/上次水合写过）则跳过；否则读取最小 workspace presentation。
   useEffect(() => {
     const isDraft = sessionId === null;
-    const store = useZCodeSessionStore.getState();
+    const store = useNekodeSessionStore.getState();
     const workspaceState = store.getWorkspaceState(workspacePath, workspaceIdentity);
     if (!agentStartupAllowed) {
       // V4 目录水合曾在无模型时直接进入 RPC，虽然 Host 不会启动 CLI，
@@ -842,7 +842,7 @@ export function useDraftConfigControl(params: {
     }
 
     store.setConfigOptionsStatus(workspacePath, "loading", workspaceIdentity);
-    const flight = prepareWorkspaceWithZCodeSessionService({
+    const flight = prepareWorkspaceWithNekodeSessionService({
       workspacePath,
       workspaceIdentity,
       provider: displayProvider,
@@ -860,7 +860,7 @@ export function useDraftConfigControl(params: {
           ),
           workspaceKey,
         });
-        const latest = useZCodeSessionStore.getState();
+        const latest = useNekodeSessionStore.getState();
         latest.setConfigOptions(workspacePath, baseOptions, workspaceIdentity);
         latest.setConfigOptionsStatus(workspacePath, "ready", workspaceIdentity);
         latest.setSlashCommands(
@@ -870,7 +870,7 @@ export function useDraftConfigControl(params: {
         );
       })
       .catch((error) => {
-        useZCodeSessionStore
+        useNekodeSessionStore
           .getState()
           .setConfigOptionsStatus(workspacePath, "error", workspaceIdentity);
         logger.warn(`[v4-workspace-catalog] workspace 目录水合失败: ${String(error)}`);

@@ -3,15 +3,15 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ExecutionPort, ExecutionResult } from "@zcode/contracts";
-import { resolveZCodeBuiltinPromptCommand } from "../src/builtin-prompt-command.js";
-import { resolveZCodeCustomCommandPrompt } from "../src/custom-command-prompt.js";
+import { resolveNekodeBuiltinPromptCommand } from "../src/builtin-prompt-command.js";
+import { resolveNekodeCustomCommandPrompt } from "../src/custom-command-prompt.js";
 
 describe("protocol slash command surface", () => {
   it("expands prompt custom commands without taking over reserved builtins", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-custom-command-prompt-"));
     const workspace = join(tempRoot, "workspace");
     const home = join(tempRoot, "home");
-    const userCommands = join(home, ".zcode", "commands");
+    const userCommands = join(home, ".nekode", "commands");
 
     try {
       await mkdir(workspace, { recursive: true });
@@ -22,25 +22,25 @@ describe("protocol slash command surface", () => {
       await writeCommand(userCommands, "plan", "Reserved Plan action", "Should not expand.");
 
       const options = {
-        env: { ZCODE_ENV: "test" },
+        env: { NEKODE_ENV: "test" },
         homeDirectory: home,
         skipUserConfig: true,
         workingDirectory: workspace,
       };
-      const prompt = await resolveZCodeCustomCommandPrompt("/review src packages", options);
+      const prompt = await resolveNekodeCustomCommandPrompt("/review src packages", options);
 
       expect(prompt).toContain("Run custom command /review.");
       expect(prompt).toContain("Command source: user/zcode.");
       expect(prompt).toContain("Review src packages.");
-      await expect(resolveZCodeCustomCommandPrompt("/model glm-5", options)).resolves.toBe(
+      await expect(resolveNekodeCustomCommandPrompt("/model glm-5", options)).resolves.toBe(
         undefined,
       );
-      await expect(resolveZCodeCustomCommandPrompt("/plan task", options)).resolves.toBe(undefined);
-      expect(resolveZCodeBuiltinPromptCommand("/plan task", { workingDirectory: workspace })).toBe(
+      await expect(resolveNekodeCustomCommandPrompt("/plan task", options)).resolves.toBe(undefined);
+      expect(resolveNekodeBuiltinPromptCommand("/plan task", { workingDirectory: workspace })).toBe(
         undefined,
       );
-      await expect(resolveZCodeCustomCommandPrompt("/init", options)).resolves.toBe(undefined);
-      await expect(resolveZCodeCustomCommandPrompt("please /review", options)).resolves.toBe(
+      await expect(resolveNekodeCustomCommandPrompt("/init", options)).resolves.toBe(undefined);
+      await expect(resolveNekodeCustomCommandPrompt("please /review", options)).resolves.toBe(
         undefined,
       );
     } finally {
@@ -55,19 +55,19 @@ describe("protocol slash command surface", () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-builtin-workflow-"));
     const workspace = join(tempRoot, "workspace");
     const home = join(tempRoot, "home");
-    const userCommands = join(home, ".zcode", "commands");
+    const userCommands = join(home, ".nekode", "commands");
     try {
       await mkdir(workspace, { recursive: true });
       await mkdir(userCommands, { recursive: true });
       await writeCommand(userCommands, "workflow", "Shadowing workflow", "Should not expand.");
       const options = {
-        env: { ZCODE_ENV: "test" },
+        env: { NEKODE_ENV: "test" },
         homeDirectory: home,
         skipUserConfig: true,
         workingDirectory: workspace,
       };
 
-      const expanded = resolveZCodeBuiltinPromptCommand("/workflow ship it", {
+      const expanded = resolveNekodeBuiltinPromptCommand("/workflow ship it", {
         dynamicWorkflowEnabled: true,
         workingDirectory: workspace,
       });
@@ -76,15 +76,15 @@ describe("protocol slash command surface", () => {
       expect(expanded).not.toContain("Should not expand.");
       // 缺席（TUI / headless）等于开启；显式 false 才挡下。
       expect(
-        resolveZCodeBuiltinPromptCommand("/workflow ship it", { workingDirectory: workspace }),
+        resolveNekodeBuiltinPromptCommand("/workflow ship it", { workingDirectory: workspace }),
       ).toContain("ship it");
       expect(
-        resolveZCodeBuiltinPromptCommand("/workflow ship it", {
+        resolveNekodeBuiltinPromptCommand("/workflow ship it", {
           dynamicWorkflowEnabled: false,
           workingDirectory: workspace,
         }),
       ).toBe(undefined);
-      await expect(resolveZCodeCustomCommandPrompt("/workflow ship it", options)).resolves.toBe(
+      await expect(resolveNekodeCustomCommandPrompt("/workflow ship it", options)).resolves.toBe(
         undefined,
       );
     } finally {
@@ -98,23 +98,23 @@ describe("protocol slash command surface", () => {
 
     try {
       await mkdir(workspace, { recursive: true });
-      const prompt = resolveZCodeBuiltinPromptCommand("/init include pnpm scripts", {
+      const prompt = resolveNekodeBuiltinPromptCommand("/init include pnpm scripts", {
         workingDirectory: workspace,
       });
 
       expect(prompt).toContain("built-in /init command");
       expect(prompt).toContain("AGENTS.md");
       expect(prompt).toContain(join(workspace, "AGENTS.md"));
-      expect(prompt).toContain(join(workspace, ".zcode", "AGENTS.md"));
+      expect(prompt).toContain(join(workspace, ".nekode", "AGENTS.md"));
       expect(prompt).toContain(join(workspace, ".agents", "AGENTS.md"));
       expect(prompt).toContain("they already have an instructions file");
       expect(prompt).not.toContain("Do not create CLAUDE.md or AGNENTS.md");
       expect(prompt).toContain("include pnpm scripts");
-      expect(resolveZCodeBuiltinPromptCommand("/review", { workingDirectory: workspace })).toBe(
+      expect(resolveNekodeBuiltinPromptCommand("/review", { workingDirectory: workspace })).toBe(
         undefined,
       );
       expect(
-        resolveZCodeBuiltinPromptCommand("please /init", { workingDirectory: workspace }),
+        resolveNekodeBuiltinPromptCommand("please /init", { workingDirectory: workspace }),
       ).toBe(undefined);
     } finally {
       await rm(tempRoot, { force: true, recursive: true });
@@ -125,7 +125,7 @@ describe("protocol slash command surface", () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-command-shell-missing-context-"));
     const workspace = join(tempRoot, "workspace");
     const home = join(tempRoot, "home");
-    const userCommands = join(home, ".zcode", "commands");
+    const userCommands = join(home, ".nekode", "commands");
     let executionCalled = false;
     const executionPort: ExecutionPort = {
       async run() {
@@ -150,17 +150,17 @@ describe("protocol slash command surface", () => {
       );
 
       const options = {
-        env: { ZCODE_ENV: "test" },
+        env: { NEKODE_ENV: "test" },
         executionPort,
         homeDirectory: home,
         skipUserConfig: true,
         workingDirectory: workspace,
       };
 
-      await expect(resolveZCodeCustomCommandPrompt("/skill-context", options)).rejects.toThrow(
+      await expect(resolveNekodeCustomCommandPrompt("/skill-context", options)).rejects.toThrow(
         "Custom command /skill-context variable requires a skill context: CLAUDE_SKILL_DIR",
       );
-      await expect(resolveZCodeCustomCommandPrompt("/session-context", options)).rejects.toThrow(
+      await expect(resolveNekodeCustomCommandPrompt("/session-context", options)).rejects.toThrow(
         "Custom command /session-context variable requires a runtime session context: CLAUDE_SESSION_ID",
       );
       expect(executionCalled).toBe(false);

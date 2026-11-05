@@ -123,7 +123,6 @@ export function prepareOffPeakTurn(
     executionSelection: execution.selection,
     modelExecution: {
       selectionScope: "execution",
-      memoryExtraction: "skip",
       requestDependencies: binding.requestDependencies,
       subagents: { foregroundModel: "submission", background: "allow" },
     },

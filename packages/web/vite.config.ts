@@ -11,7 +11,7 @@ import { resolveRemoteFrontendVersion } from "./vite/remoteFrontendVersion.mjs";
 // 根入口包含 NodeNext 风格的源码 re-export，Node 会按真实文件查找 .js 并在 bootstrap 阶段失败。
 import {
   resolveBigModelApiOrigin,
-  resolveRuntimeZCodeEndpointOrigin,
+  resolveRuntimeNekodeEndpointOrigin,
   resolveZaiOAuthClientId,
   resolveZaiOAuthOrigin,
 } from "@zcode/shared/zcodeEndpoint";
@@ -23,21 +23,21 @@ const { version, zcodeCompatibility } = JSON.parse(
 ) as { version: string; zcodeCompatibility?: { minCompatibleVersion?: string } };
 const minCompatibleVersion = zcodeCompatibility?.minCompatibleVersion ?? version;
 
-function resolveZCodeEnv(value: string | undefined): "test" | "production" {
+function resolveNekodeEnv(value: string | undefined): "test" | "production" {
   return value?.trim().toLowerCase() === "production" ? "production" : "test";
 }
 
 export default defineConfig(({ mode }) => {
-  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 ZCODE_ENV。
+  // `.env*` 只提供链接常量；当前产品环境由启动脚本或 CI 注入 NEKODE_ENV。
   // 启动脚本通过 process.env 显式选择 test/production；它必须优先于 .env 文件，
   // 否则 share:test 可能被 mode 的旧配置误解析到错误 endpoint。
   const env = { ...loadEnv(mode, REPO_ROOT, ""), ...process.env };
-  const zcodeEnv = resolveZCodeEnv(env.ZCODE_ENV);
+  const zcodeEnv = resolveNekodeEnv(env.NEKODE_ENV);
   const endpointEnv = {
     ...env,
-    ZCODE_ENV: zcodeEnv,
+    NEKODE_ENV: zcodeEnv,
   };
-  const zcodeEndpointOrigin = resolveRuntimeZCodeEndpointOrigin(endpointEnv);
+  const zcodeEndpointOrigin = resolveRuntimeNekodeEndpointOrigin(endpointEnv);
   const zaiOAuthOrigin = resolveZaiOAuthOrigin(endpointEnv);
   // 远控与桌面/分享页一致，BigModel 授权域名必须跟随产品环境。
   const bigmodelOAuthOrigin = resolveBigModelApiOrigin(endpointEnv);
@@ -94,15 +94,15 @@ export default defineConfig(({ mode }) => {
       },
     },
     define: {
-      __ZCODE_VERSION__: JSON.stringify(
+      __NEKODE_VERSION__: JSON.stringify(
         resolveRemoteFrontendVersion(version, process.env.WEB_REMOTE_FRONTEND_VERSION),
       ),
-      __ZCODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(minCompatibleVersion),
-      __ZCODE_COMMIT__: JSON.stringify(env.ZCODE_COMMIT || "unknown"),
-      __ZCODE_ENV__: JSON.stringify(zcodeEnv),
-      "import.meta.env.VITE_ZCODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
-      // 兼容旧 Web runtime 读取名；新代码统一读 VITE_ZCODE_BASE_URL。
-      "import.meta.env.VITE_ZCODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
+      __NEKODE_MIN_COMPATIBLE_VERSION__: JSON.stringify(minCompatibleVersion),
+      __NEKODE_COMMIT__: JSON.stringify(env.NEKODE_COMMIT || "unknown"),
+      __NEKODE_ENV__: JSON.stringify(zcodeEnv),
+      "import.meta.env.VITE_NEKODE_BASE_URL": JSON.stringify(zcodeEndpointOrigin),
+      // 兼容旧 Web runtime 读取名；新代码统一读 VITE_NEKODE_BASE_URL。
+      "import.meta.env.VITE_NEKODE_ENDPOINT_ORIGIN": JSON.stringify(zcodeEndpointOrigin),
       // 明确注入 OAuth 公开配置，避免 Web 端在不同 mode 下隐式依赖源码 fallback。
       "import.meta.env.VITE_ZAI_OAUTH_CLIENT_ID": JSON.stringify(zaiOAuthClientId),
       "import.meta.env.VITE_ZAI_OAUTH_ORIGIN": JSON.stringify(zaiOAuthOrigin),

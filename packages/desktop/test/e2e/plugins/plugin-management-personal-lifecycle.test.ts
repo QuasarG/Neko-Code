@@ -1,4 +1,4 @@
-import { type ZCodePluginComponentKind } from "@zcode/shared";
+import { type NekodePluginComponentKind } from "@zcode/shared";
 import { TID_V4_COMPOSER_INPUT } from "@zcode/shared/test-ids";
 import { clearAppData, waitForTestIdByDom } from "../helpers/desktop-app.js";
 import { waitForUpstreamRequestContaining } from "#e2e/helpers/conversation-session-network";
@@ -66,7 +66,7 @@ describe("PLM-LC-003 Personal Source 插件主生命周期 E2E", () => {
       "command",
       "agent",
       "hook",
-    ] satisfies ZCodePluginComponentKind[]) {
+    ] satisfies NekodePluginComponentKind[]) {
       await waitForPluginControl("plugin-store-component-section", { componentKind: kind }, 30000);
     }
     await capturePluginManualReview("PLM-LC-003", "uninstalled-five-components");

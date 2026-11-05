@@ -5,7 +5,7 @@ import {
   createRegistryModelConfig,
   createRegistryProviderConfig,
   parseProviderConfig,
-  parseZCodeBuiltinModelConfigRules,
+  parseNekodeBuiltinModelConfigRules,
 } from "@zcode/provider";
 import { AiSdkModelAdapter } from "../src/model/runner.js";
 
@@ -52,7 +52,7 @@ describe("新目录通过真实 SDK 发出的请求", () => {
             "utf8",
           ),
         );
-        const config = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules).resolve({
+        const config = parseNekodeBuiltinModelConfigRules(release.config.modelConfigRules).resolve({
           providerId: "fixture",
           modelId,
           apiType,

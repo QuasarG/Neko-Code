@@ -234,7 +234,6 @@ async function sendText(
     const intent = submissionIntent({
       text: payload.text,
       inputOrigin: payload.inputOrigin,
-      botGroupSource: payload.botGroupSource,
       conversationQuotes: payload.conversationQuotes,
       requestedDelivery:
         payload.requestedDelivery ??
@@ -258,7 +257,6 @@ async function sendText(
       intent,
       ...(payload.context_refs ? { sharedContextRefs: payload.context_refs } : {}),
       ...turnBackgroundAttributionOf(payload),
-      ...(payload.botDeliveryTarget ? { botDeliveryTarget: payload.botDeliveryTarget } : {}),
       toolDisallowlist: payload.toolDisallowlist,
       ...(payload.modelExecution
         ? { modelExecution: createModelExecutionContext(payload.modelExecution) }

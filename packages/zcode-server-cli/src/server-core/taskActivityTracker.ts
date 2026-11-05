@@ -1,9 +1,9 @@
 import type { SourceServerRunningTask } from "@zcode/shared";
 import { Emitter, type Event, type IDisposable } from "@zcode/rpc";
 import type {
-  IZCodeAgentService,
-  ZCodeAgentRuntimeLifecycleEvent,
-  ZCodeAgentWorkspaceTarget,
+  INekodeAgentService,
+  NekodeAgentRuntimeLifecycleEvent,
+  NekodeAgentWorkspaceTarget,
 } from "@zcode/services";
 import type { ConversationTelemetryFact } from "@zcode/shared/zcode-protocol-v4";
 
@@ -14,18 +14,18 @@ export interface TaskActivityTracker extends IDisposable {
 }
 
 type AgentActivitySource = Pick<
-  IZCodeAgentService,
+  INekodeAgentService,
   "onAgentRuntimeLifecycle" | "onDynamicConversationTelemetryFact"
 >;
 
 interface WorkspaceActivity {
-  target: ZCodeAgentWorkspaceTarget;
+  target: NekodeAgentWorkspaceTarget;
   activeSessionIds: Set<string>;
   runtimeIdentity: string;
   telemetry: IDisposable;
 }
 
-function workspaceKey(target: ZCodeAgentWorkspaceTarget): string {
+function workspaceKey(target: NekodeAgentWorkspaceTarget): string {
   return target.workspaceIdentity?.trim() || target.workspacePath;
 }
 
@@ -68,7 +68,7 @@ export function createTaskActivityTracker(
     publishCount();
   };
 
-  const acceptLifecycle = (event: ZCodeAgentRuntimeLifecycleEvent): void => {
+  const acceptLifecycle = (event: NekodeAgentRuntimeLifecycleEvent): void => {
     if (disposed) return;
     const key = event.workspaceKey || workspaceKey(event);
     if (event.state === "unavailable") {

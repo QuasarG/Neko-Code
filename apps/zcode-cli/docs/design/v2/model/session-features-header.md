@@ -105,7 +105,7 @@ BUA/CUA 标签的补充规则：
   - subagent 里的 CUA 尝试：Worker 侧 bridge 在引导和每次方法调用前检查 `runtime_scope`，发现是 subagent
     就直接报 `Computer Use is not available in subagent`。broker 侧的同名检查只兜住绕过 bridge、直接连
     socket 的请求，这类请求计入。
-  - node-repl-host 没有拿到 CUA Helper 凭据，或 ZCode 没有配置浏览器上游时：Worker 里没有 broker 地址，
+  - node-repl-host 没有拿到 CUA Helper 凭据，或 Nekode 没有配置浏览器上游时：Worker 里没有 broker 地址，
     bridge 直接报不可用。
   - kernel 重置后旧 cell 的调用：bridge 报 binding stale，不发请求。
 - 已知边界：超时、崩溃、停止时不产出可信 key。记账在 broker 侧，超时之前已到达 broker 的请求也已记进

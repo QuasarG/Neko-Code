@@ -23,8 +23,8 @@ export async function prepareAccessToken401Fixture(options: {
   let rejected = false;
   let rejectionStatus = 401;
   let emptyRejection = false;
-  const preserveSession = process.env.ZCODE_E2E_AUTH_VALIDATION_HEADER === "1";
-  const ordinaryStatus = process.env.ZCODE_E2E_AUTH_EXPIRY_HTTP_STATUS === "200" ? 200 : 403;
+  const preserveSession = process.env.NEKODE_E2E_AUTH_VALIDATION_HEADER === "1";
+  const ordinaryStatus = process.env.NEKODE_E2E_AUTH_EXPIRY_HTTP_STATUS === "200" ? 200 : 403;
   let ordinaryBusinessRequestCount = 0;
   let rawIdentityRequestCount = 0;
   let rejectedIdentityHeaderCount = 0;
@@ -33,7 +33,7 @@ export async function prepareAccessToken401Fixture(options: {
   let loginCompletions = 0;
   let locationUnavailable = false;
   const provider =
-    sharedJwt || preserveSession || process.env.ZCODE_E2E_AUTH_EXPIRY_PROVIDER === "zai"
+    sharedJwt || preserveSession || process.env.NEKODE_E2E_AUTH_EXPIRY_PROVIDER === "zai"
       ? "zai"
       : "bigmodel";
   const rejectResponse = (response: ServerResponse) => {
@@ -213,7 +213,7 @@ export async function prepareAccessToken401Fixture(options: {
   const address = server.address();
   if (!address || typeof address === "string") throw new Error("OAuth fixture 缺少监听端口");
   const baseUrl = `http://127.0.0.1:${address.port}`;
-  // 用独立 origin 模拟业务域与 ZCode API，避免来源头和端点改写影响业务核验回归。
+  // 用独立 origin 模拟业务域与 Nekode API，避免来源头和端点改写影响业务核验回归。
   const controlServer = preserveSession
     ? createServer((_request, response) => {
         response.setHeader("content-type", "application/json");
@@ -235,14 +235,14 @@ export async function prepareAccessToken401Fixture(options: {
     controlBaseUrl = `http://127.0.0.1:${controlAddress.port}`;
   }
   const envPatch = {
-    ZCODE_E2E_ACCESS_TOKEN_401_URL: baseUrl,
+    NEKODE_E2E_ACCESS_TOKEN_401_URL: baseUrl,
     BIGMODEL_API_BASE_URL: baseUrl,
     BIGMODEL_OAUTH_USERINFO_URL: `${baseUrl}/api/biz/customer/getCustomerInfo`,
     ZAI_BUSINESS_BASE_URL: baseUrl,
     ZAI_OAUTH_USERINFO_URL: `${baseUrl}${preserveSession ? "/api/oauth/userinfo" : "/api/biz/customer/getCustomerInfo"}`,
-    ZCODE_BASE_URL: controlBaseUrl,
-    ZCODE_TEST_BASE_URL: controlBaseUrl,
-    ZCODE_ENDPOINT_ORIGIN: controlBaseUrl,
+    NEKODE_BASE_URL: controlBaseUrl,
+    NEKODE_TEST_BASE_URL: controlBaseUrl,
+    NEKODE_ENDPOINT_ORIGIN: controlBaseUrl,
   };
   const previous = Object.fromEntries(Object.keys(envPatch).map((key) => [key, process.env[key]]));
   Object.assign(process.env, envPatch);

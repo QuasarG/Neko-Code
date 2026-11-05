@@ -2,9 +2,9 @@
 
 ## Goal
 
-Let the command-line tools shipped in official plugins (today only `zcode-site` from the ZCode Sites plugin) call the ZCode API with the signed-in user's identity, without the tool ever holding a credential.
+Let the command-line tools shipped in official plugins (today only `zcode-site` from the Nekode Sites plugin) call the Nekode API with the signed-in user's identity, without the tool ever holding a credential.
 
-A command runs in the session's Bash. Every process in that session can read its environment, so a ZCode JWT or MaaS JWT placed in the env could be copied by any other command. The agent therefore keeps the credentials and acts as a narrow proxy. The host-side resolution and protocol are specified in `docs/coding-plan/zcode-official-plugin-command-auth-spec.md` at the repository root.
+A command runs in the session's Bash. Every process in that session can read its environment, so a Nekode JWT or MaaS JWT placed in the env could be copied by any other command. The agent therefore keeps the credentials and acts as a narrow proxy. The host-side resolution and protocol are specified in `docs/coding-plan/zcode-official-plugin-command-auth-spec.md` at the repository root.
 
 ## Layering
 
@@ -19,13 +19,13 @@ A command runs in the session's Bash. Every process in that session can read its
 
 | Name | Value | Set by |
 | ---- | ----- | ------ |
-| `ZCODE_OFFICIAL_ENDPOINT` | Endpoint address: a Unix domain socket path on macOS/Linux, a named pipe (`\\.\pipe\zcode-official-<pid>-<random>`) on Windows | Agent, per execution request |
-| `ZCODE_OFFICIAL_ENDPOINT_TOKEN` | Random per-session token (32 bytes, base64url) | Agent, per execution request |
+| `NEKODE_OFFICIAL_ENDPOINT` | Endpoint address: a Unix domain socket path on macOS/Linux, a named pipe (`\\.\pipe\zcode-official-<pid>-<random>`) on Windows | Agent, per execution request |
+| `NEKODE_OFFICIAL_ENDPOINT_TOKEN` | Random per-session token (32 bytes, base64url) | Agent, per execution request |
 
 - Precedence: the agent's execution overlay always wins over a value already in the request's `env.set`. Both keys are in the sanitized runtime env list, so values inherited from the agent's own parent process are dropped and never reach commands.
 - Requests with `env.base: "empty"` are intentionally clean and get neither key.
 - The endpoint starts listening lazily on the first `envForSession`. If it cannot start, the command still runs without the keys and the warning `zcode_protocol.official_command_endpoint.env_unavailable` is logged.
-- A command that finds either key missing must fail as "not signed in / not inside a ZCode session". `zcode-site` exits with code 2 and error `UNAUTHENTICATED`.
+- A command that finds either key missing must fail as "not signed in / not inside a Nekode session". `zcode-site` exits with code 2 and error `UNAUTHENTICATED`.
 - No config file or CLI flag controls these values; they exist only to hand a session-scoped capability to child processes.
 
 ## Request handling
@@ -36,17 +36,17 @@ command ──Bearer <session token>──▶ endpoint
   path not under an allowed prefix ──────▶ 403, error header "invalid"
   host identity: unavailable or throws ──▶ 401, empty body, error header "unauthenticated"
   host identity: other failure ──────────▶ 502 "auth"
-  forward to <ZCode API origin><path> ───▶ fetch error ─▶ 502 "network"
+  forward to <Nekode API origin><path> ───▶ fetch error ─▶ 502 "network"
                                         └▶ stream status, headers, body back
 ```
 
 - The identity request carries the workspace recorded for the token's session, with `workspaceKey = workspaceIdentity || workspacePath`. The host routes the request by this workspace to a workspace the CLI owns, so it must never be the agent process cwd: a shared CLI (`shared-local-tasks`) runs in a directory that is not a workspace, and the host rejects such requests. The workspace only routes and audits the request; the identity is the host's global sign-in, so a session in workspace A can still deploy a stage directory from project B.
 - When the reverse request throws (the host rejects it, or the transport fails), the port answers `official_auth_unavailable` and logs the warning `zcode_protocol.official_command_endpoint.auth_request_failed` with the error message and `workspaceKey`.
 - Allowed prefixes are `OFFICIAL_COMMAND_ROUTES` in `contract.ts`: only `/api/v1/sites` for plugin `zcode-site`. A prefix matches on a path-segment boundary. The path is normalized by URL parsing first, so `..` segments cannot escape the prefix.
-- Only `accept`, `content-type` and `content-length` are taken from the command. Identity headers come from the host for every request and are never cached; `X-ZCode-App-Version` is set by the agent. Client-supplied `Authorization`, `Cookie`, `X-Bigmodel-*` and similar headers are dropped.
+- Only `accept`, `content-type` and `content-length` are taken from the command. Identity headers come from the host for every request and are never cached; `X-Nekode-App-Version` is set by the agent. Client-supplied `Authorization`, `Cookie`, `X-Bigmodel-*` and similar headers are dropped.
 - The request body is streamed (`duplex: "half"`) with the original `content-length`. When an HTTP proxy is configured, the proxy fetch buffers the body.
 - Response headers `connection`, `content-encoding`, `content-length`, `keep-alive`, `set-cookie`, `transfer-encoding` are dropped. The body is streamed with backpressure. If the upstream fails midway, the command's connection is destroyed so the command sees an incomplete response.
-- Endpoint-generated errors use the zcode-server envelope `{code: 2007, msg, data: null, logid: ""}` with header `X-ZCode-Official-Endpoint-Error: invalid | auth | network`. The bare 401 carries the same header with `unauthenticated`.
+- Endpoint-generated errors use the zcode-server envelope `{code: 2007, msg, data: null, logid: ""}` with header `X-Nekode-Official-Endpoint-Error: invalid | auth | network`. The bare 401 carries the same header with `unauthenticated`.
 
 ## Lifetime
 

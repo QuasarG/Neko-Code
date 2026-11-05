@@ -8,18 +8,18 @@ import { join } from "node:path";
 import { setTimeout as delay } from "node:timers/promises";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE, ZCODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE, NEKODE_PLUGIN_HOST_COMMAND } from "@zcode/contracts";
 import {
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-  ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  ZCODE_PLUGIN_ID_ENV_KEY,
-  ZCODE_RUNTIME_ENV_KEY,
-  readZCodeToolEnvPassthroughEnv,
-  resetCapturedZCodeCuaBrokerCredentialsForTest,
-  sanitizeZCodeRuntimeEnvInPlace,
+  NEKODE_CUA_OFFICIAL_PLUGIN_ID,
+  NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
+  NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  NEKODE_PLUGIN_ID_ENV_KEY,
+  NEKODE_RUNTIME_ENV_KEY,
+  readNekodeToolEnvPassthroughEnv,
+  resetCapturedNekodeCuaBrokerCredentialsForTest,
+  sanitizeNekodeRuntimeEnvInPlace,
   type ModelSelection,
-  type ZCodeModelOption,
+  type NekodeModelOption,
 } from "@zcode/shared";
 import type { RunContext } from "@zcode/shared-types";
 import type { TuiOptions } from "@zcode/tui";
@@ -114,7 +114,7 @@ const createTestModelOption = (
     label = modelId,
     levels = ["low", "medium", "high"],
   }: { defaultLevel?: string; label?: string; levels?: readonly string[] } = {},
-): ZCodeModelOption => ({
+): NekodeModelOption => ({
   ref: { providerId, modelId },
   label,
   providerLabel: providerId,
@@ -135,7 +135,7 @@ const createTestModelOption = (
 });
 
 /** 至少一个未禁用的模型，表示 Provider/账号已可用，普通 prompt 不会被登录提示拦截。 */
-const selectableTestModels = (): ZCodeModelOption[] => [
+const selectableTestModels = (): NekodeModelOption[] => [
   createTestModelOption("openai", "gpt-test"),
 ];
 
@@ -150,7 +150,7 @@ const loadTuiStartup = async (options: TuiOptions): Promise<TuiOptions> => ({
 
 const createPromptDeps = (): RunDependencies => ({
   createModelAdapter: () => ({}) as never,
-  createZCodeApp: () =>
+  createNekodeApp: () =>
     ({
       getModel: () => "openai/gpt-test",
       getLocale: () => "en-US",
@@ -179,21 +179,21 @@ const createPromptDeps = (): RunDependencies => ({
   skipUserConfig: true,
 });
 
-test("prepares a sanitized CLI runtime env with ZCode-owned runtime keys", () => {
+test("prepares a sanitized CLI runtime env with Nekode-owned runtime keys", () => {
   const sourceEnv = {
     NODE_ENV: "development",
     HTTP_PROXY: "http://ambient-proxy:8080",
     NODE_EXTRA_CA_CERTS: "/tmp/ambient-ca.pem",
-    ZCODE_HTTP_PROXY: "http://zcode-proxy:8080",
+    NEKODE_HTTP_PROXY: "http://zcode-proxy:8080",
     no_proxy: ".example.test",
     npm_config_proxy: "http://npm-proxy:8080",
   };
 
   const env = prepareCliRuntimeEnv(sourceEnv, ["/usr/bin/node", "/workspace/bin/zcode.js"]);
-  const toolEnv = readZCodeToolEnvPassthroughEnv(env);
+  const toolEnv = readNekodeToolEnvPassthroughEnv(env);
 
-  assert.equal(env.ZCODE_RUNTIME_ENV, "production");
-  assert.equal(env.ZCODE_HTTP_PROXY, "http://zcode-proxy:8080");
+  assert.equal(env.NEKODE_RUNTIME_ENV, "production");
+  assert.equal(env.NEKODE_HTTP_PROXY, "http://zcode-proxy:8080");
   assert.deepEqual(toolEnv, {
     HTTP_PROXY: "http://ambient-proxy:8080",
     NODE_EXTRA_CA_CERTS: "/tmp/ambient-ca.pem",
@@ -211,24 +211,24 @@ test("prepares a sanitized CLI runtime env with ZCode-owned runtime keys", () =>
 test("prepares beta CLI runtime env with beta storage root", () => {
   const env = prepareCliRuntimeEnv(
     {
-      ZCODE_BETA: "1",
+      NEKODE_BETA: "1",
     },
     ["/usr/bin/node", "/workspace/bin/zcode.js"],
   );
 
-  assert.equal(env.ZCODE_STORAGE_DIR, join(homedir(), ".zcode-beta"));
+  assert.equal(env.NEKODE_STORAGE_DIR, join(homedir(), ".nekode-beta"));
 });
 
 test("preserves explicit storage root when beta mode is enabled", () => {
   const env = prepareCliRuntimeEnv(
     {
-      ZCODE_BETA: "1",
-      ZCODE_STORAGE_DIR: "/tmp/custom-zcode-home",
+      NEKODE_BETA: "1",
+      NEKODE_STORAGE_DIR: "/tmp/custom-zcode-home",
     },
     ["/usr/bin/node", "/workspace/bin/zcode.js"],
   );
 
-  assert.equal(env.ZCODE_STORAGE_DIR, "/tmp/custom-zcode-home");
+  assert.equal(env.NEKODE_STORAGE_DIR, "/tmp/custom-zcode-home");
 });
 
 test("opens the TUI by default", async () => {
@@ -282,7 +282,7 @@ test("passes developer mode, version, and workspace git branch into the TUI", as
     ...createPromptDeps(),
     cwd: () => workspaceDirectory,
     env: {
-      ZCODE_RUNTIME_ENV: "development",
+      NEKODE_RUNTIME_ENV: "development",
     },
     resolveWorkspaceGitBranch: async (options) => {
       assert.equal(options.workspaceDirectory, workspaceDirectory);
@@ -343,7 +343,7 @@ test("passes configured TUI theme into the TUI", async () => {
   const ctx = createContext([]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getLocale: () => "en-US",
         getModel: () => "openai/gpt-test",
@@ -406,7 +406,7 @@ test("enables session title generation for TUI sessions", async () => {
   const ctx = createContext(["tui"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.titleGeneration, {});
       assert.equal(options?.runtimeConfig?.memory?.extractionEnabled, undefined);
       return {
@@ -435,7 +435,7 @@ test("passes --disallowedTools into TUI runtime config", async () => {
   const ctx = createContext(["tui", "--disallowedTools", "Bash", "Edit,web_search"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.toolDisallowlist, ["Bash", "Edit", "WebSearch"]);
       return {
         getLocale: () => "en-US",
@@ -463,7 +463,7 @@ test("passes force MCS into TUI runtime config", async () => {
   const ctx = createContext(["tui", "--force-mcs"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.midConversationSystem, {
         mode: "force",
       });
@@ -493,7 +493,7 @@ test("does not enable session title generation for headless prompts", async () =
   const ctx = createContext(["--prompt", "hello"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.titleGeneration, undefined);
       return {
         sessionId: "session-test",
@@ -519,7 +519,7 @@ test("disables automatic Memory Extraction for headless prompts", async () => {
   const ctx = createContext(["-p", "hello Memory"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.memory, {
         extractionEnabled: false,
       });
@@ -558,7 +558,7 @@ test("injects process provider endpoint routing into headless prompts", async ()
       assert.equal(options.workingDirectory, "/tmp/zcode-routing-headless");
       return providerEndpointRoutingPort;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.providerEndpointRoutingPort, providerEndpointRoutingPort);
       return {
         close: async () => {},
@@ -633,7 +633,7 @@ test("borrows one process provider registry for a headless prompt and disposes i
         },
       } as never;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.providerRegistry, providerRegistry);
       assert.equal(options?.providerRuntimeHeadersPort, providerRuntimeHeadersPort);
       assert.deepEqual(options?.configuredDefaultModelSelection, {
@@ -667,7 +667,7 @@ test("shows a non-blocking login notice when no coding plan key is configured", 
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
     // 登录态改由 Registry 的可选模型推导：未配置 Coding Plan 时模型目录只有被禁用的选项。
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getLocale: () => "en-US",
         getModel: () => undefined,
@@ -707,7 +707,7 @@ test("honors configured locale before app creation when login is required", asyn
       cwd: () => tempRoot,
       env: {},
       // 登录态改由 App 的可选模型推导；App 在启动屏首帧之后才创建，这里模拟没有可选模型。
-      createZCodeApp: () => {
+      createNekodeApp: () => {
         appCreated = true;
         return {
           listModels: () => [],
@@ -765,7 +765,7 @@ test("passes detected auto locale into the app and TUI", async () => {
   const ctx = createContext(["--locale", "auto"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.uiLocale, "auto");
       assert.equal(options?.uiDetectedLocale, "zh-CN");
       return {
@@ -798,7 +798,7 @@ test("TUI locale command updates later app creation locale", async () => {
   let activeLocale: "en-US" | "zh-CN" = "en-US";
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       createdLocales.push(options?.uiLocale);
       return {
         getLocale: () => activeLocale,
@@ -878,8 +878,8 @@ test("passes custom command suggestions into the TUI", async () => {
             disableNonInteractive: false,
             frontmatterKeys: [],
             name: "review",
-            path: "/workspace/.zcode/commands/review.md",
-            rootPath: "/workspace/.zcode/commands",
+            path: "/workspace/.nekode/commands/review.md",
+            rootPath: "/workspace/.nekode/commands",
             scope: "project",
             source: "zcode",
           },
@@ -925,7 +925,7 @@ test("command center expands custom commands before submitting to runtime", asyn
         metadata: {
           description: "Review custom changes",
           name: "review",
-          path: "/workspace/.zcode/commands/review.md",
+          path: "/workspace/.nekode/commands/review.md",
           scope: "project",
           source: "zcode",
         },
@@ -960,8 +960,8 @@ test("zcode commands list prints custom commands", async () => {
             disableNonInteractive: false,
             frontmatterKeys: [],
             name: "review",
-            path: "/workspace/project/.zcode/commands/review.md",
-            rootPath: "/workspace/project/.zcode/commands",
+            path: "/workspace/project/.nekode/commands/review.md",
+            rootPath: "/workspace/project/.nekode/commands",
             scope: "project",
             source: "zcode",
           },
@@ -977,61 +977,38 @@ test("zcode commands list prints custom commands", async () => {
   assert.match(ctx.stdout.output(), /\/review \[scope\]/);
 });
 
-test("zcode login runs OAuth flow and prints the authorization URL", async () => {
+test("zcode login is not a CLI command anymore", async () => {
   const ctx = createContext(["login", "--no-browser"]);
-  let sawNoBrowser = false;
+  let loginCalled = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    loginZCodeCli: async (options) => {
-      sawNoBrowser = options?.noBrowser === true;
-      await options?.onAuthorizeUrl?.({
-        authorize_url: "https://chat.z.ai/oauth/authorize?state=state",
-        expires_at: 1735000000,
-        flow_id: "flow-1",
-        poll_interval_sec: 2,
-        poll_token: "poll-token",
-      });
-      return {
-        configPath: "/home/test/.zcode/v2/model-selection.json",
-        credentialsPath: "/home/test/.zcode/v2/credentials.json",
-        model: "zai/glm-5.1",
-        providerId: "zai",
-        user: {
-          user_id: "u_1",
-          email: "alice@example.com",
-          name: "Alice",
-        },
-      };
+    loginNekodeCli: async () => {
+      loginCalled = true;
+      throw new Error("login must not be called");
     },
   });
 
-  assert.equal(exitCode, 0);
-  assert.equal(sawNoBrowser, true);
-  assert.match(ctx.stdout.output(), /Open this URL to sign in/);
-  assert.match(ctx.stdout.output(), /https:\/\/chat\.z\.ai\/oauth\/authorize/);
-  assert.match(ctx.stdout.output(), /Login successful as Alice/);
-  assert.match(
-    ctx.stdout.output(),
-    /Model selection: \/home\/test\/\.zcode\/v2\/model-selection\.json/,
-  );
+  assert.equal(exitCode, 1);
+  assert.equal(loginCalled, false);
+  assert.equal(ctx.stdout.output(), "");
+  assert.match(ctx.stderr.output(), /Unknown command: login/);
 });
 
-test("zcode logout clears shared OAuth credentials", async () => {
+test("zcode logout is not a CLI command anymore", async () => {
   const ctx = createContext(["logout"]);
   let logoutCalled = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    logoutZCodeCli: async () => {
+    logoutNekodeCli: async () => {
       logoutCalled = true;
-      return {
-        credentialsPath: "/home/test/.zcode/v2/credentials.json",
-      };
+      throw new Error("logout must not be called");
     },
   });
 
-  assert.equal(exitCode, 0);
-  assert.equal(logoutCalled, true);
-  assert.match(ctx.stdout.output(), /Logged out from Coding Plan accounts/);
+  assert.equal(exitCode, 1);
+  assert.equal(logoutCalled, false);
+  assert.equal(ctx.stdout.output(), "");
+  assert.match(ctx.stderr.output(), /Unknown command: logout/);
 });
 
 test("parses login and logout slash commands", () => {
@@ -1086,8 +1063,8 @@ test("command center handles login and logout locally", async () => {
         poll_interval_sec: 2,
       });
       return {
-        configPath: "/home/test/.zcode/v2/model-selection.json",
-        credentialsPath: "/home/test/.zcode/v2/credentials.json",
+        configPath: "/home/test/.nekode/v2/model-selection.json",
+        credentialsPath: "/home/test/.nekode/v2/credentials.json",
         model: "zai/glm-5.1",
         providerId: "zai",
         user: {
@@ -1100,7 +1077,7 @@ test("command center handles login and logout locally", async () => {
     configureApiKey: async (options) => {
       apiKeyCalled = options.providerId === "bigmodel" && options.apiKey === "manual-key";
       return {
-        configPath: "/home/test/.zcode/v2/model-selection.json",
+        configPath: "/home/test/.nekode/v2/model-selection.json",
         model: "bigmodel/glm-5.1",
         providerId: "bigmodel",
       };
@@ -1108,7 +1085,7 @@ test("command center handles login and logout locally", async () => {
     logout: async () => {
       logoutCalled = true;
       return {
-        credentialsPath: "/home/test/.zcode/v2/credentials.json",
+        credentialsPath: "/home/test/.nekode/v2/credentials.json",
       };
     },
     resumeApp: async () => {
@@ -1149,7 +1126,7 @@ test("command center handles login and logout locally", async () => {
   assert.match(loginResult.response, /Configured Z\.AI Coding Plan as Alice/);
   assert.match(
     loginResult.response,
-    /Model selection: \/home\/test\/\.zcode\/v2\/model-selection\.json/,
+    /Model selection: \/home\/test\/\.nekode\/v2\/model-selection\.json/,
   );
   assert.match(apiKeyResult.response, /Configured BigModel Coding Plan/);
   assert.match(logoutResult.response, /Logged out from Coding Plan accounts/);
@@ -1223,7 +1200,7 @@ const reviewCustomCommand = {
   metadata: {
     description: "Review custom changes",
     name: "review",
-    path: "/workspace/.zcode/commands/review.md",
+    path: "/workspace/.nekode/commands/review.md",
     scope: "project",
     source: "zcode",
   },
@@ -1239,8 +1216,8 @@ test("headless prompt submits a resolvable custom command as raw text", async ()
   let submitted: unknown;
   const exitCode = await run(ctx, {
     ...base,
-    createZCodeApp: (options) => {
-      const app = base.createZCodeApp?.(options) as {
+    createNekodeApp: (options) => {
+      const app = base.createNekodeApp?.(options) as {
         submitPrompt: (prompt: unknown, submitOptions?: unknown) => Promise<unknown>;
       };
       return {
@@ -1276,8 +1253,8 @@ test("headless prompt keeps a facade-reserved custom command name on the command
   let submitted: unknown;
   const exitCode = await run(ctx, {
     ...base,
-    createZCodeApp: (options) => {
-      const app = base.createZCodeApp?.(options) as {
+    createNekodeApp: (options) => {
+      const app = base.createNekodeApp?.(options) as {
         submitPrompt: (prompt: unknown, submitOptions?: unknown) => Promise<unknown>;
       };
       return {
@@ -1294,7 +1271,7 @@ test("headless prompt keeps a facade-reserved custom command name on the command
         metadata: {
           description: "Compress things",
           name: "compress",
-          path: "/workspace/.zcode/commands/compress.md",
+          path: "/workspace/.nekode/commands/compress.md",
           scope: "project",
           source: "zcode",
         },
@@ -1337,7 +1314,7 @@ test("headless prompt propagates a custom command load failure that is not a mis
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
     loadCustomCommand: async () => {
-      throw new Error("EACCES: permission denied, open '/workspace/.zcode/commands/review.md'");
+      throw new Error("EACCES: permission denied, open '/workspace/.nekode/commands/review.md'");
     },
     isReservedSlashCommandName: () => false,
   });
@@ -1352,7 +1329,7 @@ test("wires TUI input recall skip into the active app", async () => {
   const recalledSkips: Array<number | undefined> = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -1387,7 +1364,7 @@ test("wires TUI slash command history recording into the active app", async () =
   const recorded: Array<{ input: unknown; kind: unknown }> = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getModel: () => "openai/gpt-main",
         listModels: () => [],
@@ -1427,7 +1404,7 @@ test("TUI bare skill command lists skills when startup metadata is unavailable",
   let listed = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       appCreationAttempts += 1;
       throw new Error("app is unavailable");
     },
@@ -1440,11 +1417,11 @@ test("TUI bare skill command lists skills when startup metadata is unavailable",
         skills: [
           {
             description: "Use for demo tasks.",
-            directory: "/workspace/project/.zcode/skills/demo",
+            directory: "/workspace/project/.nekode/skills/demo",
             frontmatterKeys: ["name", "description"],
             name: "demo-skill",
-            path: "/workspace/project/.zcode/skills/demo/SKILL.md",
-            rootPath: "/workspace/project/.zcode/skills",
+            path: "/workspace/project/.nekode/skills/demo/SKILL.md",
+            rootPath: "/workspace/project/.nekode/skills",
             safeToAutoLoad: true,
             scope: "project",
             source: "zcode",
@@ -1694,7 +1671,7 @@ test("TUI startup migration failures return before entering fullscreen UI", asyn
 
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       throw migrationError;
     },
     // 新启动流程先绘制启动屏，再在 loadStartupOptions 中创建运行时；真实 runTui 在启动数据
@@ -1868,7 +1845,7 @@ test("wires TUI approval requests into the runtime permission broker", async () 
   let approvalSeen = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       return {
         listModels: selectableTestModels,
         sessionId: "session-test",
@@ -1917,7 +1894,7 @@ test("wires TUI sendInput approval requests into the runtime permission broker",
   let approvalSeen = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       return {
         sessionId: "session-test",
         traceId: "trace-test",
@@ -1973,7 +1950,7 @@ test("wires TUI mode display and switching into runtime config", async () => {
   const runtimeModeUpdates: string[] = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       // 启动屏首帧后按 CLI --mode 创建 App；此后的模式切换都作用于活动 App。
       assert.equal(options?.runtimeConfig?.mode, "plan");
       appMode = options?.runtimeConfig?.mode ?? "build";
@@ -2043,7 +2020,7 @@ test("wires TUI edit mode switching into runtime config", async () => {
   const runtimeModeUpdates: string[] = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       // 启动屏首帧后按 CLI --mode 创建 App；edit 切换经活动 App 的 runtime config 生效。
       assert.equal(options?.runtimeConfig?.mode, "build");
       appMode = options?.runtimeConfig?.mode ?? "build";
@@ -2126,7 +2103,7 @@ test("wires TUI model command into app server state", async () => {
         },
         runtime: { registryService: {} },
       }) as never,
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       return {
         getCurrentModelOption: () =>
           modelOptions.find(
@@ -2205,7 +2182,7 @@ test("wires TUI effort command into app server state", async () => {
   const requestedLevels: string[] = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       return {
         getModel: () => "openai/gpt-main",
         getThoughtLevel: () => thoughtLevel,
@@ -2276,7 +2253,7 @@ test("wires TUI fork command into a new active app", async () => {
   let forkTarget: string | undefined;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       const appSessionId = options?.sessionId ?? "sess_parent";
       createdSessionIds.push(options?.sessionId);
       return {
@@ -2328,7 +2305,7 @@ test("wires TUI new command into a fresh active app", async () => {
   const closedSessionIds: string[] = [];
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       const appSessionId = options?.sessionId ?? `sess_new_${createdSessionIds.length}`;
       createdSessionIds.push(options?.sessionId);
       return {
@@ -2380,11 +2357,11 @@ test("keeps shared telemetry alive across TUI session replacement and shuts it d
   let telemetryShutdownCount = 0;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    prepareZCodeTelemetryEnv: async (env) => {
+    prepareNekodeTelemetryEnv: async (env) => {
       telemetryPrepareCount += 1;
       return env;
     },
-    shutdownZCodeTelemetry: async () => {
+    shutdownNekodeTelemetry: async () => {
       telemetryShutdownCount += 1;
     },
     runTui: async (options) => {
@@ -2419,7 +2396,7 @@ test("reuses provider endpoint routing when TUI replaces its active session", as
       routingFactoryCalls += 1;
       return providerEndpointRoutingPort;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.providerEndpointRoutingPort, providerEndpointRoutingPort);
       createdApps += 1;
       return {
@@ -2461,11 +2438,11 @@ test("closes the active TUI app on process shutdown signals", async () => {
 
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    prepareZCodeTelemetryEnv: async (env) => env,
-    shutdownZCodeTelemetry: async () => {
+    prepareNekodeTelemetryEnv: async (env) => env,
+    shutdownNekodeTelemetry: async () => {
       telemetryShutdownCount += 1;
     },
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         close: async () => {
           closeCount += 1;
@@ -3079,7 +3056,7 @@ test("command center resolves plugin labels from listings by stable plugin id", 
   );
   assert.equal(
     items.find((item) => item.id === "zcode-cua@unlisted-marketplace")?.primary,
-    "○ ZCode Cua",
+    "○ Nekode Cua",
   );
 });
 
@@ -3117,7 +3094,7 @@ test("command center toggles plugins and refreshes the picker", async () => {
           enabled = nextEnabled;
           return {
             enabled,
-            path: "/home/test/.zcode/cli/config.json",
+            path: "/home/test/.nekode/cli/config.json",
             plugin: {
               commandRootCount: 1,
               dataPath: "/tmp/zcode/plugins/data/ios-simulator@zcode-plugins-official",
@@ -3838,7 +3815,7 @@ test("command center lists skills without sending a model prompt", async () => {
           {
             description: "Use for demo tasks.",
             name: "demo-skill",
-            path: "/workspace/project/.zcode/skills/demo/SKILL.md",
+            path: "/workspace/project/.nekode/skills/demo/SKILL.md",
             scope: "project",
             source: "zcode",
             whenToUse: "When demo files change.",
@@ -3861,7 +3838,7 @@ test("command center lists skills without sending a model prompt", async () => {
   assert.match(result.response, /Available skills \(1\)/);
   assert.match(result.response, /demo-skill \(project\/zcode\)/);
   assert.match(result.response, /Use for demo tasks\. When demo files change\./);
-  assert.match(result.response, /\/workspace\/project\/\.zcode\/skills\/demo\/SKILL\.md/);
+  assert.match(result.response, /\/workspace\/project\/\.nekode\/skills\/demo\/SKILL\.md/);
   assert.match(result.response, /Use \/skill <name> \[task\] to load one\./);
 });
 
@@ -4072,20 +4049,20 @@ test("official plugin host runs a seeded official plugin server main", async () 
   const pluginRoot = join(
     root,
     "cache",
-    ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+    NEKODE_OFFICIAL_PLUGIN_MARKETPLACE,
     "ios-simulator",
     "0.1.0",
   );
   const serverPath = join(pluginRoot, "dist", "mcp", "server.js");
   const outputPath = join(root, "host-output.json");
-  const originalOutputEnv = process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT;
+  const originalOutputEnv = process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT;
 
   try {
     await mkdir(join(pluginRoot, "dist", "mcp"), { recursive: true });
     await writeFile(
       join(pluginRoot, ".zcode-plugin-seed.json"),
       JSON.stringify({
-        marketplace: ZCODE_OFFICIAL_PLUGIN_MARKETPLACE,
+        marketplace: NEKODE_OFFICIAL_PLUGIN_MARKETPLACE,
         plugin: "ios-simulator",
         pluginVersion: "0.1.0",
         version: 1,
@@ -4096,13 +4073,13 @@ test("official plugin host runs a seeded official plugin server main", async () 
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({ argv: process.argv }));
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({ argv: process.argv }));
 }
 `,
     );
 
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    const ctx = createContext([NEKODE_PLUGIN_HOST_COMMAND, serverPath]);
     const exitCode = await run(ctx);
 
     assert.equal(exitCode, 0);
@@ -4113,9 +4090,9 @@ export async function main() {
     assert.equal(payload.argv[1], serverPath);
   } finally {
     if (originalOutputEnv === undefined) {
-      delete process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT;
+      delete process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT;
     } else {
-      process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = originalOutputEnv;
+      process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = originalOutputEnv;
     }
     await rm(root, { force: true, recursive: true });
   }
@@ -4126,12 +4103,12 @@ test("retired argv-based CUA host fails closed without the shared node_repl mark
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
-    "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    "NEKODE_CUA_PERMISSION_BROKER_SOCKET",
+    "NEKODE_CUA_PERMISSION_BROKER_TOKEN",
+    "NEKODE_PLUGIN_HOST_TEST_OUTPUT",
+    NEKODE_PLUGIN_ID_ENV_KEY,
+    NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4141,22 +4118,22 @@ test("retired argv-based CUA host fails closed without the shared node_repl mark
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN,
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
+    token: process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN,
   }));
 }
 `,
     );
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
-    sanitizeZCodeRuntimeEnvInPlace(process.env);
-    assert.equal(process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    process.env[NEKODE_PLUGIN_ID_ENV_KEY] = NEKODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
+    process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
+    sanitizeNekodeRuntimeEnvInPlace(process.env);
+    assert.equal(process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([NEKODE_PLUGIN_HOST_COMMAND, serverPath]);
     const exitCode = await runPluginHostCommand(ctx, [
       serverPath,
       "--permission-broker-socket",
@@ -4166,11 +4143,11 @@ export async function main() {
     assert.equal(exitCode, 1);
     assert.match(
       ctx.stderr.output(),
-      /Captured ZCode CUA broker credentials may only launch the trusted shared node_repl host/,
+      /Captured Nekode CUA broker credentials may only launch the trusted shared node_repl host/,
     );
     await assert.rejects(readFile(outputPath, "utf8"), { code: "ENOENT" });
   } finally {
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     for (const key of keys) {
       const value = originalEnv[key];
       if (value === undefined) delete process.env[key];
@@ -4185,12 +4162,12 @@ test("shared node_repl host restores the captured CUA broker credentials", async
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
-    "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    "NEKODE_CUA_PERMISSION_BROKER_SOCKET",
+    "NEKODE_CUA_PERMISSION_BROKER_TOKEN",
+    "NEKODE_PLUGIN_HOST_TEST_OUTPUT",
+    NEKODE_PLUGIN_ID_ENV_KEY,
+    NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4200,23 +4177,23 @@ test("shared node_repl host restores the captured CUA broker credentials", async
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    socket: process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET,
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN,
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
+    socket: process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET,
+    token: process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN,
   }));
 }
 `,
     );
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
-    sanitizeZCodeRuntimeEnvInPlace(process.env);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    process.env[NEKODE_PLUGIN_ID_ENV_KEY] = NEKODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env[NEKODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN = "scoped-secret-token";
+    process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
+    sanitizeNekodeRuntimeEnvInPlace(process.env);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([NEKODE_PLUGIN_HOST_COMMAND, serverPath]);
     assert.equal(await runPluginHostCommand(ctx, [serverPath]), 0);
     // identity 模式：恢复给宿主的只有 socket（配 authority），没有口令。环境里那个遗留
     // token 是历史键，sanitize 会连它一起剔除，因此宿主根本看不到它 —— 否则旧版 Helper
@@ -4229,10 +4206,10 @@ export async function main() {
     assert.equal(hostEnv.socket, "/tmp/cua-broker.sock");
     assert.equal(hostEnv.token, undefined);
     // 宿主只在运行期间短暂恢复，跑完父进程 env 必须回到已剔除状态。
-    assert.equal(process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET, undefined);
-    assert.equal(process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN, undefined);
+    assert.equal(process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET, undefined);
+    assert.equal(process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN, undefined);
   } finally {
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     for (const key of keys) {
       const value = originalEnv[key];
       if (value === undefined) delete process.env[key];
@@ -4249,12 +4226,12 @@ test("shared node_repl host launches with identity-mode credentials (socket + au
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
-    "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    "NEKODE_CUA_PERMISSION_BROKER_SOCKET",
+    "NEKODE_CUA_PERMISSION_BROKER_TOKEN",
+    "NEKODE_PLUGIN_HOST_TEST_OUTPUT",
+    NEKODE_PLUGIN_ID_ENV_KEY,
+    NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4264,30 +4241,30 @@ test("shared node_repl host launches with identity-mode credentials (socket + au
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
-    socket: process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET,
-    token: process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN ?? null,
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({
+    socket: process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET,
+    token: process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN ?? null,
   }));
 }
 `,
     );
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = ZCODE_CUA_OFFICIAL_PLUGIN_ID;
-    process.env[ZCODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    delete process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN;
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
-    sanitizeZCodeRuntimeEnvInPlace(process.env);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    process.env[NEKODE_PLUGIN_ID_ENV_KEY] = NEKODE_CUA_OFFICIAL_PLUGIN_ID;
+    process.env[NEKODE_CUA_NODE_REPL_HOST_ENV_KEY] = "1";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    delete process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN;
+    process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "official-authority";
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
+    sanitizeNekodeRuntimeEnvInPlace(process.env);
 
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath]);
+    const ctx = createContext([NEKODE_PLUGIN_HOST_COMMAND, serverPath]);
     assert.equal(await runPluginHostCommand(ctx, [serverPath]), 0);
     assert.deepEqual(JSON.parse(await readFile(outputPath, "utf8")), {
       socket: "/tmp/cua-broker.sock",
       token: null,
     });
   } finally {
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     for (const key of keys) {
       const value = originalEnv[key];
       if (value === undefined) delete process.env[key];
@@ -4302,12 +4279,12 @@ test("plugin host refuses non-official code while product broker credentials are
   const serverPath = join(root, "server.js");
   const outputPath = join(root, "host-output.json");
   const keys = [
-    "ZCODE_CUA_PERMISSION_BROKER_SOCKET",
-    "ZCODE_CUA_PERMISSION_BROKER_TOKEN",
-    "ZCODE_PLUGIN_HOST_TEST_OUTPUT",
-    ZCODE_PLUGIN_ID_ENV_KEY,
-    ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-    ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
+    "NEKODE_CUA_PERMISSION_BROKER_SOCKET",
+    "NEKODE_CUA_PERMISSION_BROKER_TOKEN",
+    "NEKODE_PLUGIN_HOST_TEST_OUTPUT",
+    NEKODE_PLUGIN_ID_ENV_KEY,
+    NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+    NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
   ] as const;
   const originalEnv = Object.fromEntries(keys.map((key) => [key, process.env[key]]));
 
@@ -4317,21 +4294,21 @@ test("plugin host refuses non-official code while product broker credentials are
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, String(Boolean(process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN)));
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, String(Boolean(process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN)));
 }
 `,
     );
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    process.env[ZCODE_PLUGIN_ID_ENV_KEY] = "zcode-cua@third-party";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
-    process.env.ZCODE_CUA_PERMISSION_BROKER_TOKEN = "must-not-leak";
-    process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "captured-authority";
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
-    sanitizeZCodeRuntimeEnvInPlace(process.env);
-    assert.equal(process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    process.env[NEKODE_PLUGIN_ID_ENV_KEY] = "zcode-cua@third-party";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_SOCKET = "/tmp/cua-broker.sock";
+    process.env.NEKODE_CUA_PERMISSION_BROKER_TOKEN = "must-not-leak";
+    process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "captured-authority";
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
+    sanitizeNekodeRuntimeEnvInPlace(process.env);
+    assert.equal(process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY], undefined);
 
     const ctx = createContext([
-      ZCODE_PLUGIN_HOST_COMMAND,
+      NEKODE_PLUGIN_HOST_COMMAND,
       serverPath,
       "--permission-broker-socket",
       "/tmp/cua-broker.sock",
@@ -4339,11 +4316,11 @@ export async function main() {
     assert.equal(await run(ctx), 1);
     assert.match(
       ctx.stderr.output(),
-      /Captured ZCode CUA broker credentials may only launch the trusted shared node_repl host/,
+      /Captured Nekode CUA broker credentials may only launch the trusted shared node_repl host/,
     );
     await assert.rejects(readFile(outputPath, "utf8"), { code: "ENOENT" });
   } finally {
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     for (const key of keys) {
       const value = originalEnv[key];
       if (value === undefined) delete process.env[key];
@@ -4357,7 +4334,7 @@ test("plugin host can run an explicitly configured third-party module", async ()
   const root = await mkdtemp(join(tmpdir(), "zcode-cli-plugin-host-third-party-"));
   const serverPath = join(root, "third-party", "server.js");
   const outputPath = join(root, "third-party-output.json");
-  const originalOutputEnv = process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT;
+  const originalOutputEnv = process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT;
 
   try {
     await mkdir(join(root, "third-party"), { recursive: true });
@@ -4366,13 +4343,13 @@ test("plugin host can run an explicitly configured third-party module", async ()
       serverPath,
       `import { writeFile } from "node:fs/promises";
 export async function main() {
-  await writeFile(process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({ argv: process.argv }));
+  await writeFile(process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT, JSON.stringify({ argv: process.argv }));
 }
 `,
     );
 
-    process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
-    const ctx = createContext([ZCODE_PLUGIN_HOST_COMMAND, serverPath, "--", "hello"]);
+    process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = outputPath;
+    const ctx = createContext([NEKODE_PLUGIN_HOST_COMMAND, serverPath, "--", "hello"]);
     const exitCode = await run(ctx);
 
     assert.equal(exitCode, 0);
@@ -4382,9 +4359,9 @@ export async function main() {
     assert.deepEqual(payload.argv, [process.execPath, serverPath, "--", "hello"]);
   } finally {
     if (originalOutputEnv === undefined) {
-      delete process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT;
+      delete process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT;
     } else {
-      process.env.ZCODE_PLUGIN_HOST_TEST_OUTPUT = originalOutputEnv;
+      process.env.NEKODE_PLUGIN_HOST_TEST_OUTPUT = originalOutputEnv;
     }
     await rm(root, { force: true, recursive: true });
   }
@@ -4409,7 +4386,7 @@ test("plugin host stays alive past the one-shot CLI watchdog deadline", async ()
 
     child = spawn(
       process.execPath,
-      ["--import", tsxLoaderPath, cliEntryPath, ZCODE_PLUGIN_HOST_COMMAND, serverPath],
+      ["--import", tsxLoaderPath, cliEntryPath, NEKODE_PLUGIN_HOST_COMMAND, serverPath],
       {
         env: process.env,
         stdio: ["pipe", "pipe", "pipe"],
@@ -4481,7 +4458,7 @@ test("failed plugin host still exits when initialization leaves stdin active", a
 
     child = spawn(
       process.execPath,
-      ["--import", tsxLoaderPath, cliEntryPath, ZCODE_PLUGIN_HOST_COMMAND, serverPath],
+      ["--import", tsxLoaderPath, cliEntryPath, NEKODE_PLUGIN_HOST_COMMAND, serverPath],
       {
         env: process.env,
         stdio: ["pipe", "pipe", "pipe"],
@@ -4519,7 +4496,7 @@ test("zcode plugins enable persists the selected plugin", async () => {
       assert.equal(options.workingDirectory, "/workspace/project");
       return {
         enabled: true,
-        path: "/home/test/.zcode/cli/config.json",
+        path: "/home/test/.nekode/cli/config.json",
         plugin: {
           commandRootCount: 1,
           dataPath: "/tmp/zcode/plugins/data/ios-dev@zcode-plugins-official",
@@ -4541,7 +4518,7 @@ test("zcode plugins enable persists the selected plugin", async () => {
   assert.equal(exitCode, 0);
   assert.match(
     ctx.stdout.output(),
-    /Enabled plugin ios-dev@zcode-plugins-official in \/home\/test\/.zcode\/cli\/config\.json/,
+    /Enabled plugin ios-dev@zcode-plugins-official in \/home\/test\/.nekode\/cli\/config\.json/,
   );
 });
 
@@ -4549,7 +4526,7 @@ test("prints slash help for prompt help command without creating an app", async 
   const ctx = createContext(["--prompt", "/help"]);
   let appCreated = false;
   const exitCode = await run(ctx, {
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       appCreated = true;
       throw new Error("app should not be created");
     },
@@ -4577,7 +4554,7 @@ test("lists skills in human format", async () => {
           {
             code: "skill_scan_failed",
             message: "Failed to scan skill directory: demo",
-            path: "/workspace/project/.zcode/skills/demo/SKILL.md",
+            path: "/workspace/project/.nekode/skills/demo/SKILL.md",
             severity: "warning",
             skillName: "demo",
           },
@@ -4585,11 +4562,11 @@ test("lists skills in human format", async () => {
         skills: [
           {
             description: "Use for demo tasks.",
-            directory: "/workspace/project/.zcode/skills/demo",
+            directory: "/workspace/project/.nekode/skills/demo",
             frontmatterKeys: ["name", "description", "version"],
             name: "demo",
-            path: "/workspace/project/.zcode/skills/demo/SKILL.md",
-            rootPath: "/workspace/project/.zcode/skills",
+            path: "/workspace/project/.nekode/skills/demo/SKILL.md",
+            rootPath: "/workspace/project/.nekode/skills",
             safeToAutoLoad: true,
             scope: "project",
             source: "zcode",
@@ -4614,7 +4591,7 @@ test("lists skills for bare prompt skill command", async () => {
   let listed = false;
   let appCreated = false;
   const exitCode = await run(ctx, {
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       appCreated = true;
       throw new Error("app should not be created");
     },
@@ -4627,11 +4604,11 @@ test("lists skills for bare prompt skill command", async () => {
         skills: [
           {
             description: "Review React code.",
-            directory: "/workspace/project/.zcode/skills/react",
+            directory: "/workspace/project/.nekode/skills/react",
             frontmatterKeys: ["name", "description"],
             name: "react-review",
-            path: "/workspace/project/.zcode/skills/react/SKILL.md",
-            rootPath: "/workspace/project/.zcode/skills",
+            path: "/workspace/project/.nekode/skills/react/SKILL.md",
+            rootPath: "/workspace/project/.nekode/skills",
             safeToAutoLoad: true,
             scope: "project",
             source: "zcode",
@@ -4660,11 +4637,11 @@ test("lists skills in JSON format", async () => {
         skills: [
           {
             description: "Review React code.",
-            directory: "/workspace/project/.zcode/skills/react",
+            directory: "/workspace/project/.nekode/skills/react",
             frontmatterKeys: ["name", "description", "when_to_use"],
             name: "react-review",
-            path: "/workspace/project/.zcode/skills/react/SKILL.md",
-            rootPath: "/workspace/project/.zcode/skills",
+            path: "/workspace/project/.nekode/skills/react/SKILL.md",
+            rootPath: "/workspace/project/.nekode/skills",
             safeToAutoLoad: true,
             scope: "project",
             source: "zcode",
@@ -4711,19 +4688,19 @@ test("loads nearest dotenv without overriding shell env", async () => {
     await mkdir(nested, { recursive: true });
     await writeFile(
       join(tempRoot, ".env"),
-      ["ZCODE_API_KEY=from-file", "ZCODE_BASE_URL=https://example.test"].join("\n"),
+      ["NEKODE_API_KEY=from-file", "NEKODE_BASE_URL=https://example.test"].join("\n"),
     );
 
     const env: NodeJS.ProcessEnv = {
-      ZCODE_API_KEY: "from-shell",
+      NEKODE_API_KEY: "from-shell",
     };
     const result = loadCliDotenv({ cwd: nested, env });
 
     assert.equal(findDotenv(nested), join(tempRoot, ".env"));
     assert.equal(result.loaded, true);
-    assert.deepEqual(result.keys.sort(), ["ZCODE_API_KEY", "ZCODE_BASE_URL"].sort());
-    assert.equal(env.ZCODE_API_KEY, "from-shell");
-    assert.equal(env.ZCODE_BASE_URL, "https://example.test");
+    assert.deepEqual(result.keys.sort(), ["NEKODE_API_KEY", "NEKODE_BASE_URL"].sort());
+    assert.equal(env.NEKODE_API_KEY, "from-shell");
+    assert.equal(env.NEKODE_BASE_URL, "https://example.test");
   } finally {
     await rm(tempRoot, { recursive: true, force: true });
   }
@@ -4735,7 +4712,7 @@ test("loads dotenv before creating the prompt app", async () => {
   let appEnv: NodeJS.ProcessEnv | undefined;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       appEnv = options?.env;
       return {
         sessionId: "session-test",
@@ -4753,10 +4730,10 @@ test("loads dotenv before creating the prompt app", async () => {
     env,
     loadDotenv: (options) => {
       if (options?.env) {
-        options.env.ZCODE_API_KEY = "loaded-at-runtime";
+        options.env.NEKODE_API_KEY = "loaded-at-runtime";
       }
       return {
-        keys: ["ZCODE_API_KEY"],
+        keys: ["NEKODE_API_KEY"],
         loaded: true,
         path: "/tmp/project/.env",
       };
@@ -4764,7 +4741,7 @@ test("loads dotenv before creating the prompt app", async () => {
   });
 
   assert.equal(exitCode, 0);
-  assert.equal(appEnv?.ZCODE_API_KEY, "loaded-at-runtime");
+  assert.equal(appEnv?.NEKODE_API_KEY, "loaded-at-runtime");
   assert.equal(ctx.stdout.output(), "hello env\n");
   assert.equal(ctx.stderr.output(), "");
 });
@@ -4783,7 +4760,7 @@ test("passes the CLI version into app creation for prompt runs", async () => {
   let appVersion: string | undefined;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       appVersion = options?.version;
       return {
         getModel: () => "openai/gpt-test",
@@ -4820,7 +4797,7 @@ test("passes prompt attachments into the app API", async () => {
   let submitted: unknown;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -4855,7 +4832,7 @@ test("rewrites skill slash commands for single prompts", async () => {
   let submitted = "";
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -4893,7 +4870,7 @@ test("runs goal command without prompt", async () => {
   let continued = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.memory, {
         extractionEnabled: false,
       });
@@ -4938,7 +4915,7 @@ test("passes force MCS into target runtime config", async () => {
   let continued = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.midConversationSystem, {
         mode: "force",
       });
@@ -4991,7 +4968,7 @@ test("rejects combining target with prompt", async () => {
   const ctx = createContext(["--prompt", "hello target", "--target", "Ship target MVP"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -5012,7 +4989,7 @@ test("closes the app after a headless prompt", async () => {
   let closeCount = 0;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -5040,8 +5017,8 @@ test("shuts down prepared telemetry after a headless prompt", async () => {
   let telemetryShutdownCount = 0;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    prepareZCodeTelemetryEnv: async (env) => env,
-    shutdownZCodeTelemetry: async () => {
+    prepareNekodeTelemetryEnv: async (env) => env,
+    shutdownNekodeTelemetry: async () => {
       telemetryShutdownCount += 1;
     },
   });
@@ -5055,11 +5032,11 @@ test("shuts down prepared telemetry when headless app creation fails", async () 
   let telemetryShutdownCount = 0;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       throw new Error("app creation failed");
     },
-    prepareZCodeTelemetryEnv: async (env) => env,
-    shutdownZCodeTelemetry: async () => {
+    prepareNekodeTelemetryEnv: async (env) => env,
+    shutdownNekodeTelemetry: async () => {
       telemetryShutdownCount += 1;
     },
   });
@@ -5078,7 +5055,7 @@ test("aborts and closes the headless app on process shutdown signals", async () 
 
   const runPromise = run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         close: async () => {
           closeCount += 1;
@@ -5127,7 +5104,7 @@ test("closes a late async app without submitting after shutdown during initializ
     ...createPromptDeps(),
     shutdownProcess,
     exitProcess: (code) => exited.resolve(code),
-    createZCodeApp: async () => {
+    createNekodeApp: async () => {
       started.resolve();
       await release.promise;
       return {
@@ -5160,7 +5137,7 @@ test("TUI closes an app that finishes initialization after handler shutdown", as
   const handler = createTuiSubmitPrompt(
     {
       ...createPromptDeps(),
-      createZCodeApp: async () => {
+      createNekodeApp: async () => {
         started.resolve();
         await release.promise;
         return {
@@ -5188,7 +5165,7 @@ test("rejects headless goal replacement without explicit target-replace", async 
   const ctx = createContext(["--target", "New target"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         clearTarget: async () => true,
         continueActiveTarget: async () => null,
@@ -5227,7 +5204,7 @@ test("replaces an existing goal for headless goal commands when target-replace i
   let continued = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         clearTarget: async () => true,
         continueActiveTarget: async () => {
@@ -5278,7 +5255,7 @@ test("runs slash goal commands directly in headless prompt mode", async () => {
   let continued = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         clearTarget: async () => false,
         continueActiveTarget: async () => {
@@ -5318,7 +5295,7 @@ test("rejects interactive goal replacement prompts in headless mode", async () =
   const ctx = createContext(["--prompt", "/goal New target"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         clearTarget: async () => true,
         continueActiveTarget: async () => null,
@@ -5355,7 +5332,7 @@ test("defaults headless prompts to yolo mode", async () => {
   const ctx = createContext(["--prompt", "hello default mode"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.mode, "yolo");
       assert.equal(options?.runtimeConfig?.presentationSurface, "terminal");
       return {
@@ -5381,7 +5358,7 @@ test("passes the Desktop presentation surface into headless runtime config", asy
   const ctx = createContext(["--surface", "desktop", "--prompt", "hello desktop"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.presentationSurface, "zcode_desktop");
       assert.equal(options?.sourceTitle, undefined);
       return {
@@ -5428,7 +5405,7 @@ test("passes prompt mode override into runtime config", async () => {
   const ctx = createContext(["--prompt", "hello mode", "--mode", "plan"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.mode, "plan");
       return {
         sessionId: "session-test",
@@ -5453,7 +5430,7 @@ test("passes force MCS into headless runtime config", async () => {
   const ctx = createContext(["--force-mcs", "--prompt", "hello force mcs"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.midConversationSystem, {
         mode: "force",
       });
@@ -5485,7 +5462,7 @@ test("passes --disallowedTools into headless runtime config", async () => {
   ]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.toolDisallowlist, [
         "Bash(git *)",
         "Edit",
@@ -5514,7 +5491,7 @@ test("supports the prompt short alias with --disallowedTools", async () => {
   const ctx = createContext(["-p", "hello short prompt", "--disallowedTools", "Bash"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.toolDisallowlist, ["Bash"]);
       return {
         sessionId: "session-test",
@@ -5545,7 +5522,7 @@ test("supports dashed disallowed tools alias before the prompt option", async ()
   ]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual(options?.runtimeConfig?.toolDisallowlist, ["Bash", "Edit"]);
       return {
         sessionId: "session-test",
@@ -5570,7 +5547,7 @@ test("passes edit prompt mode override into runtime config", async () => {
   const ctx = createContext(["--prompt", "hello edit mode", "--mode", "edit"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.mode, "edit");
       return {
         sessionId: "session-test",
@@ -5597,7 +5574,7 @@ test("passes the CLI cwd into prompt runtime config", async () => {
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
     cwd: () => cwd,
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.runtimeConfig?.workingDirectory, cwd);
       return {
         sessionId: "session-test",
@@ -5629,7 +5606,7 @@ test("passes explicit resume session into prompt app creation", async () => {
   const ctx = createContext(["--resume", "sess_existing", "--prompt", "hello resume"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.resume, true);
       assert.equal(options?.sessionId, "sess_existing");
       return {
@@ -5663,7 +5640,7 @@ test("resolves latest session for continue prompts", async () => {
       assert.equal(options.directory, cwd);
       return { id: "sess_latest" } as never;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.resume, true);
       assert.equal(options?.sessionId, "sess_latest");
       return {
@@ -5725,7 +5702,7 @@ test("prints provider token usage in prompt JSON", async () => {
   const ctx = createContext(["--prompt", "hello usage", "--json"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         sessionId: "session-test",
         traceId: "trace-test",
@@ -5822,7 +5799,7 @@ test("rejects force MCS outside prompt, target, or TUI commands", async () => {
   assert.equal(ctx.stdout.output(), "");
 });
 
-test("dispatches app-server stdio command to the ZCode Protocol runner without production dotenv", async () => {
+test("dispatches app-server stdio command to the Nekode Protocol runner without production dotenv", async () => {
   const ctx = createContext(["app-server", "--stdio"]);
   let called = false;
   let dotenvCalls = 0;
@@ -5835,14 +5812,14 @@ test("dispatches app-server stdio command to the ZCode Protocol runner without p
         loaded: false,
       };
     },
-    runZCodeProtocolAgent: async (options) => {
+    runNekodeProtocolAgent: async (options) => {
       called = true;
       assert.equal(options?.cwd, "/workspace");
       assert.equal(options?.input, ctx.stdin);
       assert.equal(options?.output, ctx.stdout);
       assert.equal(options?.version, "0.0.0");
       assert.equal(options?.presentationSurface, "terminal");
-      assert.equal(options?.env?.[ZCODE_RUNTIME_ENV_KEY], "production");
+      assert.equal(options?.env?.[NEKODE_RUNTIME_ENV_KEY], "production");
     },
   });
 
@@ -5886,7 +5863,7 @@ test("passes the Desktop presentation surface to the protocol app server", async
   const ctx = createContext(["app-server", "--stdio", "--surface", "desktop"]);
   let called = false;
   const exitCode = await run(ctx, {
-    runZCodeProtocolAgent: async (options) => {
+    runNekodeProtocolAgent: async (options) => {
       called = true;
       assert.equal(options?.presentationSurface, "zcode_desktop");
     },
@@ -5901,7 +5878,7 @@ test("rejects force MCS before starting the protocol app server", async () => {
   const ctx = createContext(["app-server", "--stdio", "--force-mcs"]);
   let called = false;
   const exitCode = await run(ctx, {
-    runZCodeProtocolAgent: async () => {
+    runNekodeProtocolAgent: async () => {
       called = true;
     },
   });
@@ -5919,25 +5896,25 @@ test("loads dotenv for app-server only in development runtime", async () => {
   const exitCode = await run(ctx, {
     cwd: () => "/workspace",
     env: {
-      [ZCODE_RUNTIME_ENV_KEY]: "development",
+      [NEKODE_RUNTIME_ENV_KEY]: "development",
     },
     loadDotenv: (options) => {
       dotenvCalls += 1;
       assert.equal(options?.cwd, "/workspace");
       if (options?.env) {
-        options.env.ZCODE_API_KEY = "loaded-for-dev-protocol";
+        options.env.NEKODE_API_KEY = "loaded-for-dev-protocol";
       }
       return {
-        keys: ["ZCODE_API_KEY"],
+        keys: ["NEKODE_API_KEY"],
         loaded: true,
         path: "/workspace/.env",
       };
     },
-    runZCodeProtocolAgent: async (options) => {
+    runNekodeProtocolAgent: async (options) => {
       called = true;
       assert.equal(options?.cwd, "/workspace");
-      assert.equal(options?.env?.[ZCODE_RUNTIME_ENV_KEY], "development");
-      assert.equal(options?.env?.ZCODE_API_KEY, "loaded-for-dev-protocol");
+      assert.equal(options?.env?.[NEKODE_RUNTIME_ENV_KEY], "development");
+      assert.equal(options?.env?.NEKODE_API_KEY, "loaded-for-dev-protocol");
     },
   });
 
@@ -6091,7 +6068,7 @@ test("injects and closes the managed CDP port for headless prompt", async () => 
         },
       };
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.browserControlPort, browserControlPort);
       return {
         close: async () => {
@@ -6131,7 +6108,7 @@ test("continues managed browser cleanup when app close never settles", async () 
         browserCloseCount += 1;
       },
     }),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         close: async () => {
           appCloseCount += 1;
@@ -6172,7 +6149,7 @@ test("returns from a headless prompt when managed browser close never settles", 
         await new Promise<void>(() => undefined);
       },
     }),
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         close: async () => {
           appCloseCount += 1;
@@ -6222,7 +6199,7 @@ test("injects one managed CDP runtime into TUI app lifecycle and closes it", asy
         runtimeClosed += 1;
       },
     }),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.browserControlPort, browserControlPort);
       return {
         close: async () => {
@@ -6307,7 +6284,7 @@ test("reuses one process provider registry across TUI app replacements", async (
         },
       } as never;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       appCreations += 1;
       assert.equal(options?.providerRegistry, providerRegistry);
       assert.equal(options?.providerRuntimeHeadersPort, providerRuntimeHeadersPort);
@@ -6362,7 +6339,7 @@ test("rejects an invalid explicit browser executable before creating the app", a
   let appCreated = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       appCreated = true;
       throw new Error("app must not be created");
     },
@@ -6452,7 +6429,7 @@ test("headless prompt reports exact Workspace Hook pretrust diagnostics without 
   const deps = createPromptDeps();
   const exitCode = await run(ctx, {
     ...deps,
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getModel: () => "openai/gpt-test",
         getLocale: () => "en-US",
@@ -6487,7 +6464,7 @@ test("headless prompt reports exact Workspace Hook pretrust diagnostics without 
           event: "SessionStart",
           matcher: null,
           displayCommand: "./start.sh",
-          sourcePath: ".zcode/config.json",
+          sourcePath: ".nekode/config.json",
           configuredEnabled: true,
           hookDeclarationDigest: "a".repeat(64),
           trustState: "pending_trust",
@@ -6508,7 +6485,7 @@ test("headless rollout-off diagnostics preserve the runtime feature-disabled rea
   const deps = createPromptDeps();
   const exitCode = await run(ctx, {
     ...deps,
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getModel: () => "openai/gpt-test",
         getLocale: () => "en-US",
@@ -6550,10 +6527,10 @@ for (const mode of [undefined, "off", "auto", "local"] as const) {
     let observed = false;
     const ctx = createContext([...(mode ? ["--toolsearch-mode", mode] : []), "--prompt", "hello"]);
     const deps = createPromptDeps();
-    const original = deps.createZCodeApp;
+    const original = deps.createNekodeApp;
     const code = await run(ctx, {
       ...deps,
-      createZCodeApp: (options) => {
+      createNekodeApp: (options) => {
         observed = true;
         assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, { mode: mode ?? "off" });
         return original!(options);
@@ -6573,7 +6550,7 @@ test("rejects invalid ToolSearch mode and removed enable flag before creating an
     let created = false;
     const ctx = createContext([...args, "-p", "hello"]);
     const code = await run(ctx, {
-      createZCodeApp: () => {
+      createNekodeApp: () => {
         created = true;
         throw new Error("unreachable");
       },
@@ -6588,7 +6565,7 @@ test("passes explicit Native ToolSearch into TUI runtime config", async () => {
   const ctx = createContext(["tui", "--toolsearch-mode", "native"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, {
         mode: "native",
       });
@@ -6619,7 +6596,7 @@ test("passes explicit Native ToolSearch into target runtime config", async () =>
   let continued = false;
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, {
         mode: "native",
       });
@@ -6663,7 +6640,7 @@ test("passes explicit Native ToolSearch into headless runtime config", async () 
   const ctx = createContext(["--toolsearch-mode", "native", "--prompt", "hello enable toolsearch"]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, {
         mode: "native",
       });
@@ -6702,7 +6679,7 @@ test("rejects explicit Native ToolSearch before starting the protocol app server
   const ctx = createContext(["app-server", "--stdio", "--toolsearch-mode", "native"]);
   let called = false;
   const exitCode = await run(ctx, {
-    runZCodeProtocolAgent: async () => {
+    runNekodeProtocolAgent: async () => {
       called = true;
     },
   });
@@ -6727,7 +6704,7 @@ test("passes explicit Native ToolSearch and explicit resume session into prompt 
   ]);
   const exitCode = await run(ctx, {
     ...createPromptDeps(),
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.resume, true);
       assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, { mode: "native" });
       assert.equal(options?.sessionId, "sess_existing");
@@ -6768,7 +6745,7 @@ test("passes explicit Native ToolSearch while resolving latest session for conti
       assert.equal(options.directory, cwd);
       return { id: "sess_latest" } as never;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       assert.equal(options?.resume, true);
       assert.deepEqual((options?.runtimeConfig as any)?.toolSearch, { mode: "native" });
       assert.equal(options?.sessionId, "sess_latest");
@@ -6800,10 +6777,10 @@ test("storage-migrate executes only the migration port and emits strict completi
       calls++;
       return { applied: ["0020"], backupSkipped: true };
     },
-    runZCodeProtocolAgent: async () => {
+    runNekodeProtocolAgent: async () => {
       throw new Error("must not start runtime");
     },
-    createZCodeApp: () => {
+    createNekodeApp: () => {
       throw new Error("must not create session");
     },
   });
@@ -6842,8 +6819,8 @@ test("storage-migrate real entrypoint honors an isolated custom database and rej
         ...process.env,
         HOME: directory,
         USERPROFILE: directory,
-        ZCODE_DATA_BASE_DIR: directory,
-        ZCODE_SESSION_DB_PATH: database,
+        NEKODE_DATA_BASE_DIR: directory,
+        NEKODE_SESSION_DB_PATH: database,
       },
       stdio: ["ignore", "pipe", "pipe"],
     });

@@ -1,15 +1,15 @@
 import {
-  getZCodeToolFamilyForName,
+  getNekodeToolFamilyForName,
   isTodoPlanToolName,
-  isZCodeFileContentWriteToolName,
-  normalizeZCodeToolName,
-  type ZCodeKnownToolName,
-  type ZCodeToolFamily,
+  isNekodeFileContentWriteToolName,
+  normalizeNekodeToolName,
+  type NekodeKnownToolName,
+  type NekodeToolFamily,
 } from "@zcode/shared";
 import { normalizeAskUserQuestionInput, readAskUserQuestionInput } from "@/lib/askUserQuestion.js";
 
 export type ToolCallPresentationFamily =
-  | ZCodeToolFamily
+  | NekodeToolFamily
   | "plan-guidance"
   | "switch-mode"
   | "explore"
@@ -28,7 +28,7 @@ export type ToolCallIdentitySource =
   | "unknown";
 
 export interface ToolCallIdentity {
-  toolName: ZCodeKnownToolName | string | null;
+  toolName: NekodeKnownToolName | string | null;
   family: ToolCallPresentationFamily;
   source: ToolCallIdentitySource;
   isLegacy: boolean;
@@ -84,11 +84,11 @@ function identityFromKnownToolName(
   if (["fetch", "web_fetch"].includes(normalizeLegacyToken(value))) {
     return identityFromLegacyFamily(value?.trim() ?? "WebFetch", "web-fetch", source);
   }
-  const toolName = normalizeZCodeToolName(value);
+  const toolName = normalizeNekodeToolName(value);
   if (!toolName) {
     return null;
   }
-  const family = getZCodeToolFamilyForName(toolName);
+  const family = getNekodeToolFamilyForName(toolName);
   if (!family) {
     return null;
   }
@@ -133,14 +133,14 @@ function isLegacyAgentTool(
   const kind = normalizeLegacyToken(toolCall.kind);
   const title = normalizeLegacyToken(toolCall.title);
   const rawDirect = normalizeLegacyToken(rawNames.direct);
-  const rawZCode = normalizeLegacyToken(rawNames.zcode);
+  const rawNekode = normalizeLegacyToken(rawNames.zcode);
   const rawClaude = normalizeLegacyToken(rawNames.claudeCode);
 
   return (
     rawClaude === "agent" ||
     rawClaude === "task" ||
-    rawZCode === "agent" ||
-    rawZCode === "spawn_agent" ||
+    rawNekode === "agent" ||
+    rawNekode === "spawn_agent" ||
     rawDirect === "agent" ||
     rawDirect === "spawn_agent" ||
     kind === "agent" ||
@@ -245,7 +245,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
     );
   }
 
-  // `Task` 现在是现役 Claude 兼容工具名，但历史 ZCode Agent 投影会用
+  // `Task` 现在是现役 Claude 兼容工具名，但历史 Nekode Agent 投影会用
   // kind="think" + title="Task" 表示子 agent 活动。title 只是展示名，必须放在
   // legacy payload 判断之后，避免把旧会话误升级成非 legacy 工具身份。
   const titleIdentity = identityFromKnownToolName(toolCall.title, "title");
@@ -298,7 +298,7 @@ export function resolveToolCallIdentity(toolCall: ToolIdentityLike): ToolCallIde
   }
 
   if (
-    // 当前 ZCode Agent 传给 app 的 plan mode 退出工具是 ExitPlanMode，
+    // 当前 Nekode Agent 传给 app 的 plan mode 退出工具是 ExitPlanMode，
     // normalize 后没有下划线；旧兼容只认 switch_mode / Exited Plan Mode，导致计划卡片走 fallback。
     [
       toolCall.toolName,
@@ -360,7 +360,7 @@ export function isFileContentWriteToolCall(
   if (identity.family !== "file-write") {
     return false;
   }
-  if (isZCodeFileContentWriteToolName(identity.toolName)) {
+  if (isNekodeFileContentWriteToolName(identity.toolName)) {
     return true;
   }
   const legacyKind = normalizeLegacyToken(toolCall.kind);

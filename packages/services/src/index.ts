@@ -101,25 +101,25 @@ export type {
   BroadcastMessage,
 } from "./broadcast/broadcast.js";
 
-// ZCode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
-export { IZCodeTaskService } from "./session/zcodeTaskService.js";
+// Nekode task wrapper service — task 列表/置顶/归档等 app 侧包装状态入口。
+export { INekodeTaskService } from "./session/zcodeTaskService.js";
 export type {
-  ZCodeArchivedTaskDeletionResult,
-  ZCodeModelTrajectory,
-  ZCodeModelTrajectoryCallSource,
-  ZCodeModelTrajectoryCallSourceKind,
-  ZCodeModelTrajectoryContentPart,
-  ZCodeModelTrajectoryMessage,
-  ZCodeModelTrajectoryRecord,
-  ZCodeModelTrajectoryUsage,
-  ZCodeTaskListKind,
-  ZCodeTaskListQuery,
-  ZCodeTaskListResult,
-  ZCodeTaskListSortBy,
-  ZCodeTaskListWorkspaceScope,
-  ZCodeTaskReadyOutcome,
+  NekodeArchivedTaskDeletionResult,
+  NekodeModelTrajectory,
+  NekodeModelTrajectoryCallSource,
+  NekodeModelTrajectoryCallSourceKind,
+  NekodeModelTrajectoryContentPart,
+  NekodeModelTrajectoryMessage,
+  NekodeModelTrajectoryRecord,
+  NekodeModelTrajectoryUsage,
+  NekodeTaskListKind,
+  NekodeTaskListQuery,
+  NekodeTaskListResult,
+  NekodeTaskListSortBy,
+  NekodeTaskListWorkspaceScope,
+  NekodeTaskReadyOutcome,
 } from "./session/zcodeTaskService.js";
-export type { ZCodeTaskListItem } from "./session/zcodeTaskListTypes.js";
+export type { NekodeTaskListItem } from "./session/zcodeTaskListTypes.js";
 
 export { IWindowControllerService } from "./window-controller/windowController.js";
 export {
@@ -141,93 +141,81 @@ export type {
   WindowHostTaskUnreadSignal,
 } from "./window-controller/windowController.js";
 
-// ZCode agent service — IZCodeAgentService is both a type (interface) and value (descriptor)
+// Nekode agent service — INekodeAgentService is both a type (interface) and value (descriptor)
 export {
-  IZCodeAgentService,
-  type ZCodeAgentLocalRuntimeChildProcesses,
-  ZCODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
+  INekodeAgentService,
+  type NekodeAgentLocalRuntimeChildProcesses,
+  NEKODE_AGENT_RUNTIME_UNAVAILABLE_CODE,
 } from "./zcode-agent/zcodeAgent.js";
 export {
-  isZCodeAgentMcpStatusModeUnsupportedError,
-  ZCODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
-  ZCodeAgentMcpStatusModeUnsupportedError,
+  isNekodeAgentMcpStatusModeUnsupportedError,
+  NEKODE_AGENT_MCP_STATUS_MODE_UNSUPPORTED_ERROR_CODE,
+  NekodeAgentMcpStatusModeUnsupportedError,
 } from "./zcode-agent/zcodeAgentErrors.js";
 export {
-  createZCodeAgentConnectionScope,
-  readTrustedZCodeAgentV4Connection,
+  createNekodeAgentConnectionScope,
+  readTrustedNekodeAgentV4Connection,
 } from "./zcode-agent/zcodeAgentConnectionScope.js";
 export type {
-  ZCodeAgentConnectionScope,
-  ZCodeAgentV4ClientMode,
-  ZCodeAgentV4ConnectionContext,
+  NekodeAgentConnectionScope,
+  NekodeAgentV4ClientMode,
+  NekodeAgentV4ConnectionContext,
 } from "./zcode-agent/zcodeAgentConnectionScope.js";
 export type {
-  ZCodeAgentAttachmentBeginParams,
-  ZCodeAgentAttachmentChunkParams,
-  ZCodeAgentAttachmentTerminalParams,
-  ZCodeAgentCreateSessionParams,
-  ZCodeAgentCuaPermissionObservation,
-  ZCodeAgentInitializeResult,
-  ZCodeAgentStorageStartupSnapshot,
-  ZCodeAgentRuntimeLifecycleEvent,
-  ZCodeAgentRuntimePolicy,
-  ZCodeAgentReadSessionParams,
-  ZCodeAgentRespondProviderRuntimeHeadersParams,
-  ZCodeAgentProviderRuntimeHeadersRequest,
-  ZCodeAgentResumeSessionParams,
-  ZCodeAgentRunAutomationNowResult,
-  ZCodeAgentSavedWorkflowTarget,
-  ZCodeAgentSendPromptParams,
-  ZCodeAgentServiceEvent,
-  ZCodeAgentSessionSubscribeParams,
-  ZCodeAgentSessionTarget,
-  ZCodeAgentSetModeParams,
-  ZCodeAgentSetModelParams,
-  ZCodeAgentSetThoughtLevelParams,
-  ZCodeAgentWorkspaceTarget,
+  NekodeAgentAttachmentBeginParams,
+  NekodeAgentAttachmentChunkParams,
+  NekodeAgentAttachmentTerminalParams,
+  NekodeAgentCreateSessionParams,
+  NekodeAgentCuaPermissionObservation,
+  NekodeAgentInitializeResult,
+  NekodeAgentStorageStartupSnapshot,
+  NekodeAgentRuntimeLifecycleEvent,
+  NekodeAgentRuntimePolicy,
+  NekodeAgentReadSessionParams,
+  NekodeAgentRespondProviderRuntimeHeadersParams,
+  NekodeAgentProviderRuntimeHeadersRequest,
+  NekodeAgentResumeSessionParams,
+  NekodeAgentRunAutomationNowResult,
+  NekodeAgentSavedWorkflowTarget,
+  NekodeAgentSendPromptParams,
+  NekodeAgentServiceEvent,
+  NekodeAgentSessionSubscribeParams,
+  NekodeAgentSessionTarget,
+  NekodeAgentSetModeParams,
+  NekodeAgentSetModelParams,
+  NekodeAgentSetThoughtLevelParams,
+  NekodeAgentWorkspaceTarget,
 } from "./zcode-agent/zcodeAgent.js";
 
-// ZCode session service — app-facing session facade without ZCode Agent naming.
-export { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
+// Nekode session service — app-facing session facade without Nekode Agent naming.
+export { INekodeSessionService } from "./zcode-session/zcodeSession.js";
 export type {
-  ZCodeSessionCreateParams,
-  ZCodeSessionEventsParams,
-  ZCodeSessionInitializeResult,
-  ZCodeSessionListParams,
-  ZCodeSessionMessagesParams,
-  ZCodeSessionReadParams,
-  ZCodeSessionResumeParams,
-  ZCodeSessionServiceEvent,
-  ZCodeSessionSetModeParams,
-  ZCodeSessionSetModelParams,
-  ZCodeSessionSetThoughtLevelParams,
-  ZCodeSessionSubscribeParams,
-  ZCodeTaskTarget,
-  ZCodeSessionWorkspaceTarget,
+  NekodeSessionCreateParams,
+  NekodeSessionEventsParams,
+  NekodeSessionInitializeResult,
+  NekodeSessionListParams,
+  NekodeSessionMessagesParams,
+  NekodeSessionReadParams,
+  NekodeSessionResumeParams,
+  NekodeSessionServiceEvent,
+  NekodeSessionSetModeParams,
+  NekodeSessionSetModelParams,
+  NekodeSessionSetThoughtLevelParams,
+  NekodeSessionSubscribeParams,
+  NekodeTaskTarget,
+  NekodeSessionWorkspaceTarget,
 } from "./zcode-session/zcodeSession.js";
-
-// Bots service — IBotsService is both a type (interface) and value (descriptor).
-export { IBotsService } from "./bots/bots.js";
-export type {
-  BotRemoteWorkspaceResolver,
-  BotRemoteWorkspaceResolution,
-  BotBindCodeResult,
-  BotCreateBindCodeParams,
-  BotListWorkspaceRefsParams,
-  BotSaveBotParams,
-  BotTestResult,
-} from "./bots/bots.js";
 
 // Hooks service — IHooksService is both a type (interface) and value (descriptor).
 export { IHooksService } from "./hooks/hooks.js";
 
-// Memory service — IMemoryService is both a type (interface) and value (descriptor).
-export {
-  IMemoryService,
-  PROJECT_MEMORY_FILE_CHANGED_ERROR_CODE,
-  PROJECT_MEMORY_PREVIEW_LIMIT_EXCEEDED_ERROR_CODE,
-} from "./memory/memory.js";
-export type { ProjectMemoryFileSummary, ProjectMemoryWorkspaceSummary } from "./memory/memory.js";
+// Neko memory service — 六本书只读目录；具体实现依赖 Node 文件系统，只从 node 入口暴露。
+export { INekoMemoryService } from "./neko-memory/nekoMemory.js";
+export type {
+  NekoMemoryBookBody,
+  NekoMemoryBookEntry,
+  NekoMemorySnapshot,
+} from "./neko-memory/nekoMemory.js";
 
 // OutputStyle service — IOutputStyleService is both a type (interface) and value (descriptor).
 export { IOutputStyleService } from "./output-style/outputStyle.js";

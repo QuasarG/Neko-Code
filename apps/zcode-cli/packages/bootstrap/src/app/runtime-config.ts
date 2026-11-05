@@ -13,8 +13,7 @@ import {
 } from "@zcode/contracts";
 import { omitMcpServers, resolveTrustedOfficialCuaServerNames } from "../mcp-config.js";
 import { resolveDefaultEmbeddedSearchBackend } from "./embedded-search-backend.js";
-import { getProjectMemoryRoot } from "./paths.js";
-import type { ZCodeAppOptions } from "./types.js";
+import type { NekodeAppOptions } from "./types.js";
 import {
   resolveRegistryOwnedModelSelection,
   resolveRegistryModelSelection,
@@ -34,7 +33,7 @@ interface ResolvedInitialRegistrySelection extends ResolvedRegistrySelection {
 export function resolveAppRuntimeConfig(input: {
   cliStorageRoot: string;
   configResult: ConfigResult;
-  options: ZCodeAppOptions;
+  options: NekodeAppOptions;
   persistedMode?: CollaborationMode;
   builtInMcpServers?: Record<string, McpServerConfig>;
   builtInSubagentModelSelectionOverrides?: BuiltInSubagentModelSelectionOverrides;
@@ -135,7 +134,7 @@ export function resolveAppRuntimeConfig(input: {
       resolveBashTimeoutPolicy(options.env ?? process.env),
     mode: options.runtimeConfig?.mode ?? persistedMode ?? configResult.config.permission.mode,
     modelSelection: initialModelSelection,
-    // 仅接受显式传入的会话级工具面（ZCode Protocol session/create 或 CLI
+    // 仅接受显式传入的会话级工具面（Nekode Protocol session/create 或 CLI
     // --allowed-tools/--disallowed-tools）。不要从 config.permission.allowedTools
     // 回落：那个键的既有语义是“免审批清单”，把它投影到注册面会让老配置里
     // 只写了几个 allowedTools 的用户突然丢失其余全部工具。
@@ -187,16 +186,6 @@ export function resolveAppRuntimeConfig(input: {
       },
       profiles: [...(options.runtimeConfig?.subagents?.profiles ?? []), ...subagentProfiles],
     },
-    memory: {
-      cliStorageRoot,
-      enabled: options.runtimeConfig?.memory?.enabled ?? configResult.config.features.memory,
-      ...(options.runtimeConfig?.memory?.extractionEnabled === undefined
-        ? {}
-        : { extractionEnabled: options.runtimeConfig.memory.extractionEnabled }),
-      ...(input.storageRoot ? { storageRoot: input.storageRoot } : {}),
-      use: options.runtimeConfig?.memory?.use ?? configResult.config.memory.use,
-      workspaceIdentity: workspaceIdentity?.trim() || undefined,
-    },
   };
   return {
     configuredMcpServers,
@@ -224,7 +213,7 @@ function withHookConfigSource(
 }
 
 function resolveInitialRegistrySelection(
-  options: ZCodeAppOptions,
+  options: NekodeAppOptions,
 ): ResolvedInitialRegistrySelection | undefined {
   const registry = options.providerRegistry;
   if (!registry) return undefined;
@@ -286,19 +275,8 @@ export function runtimeConfigLogContext(
   runtimeConfig: AgentRuntimeConfig,
   workingDirectory: string,
 ) {
-  const memoryRoot = runtimeConfig.memory?.cliStorageRoot
-    ? getProjectMemoryRoot(
-        runtimeConfig.memory.cliStorageRoot,
-        workingDirectory,
-        runtimeConfig.memory.workspaceIdentity,
-      )
-    : undefined;
   return {
     mcpEnabled: runtimeConfig.mcp?.enabled !== false,
-    memoryEnabled: runtimeConfig.memory?.enabled !== false,
-    memoryExtractionEnabled: runtimeConfig.memory?.extractionEnabled !== false,
-    memoryRoot,
-    memoryUse: runtimeConfig.memory?.use !== false,
     mcsMode: runtimeConfig.midConversationSystem?.mode,
     mode: runtimeConfig.mode,
     model: runtimeConfig.modelSelection

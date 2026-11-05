@@ -4,8 +4,8 @@ import type { SqliteSessionStore } from "@zcode/adapters/storage";
 import { shutdownPreparedModelTelemetry } from "@zcode/telemetry";
 import { closeSessionStore } from "../app/session-store.js";
 import type { NodeReplBrowserBroker } from "../app/node-repl-browser-broker.js";
-import type { ZCodeProcessResourceSampler } from "../process-resource-sampler.js";
-import type { ZCodeProtocolAgentServer } from "./server.js";
+import type { NekodeProcessResourceSampler } from "../process-resource-sampler.js";
+import type { NekodeProtocolAgentServer } from "./server.js";
 
 const DEFAULT_CLEANUP_BUDGET_MS = 1_200;
 const CLEANUP_STEP_BUDGET_MS = 400;
@@ -13,8 +13,8 @@ const CLEANUP_STEP_BUDGET_MS = 400;
 export async function cleanupProtocolRuntime(options: {
   logger: Logger;
   deadlineAt?: number;
-  server?: Pick<ZCodeProtocolAgentServer, "shutdown" | "disposeProjections">;
-  processResourceSampler?: Pick<ZCodeProcessResourceSampler, "stop">;
+  server?: Pick<NekodeProtocolAgentServer, "shutdown" | "disposeProjections">;
+  processResourceSampler?: Pick<NekodeProcessResourceSampler, "stop">;
   mcpTelemetryTracker?: Pick<McpTelemetryTracker, "stop">;
   nodeReplBrowserBroker?: Pick<NodeReplBrowserBroker, "close">;
   mcpPort?: Pick<McpPort, "close">;
@@ -37,7 +37,7 @@ export async function cleanupProtocolRuntime(options: {
         }),
       ]);
     } catch (error) {
-      options.logger.warn(`ZCode Protocol ${resource} shutdown failed`, {
+      options.logger.warn(`Nekode Protocol ${resource} shutdown failed`, {
         errorType: error instanceof Error ? error.name : typeof error,
         event: `zcode_protocol.${resource}.shutdown.failed`,
         module: "bootstrap.zcode_protocol",

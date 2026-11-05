@@ -256,10 +256,8 @@ describe("AgentRuntime model selection event", () => {
     expect(requests[0]?.text).not.toContain("provider-b/model-b");
     expect(requests[1]).toMatchObject({ providerId: "provider-b", modelId: "model-b" });
     expect(requests[1]?.text).toContain("provider-b/model-b");
-    expect(requests[1]?.text).toContain("provider-a/model-a");
-    expect(requests[1]?.text.indexOf("provider-a/model-a")).toBeLessThan(
-      requests[1]?.text.indexOf("provider-b/model-b") ?? -1,
-    );
+    // 模型身份是 system prompt 的当前事实，不再保留上一模型的公告。
+    expect(requests[1]?.text).not.toContain("provider-a/model-a");
   });
 
   it("uses structured ModelSelection as the current Session model fact", () => {

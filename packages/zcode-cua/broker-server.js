@@ -1,7 +1,7 @@
 import { CuaHelperError } from "./broker.js";
 import { HELPER_APP_NAME } from "./broker-helper-constants.js";
 
-export const HELPER_ADDON_ENV = "ZCODE_CUA_HELPER_ADDON";
+export const HELPER_ADDON_ENV = "NEKODE_CUA_HELPER_ADDON";
 export const WINDOWS_DEV_CONTROL_PROTOCOL = "zcode-cua-windows-dev/v1";
 
 const UNAVAILABLE = "Computer Use is not available in this build.";
@@ -152,7 +152,7 @@ export async function waitForCuaHelperStartup(startup, _deadlineMs) {
   return await startup;
 }
 
-export function isPotentialZCodeCuaAgentMcpServer(_server) {
+export function isPotentialNekodeCuaAgentMcpServer(_server) {
   return false;
 }
 

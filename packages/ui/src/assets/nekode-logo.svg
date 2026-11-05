@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="54" fill="#211829"/>
+  <path d="M 52 53 L 92 82 H 164 L 204 53 V 151 C 204 187, 175 203, 128 211 C 81 203, 52 187, 52 151 Z" fill="#B988EA"/>
+  <path id="left-arrow" d="M 84 119 L 109 143 L 84 167" fill="none" stroke="#211829" stroke-width="12" stroke-linecap="butt" stroke-linejoin="miter"/>
+  <use href="#left-arrow" transform="translate(256 0) scale(-1 1)"/>
+  <rect x="118" y="178" width="20" height="12" fill="#211829"/>
+</svg>

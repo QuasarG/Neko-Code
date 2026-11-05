@@ -31,52 +31,11 @@ Review carefully.`,
     },
   );
 
-  it("parses only exact persistent memory scopes", () => {
-    const exact = parseAgentProfileFromMarkdown({
-      source: "project",
-      content: `---
-name: reviewer
-description: Review changes
-memory: project
----
-Review carefully.`,
-    });
-    const padded = parseAgentProfileFromMarkdown({
-      source: "project",
-      content: `---
-name: reviewer
-description: Review changes
-memory: " project "
----
-Review carefully.`,
-    });
-
-    expect(exact.diagnostic).toBeUndefined();
-    expect(exact.profile?.memory).toBe("project");
-    expect(padded.diagnostic?.code).toBe("agent_invalid_memory_scope");
-    expect(padded.profile).toMatchObject({ name: "reviewer", description: "Review changes" });
-    expect(padded.profile?.memory).toBeUndefined();
-  });
-
-  it("preserves an explicitly empty tools list for persistent memory projection", () => {
-    const result = parseAgentProfileFromMarkdown({
-      source: "project",
-      content: `---
-name: reviewer
-description: Review changes
-memory: project
-tools: []
----
-Review carefully.`,
-    });
-
-    expect(result.profile?.tools).toEqual([]);
-  });
 
   it("parses the P0 custom agent fields consumed by zcode-cli", () => {
     const result = parseAgentProfileFromMarkdown({
       source: "project",
-      path: "/workspace/.zcode/agents/zcode-reviewer.md",
+      path: "/workspace/.nekode/agents/zcode-reviewer.md",
       content: `---
 name: zcode-reviewer
 description: 检查实现边界\\n输出中文结论
@@ -113,7 +72,7 @@ mcpServers:
         options: { reasoningLevel: "high" },
       },
       name: "zcode-reviewer",
-      path: "/workspace/.zcode/agents/zcode-reviewer.md",
+      path: "/workspace/.nekode/agents/zcode-reviewer.md",
       skills: ["code", "review"],
       source: "project",
       systemPrompt: "你是 zcode-reviewer。\n只输出中文。",
@@ -126,7 +85,7 @@ mcpServers:
   it("preserves concrete provider and custom model values from frontmatter", () => {
     const providerModel = parseAgentProfileFromMarkdown({
       source: "user",
-      path: "/home/user/.zcode/agents/reviewer.md",
+      path: "/home/user/.nekode/agents/reviewer.md",
       content: `---
 name: reviewer
 description: Use a concrete provider model
@@ -137,7 +96,7 @@ Review carefully.`,
     });
     const customModel = parseAgentProfileFromMarkdown({
       source: "user",
-      path: "/home/user/.zcode/agents/reviewer-custom.md",
+      path: "/home/user/.nekode/agents/reviewer-custom.md",
       content: `---
 name: reviewer-custom
 description: Use the UI custom model value

@@ -1,6 +1,6 @@
-import { ZCODE_VERSION, type ZCodeEnv } from "@zcode/shared";
+import { NEKODE_VERSION, type NekodeEnv } from "@zcode/shared";
 
-declare const __ZCODE_REMOTE_CDN_RELEASE_ROOTS__: readonly string[] | undefined;
+declare const __NEKODE_REMOTE_CDN_RELEASE_ROOTS__: readonly string[] | undefined;
 
 const REMOTE_CDN_RELEASE_ROOTS = {
   domestic: "https://cdn.codegeex.cn/zcode/electron/releases",
@@ -10,7 +10,7 @@ const REMOTE_CDN_RELEASE_ROOTS = {
 const TEST_REMOTE_CDN_RELEASE_ROOT = "http://intranet.example.invalid:12345/ssh-remote-assets";
 
 export interface ResolveRemoteCdnOptions {
-  env?: ZCodeEnv;
+  env?: NekodeEnv;
   locale?: string;
   timeZone?: string;
   overrideBaseUrl?: string;
@@ -52,16 +52,16 @@ export function resolveRemoteCdnBaseUrls(options: ResolveRemoteCdnOptions = {}):
   const orderedReleaseRoots = shouldPreferDomesticRemoteCdn(options)
     ? [REMOTE_CDN_RELEASE_ROOTS.domestic, REMOTE_CDN_RELEASE_ROOTS.overseas]
     : [REMOTE_CDN_RELEASE_ROOTS.overseas, REMOTE_CDN_RELEASE_ROOTS.domestic];
-  const version = options.version ?? ZCODE_VERSION;
+  const version = options.version ?? NEKODE_VERSION;
 
   if (options.env === "test") {
     return [`${TEST_REMOTE_CDN_RELEASE_ROOT}/${version}`];
   }
 
   const configuredReleaseRoots =
-    typeof __ZCODE_REMOTE_CDN_RELEASE_ROOTS__ === "undefined"
+    typeof __NEKODE_REMOTE_CDN_RELEASE_ROOTS__ === "undefined"
       ? []
-      : __ZCODE_REMOTE_CDN_RELEASE_ROOTS__;
+      : __NEKODE_REMOTE_CDN_RELEASE_ROOTS__;
   if (configuredReleaseRoots.length > 0) {
     // Bugfix：remote runtime 的 manifest/components 下载根不能继续写死旧 CDN。
     // 构建期按 CI 的 CDN_DOMAIN/OSS_PATH_PREFIX 注入有序列表，切换时只改 CI 变量。

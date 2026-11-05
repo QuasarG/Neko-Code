@@ -19,11 +19,10 @@ import type { ITerminalService } from "./terminal/terminal.js";
 import type { ISettingService } from "./setting/setting.js";
 import type { ICredentialService } from "./credential/credential.js";
 import type { IBroadcastService } from "./broadcast/broadcast.js";
-import type { IZCodeTaskService } from "./session/zcodeTaskService.js";
-import type { IZCodeAgentService } from "./zcode-agent/zcodeAgent.js";
-import type { IZCodeSessionService } from "./zcode-session/zcodeSession.js";
+import type { INekodeTaskService } from "./session/zcodeTaskService.js";
+import type { INekodeAgentService } from "./zcode-agent/zcodeAgent.js";
+import type { INekodeSessionService } from "./zcode-session/zcodeSession.js";
 import type { ICuaPermissionService } from "./cua-permission-broker/cuaPermissionService.js";
-import type { IBotsService } from "./bots/bots.js";
 import type { IFileWatcherService } from "./fileWatcher/fileWatcher.js";
 import type { IOAuthService } from "./oauth/oauth.js";
 import type {
@@ -45,7 +44,7 @@ import type { IPluginManagementService } from "./plugins/pluginManagement.js";
 import type { ISubagentsService } from "./subagents/subagents.js";
 import type { ICommandsService } from "./commands/commands.js";
 import type { IHooksService } from "./hooks/hooks.js";
-import type { IMemoryService } from "./memory/memory.js";
+import type { INekoMemoryService } from "./neko-memory/nekoMemory.js";
 import type { IOutputStyleService } from "./output-style/outputStyle.js";
 import type { ISettingsSyncService } from "./settings-sync/settingsSync.js";
 import type { IFeedbackService } from "./feedback/feedback.js";
@@ -75,15 +74,14 @@ export interface IServiceAccessor {
   readonly onboardingRecordService?: IOnboardingRecordService;
   readonly credentialService: ICredentialService;
   readonly broadcastService: IBroadcastService;
-  readonly zcodeTaskService: IZCodeTaskService;
+  readonly zcodeTaskService: INekodeTaskService;
   /** 窗口 Host 聚合面；旧 server wire 或测试 double 可暂不提供。 */
   readonly windowControllerService?: IWindowControllerService;
-  readonly zcodeAgentService: IZCodeAgentService;
-  readonly zcodeSessionService: IZCodeSessionService;
+  readonly zcodeAgentService: INekodeAgentService;
+  readonly zcodeSessionService: INekodeSessionService;
   // CUA 是 opt-in 内测特性：local macOS host 提供，远端 等 host 没有。可选避免连锁必填。
   readonly cuaPermissionService?: ICuaPermissionService;
   readonly conversationShareService: IConversationShareService;
-  readonly botsService: IBotsService;
   readonly fileWatcherService: IFileWatcherService;
   readonly oauthService: IOAuthService;
   /** 当前 Environment 的 Provider 配置与设置视图。 */
@@ -124,7 +122,8 @@ export interface IServiceAccessor {
   readonly subagentsService: ISubagentsService;
   readonly commandsService: ICommandsService;
   readonly hooksService: IHooksService;
-  readonly memoryService: IMemoryService;
+  /** Neko 记忆书架只读面；旧 host / 测试 double 可不提供。 */
+  readonly nekoMemoryService?: INekoMemoryService;
   readonly outputStyleService: IOutputStyleService;
   readonly settingsSyncService: ISettingsSyncService;
   readonly feedbackService: IFeedbackService;

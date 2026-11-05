@@ -36,11 +36,11 @@ interface DirectoryMcpDescriptor {
   configKeyName: McpConfigKeyName;
 }
 
-const ZCODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
+const NEKODE_MCP_DESCRIPTOR: DirectoryMcpDescriptor = {
   source: "zcodeagentmcp",
   directorySource: "zcode",
-  userConfigDirSegments: [".zcode", "cli"],
-  workspaceConfigDirSegments: [".zcode"],
+  userConfigDirSegments: [".nekode", "cli"],
+  workspaceConfigDirSegments: [".nekode"],
   fileName: "config.json",
   format: "json",
   configKeyName: "mcp.servers",
@@ -67,7 +67,7 @@ function resolveUserHomeDir(): string {
 }
 
 const DIRECTORY_MCP_DESCRIPTORS: readonly DirectoryMcpDescriptor[] = [
-  ZCODE_MCP_DESCRIPTOR,
+  NEKODE_MCP_DESCRIPTOR,
   AGENTS_MCP_DESCRIPTOR,
 ];
 
@@ -88,7 +88,7 @@ function buildDirectoryConfigPath(
 }
 
 function getUserCliConfigPath(): string {
-  return buildDirectoryConfigPath(ZCODE_MCP_DESCRIPTOR, "user");
+  return buildDirectoryConfigPath(NEKODE_MCP_DESCRIPTOR, "user");
 }
 
 function buildDirectoryMcpLocation(
@@ -347,25 +347,25 @@ async function readDirectoryServersFromPreferredSources(
   workspacePath?: string,
 ): Promise<NativeMcpServerRecord[]> {
   const zcodeServers = await readDirectoryServersFromFile(
-    ZCODE_MCP_DESCRIPTOR,
+    NEKODE_MCP_DESCRIPTOR,
     scope,
     workspacePath,
   );
-  // `.zcode` 是强优先级来源；只要读到 MCP server，同 scope 的 `.agents` 就不再参与。
+  // `.nekode` 是强优先级来源；只要读到 MCP server，同 scope 的 `.agents` 就不再参与。
   if (zcodeServers.length > 0) {
     return zcodeServers;
   }
   return readDirectoryServersFromFile(AGENTS_MCP_DESCRIPTOR, scope, workspacePath);
 }
 
-/** 写前重读 `.zcode` 的 server map，只改 update 涉及的 server，其他字段原样保留。 */
-async function updateZCodeServersInFile(
+/** 写前重读 `.nekode` 的 server map，只改 update 涉及的 server，其他字段原样保留。 */
+async function updateNekodeServersInFile(
   scope: Exclude<McpScope, "common">,
   workspacePath: string | undefined,
   update: (servers: Record<string, Record<string, unknown>>) => void,
 ): Promise<void> {
-  const filePath = buildDirectoryConfigPath(ZCODE_MCP_DESCRIPTOR, scope, workspacePath);
-  const key = ZCODE_MCP_DESCRIPTOR.configKeyName;
+  const filePath = buildDirectoryConfigPath(NEKODE_MCP_DESCRIPTOR, scope, workspacePath);
+  const key = NEKODE_MCP_DESCRIPTOR.configKeyName;
   await updateJsonObjectFile(filePath, (current) => {
     const servers = { ...migrateLegacyEnableFlag(readServerMapFromJson(current, key)).servers };
     update(servers);
@@ -378,7 +378,7 @@ export async function loadCliMcpFromUserDirectory(
 ): Promise<LoadCliMcpFromUserDirectoryResult> {
   const servers: NativeMcpServerRecord[] = [];
 
-  // 去掉其他 provider 后，ZCode Agent 只按目录约定读取；先 workspace，再 user。
+  // 去掉其他 provider 后，Nekode Agent 只按目录约定读取；先 workspace，再 user。
   if (request?.workspacePath) {
     servers.push(
       ...(await readDirectoryServersFromPreferredSources("workspace", request.workspacePath)),
@@ -400,7 +400,7 @@ export async function saveCliMcpToUserDirectory(
     const scope: Exclude<McpScope, "common"> = payload.projectPath ? "workspace" : "user";
     const location =
       payload.location ??
-      buildDirectoryMcpLocation(ZCODE_MCP_DESCRIPTOR, scope, payload.projectPath);
+      buildDirectoryMcpLocation(NEKODE_MCP_DESCRIPTOR, scope, payload.projectPath);
     await writeServerEnabledToFile(
       findDescriptorByLocation(location),
       location,
@@ -416,7 +416,7 @@ export async function saveCliMcpToUserDirectory(
   if (payload.action === "upsert" && !config) {
     throw new Error("Missing MCP config for upsert action");
   }
-  await updateZCodeServersInFile(scope, payload.projectPath, (servers) => {
+  await updateNekodeServersInFile(scope, payload.projectPath, (servers) => {
     if (config) {
       servers[payload.name] = config as Record<string, unknown>;
     } else {

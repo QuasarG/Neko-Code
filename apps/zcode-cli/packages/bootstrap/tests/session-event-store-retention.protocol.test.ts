@@ -9,10 +9,10 @@ import {
   zcodeProtocolMethods,
   zcodeSessionEventsResultSchema,
   zcodeSessionStateSnapshotSchema,
-  type ZCodeProtocolMessage,
+  type NekodeProtocolMessage,
 } from "@zcode/shared";
-import type { ZCodeAppOptions } from "../src/app/types.js";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import type { NekodeAppOptions } from "../src/app/types.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 
 const workspace = {
@@ -20,7 +20,7 @@ const workspace = {
   workspaceKey: "/workspace/retention",
 };
 
-async function requestResult(server: ZCodeProtocolAgentServer, message: ZCodeProtocolMessage) {
+async function requestResult(server: NekodeProtocolAgentServer, message: NekodeProtocolMessage) {
   const response = await server.handleMessage(message);
   if (!response || !("result" in response)) {
     throw new Error(`Expected protocol success response: ${JSON.stringify(response)}`);
@@ -29,26 +29,26 @@ async function requestResult(server: ZCodeProtocolAgentServer, message: ZCodePro
 }
 
 interface Harness {
-  server: ZCodeProtocolAgentServer;
+  server: NekodeProtocolAgentServer;
   stores: InMemorySessionEventStore[];
   factoryCalls: string[];
-  eventStore: () => ZCodeAppOptions["eventStore"];
+  eventStore: () => NekodeAppOptions["eventStore"];
   liveSink: () => ((event: SessionEvent) => void | Promise<void>) | undefined;
 }
 
 function createHarness(): Harness {
   const stores: InMemorySessionEventStore[] = [];
   const factoryCalls: string[] = [];
-  let eventStore: ZCodeAppOptions["eventStore"];
+  let eventStore: NekodeAppOptions["eventStore"];
   let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-  const server = new ZCodeProtocolAgentServer({
+  const server = new NekodeProtocolAgentServer({
     createSessionEventStore: (sessionId) => {
       factoryCalls.push(sessionId);
       const store = new InMemorySessionEventStore();
       stores.push(store);
       return store;
     },
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       eventStore = options?.eventStore;
       const app = createFakeApp(options);
       return {

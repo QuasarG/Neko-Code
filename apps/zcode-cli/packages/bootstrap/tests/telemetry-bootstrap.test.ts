@@ -2,15 +2,15 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  resetCapturedZCodeAgentTelemetryEnvForTest,
-  sanitizeZCodeRuntimeEnvInPlace,
+  resetCapturedNekodeAgentTelemetryEnvForTest,
+  sanitizeNekodeRuntimeEnvInPlace,
 } from "@zcode/shared";
 import { afterEach, describe, expect, it } from "vitest";
-import { prepareZCodeTelemetryEnv } from "../src/telemetry-bootstrap.js";
+import { prepareNekodeTelemetryEnv } from "../src/telemetry-bootstrap.js";
 
-describe("prepareZCodeTelemetryEnv", () => {
+describe("prepareNekodeTelemetryEnv", () => {
   afterEach(() => {
-    resetCapturedZCodeAgentTelemetryEnvForTest();
+    resetCapturedNekodeAgentTelemetryEnvForTest();
   });
 
   it("从进程捕获区异步准备 identity，但不把 OTLP 凭据写回业务 env", async () => {
@@ -19,19 +19,19 @@ describe("prepareZCodeTelemetryEnv", () => {
       const env: NodeJS.ProcessEnv = {
         OTEL_EXPORTER_OTLP_HEADERS: "x-arms-license-key=secret",
         OTEL_EXPORTER_OTLP_TRACES_ENDPOINT: "https://arms.example/v1/traces",
-        ZCODE_HOME: root,
+        NEKODE_HOME: root,
       };
-      sanitizeZCodeRuntimeEnvInPlace(env);
+      sanitizeNekodeRuntimeEnvInPlace(env);
 
-      const prepared = await prepareZCodeTelemetryEnv(env);
+      const prepared = await prepareNekodeTelemetryEnv(env);
 
       expect(prepared.OTEL_EXPORTER_OTLP_HEADERS).toBeUndefined();
       expect(prepared.OTEL_EXPORTER_OTLP_TRACES_ENDPOINT).toBeUndefined();
-      expect(prepared.ZCODE_TELEMETRY_DEVICE_MID).toMatch(/^[0-9a-f-]{36}$/u);
+      expect(prepared.NEKODE_TELEMETRY_DEVICE_MID).toMatch(/^[0-9a-f-]{36}$/u);
       const state = JSON.parse(
         await readFile(join(root, "v2", "telemetry-state.json"), "utf8"),
       ) as Record<string, unknown>;
-      expect(state.deviceMid).toBe(prepared.ZCODE_TELEMETRY_DEVICE_MID);
+      expect(state.deviceMid).toBe(prepared.NEKODE_TELEMETRY_DEVICE_MID);
     } finally {
       await rm(root, { force: true, recursive: true });
     }

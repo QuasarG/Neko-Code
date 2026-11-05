@@ -39,7 +39,7 @@ if (process.platform !== "win32") {
         `/DNSIS_INCLUDE_DIR=${resolve(nsisDir, "Include")}`,
         `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
         `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
-        `/DZCODE_INSTALLER_NSH=${installerNshPath}`,
+        `/DNEKODE_INSTALLER_NSH=${installerNshPath}`,
         `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
         `/DOUTPUT_FILE=${uninstallerOutput}`,
         fixturePath,
@@ -57,7 +57,7 @@ if (process.platform !== "win32") {
         `/DNSIS_INCLUDE_DIR=${resolve(nsisDir, "Include")}`,
         `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
         `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
-        `/DZCODE_INSTALLER_NSH=${installerNshPath}`,
+        `/DNEKODE_INSTALLER_NSH=${installerNshPath}`,
         `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
         `/DOUTPUT_FILE=${outputPath}`,
         fixturePath,
@@ -76,7 +76,7 @@ if (process.platform !== "win32") {
       if (!existsSync(join(installDir, "user-data.txt"))) {
         throw new Error(`${scenario}: unrelated file was removed`);
       }
-      if (readFileSync(join(installDir, "ZCode.exe")).length === 0) {
+      if (readFileSync(join(installDir, "Nekode.exe")).length === 0) {
         throw new Error(`${scenario}: application payload was not installed`);
       }
     }
@@ -90,10 +90,10 @@ if (process.platform !== "win32") {
       `/DNSIS_INCLUDE_DIR=${resolve(nsisDir, "Include")}`,
       `/DELECTRON_BUILDER_NSIS_INCLUDE_DIR=${resolve(appBuilderLibDir, "templates/nsis/include")}`,
       `/DNSIS_PLUGIN_DIR=${resolve(nsisResourcesDir, "plugins/x86-unicode")}`,
-      `/DZCODE_INSTALLER_NSH=${installerNshPath}`,
+      `/DNEKODE_INSTALLER_NSH=${installerNshPath}`,
       `/DFIXTURE_EXE=${process.env.ComSpec ?? "C:\\Windows\\System32\\cmd.exe"}`,
       `/DOUTPUT_FILE=${failureOutputPath}`,
-      `/DZCODE_UNINSTALLER_LOG_PATH=${failureLogPath}`,
+      `/DNEKODE_UNINSTALLER_LOG_PATH=${failureLogPath}`,
       "/DFAIL_DELETE",
       fixturePath,
     ];

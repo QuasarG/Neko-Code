@@ -3,11 +3,11 @@
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
   resolveOffPeakProviderId,
-  buildRuntimeZCodeApiUrl,
+  buildRuntimeNekodeApiUrl,
   type OffPeakCodingPlanKind,
   type OffPeakCodingPlanSupport,
   type OffPeakCodingPlanUnsupportedReason,
-  type ZCodeAccountAccess,
+  type NekodeAccountAccess,
 } from "@zcode/shared";
 import { isOffPeakMockEnabled, startOffPeakMockGateway } from "./offPeakMockGateway.js";
 import type { ServiceLogger } from "../logger/serviceLogger.js";
@@ -56,7 +56,7 @@ export class OffPeakModelUnavailableError extends OffPeakPermanentDispatchError 
   }
 }
 
-const ZCODE_JWT_TOKEN_KEY = "zcodejwttoken";
+const NEKODE_JWT_TOKEN_KEY = "zcodejwttoken";
 const ACTIVE_OAUTH_PROVIDER_KEY = "oauth:active_provider";
 
 export interface OffPeakCredentialSnapshot {
@@ -78,7 +78,7 @@ interface OffPeakCredentialResolverDeps {
   accountRequestAuthService: IAccountRequestAuthService;
   resolveAccountProvider(): Promise<{
     readonly providerId: string;
-    readonly access: ZCodeAccountAccess;
+    readonly access: NekodeAccountAccess;
     readonly baseURL?: string;
   } | null>;
   env?: NodeJS.ProcessEnv;
@@ -137,8 +137,8 @@ export async function resolveOffPeakCredentials(
   options: { allowMockCredentials?: boolean } = {},
 ): Promise<OffPeakCredentialSnapshot> {
   const env = deps.env ?? process.env;
-  if (options.allowMockCredentials !== false && env["ZCODE_OFFPEAK_MOCK"] === "1") {
-    if (env["ZCODE_OFFPEAK_MOCK_NO_PLAN"] === "1") {
+  if (options.allowMockCredentials !== false && env["NEKODE_OFFPEAK_MOCK"] === "1") {
+    if (env["NEKODE_OFFPEAK_MOCK_NO_PLAN"] === "1") {
       throw new OffPeakCodingPlanUnavailableError("connection_unavailable");
     }
     // mock 网关不校验凭证；使用确定性 metadata 让 UI 和 ticket/runtime 仍共享同一 support 形状。
@@ -162,7 +162,7 @@ export async function resolveOffPeakCredentials(
       // ZAI JWT 与 BigModel key（或反向）拼到同一请求，服务端只能在取号时才拒绝。
       throw new OffPeakCodingPlanUnavailableError("provider_identity_mismatch");
     }
-    const jwt = (await deps.credentialService.load(ZCODE_JWT_TOKEN_KEY))?.trim() ?? "";
+    const jwt = (await deps.credentialService.load(NEKODE_JWT_TOKEN_KEY))?.trim() ?? "";
     if (!jwt) {
       throw new OffPeakCredentialsUnavailableError("jwt");
     }
@@ -334,7 +334,7 @@ export function createOffPeakOriginResolver(deps: {
       if (!originPromise) {
         originPromise = (async () => {
           if (!isOffPeakMockEnabled(env)) {
-            return new URL(buildRuntimeZCodeApiUrl(env, "/")).origin;
+            return new URL(buildRuntimeNekodeApiUrl(env, "/")).origin;
           }
           const gateway = await startOffPeakMockGateway({
             logger: deps.logger,

@@ -137,7 +137,7 @@ describe("E2E Node coverage normalization", () => {
         .flatMap((cache) => Object.keys(cache ?? {})),
     ).toHaveLength(2);
     expect(
-      readFileSync(resolve(rawDir, ".zcode-compacted-coverage-files-v1.marker"), "utf-8"),
+      readFileSync(resolve(rawDir, ".nekode-compacted-coverage-files-v1.marker"), "utf-8"),
     ).toContain("coverage-101-1-0.json");
 
     const alreadyCompactedPath = resolve(rawDir, "coverage-101-1-0.json");

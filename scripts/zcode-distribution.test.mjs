@@ -34,10 +34,10 @@ process.exitCode = Number(process.env.FIXTURE_EXIT_CODE || 0);
     `
 import { writeFile } from 'node:fs/promises';
 await writeFile(process.env.FIXTURE_WEB_RESULT, JSON.stringify({
-  cwd: process.cwd(), port: process.env.PORT, host: process.env.ZCODE_SERVER_HOST,
-  workspace: process.env.ZCODE_SERVER_WORKSPACE, staticRoot: process.env.ZCODE_WEB_STATIC_ROOT,
-  command: process.env.ZCODE_AGENT_SERVER_COMMAND, args: JSON.parse(process.env.ZCODE_AGENT_SERVER_ARGS_JSON),
-  token: process.env.ZCODE_SERVER_AUTH_TOKEN,
+  cwd: process.cwd(), port: process.env.PORT, host: process.env.NEKODE_SERVER_HOST,
+  workspace: process.env.NEKODE_SERVER_WORKSPACE, staticRoot: process.env.NEKODE_WEB_STATIC_ROOT,
+  command: process.env.NEKODE_AGENT_SERVER_COMMAND, args: JSON.parse(process.env.NEKODE_AGENT_SERVER_ARGS_JSON),
+  token: process.env.NEKODE_SERVER_AUTH_TOKEN,
 }));
 process.on('SIGTERM', () => process.exit(0));
 setInterval(() => {}, 1000);
@@ -118,7 +118,7 @@ test("Web mode passes its runtime configuration and terminates its child on shut
       env: {
         ...process.env,
         FIXTURE_WEB_RESULT: resultPath,
-        ZCODE_SERVER_AUTH_TOKEN: "stale-token",
+        NEKODE_SERVER_AUTH_TOKEN: "stale-token",
       },
       stdio: ["ignore", "pipe", "pipe"],
     },
@@ -166,9 +166,9 @@ test("installer creates zcode and the installed command defaults to CLI", async 
   await exec("sh", [installer], {
     env: {
       ...process.env,
-      ZCODE_DIST_BASE_URL: `file://${downloads}/`,
-      ZCODE_DIST_HOME: installRoot,
-      ZCODE_DIST_BIN_DIR: bin,
+      NEKODE_DIST_BASE_URL: `file://${downloads}/`,
+      NEKODE_DIST_HOME: installRoot,
+      NEKODE_DIST_BIN_DIR: bin,
     },
   });
   await rm(root, { recursive: true });

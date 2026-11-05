@@ -58,8 +58,8 @@ describe("resolveMcpNodeFallbackProvider", () => {
     await expect(provider?.resolve()).resolves.toEqual({
       binDir: join(root, "cli", "node-fallback", "v1"),
       env: {
-        ZCODE_NODE_FALLBACK_EXEC_PATH: process.execPath,
-        ZCODE_NODE_FALLBACK_NPM_ROOT: join(glmDir, "node-runtime", "npm"),
+        NEKODE_NODE_FALLBACK_EXEC_PATH: process.execPath,
+        NEKODE_NODE_FALLBACK_NPM_ROOT: join(glmDir, "node-runtime", "npm"),
       },
     });
   });

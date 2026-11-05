@@ -1,6 +1,6 @@
 # Packaging
 
-The package is the stage directory `.zcode-site/stage/`, packed by `zcode-site deploy`. The stage root becomes `/app` in the cloud and must contain `start.sh`. Put in it only what the running site needs.
+The package is the stage directory `.nekode-site/stage/`, packed by `zcode-site deploy`. The stage root becomes `/app` in the cloud and must contain `start.sh`. Put in it only what the running site needs.
 
 ## Stage layout by project type
 
@@ -33,7 +33,7 @@ stage/
 ## Never in the package
 
 - `.env`, `.env.*` (except `*.example`) — secrets. `deploy` refuses them.
-- `.git/`, `.zcode-site.json`, `.DS_Store`, `__pycache__/` — `deploy` always drops these.
+- `.git/`, `.nekode-site.json`, `.DS_Store`, `__pycache__/` — `deploy` always drops these.
 - Source the runtime doesn't execute: TypeScript sources when compiled JS is shipped, frontend sources after the build, tests, docs, storybook.
 - Dev dependencies and build tooling (`typescript`, `vite`, `webpack`, `eslint`, `@types/*`, `pytest`).
 - Caches and local data: `.next/cache`, `.turbo`, `.cache`, `.parcel-cache`, `.svelte-kit` (except the build output), `coverage/`, `node_modules/.cache`, virtualenvs (`.venv/`, `venv/`), local SQLite files with the user's private data.
@@ -64,9 +64,9 @@ When a limit is exceeded, in this order:
 1. Make sure only production dependencies are installed (`--omit=dev`, `--prod`, no `-r requirements-dev.txt`).
 2. Use the framework's self-contained server output (standalone build, node adapter), which bundles most dependencies.
 3. Bundle a Node server into one file with esbuild, keeping only native packages external, then install just those into the stage:
-   `npx esbuild src/server.ts --bundle --platform=node --target=node24 --format=esm --outfile=.zcode-site/stage/server.mjs --external:better-sqlite3 --external:sharp`
+   `npx esbuild src/server.ts --bundle --platform=node --target=node24 --format=esm --outfile=.nekode-site/stage/server.mjs --external:better-sqlite3 --external:sharp`
    (ESM bundles of CommonJS dependencies may need `--banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"`). Run `zcode-site check` to make sure nothing is missing.
 4. Remove files that are never loaded at runtime: other platforms' prebuilt binaries, `*.map` source maps of dependencies, `docs/`, `test/`, `examples/` inside dependencies. Check before deleting anything you are unsure about.
 5. Large media: compress images/videos, or tell the user to host large media elsewhere. A single file over 25 MB can't ship.
 
-If the app is still too large (for example it needs PyTorch, TensorFlow, Chromium or a large model file), it can't run on ZCode Sites; tell the user.
+If the app is still too large (for example it needs PyTorch, TensorFlow, Chromium or a large model file), it can't run on Nekode Sites; tell the user.

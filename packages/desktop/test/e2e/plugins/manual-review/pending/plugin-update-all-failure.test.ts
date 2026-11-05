@@ -70,7 +70,7 @@ describe("PLM-LC-003 全部更新失败继续候选 E2E", () => {
     const original = join(fixture.marketplaceRoot, "plugins", failedName);
     const managed = join(
       homeDir,
-      ".zcode",
+      ".nekode",
       "cli",
       "plugins",
       "marketplaces",

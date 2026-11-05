@@ -1,20 +1,20 @@
 import {
-  createSharedZCodeCredentialStore,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
+  type SharedNekodeCredentialStore,
 } from "@zcode/adapters";
 import type { EnvRecord } from "@zcode/adapters/model";
 import {
   NodeModelSelectionConfigRepository,
   NodePersonalProviderConfigRepository,
   PERSONAL_PROVIDER_CONFIG_FILE_NAME,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "@zcode/provider-node";
 import { dirname, join } from "node:path";
 import type {
   CodingPlanProviderId,
-  LogoutZCodeCliOptions,
-  LogoutZCodeCliResult,
+  LogoutNekodeCliOptions,
+  LogoutNekodeCliResult,
 } from "./auth-login-contract.js";
 import { readLegacyCliPersonalProviderConfig } from "./app/legacy-cli-personal-provider-config-importer.js";
 import {
@@ -35,7 +35,7 @@ export async function persistStandaloneCodingPlanConnection(input: {
   readonly accountIdentity: string;
   readonly apiKey?: string;
   readonly authSource?: "oauth";
-  readonly credentialStore: SharedZCodeCredentialStore;
+  readonly credentialStore: SharedNekodeCredentialStore;
   readonly env: EnvRecord;
   readonly personalProviderConfigPath?: string;
   readonly providerId: CodingPlanProviderId;
@@ -54,7 +54,7 @@ export async function persistStandaloneCodingPlanConnection(input: {
   });
   const path =
     input.personalProviderConfigPath ??
-    input.env[ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]?.trim() ??
+    input.env[NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]?.trim() ??
     join(dirname(input.credentialStore.filePath), PERSONAL_PROVIDER_CONFIG_FILE_NAME);
   // 登录与运行时共享文件和事务；首次写入仍先保留旧用户 Provider，不能仅写默认值。
   const personalRepository = new NodePersonalProviderConfigRepository({
@@ -79,20 +79,20 @@ export async function persistStandaloneCodingPlanConnection(input: {
 
 export async function hasConfiguredStandaloneCodingPlan(
   options: {
-    credentialStore?: SharedZCodeCredentialStore;
+    credentialStore?: SharedNekodeCredentialStore;
     env?: EnvRecord;
   } = {},
 ): Promise<boolean> {
   const credentialStore =
-    options.credentialStore ?? createSharedZCodeCredentialStore({ env: options.env });
+    options.credentialStore ?? createSharedNekodeCredentialStore({ env: options.env });
   return hasStandaloneCodingPlanAccess(credentialStore, options.env ?? process.env);
 }
 
-export async function logoutZCodeCli(
-  options: LogoutZCodeCliOptions = {},
-): Promise<LogoutZCodeCliResult> {
+export async function logoutNekodeCli(
+  options: LogoutNekodeCliOptions = {},
+): Promise<LogoutNekodeCliResult> {
   const credentialStore =
-    options.credentialStore ?? createSharedZCodeCredentialStore({ env: options.env });
+    options.credentialStore ?? createSharedNekodeCredentialStore({ env: options.env });
   const providerIds = (await readStandaloneCodingPlanProviders(options.env ?? process.env)).map(
     ({ providerId }) => providerId,
   );
@@ -113,7 +113,7 @@ export async function logoutZCodeCli(
       : [];
   });
   const keys = [
-    ...Object.values(SHARED_ZCODE_CREDENTIAL_KEYS),
+    ...Object.values(SHARED_NEKODE_CREDENTIAL_KEYS),
     ...identityKeys,
     ...sourceKeys,
     ...dynamicApiKeyKeys,

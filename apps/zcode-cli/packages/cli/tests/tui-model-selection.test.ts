@@ -4,12 +4,12 @@ import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { TurnId } from "@zcode/contracts";
-import type { ZCodeAppOptions } from "@zcode/bootstrap";
+import type { NekodeAppOptions } from "@zcode/bootstrap";
 import {
   NodeModelSelectionConfigRepository,
   NodePersonalProviderConfigRepository,
 } from "@zcode/provider-node";
-import { modelSelectionSchema, type ModelSelection, type ZCodeModelOption } from "@zcode/shared";
+import { modelSelectionSchema, type ModelSelection, type NekodeModelOption } from "@zcode/shared";
 import { createCommandCenter, type CommandCenterApp } from "../src/command-center.js";
 import { handleModelCommand } from "../src/command-center/handlers/model.js";
 import { createTuiModelAvailabilityChecker } from "../src/tui-login-state.js";
@@ -23,7 +23,7 @@ import { createTuiSubmitPrompt } from "../src/tui-prompt-handler.js";
 import { createCliModeState } from "../src/tui-command-state.js";
 import type { RunDependencies } from "../src/cli-types.js";
 
-function model(providerId = "personal", modelId = "vendor/model$literal:free"): ZCodeModelOption {
+function model(providerId = "personal", modelId = "vendor/model$literal:free"): NekodeModelOption {
   return {
     ref: { providerId, modelId },
     label: "Reasoning Model",
@@ -116,7 +116,7 @@ function fixture(initial?: ModelSelection) {
     deps,
     writes,
     defaultWrites,
-    setCatalog: (next: ZCodeModelOption[]) => {
+    setCatalog: (next: NekodeModelOption[]) => {
       catalog = next;
     },
   };
@@ -261,7 +261,7 @@ test("TUI persists defaults through the shared repository across new sessions an
   await seed.update((current) => ({ ...current, providerOrder: ["personal"] }));
   seed.dispose();
   const originalFile = JSON.parse(await readFile(filePath, "utf8"));
-  const created: Array<{ options: ZCodeAppOptions; app: CommandCenterApp }> = [];
+  const created: Array<{ options: NekodeAppOptions; app: CommandCenterApp }> = [];
   const restoredSelection = { ...model().ref, options: { reasoningLevel: "high" } };
   let runtimeStarts = 0;
   const deps = {
@@ -269,7 +269,7 @@ test("TUI persists defaults through the shared repository across new sessions an
     cwd: () => dir,
     skipUserConfig: true,
     loadDotenv: () => ({ keys: [], loaded: false, path: "" }),
-    createZCodeApp: async (options: ZCodeAppOptions) => {
+    createNekodeApp: async (options: NekodeAppOptions) => {
       assert.equal(options.modelSelectionMode, "cli-default");
       const f = fixture(
         options.resume ? restoredSelection : options.configuredDefaultModelSelection,
@@ -395,7 +395,7 @@ test("active-turn model picks use the same configuration command instead of beco
     cwd: () => process.cwd(),
     skipUserConfig: true,
     loadDotenv: () => ({ keys: [], loaded: false, path: "" }),
-    createZCodeApp: async () => f.app,
+    createNekodeApp: async () => f.app,
     startProcessProviderRegistryRuntime: async () => ({
       runtime: { registryService: {} },
       modelSelectionConfigRepository: {

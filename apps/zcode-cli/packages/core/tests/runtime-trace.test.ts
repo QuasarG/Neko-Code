@@ -97,6 +97,7 @@ describe("AgentRuntime trace propagation", () => {
     expect(new Set(events.map((event) => event.traceId))).toEqual(new Set([traceContext.traceId]));
     expect(events.map((event) => event.type)).toEqual([
       SessionEventType.TurnStarted,
+      SessionEventType.ContextInjected,
       SessionEventType.ModelRequest,
       SessionEventType.ModelComplete,
       SessionEventType.TurnComplete,
@@ -361,14 +362,12 @@ describe("AgentRuntime trace propagation", () => {
       traceId: traceContext.traceId,
     });
     const messageTailRoles = steeredRequest?.messageTailRoles as string[] | undefined;
-    expect(messageTailRoles?.slice(-2)).toEqual(["assistant", "user"]);
+    expect(messageTailRoles?.slice(-2)).toEqual(["user", "user"]);
     const steeredMessageTail = steeredRequest?.messageTail as
       | Array<Record<string, unknown>>
       | undefined;
-    expect(steeredMessageTail?.at(-1)).toMatchObject({
-      contentBytes: "keep the original task but switch to option B".length,
-      role: "user",
-    });
+    expect(steeredMessageTail?.at(-2)).toMatchObject({ role: "user" });
+    expect(steeredMessageTail?.at(-1)).toMatchObject({ role: "user" });
   });
 
   it("emits full context sections through the debug logger for debug observers", async () => {
@@ -857,11 +856,12 @@ describe("AgentRuntime trace propagation", () => {
     await runtime.executeTurn("hello");
 
     expect(requests[0]?.[0]).toEqual(expect.objectContaining({ role: "system" }));
-    expect(requests[0]?.[0]?.content).toBe("You are ZCode, an interactive agent");
+    expect(requests[0]?.[0]?.content).toBe("You are Nekode, an interactive coding agent");
     expect(requests[0]?.[1]?.content).toBe("\nYou are terse for this session.");
-    // 自定义 prompt 不影响环境与模型公告。
+    // 自定义 prompt 不影响环境与模型：它们随 system prompt 下发。
     expect(requests[0]?.[2]?.content).toContain("# Environment\n");
-    expect(requests[0]?.[3]?.content).toContain("You are powered by the model named");
+    expect(requests[0]?.[2]?.content).toContain("You are powered by the model named");
+    expect(requests[0]?.[3]?.content).toContain("Current time:");
     // 自定义 prompt 也宣告 output style 指令，紧跟模型公告。
     expect(requests[0]?.[4]?.content).toContain("# Output Style: Terse\nKeep responses short.");
     // 输入附件（output_style）在前，请求前公告（date）在后，与两个收集器的顺序一致。
@@ -1042,15 +1042,14 @@ describe("AgentRuntime trace propagation", () => {
       "Learning output style is active. Remember to follow the specific guidelines for this style.",
     );
     expect(second?.messages).toEqual([
-      { role: "system", cacheControl: undefined, content: "You are ZCode, an interactive agent" },
+      { role: "system", cacheControl: undefined, content: "You are Nekode, an interactive coding agent" },
       { role: "system", cacheControl: EPHEMERAL, content: expect.stringContaining("# Harness") },
       {
         role: "system",
         cacheControl: EPHEMERAL,
         content: expect.stringMatching(/^\n\nWrite code that reads like the surrounding code/),
       },
-      { role: "user", cacheControl: undefined, content: ENVIRONMENT_REMINDER },
-      { role: "user", cacheControl: undefined, content: MODEL_REMINDER },
+      { role: "user", cacheControl: undefined, content: expect.stringContaining("Current time:") },
       {
         role: "user",
         cacheControl: undefined,
@@ -1062,6 +1061,7 @@ describe("AgentRuntime trace propagation", () => {
       { role: "user", cacheControl: undefined, content: TODAY_REMINDER },
       { role: "user", cacheControl: undefined, content: "first question" },
       { role: "assistant", cacheControl: undefined, content: "first response" },
+      { role: "user", cacheControl: undefined, content: expect.stringContaining("Current time:") },
       { role: "user", cacheControl: undefined, content: styleActive },
       { role: "user", cacheControl: EPHEMERAL, content: "second question" },
     ]);
@@ -1071,7 +1071,7 @@ describe("AgentRuntime trace propagation", () => {
     const stableBody = second?.messages[1]?.content ?? "";
     const dynamicSystem = second?.messages[2]?.content ?? "";
 
-    expect(cliPrefix).toBe("You are ZCode, an interactive agent");
+    expect(cliPrefix).toBe("You are Nekode, an interactive coding agent");
     expect(stableBody).not.toContain("# Agent Identity");
     expect(stableBody).toContain(
       'You are an interactive agent that helps users according to your "Output Style", which describes how you should respond to user queries.',
@@ -1083,14 +1083,14 @@ describe("AgentRuntime trace propagation", () => {
     expect(stableBody).not.toContain("# Context management");
     expect(stableBody).not.toContain("# Risky Actions");
     expect(stableBody).not.toContain("Write code that reads like the surrounding code");
-    expect(stableBody).not.toContain("For actions that are hard to reverse");
+    expect(stableBody).not.toContain("Confirm hard-to-reverse or outward-facing actions first");
     expect(dynamicSystem).not.toContain("# Session Guidance");
     expect(dynamicSystem).toMatch(/^\n\nWrite code that reads like the surrounding code/);
     expect(dynamicSystem).toContain("Write code that reads like the surrounding code");
-    expect(dynamicSystem).toContain("For actions that are hard to reverse");
+    expect(dynamicSystem).toContain("Confirm hard-to-reverse or outward-facing actions first");
     expect(dynamicSystem).not.toContain("# Session-specific guidance");
     expect(dynamicSystem).not.toContain("`! <command>`");
-    expect(dynamicSystem).not.toContain("# Environment");
+    expect(dynamicSystem).toContain("# Environment");
     expect(providerMessagesToText(second?.messages)).toContain("# Environment");
     expect(dynamicSystem).toContain("# Context management");
     expect(dynamicSystem).not.toContain("not a git repository");
@@ -1227,23 +1227,21 @@ describe("AgentRuntime trace propagation", () => {
     await runtime.executeTurn("first question");
     await runtime.executeTurn("second question");
 
-    // 完整形状：三段 system，然后是请求前公告（环境、模型、日期）和第一问，公告不带 cacheControl。
+    // 完整形状：三段 system（环境/模型在 dynamic 段），然后是时间、日期和第一问。
     expect(requests[0]?.map(({ role, cacheControl }) => ({ role, cacheControl }))).toEqual([
       { role: "system", cacheControl: undefined },
       { role: "system", cacheControl: EPHEMERAL },
       { role: "system", cacheControl: EPHEMERAL },
       { role: "user", cacheControl: undefined },
       { role: "user", cacheControl: undefined },
-      { role: "user", cacheControl: undefined },
       { role: "user", cacheControl: EPHEMERAL },
     ]);
     expect(requests[0]?.slice(3).map((message) => message.content)).toEqual([
-      ENVIRONMENT_REMINDER,
-      MODEL_REMINDER,
+      expect.stringContaining("Current time:"),
       TODAY_REMINDER,
       "first question",
     ]);
-    expect(requests[0]?.[0]?.content).toBe("You are ZCode, an interactive agent");
+    expect(requests[0]?.[0]?.content).toBe("You are Nekode, an interactive coding agent");
     expect(requests[0]?.[1]?.content).not.toContain("# Agent Identity");
     expect(requests[0]?.[1]?.content).toMatch(
       /^\n?You are an agent working with the user toward their goals/,
@@ -1256,7 +1254,7 @@ describe("AgentRuntime trace propagation", () => {
     expect(requests[0]?.[1]?.content).not.toContain(
       "Write code that reads like the surrounding code",
     );
-    expect(requests[0]?.[1]?.content).not.toContain("For actions that are hard to reverse");
+    expect(requests[0]?.[1]?.content).not.toContain("Confirm hard-to-reverse or outward-facing actions first");
     expect(requests[0]?.[2]?.content).toMatch(
       /^\n\nWrite code that reads like the surrounding code/,
     );
@@ -1265,8 +1263,8 @@ describe("AgentRuntime trace propagation", () => {
     );
     expect(
       requests[0]?.[2]?.content.indexOf("Write code that reads like the surrounding code"),
-    ).toBeLessThan(requests[0]?.[2]?.content.indexOf("For actions that are hard to reverse") ?? -1);
-    expect(requests[0]?.[2]?.content.indexOf("For actions that are hard to reverse")).toBeLessThan(
+    ).toBeLessThan(requests[0]?.[2]?.content.indexOf("Confirm hard-to-reverse or outward-facing actions first") ?? -1);
+    expect(requests[0]?.[2]?.content.indexOf("Confirm hard-to-reverse or outward-facing actions first")).toBeLessThan(
       requests[0]?.[2]?.content.indexOf("# Context management") ?? -1,
     );
     expect(requests[0]?.[2]?.content).not.toContain("# Session-specific guidance");
@@ -1275,7 +1273,7 @@ describe("AgentRuntime trace propagation", () => {
     expect(requests[0]?.[2]?.content).not.toContain("# Function Result Clearing");
     expect(requests[0]?.[2]?.content).not.toContain("# Summarize Tool Results");
     expect(requests[0]?.[2]?.content).not.toContain("## Current Environment");
-    expect(requests[0]?.[2]?.content).not.toContain("# Environment");
+    expect(requests[0]?.[2]?.content).toContain("# Environment");
     expect(providerMessagesToText(requests[0])).toContain("# Environment");
     expect(requests[0]?.[2]?.content).toContain("# Context management");
     expect(requests[0]?.[2]?.content).toContain(
@@ -1296,11 +1294,12 @@ describe("AgentRuntime trace propagation", () => {
       content: "first question",
       cacheControl: { type: "ephemeral" },
     });
-    expect(requests[1]?.slice(0, -2).map(({ role, content }) => ({ role, content }))).toEqual(
+    expect(requests[1]?.slice(0, -3).map(({ role, content }) => ({ role, content }))).toEqual(
       requests[0]?.map(({ role, content }) => ({ role, content })),
     );
     expect(requests[1]?.at(-3)?.cacheControl).toBeUndefined();
-    expect(requests[1]?.at(-2)?.content).toBe("first response");
+    expect(requests[1]?.at(-3)?.content).toBe("first response");
+    expect(requests[1]?.at(-2)?.content).toContain("Current time:");
     expect(requests[1]?.at(-1)).toEqual({
       role: "user",
       content: "second question",
@@ -1379,17 +1378,9 @@ describe("AgentRuntime trace propagation", () => {
     await runtime.executeTurn("first question");
     await runtime.executeTurn("second question");
 
-    // 结构化前缀：环境、模型、指令、日期公告都是 user 侧附件，排在第一问之前，不带 cacheControl。
+    // 结构化前缀：环境、模型、指令都在 system[2]；user 侧只剩时间与日期。
     const prefix = [
-      { role: "user", cacheControl: undefined, content: ENVIRONMENT_REMINDER },
-      { role: "user", cacheControl: undefined, content: MODEL_REMINDER },
-      {
-        role: "user",
-        cacheControl: undefined,
-        content: expect.stringMatching(
-          /^<system-reminder>\nCodebase and user instructions are shown below\.[\s\S]*Contents of \/workspace\/AGENTS\.md \(project instructions, checked into the codebase\):\n\nproject instructions\n<\/system-reminder>$/,
-        ),
-      },
+      { role: "user", cacheControl: undefined, content: expect.stringContaining("Current time:") },
       {
         role: "user",
         cacheControl: undefined,
@@ -1397,7 +1388,7 @@ describe("AgentRuntime trace propagation", () => {
       },
     ];
     const systems = [
-      { role: "system", cacheControl: undefined, content: "You are ZCode, an interactive agent" },
+      { role: "system", cacheControl: undefined, content: "You are Nekode, an interactive coding agent" },
       { role: "system", cacheControl: EPHEMERAL, content: expect.any(String) },
       { role: "system", cacheControl: EPHEMERAL, content: expect.any(String) },
     ];
@@ -1412,6 +1403,7 @@ describe("AgentRuntime trace propagation", () => {
       ...prefix,
       { role: "user", cacheControl: undefined, content: "first question" },
       { role: "assistant", cacheControl: undefined, content: "first response" },
+      { role: "user", cacheControl: undefined, content: expect.stringContaining("Current time:") },
       { role: "user", cacheControl: EPHEMERAL, content: "second question" },
     ]);
   });
@@ -1525,9 +1517,10 @@ describe("AgentRuntime trace propagation", () => {
     }));
     expect(liveEvents).toEqual([
       { sequenceNumber: 1, type: SessionEventType.TurnStarted },
-      { sequenceNumber: 2, type: SessionEventType.ModelRequest },
-      { sequenceNumber: 3, type: SessionEventType.ModelComplete },
-      { sequenceNumber: 4, type: SessionEventType.TurnComplete },
+      { sequenceNumber: 2, type: SessionEventType.ContextInjected },
+      { sequenceNumber: 3, type: SessionEventType.ModelRequest },
+      { sequenceNumber: 4, type: SessionEventType.ModelComplete },
+      { sequenceNumber: 5, type: SessionEventType.TurnComplete },
     ]);
     expect(liveEvents).toEqual(storedEvents);
   });
@@ -1581,6 +1574,7 @@ describe("AgentRuntime trace propagation", () => {
     ]);
     expect(events.map((event) => event.type)).toEqual([
       SessionEventType.TurnStarted,
+      SessionEventType.ContextInjected,
       SessionEventType.ModelRequest,
       SessionEventType.ModelStreaming,
       SessionEventType.ModelStreaming,
@@ -1595,9 +1589,9 @@ describe("AgentRuntime trace propagation", () => {
     expect(appendSummary?.context).toMatchObject({
       event: "event_store.appended.summary",
       eventCount: 3,
-      firstSessionEventSequenceNumber: 3,
+      firstSessionEventSequenceNumber: 4,
       flushReason: "low_frequency_event",
-      lastSessionEventSequenceNumber: 5,
+      lastSessionEventSequenceNumber: 6,
       module: "core.runtime",
       payloadKinds: {
         finish: 1,
@@ -1872,8 +1866,9 @@ it.each([true, false])(
     await runtime.executeTurn("fourth");
     const text = (index: number) => requests[index]!.map((message) => message.content).join("\n");
     expect(text(1).match(/powered by the model named provider-a\/model-a/g)).toHaveLength(1);
-    expect(text(2)).toContain("powered by the model named provider-a/model-a");
+    // system prompt 反映当前模型；旧模型身份不留在请求文本里。
     expect(text(2)).toContain("powered by the model named provider-b/model-b");
+    expect(text(2)).not.toContain("powered by the model named provider-a/model-a");
     expect(text(3).match(/powered by the model named provider-b\/model-b/g)).toHaveLength(1);
     // Harness 第三条必须描述本请求实际使用的动态上下文通道。
     for (let index = 0; index < 4; index++) {

@@ -5,8 +5,8 @@ import {
   zcodeWorkspaceHookTrustGrantParamsSchema,
   zcodeWorkspaceHookTrustGrantReasonCodeSchema,
   zcodeWorkspaceHookTrustGrantResultSchema,
-  type ZCodeWorkspaceHookTrustGrantReasonCode,
-  type ZCodeWorkspaceHookTrustGrantResult,
+  type NekodeWorkspaceHookTrustGrantReasonCode,
+  type NekodeWorkspaceHookTrustGrantResult,
 } from "@zcode/shared";
 import {
   grantWorkspaceHookTrust,
@@ -28,7 +28,7 @@ export async function grantWorkspaceHookTrustForProtocol(
     grant?: GrantWorkspaceHookTrust;
     policyProvider: WorkspaceHookPolicyProvider;
   },
-): Promise<ZCodeWorkspaceHookTrustGrantResult> {
+): Promise<NekodeWorkspaceHookTrustGrantResult> {
   const params = zcodeWorkspaceHookTrustGrantParamsSchema.parse(rawParams);
   const grant = dependencies.grant ?? grantWorkspaceHookTrust;
   const workspaceIdentity =
@@ -69,7 +69,7 @@ export async function grantWorkspaceHookTrustForProtocol(
 function getPolicyRejectionReason(
   policyProvider: WorkspaceHookPolicyProvider,
   workspaceIdentity: string,
-): ZCodeWorkspaceHookTrustGrantReasonCode | undefined {
+): NekodeWorkspaceHookTrustGrantReasonCode | undefined {
   try {
     const policy = workspaceHookPolicySchema.parse(
       policyProvider.getPolicy(workspaceIdentity),
@@ -85,7 +85,7 @@ function getPolicyRejectionReason(
   }
 }
 
-function toPublicReasonCode(error: unknown): ZCodeWorkspaceHookTrustGrantReasonCode {
+function toPublicReasonCode(error: unknown): NekodeWorkspaceHookTrustGrantReasonCode {
   const candidate = error instanceof Error ? error.message : error;
   const parsed = zcodeWorkspaceHookTrustGrantReasonCodeSchema.safeParse(candidate);
   if (parsed.success) return parsed.data;

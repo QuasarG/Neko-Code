@@ -39,19 +39,19 @@ describe("Context execution model source", () => {
       );
     expect(runtimeContext(child)).toEqual(runtimeContext(main));
     expect(runtimeContext(child).map((section) => section.injectionTarget)).toEqual([
-      "meta_user",
-      "meta_user",
+      "system",
+      "system",
     ]);
-    // 自定义 prompt 只替换 system 正文，环境与模型公告照常发送。
+    // 自定义 prompt 只替换 system 正文，环境与模型随 system prompt 下发。
     expect(runtimeContext(custom)).toEqual(runtimeContext(main));
     expect(child.metaUserAttachments).toEqual([]);
     const initial = child.systemMessages.map((message) => message.content).join("");
     expect(initial).toMatch(
       /Child-only identity\.\n\nMessages from the agent that launched you — .+\n\nNotes:/u,
     );
-    expect(initial).not.toContain("# Environment");
+    expect(initial).toContain("# Environment");
     expect(initial).not.toContain("<env>");
-    expect(initial).not.toContain("You are powered by");
+    expect(initial).toContain("You are powered by");
     expect(
       child.sections.some(
         (section) =>
@@ -71,7 +71,7 @@ describe("Context execution model source", () => {
               ...config,
               agentPrompt: "Inspect the workspace.",
             }).build();
-      // 环境与模型身份只产出 section，由运行时宣告。
+      // 环境与模型身份随 system prompt 下发。
       return [...result.systemMessages, ...result.sections]
         .map((item) => String(item.content))
         .join("\n");

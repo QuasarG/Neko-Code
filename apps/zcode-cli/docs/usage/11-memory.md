@@ -1,34 +1,28 @@
 # 11 · 指令与记忆
 
-`AGENTS.md` 是用户或项目提供的指令，Memory 是运行过程中存取的记忆。二者都可能影响模型输入，但控制方式不同。
+`AGENTS.md` 是用户或项目提供的指令，Neko Memory 是运行过程中存取的长期记忆。二者都可能影响模型输入，但控制方式不同。
 
 ## AGENTS.md
 
-当前指令装配会合并用户目录中的 `~/.zcode/AGENTS.md` 与工作区查找得到的项目 `AGENTS.md`，先用户、后项目。工作区范围与当前有效目录影响查找结果；不要默认每个父目录中的指令文件都会叠加，也不要默认其他产品的指令文件名会自动导入。
+当前指令装配会合并用户目录中的 `~/.nekode/AGENTS.md` 与工作区查找得到的项目 `AGENTS.md`，先用户、后项目。工作区范围与当前有效目录影响查找结果；不要默认每个父目录中的指令文件都会叠加，也不要默认其他产品的指令文件名会自动导入。
 
 验证指令是否进入上下文时，使用受控的无敏感标记或检查实际请求，避免依靠模型声称“已阅读”。并发评测应使用隔离用户目录和固定工作区，记录这两处指令文件的内容哈希。
 
-## Memory 开关
+## Neko Memory
 
-记忆总能力由 `features.memory` 控制，使用行为还受 `memory.use` 控制。需要无记忆对照组时，在运行配置中显式关闭二者：
+主会话的长期记忆只有 Neko Memory，**始终开启，不提供关闭开关**。它按四个书架保存 Markdown 记录：
 
-```json
-{
-  "features": { "memory": false },
-  "memory": { "use": false }
-}
-```
+- `persona/`：主人与关系
+- `toolbox/`：跨项目可复用的工程经验
+- `projects/<project>/records/`：当前项目知识
+- `scratch/`：本会话暂存，晋升后归档
 
-普通 `--prompt` 和 `--target` 不默认开启自动记忆提取；这不等于已有记忆不会被读取或影响上下文。需要隔离时，同时使用全新的用户目录和数据基目录。
+模型通过 `memory_write` / `memory_read` / `memory_promote` / `memory_delete` / `continuity_update` 读写；运行时会按每轮投递基线、diff、墓碑和省略提示。数据位于 `<NEKODE_HOME|~/.nekode>/memory/`，回执与快照位于 `runtime/memory.sqlite`。
+
+旧版 Workspace Memory / Project Memory（`MEMORY.md` + 事实文件、Extraction、Dream、Semantic Recall）和 custom-agent memory 已删除；`features.memory` / `memory.use` 不再被解析。旧会话里的 `memoryEnabled` 字段只作兼容保留，不影响运行时。
 
 ## 记忆实验
 
-```sh
-zcode --prompt "执行本次记忆实验任务" --memory-bench --mode yolo --json
-```
+Neko Memory 目前没有独立的实验开关。需要隔离时，使用全新的 `NEKODE_HOME` / 数据根和独立会话；不要直接编辑活跃会话数据库来清理记忆。
 
-`--memory-bench` 仅用于 prompt，要求先启用记忆。它开启自动提取，并在返回结果前等待提取工作结束。默认没有固定的提取等待截止时间；实验启动器应设置自己的运行时限并记录取消状态。
-
-主任务成功不保证提取成功。分别观察主任务结果、提取诊断和后续召回表现。单轮结果、跨轮学习和跨任务复用应分别设计实验，避免把上一个样本的记忆带入下一个独立样本。
-
-不要直接编辑活跃会话数据库来清理记忆。优先为实验创建新的数据目录；需要保留记忆做跨轮实验时显式复用，并记录复用关系。
+旧版 `--memory-bench` 与 Project Memory Extraction 已随旧版记忆删除，不再提供。

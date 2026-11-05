@@ -1,8 +1,8 @@
 import { zcodeProcessResourceSampleSchema } from "@zcode/shared";
 import { describe, expect, it, vi } from "vitest";
 import {
-  ZCODE_PROCESS_RESOURCE_SAMPLE_INTERVAL_MS,
-  createZCodeProcessResourceSampler,
+  NEKODE_PROCESS_RESOURCE_SAMPLE_INTERVAL_MS,
+  createNekodeProcessResourceSampler,
   type ProcessMemoryUsageSnapshot,
 } from "../src/process-resource-sampler.js";
 
@@ -14,7 +14,7 @@ const memoryUsage: ProcessMemoryUsageSnapshot = {
   arrayBuffers: 1024 * 1024,
 };
 
-describe("createZCodeProcessResourceSampler", () => {
+describe("createNekodeProcessResourceSampler", () => {
   it("每 60 秒按差分计算 CPU 核心数、整机百分比和 RSS，并把完整内存快照作为第二参数交给 onSample", () => {
     const onSample = vi.fn();
     const unref = vi.fn();
@@ -24,7 +24,7 @@ describe("createZCodeProcessResourceSampler", () => {
       { user: 2_000_000, system: 500_000 },
     ];
     const monotonicSnapshots = [0n, 1_000_000_000n];
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "arm64",
       logicalCpuCount: 8,
       onSample,
@@ -38,7 +38,7 @@ describe("createZCodeProcessResourceSampler", () => {
       timer: {
         clearInterval: vi.fn(),
         setInterval(callback, intervalMs) {
-          expect(intervalMs).toBe(ZCODE_PROCESS_RESOURCE_SAMPLE_INTERVAL_MS);
+          expect(intervalMs).toBe(NEKODE_PROCESS_RESOURCE_SAMPLE_INTERVAL_MS);
           scheduled = callback;
           return { unref };
         },
@@ -79,7 +79,7 @@ describe("createZCodeProcessResourceSampler", () => {
       { user: 2_000_000, system: 0 },
     ];
     const monotonicSnapshots = [0n, 1_000_000_000n, 2_000_000_000n];
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "x64",
       logicalCpuCount: 4,
       onSample,
@@ -124,7 +124,7 @@ describe("createZCodeProcessResourceSampler", () => {
       { user: 3_000_000, system: 0 },
     ];
     const monotonicSnapshots = [0n, 1_000_000_000n, 3_000_000_000n];
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "x64",
       logicalCpuCount: 4,
       onSample,
@@ -161,7 +161,7 @@ describe("createZCodeProcessResourceSampler", () => {
     const onSample = vi.fn();
     let scheduled: (() => void) | undefined;
     const monotonicSnapshots = [0n, 1_000_000_000n];
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "x64",
       logicalCpuCount: 4,
       onSample,
@@ -189,7 +189,7 @@ describe("createZCodeProcessResourceSampler", () => {
     const clearInterval = vi.fn();
     const handle = { unref: vi.fn() };
     const setInterval = vi.fn(() => handle);
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "x64",
       logicalCpuCount: 1,
       onSample: vi.fn(),
@@ -218,7 +218,7 @@ describe("createZCodeProcessResourceSampler", () => {
       },
     };
     const clearInterval = vi.fn();
-    const sampler = createZCodeProcessResourceSampler({
+    const sampler = createNekodeProcessResourceSampler({
       arch: "x64",
       logicalCpuCount: 1,
       onSample: vi.fn(),

@@ -7,7 +7,7 @@ import { describe, expect, it, vi } from "vitest";
 import { createSqliteSessionStore } from "@zcode/adapters/storage";
 import {
   BUILTIN_MODEL_PROVIDER_IDS,
-  ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+  NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
   zcodeProtocolMethods,
   zcodeMessagePartSchema,
   zcodeSessionCancelBackgroundTaskResultSchema,
@@ -25,8 +25,8 @@ import {
   zcodeWorkspaceCancelGenerateTextResultSchema,
   zcodeWorkspacePresentationSchema,
   zcodeWorkspaceUpdateInteractionPreferencesResultSchema,
-  type ZCodeProtocolMessage,
-  type ZCodeProtocolNotification,
+  type NekodeProtocolMessage,
+  type NekodeProtocolNotification,
 } from "@zcode/shared";
 import {
   V4_METHODS,
@@ -70,12 +70,12 @@ import {
   ProviderRegistry,
   type Provider,
 } from "@zcode/provider";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
-import { ZCodeProtocolNdjsonConnection } from "../src/zcode-protocol/transport.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { NekodeProtocolNdjsonConnection } from "../src/zcode-protocol/transport.js";
 import { shouldCloseSessionForExpectedPersistence } from "../src/zcode-protocol/server-operations.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 import {
   buildSessionSnapshot,
@@ -84,9 +84,9 @@ import {
   mapSessionEvents,
   mapSessionSettings,
 } from "../src/zcode-protocol/mapper.js";
-import { createWorkspaceZCodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
+import { createWorkspaceNekodeApp } from "../src/zcode-protocol/workspace-model-runtime.js";
 import { onSessionEvent } from "../src/zcode-protocol/server-operations.js";
-import type { ZCodeApp, ZCodeAppOptions } from "../src/app/types.js";
+import type { NekodeApp, NekodeAppOptions } from "../src/app/types.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 import { createApiKeyProviderConfig } from "./provider-config-fixtures.js";
 
@@ -184,10 +184,10 @@ describe("conditional session close", () => {
   });
 });
 
-describe("ZCodeProtocolAgentServer", () => {
+describe("NekodeProtocolAgentServer", () => {
   it("所有 Entry 都不再接受旧 Workspace Provider 写协议", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -202,7 +202,7 @@ describe("ZCodeProtocolAgentServer", () => {
           id: `retired-provider-writer-${index}`,
           method,
           params: {},
-        } as ZCodeProtocolMessage),
+        } as NekodeProtocolMessage),
       ).resolves.toMatchObject({
         id: `retired-provider-writer-${index}`,
         error: { code: -32601 },
@@ -216,8 +216,8 @@ describe("ZCodeProtocolAgentServer", () => {
       reason: "managed",
       policyRevision: "test:deny:v1",
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
       workspaceHookPolicyProvider: policyProvider,
@@ -244,9 +244,9 @@ describe("ZCodeProtocolAgentServer", () => {
       mode: "user_decides",
       policyRevision: "test:user-decides:v1",
     });
-    let createdOptions: ZCodeAppOptions | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    let createdOptions: NekodeAppOptions | undefined;
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdOptions = options;
         return createFakeApp(options);
       },
@@ -265,8 +265,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("applies strict workspace interaction preferences without creating a session", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -291,7 +291,7 @@ describe("ZCodeProtocolAgentServer", () => {
     });
   });
 
-  it("maps core tool events into typed ZCode session event payloads", () => {
+  it("maps core tool events into typed Nekode session event payloads", () => {
     const mapped = zcodeSessionEventSchema.parse(
       mapSessionEvent({
         id: "evt_tool_1" as SessionEvent["id"],
@@ -873,7 +873,7 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("emits Computer Use lifecycle metadata without a legacy deliveryKind", () => {
     const ingest = vi.fn();
-    const notify = vi.fn<(notification: ZCodeProtocolNotification) => void>();
+    const notify = vi.fn<(notification: NekodeProtocolNotification) => void>();
     const record = {
       app: { sessionId: "sess_cua_sideband" },
       updatedAt: 1_700,
@@ -1163,8 +1163,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("logs snapshot phase timings for session create diagnostics", async () => {
     const logs: RecordedLog[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       loggerFactory: createProtocolTestLoggerFactory(logs),
       version: "test-version",
@@ -1193,8 +1193,8 @@ describe("ZCodeProtocolAgentServer", () => {
   // M5 ③-3：usage query 的 v4 名字空间分派（L2）。数据访问层与旧 usage/stats、
   // session/usage 共用（usage store 聚合），这里锁定 v4 方法名可达且结果过 v4 schema。
   it("serves v4/usage/stats through the usage data access layer", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1215,8 +1215,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("serves v4/conversation/usage keyed by sessionId", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1235,8 +1235,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("三类 v4 subscribe response 只含 ACK，并把 initial 放入 request-scoped outbox", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1302,8 +1302,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("routes strict v4 connection flow control to the gateway", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1326,8 +1326,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("routes attachment begin/chunk/commit/abort without a full-data RPC", async () => {
     const writePromptAttachment = vi.fn(async () => ({ ref: "zcode-artifact://upload/server" }));
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { writePromptAttachment }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { writePromptAttachment }),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1408,8 +1408,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("并发 subscribe request id 的 post-response outbox 不串线", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1441,8 +1441,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("aligned resume 经真实 server/outbox/NDJSON 只写一行 ACK response", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1486,7 +1486,7 @@ describe("ZCodeProtocolAgentServer", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages: () => server.clearPostResponseMessages(),
       handleMessage: (message) => server.handleMessage(message),
       input,
@@ -1516,8 +1516,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("same-sub resync 经真实 server/NDJSON 严格先 ACK 再 physical recovery", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -1551,7 +1551,7 @@ describe("ZCodeProtocolAgentServer", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages: () => server.clearPostResponseMessages(),
       handleMessage: (message) => server.handleMessage(message),
       input,
@@ -1589,8 +1589,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("uses the app supplied protocol trace as the session root trace", async () => {
     const logs: RecordedLog[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       loggerFactory: createProtocolTestLoggerFactory(logs),
       version: "test-version",
@@ -1618,8 +1618,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const pluginRoot = join(root, "plugin");
     const connectedConfigs: Record<string, McpServerConfig>[] = [];
     const mcpPort = createProtocolListMcpPort(connectedConfigs);
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspacePath,
       mcpPort,
       version: "test-version",
@@ -1691,8 +1691,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const workspacePath = join(root, "workspace");
     const connectedConfigs: Record<string, McpServerConfig>[] = [];
     const mcpPort = createProtocolListMcpPort(connectedConfigs);
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspacePath,
       mcpPort,
       version: "test-version",
@@ -1782,8 +1782,8 @@ describe("ZCodeProtocolAgentServer", () => {
         updatedAt: new Date(1).toISOString(),
       },
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspacePath,
       mcpPort,
       version: "test-version",
@@ -1810,7 +1810,7 @@ describe("ZCodeProtocolAgentServer", () => {
               headers: [],
               oauth: {
                 type: "authorization_code",
-                clientName: "ZCode",
+                clientName: "Nekode",
               },
             },
           ],
@@ -1858,8 +1858,8 @@ describe("ZCodeProtocolAgentServer", () => {
         updatedAt: new Date(1).toISOString(),
       },
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspacePath,
       mcpPort,
       version: "test-version",
@@ -1891,7 +1891,7 @@ describe("ZCodeProtocolAgentServer", () => {
               headers: [],
               oauth: {
                 type: "authorization_code",
-                clientName: "ZCode",
+                clientName: "Nekode",
               },
             },
           ],
@@ -1932,8 +1932,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const mcpPort = createProtocolPendingAuthorizationMcpPort(connectedConfigs, (resolve) => {
       finishConnect = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspacePath,
       mcpPort,
       version: "test-version",
@@ -1959,7 +1959,7 @@ describe("ZCodeProtocolAgentServer", () => {
               headers: [],
               oauth: {
                 type: "authorization_code",
-                clientName: "ZCode",
+                clientName: "Nekode",
               },
             },
           ],
@@ -1987,7 +1987,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("cancels background bash tasks through the session protocol", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
+    const notifications: NekodeProtocolNotification[] = [];
     let cancelledTaskId: string | undefined;
     let backgroundTasks: BackgroundTaskInfo[] = [
       {
@@ -1998,8 +1998,8 @@ describe("ZCodeProtocolAgentServer", () => {
         terminalId: "bg_1",
       },
     ];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options);
         return {
           ...app,
@@ -2062,12 +2062,12 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("sends contiguous protocol seq for the visible session event stream", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
+    const notifications: NekodeProtocolNotification[] = [];
     const logs: RecordedLog[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -2224,11 +2224,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("omits repeated scheduled tool input after model streaming tool calls", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    const notifications: NekodeProtocolNotification[] = [];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -2367,11 +2367,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("coalesces streaming tool input deltas with eager and timestamp-budgeted flushes", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    const notifications: NekodeProtocolNotification[] = [];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -2495,11 +2495,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("coalesces text and reasoning streaming deltas after the first visible token", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    const notifications: NekodeProtocolNotification[] = [];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -2619,11 +2619,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("keeps separate text streaming parts in separate protocol batches", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    const notifications: NekodeProtocolNotification[] = [];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -2726,8 +2726,8 @@ describe("ZCodeProtocolAgentServer", () => {
       workspaceIdentity: "ssh:example:/workspace/app",
     };
     try {
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => createFakeApp(options),
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => createFakeApp(options),
         cwd: importedWorkspace.workspacePath,
         sessionStore: store,
         version: "test-version",
@@ -2837,8 +2837,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("accepts an assigned fresh ID and rejects replacement of the existing runtime", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -2866,8 +2866,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: async (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: async (options) => {
         started();
         await gate;
         return createFakeApp(options);
@@ -2893,11 +2893,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("keeps session title generation internals out of the visible event stream", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    let eventStore: ZCodeAppOptions["eventStore"];
+    const notifications: NekodeProtocolNotification[] = [];
+    let eventStore: NekodeAppOptions["eventStore"];
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -3064,8 +3064,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const notifications: Array<{ method: string; params: unknown }> = [];
     let eventStore: SessionEventStore | undefined;
     let liveSink: ((event: SessionEvent) => void | Promise<void>) | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         eventStore = options?.eventStore;
         const app = createFakeApp(options);
         return {
@@ -3197,8 +3197,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("returns direct session snapshots for create/read and wrapped subscribe results", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -3210,7 +3210,7 @@ describe("ZCodeProtocolAgentServer", () => {
         params: { workspace },
       }),
     );
-    expect(created.protocol).toEqual({ name: "ZCode Protocol", version: 1 });
+    expect(created.protocol).toEqual({ name: "Nekode Protocol", version: 1 });
     expect(created.session.workspace.workspaceKey).toBe(workspace.workspaceKey);
 
     const read = zcodeSessionStateSnapshotSchema.parse(
@@ -3241,8 +3241,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const store = await createSqliteSessionStore({ dbPath: ":memory:" });
     const big = "y".repeat(512 * 1024);
     try {
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => createFakeApp(options),
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => createFakeApp(options),
         cwd: workspace.workspacePath,
         sessionStore: store,
         version: "test-version",
@@ -3363,8 +3363,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("returns built-in slash commands for workspace and session snapshots", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       version: "test-version",
     });
@@ -3402,12 +3402,12 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("enables model streaming by default for protocol workspace apps", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
 
-    await createWorkspaceZCodeApp(
+    await createWorkspaceNekodeApp(
       {
         deps: {
-          createZCodeApp: (options) => {
+          createNekodeApp: (options) => {
             createdAppOptions.push(options ?? {});
             return createFakeApp(options);
           },
@@ -3427,7 +3427,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("passes the opaque workspace identity into protocol app Memory config", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const remoteWorkspace = {
       workspaceIdentity: "ssh:example:/workspace/app",
       workspaceKey: "ssh:example:/workspace/app",
@@ -3435,10 +3435,10 @@ describe("ZCodeProtocolAgentServer", () => {
       remoteSessionId: "remote-session-1",
     };
 
-    await createWorkspaceZCodeApp(
+    await createWorkspaceNekodeApp(
       {
         deps: {
-          createZCodeApp: (options) => {
+          createNekodeApp: (options) => {
             createdAppOptions.push(options ?? {});
             return createFakeApp(options);
           },
@@ -3454,7 +3454,7 @@ describe("ZCodeProtocolAgentServer", () => {
       },
     );
 
-    expect(createdAppOptions[0]?.runtimeConfig?.memory?.workspaceIdentity).toBe(
+    expect(createdAppOptions[0]?.runtimeConfig?.workspaceIdentity).toBe(
       remoteWorkspace.workspaceIdentity,
     );
     expect(createdAppOptions[0]?.runtimeConfig?.remoteSessionId).toBe(
@@ -3463,16 +3463,16 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("preserves unapplied zcode-plan runtime headers original failure", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const requestClient = vi.fn(async () => ({
       headersApplied: false,
       errorMessage: "Runtime headers helper timed out after 5000ms.",
     }));
 
-    await createWorkspaceZCodeApp(
+    await createWorkspaceNekodeApp(
       {
         deps: {
-          createZCodeApp: (options) => {
+          createNekodeApp: (options) => {
             createdAppOptions.push(options ?? {});
             return createFakeApp(options);
           },
@@ -3524,7 +3524,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("returns per-request auth and distinct IDs for concurrent runtime header refreshes", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const requestClient = vi.fn(async () => ({
       headersApplied: true,
       requestAuth: {
@@ -3534,10 +3534,10 @@ describe("ZCodeProtocolAgentServer", () => {
       },
     }));
 
-    await createWorkspaceZCodeApp(
+    await createWorkspaceNekodeApp(
       {
         deps: {
-          createZCodeApp: (options) => {
+          createNekodeApp: (options) => {
             createdAppOptions.push(options ?? {});
             return createFakeApp(options);
           },
@@ -3612,9 +3612,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("injects protocol MCP servers into session runtime config", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -3680,9 +3680,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("injects protocol tool allow and deny lists into session runtime config", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -3707,9 +3707,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("远程 SSH/WSL workspace 默认禁用全部 Cron 工具并保留调用方 denylist", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -3746,13 +3746,13 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("reads materialization preferences once per root runtime and keeps active resumes stable", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     let nativeSearchEnabled = false;
     let toolSearchMode: "off" | "local" = "off";
     let memoryEnabled = false;
     let modelContextBudgetStrategy: "legacy" | "preflight-v1" = "legacy";
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -3795,18 +3795,15 @@ describe("ZCodeProtocolAgentServer", () => {
     expect(createdAppOptions[0]?.runtimeConfig?.toolSearch).toEqual({ mode: "off" });
     expect(createdAppOptions[1]?.runtimeConfig?.toolSearch).toEqual({ mode: "local" });
     expect(createdAppOptions[0]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(false);
-    expect(createdAppOptions[0]?.runtimeConfig?.memory?.enabled).toBe(false);
     expect(createdAppOptions[0]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
     expect(createdAppOptions[1]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(true);
     expect(createdAppOptions[1]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
-    // 开启 Settings 只解除总开关，不覆盖底层 features.memory/use 配置。
-    expect(createdAppOptions[1]?.runtimeConfig?.memory?.enabled).toBeUndefined();
   });
 
   it("reads the latest materialization preferences for a cold resume", async () => {
     const store = await createSqliteSessionStore({ dbPath: ":memory:" });
     const sessionId = "sess_native_search_cold_resume" as SessionId;
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     try {
       await store.createSession({
         id: sessionId,
@@ -3818,8 +3815,8 @@ describe("ZCodeProtocolAgentServer", () => {
         version: "test-version",
         time: { created: 1, updated: 1 },
       });
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => {
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => {
           createdAppOptions.push(options);
           return createFakeApp(options);
         },
@@ -3843,7 +3840,6 @@ describe("ZCodeProtocolAgentServer", () => {
       expect(preferenceRequests).toHaveLength(1);
       expect(createdAppOptions[0]?.runtimeConfig?.toolSearch).toEqual({ mode: "auto" });
       expect(createdAppOptions[0]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(false);
-      expect(createdAppOptions[0]?.runtimeConfig?.memory?.enabled).toBe(false);
       expect(createdAppOptions[0]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
     } finally {
       await store.close();
@@ -3858,11 +3854,11 @@ describe("ZCodeProtocolAgentServer", () => {
   ])(
     "injects pull access into advertised local and remote sessions (%s)",
     async (workspaceIdentity) => {
-      const options: ZCodeAppOptions[] = [];
+      const options: NekodeAppOptions[] = [];
       const reads: unknown[] = [];
       let content = "old";
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (input) => {
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (input) => {
           options.push(input);
           return createFakeApp(input);
         },
@@ -3931,9 +3927,9 @@ describe("ZCodeProtocolAgentServer", () => {
   );
 
   it("keeps native search on but defaults Memory off when no Host client is attached", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -3949,14 +3945,13 @@ describe("ZCodeProtocolAgentServer", () => {
 
     expect(createdAppOptions[0]?.readSubagentRuntimeConfig).toBeUndefined();
     expect(createdAppOptions[0]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(true);
-    expect(createdAppOptions[0]?.runtimeConfig?.memory?.enabled).toBe(false);
     expect(createdAppOptions[0]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
   });
 
   it("defaults Memory off for an old Host but rejects other preference failures", async () => {
-    const oldHostOptions: ZCodeAppOptions[] = [];
-    const oldHostServer = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const oldHostOptions: NekodeAppOptions[] = [];
+    const oldHostServer = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         oldHostOptions.push(options);
         return createFakeApp(options);
       },
@@ -3981,16 +3976,15 @@ describe("ZCodeProtocolAgentServer", () => {
       params: { workspace },
     });
     expect(oldHostOptions[0]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(true);
-    expect(oldHostOptions[0]?.runtimeConfig?.memory?.enabled).toBe(false);
     expect(oldHostOptions[0]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
 
     for (const response of [
       { error: { code: -32603, message: "setting read failed" } },
       { result: { nativeSearchEnhancementsEnabled: "invalid" } },
     ]) {
-      const createdAppOptions: ZCodeAppOptions[] = [];
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => {
+      const createdAppOptions: NekodeAppOptions[] = [];
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => {
           createdAppOptions.push(options);
           return createFakeApp(options);
         },
@@ -4002,7 +3996,7 @@ describe("ZCodeProtocolAgentServer", () => {
           "id" in message &&
           message.method === zcodeProtocolMethods.sessionRequestRuntimePreferences
         ) {
-          void server.handleMessage({ id: message.id, ...response } as ZCodeProtocolMessage);
+          void server.handleMessage({ id: message.id, ...response } as NekodeProtocolMessage);
         }
       });
 
@@ -4019,10 +4013,10 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("times out runtime preference resolution while the Host remains connected", async () => {
     vi.useFakeTimers();
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const logs: RecordedLog[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -4041,13 +4035,13 @@ describe("ZCodeProtocolAgentServer", () => {
         params: { workspace },
       });
 
-      await vi.advanceTimersByTimeAsync(ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS);
+      await vi.advanceTimersByTimeAsync(NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS);
 
       await expect(resultPromise).resolves.toMatchObject({
         error: {
           code: -32022,
           data: {
-            timeoutMs: ZCODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
+            timeoutMs: NEKODE_SESSION_RUNTIME_PREFERENCES_REQUEST_TIMEOUT_MS,
           },
         },
       });
@@ -4055,7 +4049,7 @@ describe("ZCodeProtocolAgentServer", () => {
       expect(logs).toContainEqual(
         expect.objectContaining({
           level: "warn",
-          message: "ZCode Protocol runtime preferences request timed out",
+          message: "Nekode Protocol runtime preferences request timed out",
           context: expect.objectContaining({
             errorCode: -32022,
             scope: "runtime-materialization",
@@ -4069,9 +4063,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("defaults Memory off when an older responder omits the preference field", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -4090,13 +4084,12 @@ describe("ZCodeProtocolAgentServer", () => {
 
     expect(createdAppOptions[0]?.readSubagentRuntimeConfig).toBeUndefined();
     expect(createdAppOptions[0]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(true);
-    expect(createdAppOptions[0]?.runtimeConfig?.memory?.enabled).toBe(false);
   });
 
   it("settles queued Session creation when the Host disconnects during preference resolution", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -4109,7 +4102,7 @@ describe("ZCodeProtocolAgentServer", () => {
     output.on("data", (chunk: Buffer) => {
       written += chunk.toString("utf8");
     });
-    const connection = new ZCodeProtocolNdjsonConnection({
+    const connection = new NekodeProtocolNdjsonConnection({
       clearPostResponseMessages: () => server.clearPostResponseMessages(),
       handleMessage: (message) => server.handleMessage(message),
       input,
@@ -4145,7 +4138,7 @@ describe("ZCodeProtocolAgentServer", () => {
     const messages = written
       .trim()
       .split("\n")
-      .map((line) => JSON.parse(line) as ZCodeProtocolMessage);
+      .map((line) => JSON.parse(line) as NekodeProtocolMessage);
     expect(
       messages.filter(
         (message) =>
@@ -4176,38 +4169,38 @@ describe("ZCodeProtocolAgentServer", () => {
     }));
     app.runtime.stopActiveForegroundExecution = stopActiveForegroundExecution;
     const activeAbortController = new AbortController();
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: () => app,
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: () => app,
       cwd: workspace.workspacePath,
       version: "test-version",
     });
-    const context = (server as unknown as { context: ZCodeProtocolAgentServerContext }).context;
+    const context = (server as unknown as { context: NekodeProtocolAgentServerContext }).context;
     context.sessions.set("sess_active", {
       activeAbortController,
       app,
-    } as unknown as ZCodeProtocolSessionRecord);
+    } as unknown as NekodeProtocolSessionRecord);
     const disconnectError = new Error("Core owner disconnected");
 
     server.disconnectClient(disconnectError);
 
     expect(stopActiveForegroundExecution).toHaveBeenCalledOnce();
     expect(stopActiveForegroundExecution).toHaveBeenCalledWith({
-      reason: "ZCode Protocol owner disconnected",
+      reason: "Nekode Protocol owner disconnected",
     });
     expect(activeAbortController.signal.aborted).toBe(true);
     expect(activeAbortController.signal.reason).toBe(disconnectError);
   });
 
   it("initializes the configured integrated terminal shell before the first prompt", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const shellInitializations: unknown[] = [];
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-protocol-shell-"));
     const fakeGitBash = join(tempRoot, "bash.exe");
     await writeFile(fakeGitBash, "");
     await chmod(fakeGitBash, 0o755);
     try {
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) =>
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) =>
           createShellRecordingFakeApp(options, shellInitializations, createdAppOptions),
         cwd: workspace.workspacePath,
         platform: "win32",
@@ -4271,11 +4264,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("does not initialize an unavailable configured integrated terminal shell as the effective snapshot", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const shellInitializations: unknown[] = [];
     const unavailablePath = "Z:\\Missing\\Git\\bin\\bash.exe";
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createShellRecordingFakeApp(options, shellInitializations, createdAppOptions),
       cwd: workspace.workspacePath,
       env: { PATH: "" },
@@ -4337,8 +4330,8 @@ describe("ZCodeProtocolAgentServer", () => {
     await chmod(laterGitBash, 0o755);
     try {
       let selectedShell = initialGitBash;
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => createShellRecordingFakeApp(options, shellInitializations),
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => createShellRecordingFakeApp(options, shellInitializations),
         cwd: workspace.workspacePath,
         platform: "win32",
         version: "test-version",
@@ -4423,13 +4416,13 @@ describe("ZCodeProtocolAgentServer", () => {
   it("initializes a deferred draft shell before accepting its first prompt", async () => {
     const tempRoot = await mkdtemp(join(tmpdir(), "zcode-protocol-shell-deferred-"));
     const laterGitBash = join(tempRoot, "later-bash.exe");
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const shellInitializations: unknown[] = [];
     await writeFile(laterGitBash, "");
     await chmod(laterGitBash, 0o755);
     try {
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) =>
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) =>
           createShellRecordingFakeApp(options, shellInitializations, createdAppOptions),
         cwd: workspace.workspacePath,
         platform: "win32",
@@ -4488,8 +4481,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("rejects integrated terminal shell params on create, resume, and send", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
       platform: "win32",
       version: "test-version",
@@ -4549,8 +4542,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("keeps deferred draft sessions out of session/list until the first send", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
     });
 
@@ -4592,9 +4585,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("keeps server-owned model state and emits state update notifications", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const notifications: NekodeProtocolNotification[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
     });
     setTestNotificationSink(server, (notification) => notifications.push(notification));
@@ -4637,9 +4630,9 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("maps a protocol session model to structured Runtime Selection", async () => {
-    const createdAppOptions: ZCodeAppOptions[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const createdAppOptions: NekodeAppOptions[] = [];
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         createdAppOptions.push(options);
         return createFakeApp(options);
       },
@@ -4709,9 +4702,9 @@ describe("ZCodeProtocolAgentServer", () => {
         tokens: { input: 12345, output: 67, reasoning: 0, cache: { read: 2345, write: 678 } },
       });
 
-      const appOptions: ZCodeAppOptions[] = [];
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => {
+      const appOptions: NekodeAppOptions[] = [];
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => {
           appOptions.push(options ?? {});
           return createFakeApp(options);
         },
@@ -4789,8 +4782,8 @@ describe("ZCodeProtocolAgentServer", () => {
         time: { created: 1, updated: 2 },
       });
 
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => createFakeApp(options),
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => createFakeApp(options),
         cwd: workspace.workspacePath,
         sessionStore: store,
       });
@@ -4802,7 +4795,7 @@ describe("ZCodeProtocolAgentServer", () => {
       });
 
       const record = (
-        server as unknown as { context: ZCodeProtocolAgentServerContext }
+        server as unknown as { context: NekodeProtocolAgentServerContext }
       ).context.sessions.get(sessionId);
       expect(record?.taskType).toBe("workflow_child");
     } finally {
@@ -4811,8 +4804,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("workspace presentation omits model facts", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
     });
 
@@ -4831,8 +4824,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("通过独立协议同步 Account Config，不再从 Workspace Snapshot 反向投影", async () => {
     const syncAccountProviderConfig = vi.fn(async () => true);
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: () => createFakeApp(),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: () => createFakeApp(),
       cwd: workspace.workspacePath,
       syncAccountProviderConfig,
     });
@@ -4842,7 +4835,7 @@ describe("ZCodeProtocolAgentServer", () => {
       method: zcodeProtocolMethods.providerUpdateAccountConfig,
       params: {
         revision: "account-1",
-        basedOnZCodeBuiltinRevision: "zcode-builtin:1",
+        basedOnNekodeBuiltinRevision: "zcode-builtin:1",
         states: {
           "account:zai-individual-coding-plan": {
             availability: "available",
@@ -4867,7 +4860,7 @@ describe("ZCodeProtocolAgentServer", () => {
     expect(syncAccountProviderConfig).toHaveBeenCalledTimes(1);
     const snapshot = syncAccountProviderConfig.mock.calls[0]?.[0];
     expect(snapshot?.revision).toBe("account-1");
-    expect(snapshot?.basedOnZCodeBuiltinRevision).toBe("zcode-builtin:1");
+    expect(snapshot?.basedOnNekodeBuiltinRevision).toBe("zcode-builtin:1");
     expect(snapshot?.states?.["account:zai-individual-coding-plan"].current).toBe(false);
     expect(snapshot?.providers.get("account:zai-individual-coding-plan")?.toJSON()).toEqual({
       access: { type: "zhipu-account", entitled: true },
@@ -4879,8 +4872,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const refreshProviderRegistry = vi.fn(async (reason: string) => {
       expect(reason).toBe("before-turn");
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: () => createFakeApp(),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: () => createFakeApp(),
       cwd: workspace.workspacePath,
       refreshProviderRegistry,
     });
@@ -4926,8 +4919,8 @@ describe("ZCodeProtocolAgentServer", () => {
       revision: "model-runtime:first-provider-default",
       thoughtLevel: "max",
     };
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
     });
 
@@ -4946,8 +4939,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("uses app-provided thought level when creating a session", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options),
       cwd: workspace.workspacePath,
     });
 
@@ -4979,8 +4972,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const sendInputCompletion = new Promise<void>((resolve) => {
       resolveSendInput = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (_input, options) => {
             receivedInputId = options?.inputId;
@@ -5046,8 +5039,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const sendInputStarted = new Promise<void>((resolve) => {
       resolveSendInputStarted = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (_input, sendOptions) => {
             receivedAutomationId = sendOptions?.automationId;
@@ -5096,8 +5089,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const sendInputStarted = new Promise<void>((resolve) => {
       resolveSendInputStarted = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (_input, options) => {
             receivedAutomationId = options?.automationId;
@@ -5138,8 +5131,8 @@ describe("ZCodeProtocolAgentServer", () => {
     let secondSendDuringCompleted: Promise<unknown> | undefined;
     let finalizationCountDuringCompleted: number | undefined;
     let activeLockDuringCompleted: AbortController | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async () => ({
             kind: "started_turn",
@@ -5156,7 +5149,7 @@ describe("ZCodeProtocolAgentServer", () => {
         !secondSendDuringCompleted
       ) {
         const record = (
-          server as unknown as { context: ZCodeProtocolAgentServerContext }
+          server as unknown as { context: NekodeProtocolAgentServerContext }
         ).context.sessions.get(sessionId);
         finalizationCountDuringCompleted = record?.residencyFinalizationCount;
         activeLockDuringCompleted = record?.activeAbortController;
@@ -5207,7 +5200,7 @@ describe("ZCodeProtocolAgentServer", () => {
     expect(finalizationCountDuringCompleted).toBe(1);
     await vi.waitFor(() => {
       const record = (
-        server as unknown as { context: ZCodeProtocolAgentServerContext }
+        server as unknown as { context: NekodeProtocolAgentServerContext }
       ).context.sessions.get(sessionId);
       expect(record?.residencyFinalizationCount).toBe(0);
     });
@@ -5219,8 +5212,8 @@ describe("ZCodeProtocolAgentServer", () => {
     const received = new Promise<void>((resolve) => {
       resolveReceived = resolve;
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async (input) => {
             receivedInput = input;
@@ -5259,7 +5252,7 @@ describe("ZCodeProtocolAgentServer", () => {
             filename: "pasted-text.txt",
             mimeType: "text/plain",
             sizeBytes: 8192,
-            localPath: "/tmp/.zcode/tmp/paste-attachments/2026-06-30/pasted-text.txt",
+            localPath: "/tmp/.nekode/tmp/paste-attachments/2026-06-30/pasted-text.txt",
             sourceKind: "clipboard-text",
           },
           {
@@ -5278,7 +5271,7 @@ describe("ZCodeProtocolAgentServer", () => {
       attachments: [
         { path: "/tmp/report.pdf", type: "pdf" },
         {
-          path: "/tmp/.zcode/tmp/paste-attachments/2026-06-30/pasted-text.txt",
+          path: "/tmp/.nekode/tmp/paste-attachments/2026-06-30/pasted-text.txt",
           sourceKind: "clipboard-text",
           type: "file",
         },
@@ -5288,7 +5281,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("bridges protocol permission requests through server-to-client JSON-RPC", async () => {
-    const outgoing: ZCodeProtocolMessage[] = [];
+    const outgoing: NekodeProtocolMessage[] = [];
     const origin = {
       kind: "subagent",
       agentId: "agent_perm",
@@ -5300,10 +5293,10 @@ describe("ZCodeProtocolAgentServer", () => {
       parentTurnId: "turn_parent_perm",
     } as const;
     let brokerResult:
-      | Awaited<ReturnType<NonNullable<ZCodeAppOptions["permissionBroker"]>["requestPermission"]>>
+      | Awaited<ReturnType<NonNullable<NekodeAppOptions["permissionBroker"]>["requestPermission"]>>
       | undefined;
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async () => {
             brokerResult = await options?.permissionBroker?.requestPermission({
@@ -5389,12 +5382,12 @@ describe("ZCodeProtocolAgentServer", () => {
   it("reannounces pending protocol permission requests so a later client request can be answered", async () => {
     vi.useFakeTimers();
     try {
-      const outgoing: ZCodeProtocolMessage[] = [];
+      const outgoing: NekodeProtocolMessage[] = [];
       let brokerResultPromise:
-        | ReturnType<NonNullable<ZCodeAppOptions["permissionBroker"]>["requestPermission"]>
+        | ReturnType<NonNullable<NekodeAppOptions["permissionBroker"]>["requestPermission"]>
         | undefined;
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) =>
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) =>
           createFakeApp(options, {
             sendInput: async () => {
               brokerResultPromise = options?.permissionBroker?.requestPermission({
@@ -5474,7 +5467,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("bridges AskUserQuestion through protocol user input requests", async () => {
-    const outgoing: ZCodeProtocolMessage[] = [];
+    const outgoing: NekodeProtocolMessage[] = [];
     const origin = {
       kind: "subagent",
       agentId: "agent_ask",
@@ -5486,7 +5479,7 @@ describe("ZCodeProtocolAgentServer", () => {
       parentTurnId: "turn_parent_ask",
     } as const;
     let brokerResult:
-      | Awaited<ReturnType<NonNullable<ZCodeAppOptions["permissionBroker"]>["requestPermission"]>>
+      | Awaited<ReturnType<NonNullable<NekodeAppOptions["permissionBroker"]>["requestPermission"]>>
       | undefined;
     const askInput = {
       questions: [
@@ -5500,8 +5493,8 @@ describe("ZCodeProtocolAgentServer", () => {
         },
       ],
     };
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async () => {
             brokerResult = await options?.permissionBroker?.requestPermission({
@@ -5584,7 +5577,7 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("bridges ExitPlanMode approval through protocol user input requests", async () => {
-    const outgoing: ZCodeProtocolMessage[] = [];
+    const outgoing: NekodeProtocolMessage[] = [];
     const origin = {
       kind: "subagent",
       agentId: "agent_exit_plan",
@@ -5596,13 +5589,13 @@ describe("ZCodeProtocolAgentServer", () => {
       parentTurnId: "turn_parent_exit_plan",
     } as const;
     let brokerResult:
-      | Awaited<ReturnType<NonNullable<ZCodeAppOptions["permissionBroker"]>["requestPermission"]>>
+      | Awaited<ReturnType<NonNullable<NekodeAppOptions["permissionBroker"]>["requestPermission"]>>
       | undefined;
     const exitPlanInput = {
       plan: "1. Change the runtime\n2. Add tests",
     };
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           sendInput: async () => {
             brokerResult = await options?.permissionBroker?.requestPermission({
@@ -5687,15 +5680,15 @@ describe("ZCodeProtocolAgentServer", () => {
   it("reannounces pending ExitPlanMode approval so a later client request can be answered", async () => {
     vi.useFakeTimers();
     try {
-      const outgoing: ZCodeProtocolMessage[] = [];
+      const outgoing: NekodeProtocolMessage[] = [];
       let brokerResultPromise:
-        | ReturnType<NonNullable<ZCodeAppOptions["permissionBroker"]>["requestPermission"]>
+        | ReturnType<NonNullable<NekodeAppOptions["permissionBroker"]>["requestPermission"]>
         | undefined;
       const exitPlanInput = {
         plan: "1. Change the runtime\n2. Add tests",
       };
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) =>
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) =>
           createFakeApp(options, {
             sendInput: async () => {
               brokerResultPromise = options?.permissionBroker?.requestPermission({
@@ -5785,8 +5778,8 @@ describe("ZCodeProtocolAgentServer", () => {
   // zcode-protocol-v4/commands/handlers/fork-edit-retry.ts）；本用例收敛为 compact 单验证。
   it("runs compact through the explicit session protocol method", async () => {
     const submittedPrompts: string[] = [];
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           submitPrompt: async (prompt) => {
             submittedPrompts.push(typeof prompt === "string" ? prompt : prompt.text);
@@ -5844,8 +5837,8 @@ describe("ZCodeProtocolAgentServer", () => {
         options?.abortSignal?.addEventListener("abort", abort, { once: true });
       });
     });
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { submitPrompt }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { submitPrompt }),
       cwd: workspace.workspacePath,
     });
     const created = zcodeSessionStateSnapshotSchema.parse(
@@ -5897,8 +5890,8 @@ describe("ZCodeProtocolAgentServer", () => {
       finishReason: "length",
       usage: { inputTokens: 3, outputTokens: 256, totalTokens: 259 },
     }));
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
       cwd: workspace.workspacePath,
     });
 
@@ -5945,8 +5938,8 @@ describe("ZCodeProtocolAgentServer", () => {
       calls.push("refresh");
     });
     const testModelConnectivity = vi.fn(async () => {});
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) =>
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) =>
         createFakeApp(options, {
           testModelConnectivity: async (...args) => {
             calls.push("connectivity");
@@ -5995,8 +5988,8 @@ describe("ZCodeProtocolAgentServer", () => {
   it("closes the temporary app after provider connectivity testing", async () => {
     const close = vi.fn(async () => {});
     const testModelConnectivity = vi.fn(async () => {});
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { close, testModelConnectivity }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { close, testModelConnectivity }),
       cwd: workspace.workspacePath,
     });
 
@@ -6020,7 +6013,7 @@ describe("ZCodeProtocolAgentServer", () => {
       resolveStarted = resolve;
     });
     const generateWorkspaceText = vi.fn(
-      async (...[, options]: Parameters<ZCodeApp["generateWorkspaceText"]>) => {
+      async (...[, options]: Parameters<NekodeApp["generateWorkspaceText"]>) => {
         generatedSignal = options?.abortSignal;
         resolveStarted?.();
         await new Promise<never>((_resolve, reject) => {
@@ -6030,8 +6023,8 @@ describe("ZCodeProtocolAgentServer", () => {
         });
       },
     );
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
       cwd: workspace.workspacePath,
     });
 
@@ -6072,7 +6065,7 @@ describe("ZCodeProtocolAgentServer", () => {
     });
     let invocation = 0;
     const generateWorkspaceText = vi.fn(
-      async (...[, options]: Parameters<ZCodeApp["generateWorkspaceText"]>) => {
+      async (...[, options]: Parameters<NekodeApp["generateWorkspaceText"]>) => {
         invocation += 1;
         if (invocation > 1) {
           return {
@@ -6088,8 +6081,8 @@ describe("ZCodeProtocolAgentServer", () => {
         });
       },
     );
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { generateWorkspaceText }),
       cwd: workspace.workspacePath,
     });
     const params = {
@@ -6146,15 +6139,15 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("closes the temporary app after draft workspace text generation", async () => {
     const close = vi.fn(async () => {});
-    const appOptions: ZCodeAppOptions[] = [];
+    const appOptions: NekodeAppOptions[] = [];
     const generateWorkspaceText = vi.fn(async () => ({
       text: "fix(git): generate message",
       selection: { providerId: "custom-openai", modelId: "backup-model" },
       finishReason: "stop",
     }));
     const providerRegistry = createProtocolTestProviderRegistry();
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const effectiveOptions = { ...options, providerRegistry };
         appOptions.push(effectiveOptions);
         return createFakeApp(effectiveOptions, { close, generateWorkspaceText });
@@ -6185,8 +6178,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("drops duplicate compact requests while the same session is compacting", async () => {
     const submitPrompt = vi.fn();
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options);
         return {
           ...app,
@@ -6230,11 +6223,11 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("runs goal through target APIs instead of submitPrompt", async () => {
-    let target: Awaited<ReturnType<NonNullable<ZCodeApp["readTarget"]>>> = null;
+    let target: Awaited<ReturnType<NonNullable<NekodeApp["readTarget"]>>> = null;
     const submitPrompt = vi.fn();
     const continueActiveTarget = vi.fn(async () => ({ response: "continued" }) as never);
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options);
         return {
           ...app,
@@ -6288,7 +6281,7 @@ describe("ZCodeProtocolAgentServer", () => {
             target = { ...target, status, time: { ...target.time, updated: 3 } };
             return target;
           },
-        } satisfies ZCodeApp;
+        } satisfies NekodeApp;
       },
       cwd: workspace.workspacePath,
     });
@@ -6376,8 +6369,8 @@ describe("ZCodeProtocolAgentServer", () => {
       targetID: "goal_running",
       time: { created: 1, updated: 1 },
     }));
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => createFakeApp(options, { sendInput, setTarget }),
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => createFakeApp(options, { sendInput, setTarget }),
     });
     const created = zcodeSessionStateSnapshotSchema.parse(
       await requestResult(server, {
@@ -6420,8 +6413,8 @@ describe("ZCodeProtocolAgentServer", () => {
 
   it("allows session goal pause to stop a running prompt", async () => {
     const abortReasons: string[] = [];
-    let target: Awaited<ReturnType<NonNullable<ZCodeApp["readTarget"]>>> = null;
-    const sendInput = vi.fn<ZCodeApp["sendInput"]>(
+    let target: Awaited<ReturnType<NonNullable<NekodeApp["readTarget"]>>> = null;
+    const sendInput = vi.fn<NekodeApp["sendInput"]>(
       async (_input, options) =>
         await new Promise<never>((_resolve, reject) => {
           const signal = options.abortSignal;
@@ -6437,8 +6430,8 @@ describe("ZCodeProtocolAgentServer", () => {
           signal.addEventListener("abort", rejectFromAbort, { once: true });
         }),
     );
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options, { sendInput });
         target = {
           objective: "Pause current goal immediately",
@@ -6476,7 +6469,7 @@ describe("ZCodeProtocolAgentServer", () => {
             target = { ...target, status, time: { ...target.time, updated: 3 } };
             return target;
           },
-        } satisfies ZCodeApp;
+        } satisfies NekodeApp;
       },
     });
     const created = zcodeSessionStateSnapshotSchema.parse(
@@ -6510,7 +6503,7 @@ describe("ZCodeProtocolAgentServer", () => {
     );
 
     await vi.waitFor(() => {
-      expect(abortReasons).toContain("ZCode Protocol goal paused");
+      expect(abortReasons).toContain("Nekode Protocol goal paused");
     });
     expect(target?.status).toBe("paused");
     expect(pauseResult).toMatchObject({
@@ -6525,14 +6518,14 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("pauses an active goal when session stop cancels goal continuation", async () => {
-    const notifications: ZCodeProtocolNotification[] = [];
+    const notifications: NekodeProtocolNotification[] = [];
     const abortReasons: string[] = [];
     let resolveContinuationStarted!: () => void;
     const continuationStarted = new Promise<void>((resolve) => {
       resolveContinuationStarted = resolve;
     });
-    let target: Awaited<ReturnType<NonNullable<ZCodeApp["readTarget"]>>> = null;
-    const continueActiveTarget = vi.fn<ZCodeApp["continueActiveTarget"]>(
+    let target: Awaited<ReturnType<NonNullable<NekodeApp["readTarget"]>>> = null;
+    const continueActiveTarget = vi.fn<NekodeApp["continueActiveTarget"]>(
       async (options) =>
         await new Promise<never>((_resolve, reject) => {
           const signal = options?.abortSignal;
@@ -6549,8 +6542,8 @@ describe("ZCodeProtocolAgentServer", () => {
           signal?.addEventListener("abort", rejectFromAbort, { once: true });
         }),
     );
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options, { continueActiveTarget });
         return {
           ...app,
@@ -6595,7 +6588,7 @@ describe("ZCodeProtocolAgentServer", () => {
             target = { ...target, status, time: { ...target.time, updated: 3 } };
             return target;
           },
-        } satisfies ZCodeApp;
+        } satisfies NekodeApp;
       },
       cwd: workspace.workspacePath,
     });
@@ -6630,7 +6623,7 @@ describe("ZCodeProtocolAgentServer", () => {
     });
 
     await vi.waitFor(() => {
-      expect(abortReasons).toContain("ZCode Protocol session stopped");
+      expect(abortReasons).toContain("Nekode Protocol session stopped");
     });
     expect(goalResult.startedTurn).toBe(true);
     expect(target?.status).toBe("paused");
@@ -6642,8 +6635,8 @@ describe("ZCodeProtocolAgentServer", () => {
   });
 
   it("includes persisted goal and todos in protocol snapshots", async () => {
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options) => {
         const app = createFakeApp(options);
         const persistedTarget = {
           objective: "Restore parser goal",
@@ -7457,11 +7450,11 @@ describe("ZCodeProtocolAgentServer", () => {
   it("forks sessions and lets selection children inherit parent runtime preferences", async () => {
     const store = await createSqliteSessionStore({ dbPath: ":memory:" });
     const forkTargets: Array<{ targetCheckpointId?: string; targetMessageId?: string }> = [];
-    const createdAppOptions: ZCodeAppOptions[] = [];
+    const createdAppOptions: NekodeAppOptions[] = [];
     const selectionChildId = "sess_selection_runtime_preferences" as SessionId;
     try {
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) => {
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) => {
           createdAppOptions.push(options);
           const app = createFakeApp(options);
           return {
@@ -7532,7 +7525,7 @@ describe("ZCodeProtocolAgentServer", () => {
               }),
             updateTargetStatus: async (status) =>
               await store.updateTargetStatus({ sessionID: app.sessionId, status }),
-          } satisfies ZCodeApp;
+          } satisfies NekodeApp;
         },
         cwd: workspace.workspacePath,
         sessionStore: store,
@@ -7636,7 +7629,6 @@ describe("ZCodeProtocolAgentServer", () => {
       expect(preferenceRequests).toHaveLength(1);
       expect(createdAppOptions[1]?.runtimeConfig?.toolSearch).toEqual({ mode: "local" });
       expect(createdAppOptions[1]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(false);
-      expect(createdAppOptions[1]?.runtimeConfig?.memory?.enabled).toBe(false);
       expect(createdAppOptions[1]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
       expect(result.snapshot.session.target).toMatchObject({
         objective: "Fork inherits parent goal target",
@@ -7677,7 +7669,6 @@ describe("ZCodeProtocolAgentServer", () => {
       expect(preferenceRequests).toHaveLength(1);
       expect(createdAppOptions[2]?.runtimeConfig?.toolSearch).toEqual({ mode: "local" });
       expect(createdAppOptions[2]?.runtimeConfig?.nativeSearchEnhancementsEnabled).toBe(false);
-      expect(createdAppOptions[2]?.runtimeConfig?.memory?.enabled).toBe(false);
       expect(createdAppOptions[2]?.runtimeConfig?.modelContextBudgetStrategy).toBe("preflight-v1");
       expect((await store.getSession(selectionChildId))?.taskType).toBe("selection_side_chat");
     } finally {
@@ -7721,8 +7712,8 @@ describe("ZCodeProtocolAgentServer", () => {
       await saveSyntheticForkNotice(store, sessionId, "msg_fork_notice" as MessageId, 6);
       await saveCompactSummary(store, sessionId, "msg_compact_summary" as MessageId, 7);
 
-      const server = new ZCodeProtocolAgentServer({
-        createZCodeApp: (options) =>
+      const server = new NekodeProtocolAgentServer({
+        createNekodeApp: (options) =>
           createFakeApp(options, {
             forkFromCheckpoint: async (target) => {
               forkTargets.push({
@@ -7978,7 +7969,7 @@ function messageTexts(
   );
 }
 
-async function requestResult(server: ZCodeProtocolAgentServer, message: ZCodeProtocolMessage) {
+async function requestResult(server: NekodeProtocolAgentServer, message: NekodeProtocolMessage) {
   const response = await server.handleMessage(message);
   if (!response || !("result" in response)) {
     throw new Error(`Expected protocol success response: ${JSON.stringify(response)}`);
@@ -7987,8 +7978,8 @@ async function requestResult(server: ZCodeProtocolAgentServer, message: ZCodePro
 }
 
 function setTestNotificationSink(
-  server: ZCodeProtocolAgentServer,
-  sink: Parameters<ZCodeProtocolAgentServer["setNotificationSink"]>[0],
+  server: NekodeProtocolAgentServer,
+  sink: Parameters<NekodeProtocolAgentServer["setNotificationSink"]>[0],
 ): void {
   server.setNotificationSink((message) => {
     if (
@@ -8006,7 +7997,7 @@ function setTestNotificationSink(
 }
 
 function attachSessionRuntimePreferencesResponder(
-  server: ZCodeProtocolAgentServer,
+  server: NekodeProtocolAgentServer,
   resolvePreferences: (scope: "runtime-materialization" | "user-execution") => {
     nativeSearchEnhancementsEnabled: boolean;
     toolSearchMode?: "auto" | "local" | "off";
@@ -8025,8 +8016,8 @@ function attachSessionRuntimePreferencesResponder(
           path: string;
         };
   },
-): ZCodeProtocolMessage[] {
-  const requests: ZCodeProtocolMessage[] = [];
+): NekodeProtocolMessage[] {
+  const requests: NekodeProtocolMessage[] = [];
   server.setNotificationSink((message) => {
     if (
       "id" in message &&
@@ -8258,7 +8249,7 @@ function createProtocolPendingAuthorizationMcpPort(
 }
 
 type ShellInitializationCandidate = Parameters<
-  ZCodeApp["runtime"]["initializeSessionShellEnvironmentIfNeeded"]
+  NekodeApp["runtime"]["initializeSessionShellEnvironmentIfNeeded"]
 >[0];
 
 function resolveShellInitializationCandidate(
@@ -8268,10 +8259,10 @@ function resolveShellInitializationCandidate(
 }
 
 function createShellRecordingFakeApp(
-  options: ZCodeAppOptions,
+  options: NekodeAppOptions,
   shellInitializations: unknown[],
-  createdAppOptions?: ZCodeAppOptions[],
-): ZCodeApp {
+  createdAppOptions?: NekodeAppOptions[],
+): NekodeApp {
   createdAppOptions?.push(options);
   const app = createFakeApp(options);
   let effectiveShellSelection = options.runtimeConfig?.bashShellSelection;

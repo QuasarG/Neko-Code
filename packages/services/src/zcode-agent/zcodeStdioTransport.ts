@@ -1,12 +1,12 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 import { StringDecoder } from "node:string_decoder";
 import { Emitter } from "@zcode/rpc";
-import type { ZCodeProtocolMessage } from "@zcode/shared";
+import type { NekodeProtocolMessage } from "@zcode/shared";
 import { zcodeProtocolMessageSchema } from "@zcode/shared";
 import { createServiceLogger } from "#src/logger/serviceLogger.js";
 import type {
-  ZCodeProtocolTransport,
-  ZCodeProtocolTransportClosedEvent,
+  NekodeProtocolTransport,
+  NekodeProtocolTransportClosedEvent,
 } from "./zcodeProtocolTransport.js";
 import {
   captureProcessGroupSnapshot,
@@ -18,7 +18,7 @@ import {
 import type { ProcessTreeSnapshot } from "#src/process/processTreeTerminator.js";
 import { AgentStderrCollector, EXIT_STDERR_DRAIN_MS } from "./agentStderrCollector.js";
 
-interface ZCodeStdioTransportOptions {
+interface NekodeStdioTransportOptions {
   onStderrLine?: (line: string) => void;
   ownedProcessGroupId?: number;
   ownedProcessStartedAtMs?: number;
@@ -32,11 +32,11 @@ const PROCESS_TREE_WINDOWS_TASKKILL_TIMEOUT_MS = 1_000;
 const PROCESS_TREE_WINDOWS_EXIT_OBSERVATION_GRACE_MS = 250;
 const processTreeLogger = createServiceLogger("zcode-agent-process-tree");
 
-export class ZCodeStdioTransport implements ZCodeProtocolTransport {
+export class NekodeStdioTransport implements NekodeProtocolTransport {
   readonly kind = "stdio" as const;
 
-  private readonly messageEmitter = new Emitter<ZCodeProtocolMessage>();
-  private readonly closeEmitter = new Emitter<ZCodeProtocolTransportClosedEvent>();
+  private readonly messageEmitter = new Emitter<NekodeProtocolMessage>();
+  private readonly closeEmitter = new Emitter<NekodeProtocolTransportClosedEvent>();
   private readonly stderrCollector: AgentStderrCollector;
   private readonly stdoutDecoder = new StringDecoder("utf8");
   // 当前未完成行的分片；只在遇到 LF 时 join 一次，见 handleStdoutData 注释。
@@ -55,11 +55,11 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
 
   constructor(
     private readonly child: ChildProcessWithoutNullStreams,
-    private readonly options?: ZCodeStdioTransportOptions,
+    private readonly options?: NekodeStdioTransportOptions,
   ) {
     this.stderrCollector = new AgentStderrCollector(child.stderr, options?.onStderrLine);
 
-    // ZCode Protocol stdio 帧边界只认 LF。Node readline 会把 U+2028/U+2029
+    // Nekode Protocol stdio 帧边界只认 LF。Node readline 会把 U+2028/U+2029
     // 当作换行，模型文本包含这类字符时会把合法 JSON 字符串切成半帧。
     child.stdout.on("data", this.handleStdoutData);
     child.stdout.once("end", this.handleStdoutEnd);
@@ -79,9 +79,9 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
     });
   }
 
-  async send(message: ZCodeProtocolMessage): Promise<void> {
+  async send(message: NekodeProtocolMessage): Promise<void> {
     if (this.disposed || this.closed || this.child.killed || !this.child.stdin.writable) {
-      throw new Error("ZCode agent stdio transport is closed");
+      throw new Error("Nekode agent stdio transport is closed");
     }
     const frame = `${JSON.stringify(message)}\n`;
     await new Promise<void>((resolve, reject) => {
@@ -158,7 +158,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
       // coverage CLI bundle 未压缩且带完整 source map，启动/收尾明显慢于发布包。
       // coverage 下继续保留额外写盘宽限；普通窗口覆盖 CLI 的 1500ms 退出 deadline。
       const configuredEofWaitMs =
-        process.env.ZCODE_E2E_COVERAGE === "1"
+        process.env.NEKODE_E2E_COVERAGE === "1"
           ? E2E_COVERAGE_STDIO_EOF_EXIT_WAIT_MS
           : STDIO_EOF_EXIT_WAIT_MS;
       const remainingCleanupMs =
@@ -278,7 +278,7 @@ export class ZCodeStdioTransport implements ZCodeProtocolTransport {
     this.fireClose({ reason: `${stream}_error: ${error.message}` });
   }
 
-  private fireClose(event: ZCodeProtocolTransportClosedEvent): void {
+  private fireClose(event: NekodeProtocolTransportClosedEvent): void {
     if (this.closed) {
       return;
     }

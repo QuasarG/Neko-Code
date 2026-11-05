@@ -6,7 +6,7 @@ import {
   type SessionEvent,
   type SessionId,
 } from "@zcode/contracts";
-import { zcodeProtocolMethods, type ZCodeProtocolMessage } from "@zcode/shared";
+import { zcodeProtocolMethods, type NekodeProtocolMessage } from "@zcode/shared";
 import {
   V4_METHODS,
   conversationTopic,
@@ -14,8 +14,8 @@ import {
   reassembleTopicWireFrames,
   routedTopicWireFrameSchema,
 } from "@zcode/shared/zcode-protocol-v4";
-import type { ZCodeApp, ZCodeAppOptions } from "../src/app/types.js";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import type { NekodeApp, NekodeAppOptions } from "../src/app/types.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 import { createFakeApp } from "./helpers/fake-zcode-app.js";
 
 const workspace = {
@@ -24,8 +24,8 @@ const workspace = {
 };
 
 async function requestResult(
-  server: ZCodeProtocolAgentServer,
-  message: ZCodeProtocolMessage,
+  server: NekodeProtocolAgentServer,
+  message: NekodeProtocolMessage,
 ): Promise<unknown> {
   const response = await server.handleMessage(message);
   if (!response || !("result" in response)) {
@@ -106,8 +106,8 @@ describe("v4 queue auto-drain foreground races", () => {
         },
       );
 
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp: (options: ZCodeAppOptions) => {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp: (options: NekodeAppOptions) => {
         const app = createFakeApp(options);
         return {
           ...app,
@@ -128,7 +128,7 @@ describe("v4 queue auto-drain foreground races", () => {
               return () => {};
             },
           },
-        } as ZCodeApp;
+        } as NekodeApp;
       },
       cwd: workspace.workspacePath,
       version: "test-version",

@@ -5,34 +5,34 @@ import type {
   McpStdioServerConfig,
 } from "@zcode/contracts";
 import {
-  getCapturedZCodeCuaBrokerCredentials,
-  isZCodeCuaMcpCommand,
-  isZCodeCuaMcpPackageArg,
-  ZCODE_CUA_BROKER_SOCKET_ENV_KEY,
-  ZCODE_CUA_NODE_REPL_HOST_ENV_KEY,
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  ZCODE_PLUGIN_ID_ENV_KEY,
+  getCapturedNekodeCuaBrokerCredentials,
+  isNekodeCuaMcpCommand,
+  isNekodeCuaMcpPackageArg,
+  NEKODE_CUA_BROKER_SOCKET_ENV_KEY,
+  NEKODE_CUA_NODE_REPL_HOST_ENV_KEY,
+  NEKODE_CUA_OFFICIAL_PLUGIN_ID,
+  NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  NEKODE_PLUGIN_ID_ENV_KEY,
 } from "@zcode/shared";
 
-export { ZCODE_CUA_BROKER_SOCKET_ENV_KEY as ZCODE_CUA_BROKER_SOCKET_ENV } from "@zcode/shared";
+export { NEKODE_CUA_BROKER_SOCKET_ENV_KEY as NEKODE_CUA_BROKER_SOCKET_ENV } from "@zcode/shared";
 // 保留环境变量名供旧诊断脚本读取；迁移后的配置路径不会据此启动独立 CUA MCP。
-export const ZCODE_CUA_BROKER_UNAVAILABLE_ENV = "ZCODE_CUA_PERMISSION_BROKER_UNAVAILABLE";
+export const NEKODE_CUA_BROKER_UNAVAILABLE_ENV = "NEKODE_CUA_PERMISSION_BROKER_UNAVAILABLE";
 // CLI 入口会先清理 broker 凭据；shared node_repl 的可信配置随后从进程内捕获快照恢复它们。
-function resolveZCodeCuaBrokerSocket(): string | undefined {
+function resolveNekodeCuaBrokerSocket(): string | undefined {
   // captured 优先；运行时残留的 stale socket 不能覆盖可信快照。
   return (
-    getCapturedZCodeCuaBrokerCredentials().socket ||
-    process.env[ZCODE_CUA_BROKER_SOCKET_ENV_KEY]?.trim()
+    getCapturedNekodeCuaBrokerCredentials().socket ||
+    process.env[NEKODE_CUA_BROKER_SOCKET_ENV_KEY]?.trim()
   );
 }
 
-function resolveZCodeCuaBrokerToken(): string | undefined {
+function resolveNekodeCuaBrokerToken(): string | undefined {
   return undefined;
 }
 
 const NODE_REPL_SERVER_NAME = "node_repl";
-const REFRESH_MARKER_ENV = "ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER";
+const REFRESH_MARKER_ENV = "NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER";
 
 /**
  * Derive official CUA provenance from the in-memory plugin registry rather than
@@ -50,8 +50,8 @@ export function resolveTrustedOfficialCuaServerNames(
         ([name, config]) =>
           configuredServers[name] === config &&
           config.type === "stdio" &&
-          config.env?.[ZCODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase() ===
-            ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+          config.env?.[NEKODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase() ===
+            NEKODE_CUA_OFFICIAL_PLUGIN_ID,
       )
       .map(([name]) => name),
   );
@@ -97,15 +97,15 @@ export function omitMcpServers(
     ),
   );
 
-  return injectZCodeCuaBrokerMcpServers(
+  return injectNekodeCuaBrokerMcpServers(
     kept,
-    resolveZCodeCuaBrokerSocket(),
-    resolveZCodeCuaBrokerToken(),
+    resolveNekodeCuaBrokerSocket(),
+    resolveNekodeCuaBrokerToken(),
     trustedOfficialCuaServerNames,
   );
 }
 
-export function injectZCodeCuaBrokerMcpServers(
+export function injectNekodeCuaBrokerMcpServers(
   servers: Record<string, McpServerConfig>,
   socketPath: string | undefined,
   token: string | undefined = undefined,
@@ -147,7 +147,7 @@ function injectCuaCredentialsIntoNodeRepl(
   token: string | undefined,
 ): McpServerConfig {
   if (config.type !== "stdio") return config;
-  const captured = getCapturedZCodeCuaBrokerCredentials();
+  const captured = getCapturedNekodeCuaBrokerCredentials();
   const pluginAuthority = captured.pluginAuthority;
   // CLI runtime env 会在 bootstrap 前被清理。marker 必须和 socket/token 一样取自私有凭据快照，
   // 否则 SDK 迁移后 broker 虽然存活，权限刷新仍会静默停止。
@@ -156,16 +156,16 @@ function injectCuaCredentialsIntoNodeRepl(
     ...config,
     env: {
       ...config.env,
-      [ZCODE_CUA_BROKER_SOCKET_ENV_KEY]: socketPath,
+      [NEKODE_CUA_BROKER_SOCKET_ENV_KEY]: socketPath,
       ...(refreshMarker ? { [REFRESH_MARKER_ENV]: refreshMarker } : {}),
-      ...(pluginAuthority ? { [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: pluginAuthority } : {}),
-      [ZCODE_CUA_NODE_REPL_HOST_ENV_KEY]: "1",
-      [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+      ...(pluginAuthority ? { [NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: pluginAuthority } : {}),
+      [NEKODE_CUA_NODE_REPL_HOST_ENV_KEY]: "1",
+      [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID,
     },
   };
 }
 
-function isZCodeCuaStdioServer(
+function isNekodeCuaStdioServer(
   name: string,
   config: McpServerConfig,
 ): config is McpStdioServerConfig {
@@ -176,20 +176,20 @@ function isZCodeCuaStdioServer(
   // 上面的 name/command/args 三条都匹配不到。_plugin id 由 adapters resolver 权威写入 env
   // （manifest/user env 不可覆盖），用它识别 official plugin server。
   if (
-    config.env?.[ZCODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase() === ZCODE_CUA_OFFICIAL_PLUGIN_ID
+    config.env?.[NEKODE_PLUGIN_ID_ENV_KEY]?.trim().toLowerCase() === NEKODE_CUA_OFFICIAL_PLUGIN_ID
   ) {
     return true;
   }
   // 判定与 desktop/services 共用 @zcode/shared 的单一事实源，避免两条注入入口漂移。
-  if (isZCodeCuaMcpCommand(config.command)) return true;
-  return (config.args ?? []).some(isZCodeCuaMcpPackageArg);
+  if (isNekodeCuaMcpCommand(config.command)) return true;
+  return (config.args ?? []).some(isNekodeCuaMcpPackageArg);
 }
 
 function isRetiredCuaMcpServer(name: string, config: McpServerConfig | undefined): boolean {
   // node_repl is the single supported CUA host and may share the CUA plugin's
   // authority marker; all other CUA-shaped MCP entries are retired.
   return (
-    name !== NODE_REPL_SERVER_NAME && config !== undefined && isZCodeCuaStdioServer(name, config)
+    name !== NODE_REPL_SERVER_NAME && config !== undefined && isNekodeCuaStdioServer(name, config)
   );
 }
 

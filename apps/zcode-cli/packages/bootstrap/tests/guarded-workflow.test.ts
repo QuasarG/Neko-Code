@@ -36,7 +36,7 @@ describe("guarded workflow runtime ingress", () => {
       }));
       let sent = false;
       const app = await createRegistryBackedTestApp({
-        env: { ZCODE_HOME: root },
+        env: { NEKODE_HOME: root },
         skipUserConfig: true,
         sessionStore: store,
         providerRegistry: createTestProviderRegistry([selection]),

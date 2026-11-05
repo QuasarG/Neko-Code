@@ -5,8 +5,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { HttpClientPort, HttpClientRequest, HttpClientResponse } from "@zcode/contracts";
 import {
-  SHARED_ZCODE_CREDENTIAL_KEYS,
-  createSharedZCodeCredentialStore,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
+  createSharedNekodeCredentialStore,
 } from "@zcode/adapters/auth";
 import { BUILTIN_MODEL_PROVIDER_IDS } from "@zcode/shared";
 import {
@@ -17,21 +17,21 @@ import {
 import {
   configureCodingPlanApiKey,
   hasConfiguredStandaloneCodingPlan,
-  loginZCodeCli,
-  logoutZCodeCli,
+  loginNekodeCli,
+  logoutNekodeCli,
 } from "../src/auth-login.js";
 
 const TEST_ENV = {
-  ZCODE_CREDENTIAL_SECRET: "bootstrap-test-secret",
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
+  NEKODE_CREDENTIAL_SECRET: "bootstrap-test-secret",
+  NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: fileURLToPath(
     new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
   ),
 };
 
-describe("ZCode CLI login", () => {
+describe("Nekode CLI login", () => {
   it("没有任何 Standalone 账号凭据时不会误报已配置 Coding Plan", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-no-login-"));
-    const credentialStore = createSharedZCodeCredentialStore({
+    const credentialStore = createSharedNekodeCredentialStore({
       baseDir: dir,
       env: TEST_ENV,
     });
@@ -44,7 +44,7 @@ describe("ZCode CLI login", () => {
     }
   });
 
-  it("uses the production ZCode endpoint by default for OAuth init", async () => {
+  it("uses the production Nekode endpoint by default for OAuth init", async () => {
     const httpClient = new FakeHttpClient([
       jsonResponse({
         code: 0,
@@ -67,7 +67,7 @@ describe("ZCode CLI login", () => {
     ]);
 
     await expect(
-      loginZCodeCli({
+      loginNekodeCli({
         env: TEST_ENV,
         httpClient,
         noBrowser: true,
@@ -86,7 +86,7 @@ describe("ZCode CLI login", () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-login-"));
     const credentialsBaseDir = join(dir, "home");
     const personalProviderConfigPath = join(dir, "provider_config.json");
-    const credentialStore = createSharedZCodeCredentialStore({
+    const credentialStore = createSharedNekodeCredentialStore({
       baseDir: credentialsBaseDir,
       env: TEST_ENV,
     });
@@ -173,7 +173,7 @@ describe("ZCode CLI login", () => {
     let authorizeUrl = "";
 
     try {
-      const result = await loginZCodeCli({
+      const result = await loginNekodeCli({
         credentialStore,
         env: TEST_ENV,
         httpClient,
@@ -208,10 +208,10 @@ describe("ZCode CLI login", () => {
           name: "Alice",
         },
       });
-      expect(await credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe(
+      expect(await credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe(
         "zai-access-token",
       );
-      expect(await credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken)).toBe(
+      expect(await credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken)).toBe(
         "jwt-token",
       );
       expect(
@@ -238,7 +238,7 @@ describe("ZCode CLI login", () => {
 
   it("clears shared ZAI credentials and standalone account access on logout", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-logout-"));
-    const credentialStore = createSharedZCodeCredentialStore({
+    const credentialStore = createSharedNekodeCredentialStore({
       baseDir: dir,
       env: TEST_ENV,
     });
@@ -265,11 +265,11 @@ describe("ZCode CLI login", () => {
         [accountProviderCredentialKey]: "coding-plan-key",
       });
 
-      const result = await logoutZCodeCli({ credentialStore, env: TEST_ENV });
+      const result = await logoutNekodeCli({ credentialStore, env: TEST_ENV });
 
       expect(result.credentialsPath).toBe(credentialStore.filePath);
-      expect(await credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken)).toBeNull();
-      expect(await credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider)).toBeNull();
+      expect(await credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken)).toBeNull();
+      expect(await credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider)).toBeNull();
       expect(
         await credentialStore.load(
           standaloneAccountIdentityCredentialKey(
@@ -285,7 +285,7 @@ describe("ZCode CLI login", () => {
 
   it.each(["oauth", undefined])("退出不解密来源为 %s 的历史旧 Key", async (source) => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-logout-legacy-"));
-    const credentialStore = createSharedZCodeCredentialStore({ baseDir: dir, env: TEST_ENV });
+    const credentialStore = createSharedNekodeCredentialStore({ baseDir: dir, env: TEST_ENV });
     const providerId = BUILTIN_MODEL_PROVIDER_IDS.zaiIndividualCodingPlan;
     const legacyKey = standaloneAccountProviderCredentialKey({
       providerId,
@@ -293,17 +293,17 @@ describe("ZCode CLI login", () => {
     });
     try {
       await credentialStore.saveMany({
-        [SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken]: "valid-oauth",
+        [SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken]: "valid-oauth",
         [standaloneAccountIdentityCredentialKey(providerId)]: "user",
         ...(source ? { [standaloneAccountAuthSourceCredentialKey(providerId)]: source } : {}),
       });
       const raw = JSON.parse(await readFile(credentialStore.filePath, "utf8"));
       raw[legacyKey] = "enc:v1:broken-legacy-key";
       await writeFile(credentialStore.filePath, JSON.stringify(raw));
-      await expect(logoutZCodeCli({ credentialStore, env: TEST_ENV })).resolves.toMatchObject({
+      await expect(logoutNekodeCli({ credentialStore, env: TEST_ENV })).resolves.toMatchObject({
         credentialsPath: credentialStore.filePath,
       });
-      expect(await credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken)).toBeNull();
+      expect(await credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken)).toBeNull();
       expect(
         await credentialStore.load(standaloneAccountIdentityCredentialKey(providerId)),
       ).toBeNull();
@@ -317,7 +317,7 @@ describe("ZCode CLI login", () => {
 
   it("manual Coding Plan API Key uses the same Account Access and Selection facts", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-api-key-login-"));
-    const credentialStore = createSharedZCodeCredentialStore({
+    const credentialStore = createSharedNekodeCredentialStore({
       baseDir: join(dir, "home"),
       env: TEST_ENV,
     });
@@ -364,7 +364,7 @@ describe("ZCode CLI login", () => {
         credentialStore,
         env: {
           ...TEST_ENV,
-          ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: zcodeBuiltinProviderConfigPath,
+          NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: zcodeBuiltinProviderConfigPath,
         },
         personalProviderConfigPath,
         providerId: "bigmodel",
@@ -380,7 +380,7 @@ describe("ZCode CLI login", () => {
           credentialStore,
           env: {
             ...TEST_ENV,
-            ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: zcodeBuiltinProviderConfigPath,
+            NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: zcodeBuiltinProviderConfigPath,
           },
         }),
       ).resolves.toBe(true);
@@ -412,7 +412,7 @@ describe("ZCode CLI login", () => {
     ]);
 
     await expect(
-      loginZCodeCli({
+      loginNekodeCli({
         env: TEST_ENV,
         httpClient: failedClient,
         noBrowser: true,
@@ -439,7 +439,7 @@ describe("ZCode CLI login", () => {
     ]);
 
     await expect(
-      loginZCodeCli({
+      loginNekodeCli({
         env: TEST_ENV,
         httpClient: expiredClient,
         noBrowser: true,
@@ -479,7 +479,7 @@ describe("ZCode CLI login", () => {
       }),
     ]);
 
-    const loginPromise = loginZCodeCli({
+    const loginPromise = loginNekodeCli({
       abortSignal: abortController.signal,
       env: TEST_ENV,
       httpClient,

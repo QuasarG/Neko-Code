@@ -5,15 +5,15 @@ import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ProviderConfigMap, createAccountProviderConfigSnapshot } from "@zcode/provider";
 import {
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
-  ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
+  NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV,
 } from "@zcode/provider-node";
 import { zcodeProtocolMethods } from "@zcode/shared";
 import {
   startProcessProviderRegistryRuntime,
   parseProcessAccountProviderConfigSnapshot,
 } from "../src/app/process-provider-registry-runtime.js";
-import { ZCodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
+import { NekodeProtocolAgentServer } from "../src/zcode-protocol/server.js";
 
 const cleanups: (() => Promise<void>)[] = [];
 afterEach(async () => {
@@ -25,10 +25,10 @@ async function startRuntime() {
   const directory = await mkdtemp(join(tmpdir(), "account-delivery-"));
   cleanups.push(() => rm(directory, { recursive: true, force: true }));
   const started = await startProcessProviderRegistryRuntime({
-    [ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: fileURLToPath(
+    [NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]: fileURLToPath(
       new URL("../../../../../config/provider/zcode-builtin.json", import.meta.url),
     ),
-    [ZCODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(directory, "personal.json"),
+    [NEKODE_PERSONAL_PROVIDER_CONFIG_FILE_ENV]: join(directory, "personal.json"),
   });
   cleanups.unshift(async () => started.dispose());
   return started;
@@ -40,8 +40,8 @@ describe("托管 Worker 账号交付", () => {
     const registry = started.runtime.registryService;
     const previous = registry.getSnapshot();
     const next = createAccountProviderConfigSnapshot("builtin-B", ProviderConfigMap.empty(), {});
-    const server = new ZCodeProtocolAgentServer({
-      createZCodeApp() {
+    const server = new NekodeProtocolAgentServer({
+      createNekodeApp() {
         throw new Error("账号交付不得创建会话");
       },
       syncAccountProviderConfig: started.syncAccountProviderConfig,
@@ -94,7 +94,7 @@ describe("托管 Worker 账号交付", () => {
     expect(() =>
       parseProcessAccountProviderConfigSnapshot({
         revision: "incomplete",
-        basedOnZCodeBuiltinRevision: "builtin-A",
+        basedOnNekodeBuiltinRevision: "builtin-A",
         providers: {
           "account:bigmodel-individual-coding-plan": {
             access: { type: "zhipu-account", entitled: true },
@@ -112,7 +112,7 @@ describe("托管 Worker 账号交付", () => {
     expect(() =>
       parseProcessAccountProviderConfigSnapshot({
         revision: "allowed",
-        basedOnZCodeBuiltinRevision: "builtin-A",
+        basedOnNekodeBuiltinRevision: "builtin-A",
         states: {},
         providers: { [providerId]: { access: { type: "zhipu-account", entitled } } },
       }),

@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 import {
   createCodingPlanApiKeyResolver,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
-  type SharedZCodeCredentialStore,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
+  type SharedNekodeCredentialStore,
 } from "@zcode/adapters/auth";
 import { createNodeHttpClientAdapter } from "@zcode/adapters/http";
 import { createConfig } from "@zcode/adapters/config";
@@ -16,8 +16,8 @@ import {
   type ProviderConfigLayerSnapshot,
 } from "@zcode/provider";
 import {
-  NodeZCodeBuiltinProviderConfigSource,
-  ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
+  NodeNekodeBuiltinProviderConfigSource,
+  NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV,
 } from "@zcode/provider-node";
 import type { ProviderFamilyDomain } from "@zcode/shared";
 
@@ -54,11 +54,11 @@ async function readStandaloneCodingPlanCatalog(
           : [];
       }),
     };
-  const filePath = env[ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
+  const filePath = env[NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV]?.trim();
   if (!filePath) {
-    throw new Error(`${ZCODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV} is required for login`);
+    throw new Error(`${NEKODE_BUILTIN_PROVIDER_CONFIG_FILE_ENV} is required for login`);
   }
-  const source = new NodeZCodeBuiltinProviderConfigSource({
+  const source = new NodeNekodeBuiltinProviderConfigSource({
     bundledFilePath: filePath,
     watch: false,
   });
@@ -79,7 +79,7 @@ export async function resolveStandaloneCodingPlanProvider(
   );
   if (matches.length !== 1) {
     throw new Error(
-      `ZCode Built-in Config 必须为 ${family} 声明唯一 Individual Coding Plan Provider`,
+      `Nekode Built-in Config 必须为 ${family} 声明唯一 Individual Coding Plan Provider`,
     );
   }
   return matches[0]!;
@@ -96,8 +96,8 @@ export function standaloneAccountAuthSourceCredentialKey(providerId: string): st
 }
 function oauthCredentialKey(family: ProviderFamilyDomain): string {
   return family === "zai"
-    ? SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken
-    : SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelAccessToken;
+    ? SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken
+    : SHARED_NEKODE_CREDENTIAL_KEYS.bigmodelAccessToken;
 }
 
 /** Standalone Credential Store 私有键；不得进入 Provider Config、Model 或 Protocol。 */
@@ -120,7 +120,7 @@ export function createStandaloneAccountIdentityFromSecret(secret: string): strin
 }
 
 export async function readStandaloneAccountProviderConfigSnapshot(
-  credentialStore: Pick<SharedZCodeCredentialStore, "loadMany">,
+  credentialStore: Pick<SharedNekodeCredentialStore, "loadMany">,
   env: Readonly<Record<string, string | undefined>>,
   config?: Pick<ProviderConfigLayerSnapshot, "revision" | "providers">,
 ): Promise<AccountProviderConfigSnapshot> {
@@ -182,7 +182,7 @@ export async function readStandaloneAccountProviderConfigSnapshot(
 }
 
 export async function hasStandaloneCodingPlanAccess(
-  credentialStore: Pick<SharedZCodeCredentialStore, "loadMany">,
+  credentialStore: Pick<SharedNekodeCredentialStore, "loadMany">,
   env: Readonly<Record<string, string | undefined>>,
 ): Promise<boolean> {
   return (await readStandaloneAccountProviderConfigSnapshot(credentialStore, env)).providers
@@ -193,7 +193,7 @@ export async function hasStandaloneCodingPlanAccess(
 }
 
 export function createStandaloneProviderRuntimeHeadersPort(
-  credentialStore: Pick<SharedZCodeCredentialStore, "load" | "loadMany" | "save" | "delete">,
+  credentialStore: Pick<SharedNekodeCredentialStore, "load" | "loadMany" | "save" | "delete">,
   env: Readonly<Record<string, string | undefined>>,
   injectedResolver?: ReturnType<typeof createCodingPlanApiKeyResolver>,
 ): ProviderRuntimeHeadersPort & {

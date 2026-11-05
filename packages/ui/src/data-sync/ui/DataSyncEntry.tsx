@@ -11,7 +11,7 @@ import {
 import { useOptionalPlatform } from "@/hooks/usePlatform.js";
 import { useRemoteDevicePresentationInput } from "@/hooks/useSourceServerStatuses.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import type { DataSyncCategoryId, DataSyncWorkspaceMapping } from "@/data-sync/contract.js";
 import {
   DataSyncDialogContainer,
@@ -116,7 +116,7 @@ export function DataSyncEntryMenuItems(props: {
   stopMouseDownPropagation?: boolean;
   onSelect(category: DataSyncEntryCategory): void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const handleMouseDown = props.stopMouseDownPropagation
     ? (event: MouseEvent) => event.stopPropagation()
     : undefined;
@@ -143,7 +143,7 @@ export function DataSyncEntryDropdownButton(props: {
   disabled?: boolean;
   onSelect(category: DataSyncEntryCategory): void;
 }) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

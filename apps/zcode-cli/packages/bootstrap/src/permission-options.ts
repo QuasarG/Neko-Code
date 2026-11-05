@@ -1,5 +1,5 @@
 import type { PermissionOptionsPolicy, PermissionUpdate } from "@zcode/contracts";
-import { OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME, type ZCodePermissionOption } from "@zcode/shared";
+import { OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME, type NekodePermissionOption } from "@zcode/shared";
 
 const PROJECT_RULE_INPUT_KEYS = ["command", "url", "file_path", "path", "pattern"] as const;
 
@@ -37,14 +37,14 @@ interface PermissionOptionSource {
  */
 export function buildProtocolPermissionOptions(
   source: PermissionOptionSource,
-): ZCodePermissionOption[] {
+): NekodePermissionOption[] {
   const permissionUpdates = source.suggestedPermissionUpdates?.length
     ? source.suggestedPermissionUpdates
     : defaultPermissionUpdates(source);
   const officialCuaProjectScope = permissionUpdates.some((update) =>
     update.rules.some((rule) => rule.toolName === OFFICIAL_CUA_PERMISSION_RULE_TOOL_NAME),
   );
-  const options: ZCodePermissionOption[] = [
+  const options: NekodePermissionOption[] = [
     {
       kind: "allow_once",
       name: "Allow once",

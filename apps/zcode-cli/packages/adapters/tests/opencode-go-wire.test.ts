@@ -5,7 +5,7 @@ import {
   createRegistryProviderConfig,
   createRegistryModelConfig,
   parseProviderConfig,
-  parseZCodeBuiltinModelConfigRules,
+  parseNekodeBuiltinModelConfigRules,
   type ModelConfigRules,
 } from "@zcode/provider";
 import { AiSdkModelExecution } from "../src/model/model-execution.js";
@@ -21,7 +21,7 @@ beforeAll(async () => {
       "utf8",
     ),
   );
-  rules = parseZCodeBuiltinModelConfigRules(release.config.modelConfigRules);
+  rules = parseNekodeBuiltinModelConfigRules(release.config.modelConfigRules);
 });
 const baseUrl = "https://opencode.ai/zen/go/v1";
 // 每种 Go 映射走正式 SDK / transport；只截获假 Key 请求，不消耗用户额度。
@@ -59,7 +59,7 @@ describe("Todo149 OpenCode Go 正式 SDK 请求", () => {
     const execution = new AiSdkModelExecution(
       {
         env: {},
-        defaultHeaders: { "User-Agent": "ZCode/3.12.1", "X-ZCode-App-Version": "3.12.1" },
+        defaultHeaders: { "User-Agent": "Nekode/3.12.1", "X-Nekode-App-Version": "3.12.1" },
       },
       {
         transport: async (input, init) => {
@@ -111,7 +111,7 @@ describe("Todo149 OpenCode Go 正式 SDK 请求", () => {
         `${baseUrl}/${apiType === "anthropic-messages" ? "messages" : apiType === "openai-responses" ? "responses" : "chat/completions"}`,
       );
       expect(request.headers.get("authorization")).toBe("Bearer E2E_GO_FAKE_KEY");
-      expect(request.headers.get("user-agent")).toContain("ZCode/3.12.1");
+      expect(request.headers.get("user-agent")).toContain("Nekode/3.12.1");
       expect(request.headers.get("x-zcode-app-version")).toBe("3.12.1");
       expect(request.headers.get("x-session-id")).toBe("go-wire-session");
       expect(request.headers.get("x-opencode-session")).toBe("go-wire-session");

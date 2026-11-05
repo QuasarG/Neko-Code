@@ -1,15 +1,15 @@
 import { Worker } from "node:worker_threads";
 
 import {
-  isZCodeDataSizeScanResult,
-  type ZCodeDataSizeScanRequest,
-  type ZCodeDataSizeScanResult,
+  isNekodeDataSizeScanResult,
+  type NekodeDataSizeScanRequest,
+  type NekodeDataSizeScanResult,
 } from "./zcodeDataSizeScanner.js";
 
-export function scanZCodeDataDirectoryInWorker(
-  request: ZCodeDataSizeScanRequest,
+export function scanNekodeDataDirectoryInWorker(
+  request: NekodeDataSizeScanRequest,
   signal: AbortSignal,
-): Promise<ZCodeDataSizeScanResult> {
+): Promise<NekodeDataSizeScanResult> {
   return new Promise((resolve, reject) => {
     const worker = new Worker(new URL("./zcodeDataSizeWorker.js", import.meta.url), {
       workerData: request,
@@ -26,13 +26,13 @@ export function scanZCodeDataDirectoryInWorker(
     };
     const abort = () => {
       void worker.terminate();
-      finish(() => reject(new DOMException("ZCode data size scan aborted", "AbortError")));
+      finish(() => reject(new DOMException("Nekode data size scan aborted", "AbortError")));
     };
 
     worker.once("message", (message: unknown) => {
       const response = message as { ok?: unknown; result?: unknown; error?: unknown };
-      if (response.ok === true && isZCodeDataSizeScanResult(response.result)) {
-        finish(() => resolve(response.result as ZCodeDataSizeScanResult));
+      if (response.ok === true && isNekodeDataSizeScanResult(response.result)) {
+        finish(() => resolve(response.result as NekodeDataSizeScanResult));
         return;
       }
       finish(() =>
@@ -40,7 +40,7 @@ export function scanZCodeDataDirectoryInWorker(
           new Error(
             response.ok === false && typeof response.error === "string"
               ? response.error
-              : "Invalid ZCode data size worker response",
+              : "Invalid Nekode data size worker response",
           ),
         ),
       );
@@ -48,7 +48,7 @@ export function scanZCodeDataDirectoryInWorker(
     worker.once("error", (error) => finish(() => reject(error)));
     worker.once("exit", (code) => {
       if (code !== 0) {
-        finish(() => reject(new Error(`ZCode data size worker exited with code ${code}`)));
+        finish(() => reject(new Error(`Nekode data size worker exited with code ${code}`)));
       }
     });
     signal.addEventListener("abort", abort, { once: true });

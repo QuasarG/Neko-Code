@@ -1,9 +1,9 @@
 /* eslint-disable max-lines */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type {
-  ZCodePersistedFileChange,
-  ZCodePersistedFileSnapshot,
-  ZCodeTaskChangeSummary,
+  NekodePersistedFileChange,
+  NekodePersistedFileSnapshot,
+  NekodeTaskChangeSummary,
   GitBranchComparison,
   GitChangeSectionId,
   GitChangeSourceId,
@@ -285,8 +285,8 @@ function buildRepositoryDatasets(options: {
 
 function createLastTurnChange(
   workspacePath: string,
-  snapshotByPath: Map<string, ZCodePersistedFileSnapshot>,
-  file: ZCodeTaskChangeSummary["files"][number],
+  snapshotByPath: Map<string, NekodePersistedFileSnapshot>,
+  file: NekodeTaskChangeSummary["files"][number],
 ): GitPaneFileChange {
   const relativePath = toWorkspaceRelativePath(workspacePath, file.path);
   const snapshot = snapshotByPath.get(file.path);
@@ -316,10 +316,10 @@ function createLastTurnChange(
 function buildLastTurnDataset(options: {
   workspacePath: string;
   turnIndex: number | null;
-  fileChange: ZCodePersistedFileChange | null;
-  summary: ZCodeTaskChangeSummary | null;
+  fileChange: NekodePersistedFileChange | null;
+  summary: NekodeTaskChangeSummary | null;
 }): GitPaneDataset {
-  const snapshotByPath = new Map<string, ZCodePersistedFileSnapshot>(
+  const snapshotByPath = new Map<string, NekodePersistedFileSnapshot>(
     options.fileChange?.snapshots.map((snapshot) => [snapshot.path, snapshot]) ?? [],
   );
 
@@ -327,7 +327,7 @@ function buildLastTurnDataset(options: {
     id: "last-turn",
     readonly: true,
     turnIndex: options.turnIndex,
-    // 关键业务逻辑：上一轮更改继续优先复用 ZCode Agent 已持久化的单轮文件快照，
+    // 关键业务逻辑：上一轮更改继续优先复用 Nekode Agent 已持久化的单轮文件快照，
     // 这样 Git pane 接入真实仓库数据后，agent 视角的只读审阅链路仍然保持独立稳定。
     sections: options.summary
       ? [

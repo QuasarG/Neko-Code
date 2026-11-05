@@ -8,22 +8,22 @@
   ],
   "fileFixtures": [
     {
-      "path": ".zcode-e2e/continue-markdown-otc10/one.svg",
+      "path": ".nekode-e2e/continue-markdown-otc10/one.svg",
       "source": "created-by-spec",
       "description": "OTC10 single-image 与 image-gallery 使用的第一张固定本地 SVG。"
     },
     {
-      "path": ".zcode-e2e/continue-markdown-otc10/two.svg",
+      "path": ".nekode-e2e/continue-markdown-otc10/two.svg",
       "source": "created-by-spec",
       "description": "OTC10 image-gallery 使用的第二张固定本地 SVG。"
     },
     {
-      "path": ".zcode-e2e/continue-markdown-otc10/link-target.md",
+      "path": ".nekode-e2e/continue-markdown-otc10/link-target.md",
       "source": "created-by-spec",
       "description": "OTC10 workspace-file-link 的固定存在文件。"
     },
     {
-      "path": ".zcode-e2e/continue-markdown-otc10/citation.txt",
+      "path": ".nekode-e2e/continue-markdown-otc10/citation.txt",
       "source": "created-by-spec",
       "description": "OTC10 zcode-file-citation 的固定目标文件。"
     }

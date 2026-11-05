@@ -9,7 +9,7 @@ import {
   resolveLocale,
   SUPPORTED_LOCALES,
 } from "./locale.js";
-import type { ZCodeCopy } from "./types.js";
+import type { NekodeCopy } from "./types.js";
 
 export {
   DEFAULT_LOCALE,
@@ -20,13 +20,13 @@ export {
   resolveLocale,
 };
 export type { LocaleDetectionInput } from "./locale.js";
-export type { CliCopy, TuiCopy, UiLocale, SupportedLocale, ZCodeCopy } from "./types.js";
+export type { CliCopy, TuiCopy, UiLocale, SupportedLocale, NekodeCopy } from "./types.js";
 
-const CATALOGS: Record<SupportedLocale, ZCodeCopy> = {
+const CATALOGS: Record<SupportedLocale, NekodeCopy> = {
   "en-US": enUS,
   "zh-CN": zhCN,
 };
 
-export function getZCodeCopy(locale?: UiLocale | string, detected?: string | null): ZCodeCopy {
+export function getNekodeCopy(locale?: UiLocale | string, detected?: string | null): NekodeCopy {
   return CATALOGS[resolveLocale(locale, detected)];
 }

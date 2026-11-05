@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React, { act } from "react";
 import { testRender } from "@mbears/opentui-react/test-utils";
-import { getZCodeCopy } from "@zcode/i18n";
+import { getNekodeCopy } from "@zcode/i18n";
 import { shouldHandleInputHistoryNavigation } from "../src/app-keyboard.js";
 import {
   InputPane,
@@ -59,7 +59,7 @@ test("sizes prompt textarea from draft content up to six visible rows", () => {
 });
 
 test("uses localized prompt title and placeholder copy", () => {
-  const copy = getZCodeCopy("zh-CN").tui;
+  const copy = getNekodeCopy("zh-CN").tui;
 
   assert.equal(inputPaneTitle(copy), " 输入 ");
   assert.equal(inputPaneTitle(copy, "yolo"), " Yolo ");
@@ -121,7 +121,7 @@ test("renders model, muted provider, and thought in the composer status row", ()
 });
 
 test("formats and renders the active status context meter on the right", () => {
-  const copy = getZCodeCopy("en-US").tui;
+  const copy = getNekodeCopy("en-US").tui;
   const contextUsage = { contextUsed: 24_100, contextWindow: 1_000_000 };
   const row = inputActiveStatusRow(copy, undefined, {
     contentWidth: 80,
@@ -147,7 +147,7 @@ test("formats and renders the active status context meter on the right", () => {
 });
 
 test("reserves one active status row while idle and empty", () => {
-  const copy = getZCodeCopy("en-US").tui;
+  const copy = getNekodeCopy("en-US").tui;
   const row = InputActiveStatus({ active: false, copy });
 
   assert.deepEqual(collectTextNodes(row), []);
@@ -155,7 +155,7 @@ test("reserves one active status row while idle and empty", () => {
 });
 
 test("renders the active status outside the composer status row while busy", () => {
-  const copy = getZCodeCopy("en-US").tui;
+  const copy = getNekodeCopy("en-US").tui;
   const frame = spinnerFrame(0);
   const contextUsage = { contextUsed: 11_100, contextWindow: 185_000 };
   const activeNodes = collectTextNodes(inputActiveStatusRow(copy, frame, { contextUsage }));

@@ -5,7 +5,6 @@ import type { ModelExecutionInput, ModelExecutionContext } from "./contract.js";
 export function createModelExecutionContext(input: ModelExecutionInput): ModelExecutionContext {
   const requestAuth = input.requestAuth ? freezeRequestAuth(input.requestAuth) : undefined;
   return {
-    ...(input.memoryExtraction ? { memoryExtraction: input.memoryExtraction } : {}),
     selectionScope: "execution",
     ...(input.offPeak ? { offPeak: input.offPeak } : {}),
     ...(requestAuth

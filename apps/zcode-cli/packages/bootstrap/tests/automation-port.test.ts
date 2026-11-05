@@ -9,7 +9,7 @@ import {
 } from "../src/zcode-protocol/automation-port.js";
 import {
   ProtocolRequestError,
-  type ZCodeProtocolAgentServerContext,
+  type NekodeProtocolAgentServerContext,
 } from "../src/zcode-protocol/server-types.js";
 
 describe("createProtocolAutomationPort", () => {
@@ -35,7 +35,7 @@ describe("createProtocolAutomationPort", () => {
           },
         ],
       ]),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.create(
@@ -77,7 +77,7 @@ describe("createProtocolAutomationPort", () => {
           },
         ],
       ]),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.create(
@@ -146,7 +146,7 @@ describe("createProtocolAutomationPort", () => {
             },
           ],
         ]),
-      } as unknown as ZCodeProtocolAgentServerContext);
+      } as unknown as NekodeProtocolAgentServerContext);
 
       await expect(
         port.create(
@@ -260,7 +260,7 @@ describe("createProtocolAutomationPort", () => {
           },
         ],
       ]),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     const created = await port.create(
       {
@@ -305,60 +305,6 @@ describe("createProtocolAutomationPort", () => {
     expect(listed[0]?.scheduleRule).toMatchObject({ unit: "hourly", interval: 200, minute: 49 });
   });
 
-  it("将当前 Bot turn 的回推目标注入 automation/create，普通模型输入不能自行指定", async () => {
-    const requestClient = vi.fn(async (method: string) => {
-      if (method === zcodeProtocolMethods.automationCheckTaskBinding) return { bound: false };
-      if (method === zcodeProtocolMethods.automationCreate) {
-        return {
-          automation: {
-            automationId: "automation-bot",
-            title: "Bot 日报",
-            cronExpr: "0 9 * * *",
-            prompt: "生成日报",
-            enabled: true,
-            lifecycleStatus: "active" as const,
-            runCount: 0,
-            recurring: true,
-          },
-        };
-      }
-      throw new Error(`unexpected method ${method}`);
-    });
-    const botDeliveryTarget = {
-      provider: "feishu" as const,
-      botId: "bot-feishu",
-      providerUserId: "chat-1",
-      chatType: "group" as const,
-    };
-    const port = createProtocolAutomationPort(
-      { requestClient, sessions: new Map() } as unknown as ZCodeProtocolAgentServerContext,
-      () =>
-        ({
-          activeBotDeliveryTarget: botDeliveryTarget,
-          app: {
-            runtime: { getSessionModelSelection: () => undefined },
-            sessionId: "session-1",
-            getModel: () => undefined,
-            getMode: () => undefined,
-            getThoughtLevel: () => undefined,
-            setCustomSessionTitle: vi.fn(async () => undefined),
-          },
-          traceContext: { traceId: "trace-session-1" },
-        }) as never,
-    );
-
-    await port.create(
-      { cron: "0 9 * * *", delayMinutes: null, prompt: "生成日报", title: "Bot 日报" },
-      { sessionId: "session-1" },
-    );
-
-    expect(requestClient).toHaveBeenCalledWith(
-      zcodeProtocolMethods.automationCreate,
-      expect.objectContaining({ botDeliveryTarget }),
-      expect.anything(),
-    );
-  });
-
   it("旧 Host 缺少归属查询方法时回退 automation/list，并允许未绑定会话 CronCreate", async () => {
     const requestClient = vi.fn(async (method: string) => {
       if (method === zcodeProtocolMethods.automationCheckTaskBinding) {
@@ -401,7 +347,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.create(
@@ -453,7 +399,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.create(
@@ -495,7 +441,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await port.create({
       delayMinutes: 3,
@@ -536,7 +482,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     // Bug 原因：`delayMinutes !== null` 判定下，省略字段（很多 provider 不稳定保留
     // null 字段）会被误当成相对任务，把普通 recurring 调度错建成一次性。
@@ -591,7 +537,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     const automations = await port.list();
 
@@ -613,7 +559,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     const error = await port
       .create(
@@ -638,7 +584,7 @@ describe("createProtocolAutomationPort", () => {
       logger,
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.create(
@@ -711,7 +657,7 @@ describe("createProtocolAutomationPort", () => {
           },
         ],
       ]),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await port.create(
       {
@@ -762,7 +708,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(
       port.update({
@@ -805,7 +751,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(port.delete({ id: "stale-id" })).resolves.toBe(false);
     expect(requestClient).toHaveBeenCalledWith(
@@ -820,7 +766,7 @@ describe("createProtocolAutomationPort", () => {
     const port = createProtocolAutomationPort({
       requestClient,
       sessions: new Map(),
-    } as unknown as ZCodeProtocolAgentServerContext);
+    } as unknown as NekodeProtocolAgentServerContext);
 
     await expect(port.pause({ id: "automation-1" })).resolves.toBe(true);
     expect(requestClient).toHaveBeenCalledWith(
@@ -871,7 +817,7 @@ describe("createProtocolAutomationPort", () => {
         requestClient,
         // 归属会话故意不在 sessions map 中，模拟 V4/desktop 场景。
         sessions: new Map(),
-      } as unknown as ZCodeProtocolAgentServerContext,
+      } as unknown as NekodeProtocolAgentServerContext,
       () => ownSession as unknown as never,
     );
 
@@ -912,9 +858,9 @@ it.each([false, true])("定时任务列表按协商能力携带自身工作区�
     {
       requestClient,
       sessionWorkspaceRoutingEnabled: enabled,
-    } as unknown as ZCodeProtocolAgentServerContext,
+    } as unknown as NekodeProtocolAgentServerContext,
     () =>
-      ({ workspace }) as import("../src/zcode-protocol/server-types.js").ZCodeProtocolSessionRecord,
+      ({ workspace }) as import("../src/zcode-protocol/server-types.js").NekodeProtocolSessionRecord,
   );
   await port.list({ sessionId: "session-b" });
   expect(requestClient).toHaveBeenCalledWith(

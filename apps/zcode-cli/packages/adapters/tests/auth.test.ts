@@ -6,28 +6,28 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { HttpClientPort, HttpClientRequest, HttpClientResponse } from "@zcode/contracts";
 import {
   CliOAuthError,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
   createBigmodelOAuthClient,
   createCliOAuthClient,
   createCodingPlanApiKeyResolver,
-  createSharedZCodeCredentialStore,
-  loadSharedZCodeCredentialSync,
+  createSharedNekodeCredentialStore,
+  loadSharedNekodeCredentialSync,
 } from "../src/auth/index.js";
 
 const TEST_ENV = {
-  ZCODE_CREDENTIAL_SECRET: "test-secret",
+  NEKODE_CREDENTIAL_SECRET: "test-secret",
 };
 
 afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-describe("shared ZCode credentials", () => {
+describe("shared Nekode credentials", () => {
   it("stores ZAI login credentials with z-code compatible encrypted keys", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-"));
 
     try {
-      const store = createSharedZCodeCredentialStore({
+      const store = createSharedNekodeCredentialStore({
         baseDir: dir,
         env: TEST_ENV,
       });
@@ -43,15 +43,15 @@ describe("shared ZCode credentials", () => {
       });
 
       const raw = JSON.parse(await readFile(store.filePath, "utf-8")) as Record<string, string>;
-      expect(store.filePath).toBe(join(dir, ".zcode", "v2", "credentials.json"));
-      expect(raw[SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken]?.startsWith("enc:v1:")).toBe(true);
-      expect(await store.load(SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider)).toBe("zai");
-      expect(await store.load(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe(
+      expect(store.filePath).toBe(join(dir, ".nekode", "v2", "credentials.json"));
+      expect(raw[SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken]?.startsWith("enc:v1:")).toBe(true);
+      expect(await store.load(SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider)).toBe("zai");
+      expect(await store.load(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe(
         "zai-access-token",
       );
-      expect(await store.load(SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken)).toBe("zcode-jwt-token");
+      expect(await store.load(SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken)).toBe("zcode-jwt-token");
       expect(
-        loadSharedZCodeCredentialSync(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken, {
+        loadSharedNekodeCredentialSync(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken, {
           baseDir: dir,
           env: TEST_ENV,
         }),
@@ -63,7 +63,7 @@ describe("shared ZCode credentials", () => {
 
   it("reads legacy plaintext credential values", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-"));
-    const credentialsDir = join(dir, ".zcode", "v2");
+    const credentialsDir = join(dir, ".nekode", "v2");
     const credentialsPath = join(credentialsDir, "credentials.json");
 
     try {
@@ -71,16 +71,16 @@ describe("shared ZCode credentials", () => {
       await writeFile(
         credentialsPath,
         JSON.stringify({
-          [SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken]: "legacy-token",
+          [SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken]: "legacy-token",
         }),
       );
 
-      const store = createSharedZCodeCredentialStore({
+      const store = createSharedNekodeCredentialStore({
         baseDir: dir,
         env: TEST_ENV,
       });
 
-      expect(await store.load(SHARED_ZCODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe("legacy-token");
+      expect(await store.load(SHARED_NEKODE_CREDENTIAL_KEYS.zaiAccessToken)).toBe("legacy-token");
     } finally {
       await rm(dir, { force: true, recursive: true });
     }
@@ -88,7 +88,7 @@ describe("shared ZCode credentials", () => {
 
   it("preserves every key across concurrent read-modify-write mutations", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-concurrent-"));
-    const store = createSharedZCodeCredentialStore({
+    const store = createSharedNekodeCredentialStore({
       baseDir: dir,
       env: TEST_ENV,
     });
@@ -109,7 +109,7 @@ describe("shared ZCode credentials", () => {
 
   it("deletes a credential only when its expected plaintext value is still current", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-compare-delete-"));
-    const store = createSharedZCodeCredentialStore({
+    const store = createSharedNekodeCredentialStore({
       baseDir: dir,
       env: TEST_ENV,
     });
@@ -128,7 +128,7 @@ describe("shared ZCode credentials", () => {
 
   it("publishes a replacement credential and removes legacy keys in one mutation", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-replace-"));
-    const store = createSharedZCodeCredentialStore({
+    const store = createSharedNekodeCredentialStore({
       baseDir: dir,
       env: TEST_ENV,
     });
@@ -158,7 +158,7 @@ describe("shared ZCode credentials", () => {
 
     try {
       await runConcurrentCredentialWorkers(credentialsPath, processCount, keysPerProcess);
-      const store = createSharedZCodeCredentialStore({
+      const store = createSharedNekodeCredentialStore({
         env: TEST_ENV,
         filePath: credentialsPath,
       });
@@ -179,7 +179,7 @@ describe("shared ZCode credentials", () => {
   it("backs up corrupt JSON and refuses to overwrite it", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-auth-corrupt-"));
     const credentialsPath = join(dir, "credentials.json");
-    const store = createSharedZCodeCredentialStore({
+    const store = createSharedNekodeCredentialStore({
       env: TEST_ENV,
       filePath: credentialsPath,
     });
@@ -192,11 +192,11 @@ describe("shared ZCode credentials", () => {
 
       await Promise.all(
         Array.from({ length: 8 }, () =>
-          expect(store.load("safe-key")).rejects.toThrow("Shared ZCode credentials are corrupt"),
+          expect(store.load("safe-key")).rejects.toThrow("Shared Nekode credentials are corrupt"),
         ),
       );
       await expect(store.save("safe-key", "safe-value")).rejects.toThrow(
-        "Shared ZCode credentials are corrupt",
+        "Shared Nekode credentials are corrupt",
       );
       await expect(readFile(credentialsPath, "utf-8")).resolves.toBe("{not-json");
       const backups = (await readdir(dir)).filter((file) =>
@@ -551,8 +551,8 @@ describe("Coding Plan API key resolver", () => {
     });
   });
 
-  it("uses bigmodel.cn for BigModel API key resolution when ZCODE_ENV=test", async () => {
-    vi.stubEnv("ZCODE_ENV", "test");
+  it("uses bigmodel.cn for BigModel API key resolution when NEKODE_ENV=test", async () => {
+    vi.stubEnv("NEKODE_ENV", "test");
     const httpClient = new FakeHttpClient([
       customerInfoResponse(),
       jsonResponse({
@@ -620,8 +620,8 @@ describe("BigModel OAuth client", () => {
     );
   });
 
-  it("uses bigmodel.cn for authorize URL when ZCODE_ENV=test", () => {
-    vi.stubEnv("ZCODE_ENV", "test");
+  it("uses bigmodel.cn for authorize URL when NEKODE_ENV=test", () => {
+    vi.stubEnv("NEKODE_ENV", "test");
     const httpClient = new FakeHttpClient([]);
     const client = createBigmodelOAuthClient({
       appSecret: "test-secret",
@@ -636,8 +636,8 @@ describe("BigModel OAuth client", () => {
     expect(authorizeUrl).toContain("https://bigmodel.cn/login?");
   });
 
-  it("uses bigmodel.cn for token exchange when ZCODE_ENV=test", async () => {
-    vi.stubEnv("ZCODE_ENV", "test");
+  it("uses bigmodel.cn for token exchange when NEKODE_ENV=test", async () => {
+    vi.stubEnv("NEKODE_ENV", "test");
     const httpClient = new FakeHttpClient([
       jsonResponse({
         data: {

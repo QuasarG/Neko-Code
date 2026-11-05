@@ -1,6 +1,6 @@
 // plugins/referenceCatalog 协议契约回归（docs/plugin-reference-mention.md §5）：
 // session authority（冻结 catalog 直读 session record 的 App）、workspace authority
-// （resolveZCodePlugins 实时投影）、session 不存在时 fail closed（不回退 workspace）。
+// （resolveNekodePlugins 实时投影）、session 不存在时 fail closed（不回退 workspace）。
 // catalog 构建与冲突语义的机制证据在 core（plugin-reference.test.ts）。
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -27,8 +27,8 @@ import {
 import type { PluginReferenceCatalog } from "@zcode/contracts";
 import { getPluginReferenceCatalog } from "../src/zcode-protocol/plugin-reference-catalog.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 
 afterAll(async () => {
@@ -54,15 +54,15 @@ const SESSION_CATALOG: PluginReferenceCatalog = {
   ],
 };
 
-function contextWithSession(sessionId: string): ZCodeProtocolAgentServerContext {
+function contextWithSession(sessionId: string): NekodeProtocolAgentServerContext {
   const record = {
     app: {
       getPluginReferenceCatalog: () => SESSION_CATALOG,
     },
-  } as unknown as ZCodeProtocolSessionRecord;
+  } as unknown as NekodeProtocolSessionRecord;
   return {
     sessions: new Map([[sessionId, record]]),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("plugins/referenceCatalog protocol", () => {
@@ -141,10 +141,10 @@ describe("plugins/referenceCatalog protocol", () => {
 
   it("serves the live workspace catalog when no sessionId is provided (draft picker)", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-plugin-reference-workspace-"));
-    const previousStorageDir = process.env.ZCODE_STORAGE_DIR;
-    process.env.ZCODE_STORAGE_DIR = join(root, "cli");
+    const previousStorageDir = process.env.NEKODE_STORAGE_DIR;
+    process.env.NEKODE_STORAGE_DIR = join(root, "cli");
     try {
-      const result = await getPluginReferenceCatalog({} as ZCodeProtocolAgentServerContext, {
+      const result = await getPluginReferenceCatalog({} as NekodeProtocolAgentServerContext, {
         workspace: { workspacePath: root, workspaceKey: root },
       });
       expect(result.authority).toBe("workspace");
@@ -163,7 +163,7 @@ describe("plugins/referenceCatalog protocol", () => {
       // 供 Picker 中文搜索/展示（插件 @ 引用中文搜索）。
       expect(zcodeGuide?.category).toBeUndefined();
       const enriched = await getPluginReferenceCatalog(
-        {} as ZCodeProtocolAgentServerContext,
+        {} as NekodeProtocolAgentServerContext,
         {
           workspace: { workspacePath: root, workspaceKey: root },
         },
@@ -176,16 +176,16 @@ describe("plugins/referenceCatalog protocol", () => {
         result.plugins.map((x) => x.pluginId),
       );
       expect(() => zcodePluginsReferenceCatalogResultSchema.parse(enriched)).not.toThrow();
-      expect(zcodeGuide?.displayName).toBe("ZCode Guide");
-      expect(zcodeGuide?.displayNameI18n?.["zh-CN"]).toBe("ZCode 使用指南");
+      expect(zcodeGuide?.displayName).toBe("Nekode Guide");
+      expect(zcodeGuide?.displayNameI18n?.["zh-CN"]).toBe("Nekode 使用指南");
       expect(zcodeGuide?.description).toEqual(expect.any(String));
       expect(zcodeGuide?.descriptionI18n?.["zh-CN"]).toEqual(expect.any(String));
       expect(
         enriched.plugins.find((x) => x.pluginId === zcodeGuide?.pluginId)?.descriptionI18n,
       ).toEqual(zcodeGuide?.descriptionI18n);
     } finally {
-      if (previousStorageDir === undefined) delete process.env.ZCODE_STORAGE_DIR;
-      else process.env.ZCODE_STORAGE_DIR = previousStorageDir;
+      if (previousStorageDir === undefined) delete process.env.NEKODE_STORAGE_DIR;
+      else process.env.NEKODE_STORAGE_DIR = previousStorageDir;
       await rm(root, { force: true, recursive: true });
     }
   });

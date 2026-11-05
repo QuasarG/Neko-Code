@@ -23,7 +23,7 @@ export interface NodeReplBrowserBrokerConnection {
   token: string;
 }
 
-// 修复原因（MR !3207 评审 CR-01）：bridge 原来直接连 ZCode 主进程的浏览器 broker，并在 Worker 里
+// 修复原因（MR !3207 评审 CR-01）：bridge 原来直接连 Nekode 主进程的浏览器 broker，并在 Worker 里
 // 填写会话信息、记录截图；cell 能冒充 Worker 的结果消息，也能自报别的会话。现在只连主线程的代理，
 // 会话信息由代理按账本条目填写，截图由代理记进账本（20-node-repl-call-ledger.md「浏览器代理 broker」）。
 export function createBrowserBridgeGlobals(input: {

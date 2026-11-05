@@ -1,5 +1,5 @@
 import {
-  ZCODE_AGENT_PROVIDER,
+  NEKODE_AGENT_PROVIDER,
   sanitizeTelemetryEventDetail,
   type TelemetryEventPayload,
 } from "@zcode/shared";
@@ -74,7 +74,7 @@ export class RemoteConversationTelemetry {
             memoryEnabled: fact.memoryEnabled,
             extraDetail: {
               ...buildPromptTelemetryExtraDetail({
-                provider: ZCODE_AGENT_PROVIDER,
+                provider: NEKODE_AGENT_PROVIDER,
                 modelName: fact.modelName,
               }),
               ...(fact.modelProvider ? { model_provider: fact.modelProvider } : {}),

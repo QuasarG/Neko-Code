@@ -42,11 +42,11 @@ import type {
 } from "@zcode/contracts";
 import {
   McpResourceSubscribeUnsupportedError,
-  ZCODE_MCP_SERVER_REQUEST_ID_META_KEY,
+  NEKODE_MCP_SERVER_REQUEST_ID_META_KEY,
 } from "@zcode/contracts";
 import {
   OFFICIAL_MCP_AUTH_META_KEY,
-  ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+  NEKODE_OFFICIAL_MCP_AUTH_TYPE,
   type McpServerFailureKind,
   type OfficialMcpAuthFailureKind,
 } from "@zcode/shared";
@@ -55,8 +55,8 @@ import { createHash, randomUUID } from "node:crypto";
 import { resolve } from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "../auth/shared-credentials.js";
 import { normalizeMcpToolDescriptor } from "./descriptor.js";
 import {
@@ -141,11 +141,11 @@ export interface CreateMcpAdapterOptions {
     authHeadersPort?: OfficialMcpAuthHeadersPort;
     trustedOrigins: OfficialMcpTrustedOriginRegistry;
     /**
-     * 当前 ZCode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出
+     * 当前 Nekode API origin。stdio 形态没有 `url` 可供校验，targetOrigin 只能由宿主给出
      * ——插件因此无法把身份头导向别的 origin。
-     * 与 trustedOrigins 的 `resolveZCodeApiOrigin` 必须同源，否则两侧判定会分叉。
+     * 与 trustedOrigins 的 `resolveNekodeApiOrigin` 必须同源，否则两侧判定会分叉。
      */
-    resolveZCodeApiOrigin?: () => string;
+    resolveNekodeApiOrigin?: () => string;
     workspaceIdentity?: string;
   };
   workingDirectory?: string;
@@ -163,7 +163,7 @@ type AuthorizationCodeOAuthConfig = Extract<McpOAuthConfig, { type: "authorizati
  * stdio 官方 MCP 的身份头载荷，随每条出站协议消息的 `_meta` 下发。
  *
  * 失败也下发（`ok: false` + 枚举 reason）；stdio 插件拿不到头时不会去打官方端点。HTTP 路径则
- * 由 adapter 发起无身份的 tools/call，让 ZCode server 返回权威结构化错误。把 reason 交给 stdio
+ * 由 adapter 发起无身份的 tools/call，让 Nekode server 返回权威结构化错误。把 reason 交给 stdio
  * 插件才能让它把"未登录"与"无 Coding Plan
  * 套餐"如实呈现给用户，而不是静默降级成一句莫名其妙的失败。
  */
@@ -268,7 +268,7 @@ class NodeMcpAdapter implements McpPort {
   private readonly officialMcpAuth?: CreateMcpAdapterOptions["officialMcpAuth"];
   private readonly telemetry?: McpTelemetryTracker;
   private readonly connectionGenerations = new Map<string, number>();
-  private credentialStore?: SharedZCodeCredentialStore;
+  private credentialStore?: SharedNekodeCredentialStore;
   /**
    * 官方鉴权失败分类的暂存槽。不能从 error 对象读——SDK 的 version
    * negotiation 会把 OfficialMcpAuthError 重新包装成普通 Error，instanceof 失效；
@@ -530,7 +530,7 @@ class NodeMcpAdapter implements McpPort {
             tool,
             record.config.timeoutMs,
             record.config.type === "http" &&
-              record.config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+              record.config.auth?.type === NEKODE_OFFICIAL_MCP_AUTH_TYPE,
           ),
         );
         record.status = { ...record.status, toolCount: record.tools.length };
@@ -1005,7 +1005,7 @@ class NodeMcpAdapter implements McpPort {
     const official = config.official;
     const authHeadersPort = this.officialMcpAuth?.authHeadersPort;
     const trustedOrigins = this.officialMcpAuth?.trustedOrigins;
-    const resolveZCodeApiOrigin = this.officialMcpAuth?.resolveZCodeApiOrigin;
+    const resolveNekodeApiOrigin = this.officialMcpAuth?.resolveNekodeApiOrigin;
     const logBase = {
       event: "mcp.official_auth.stdio_meta",
       mcpKey: official.mcpKey,
@@ -1027,7 +1027,7 @@ class NodeMcpAdapter implements McpPort {
 
     // standalone CLI 没有 host auth port。不静默省略该键：插件区分不了"宿主不支持"与
     // "宿主支持但我没登录"，只有显式 reason 才能给出正确的用户提示。
-    if (!authHeadersPort || !trustedOrigins || !resolveZCodeApiOrigin) {
+    if (!authHeadersPort || !trustedOrigins || !resolveNekodeApiOrigin) {
       return fail("official_auth_unavailable");
     }
 
@@ -1042,7 +1042,7 @@ class NodeMcpAdapter implements McpPort {
     let targetOrigin: string;
     let trust: Awaited<ReturnType<OfficialMcpTrustedOriginRegistry["isTrusted"]>>;
     try {
-      targetOrigin = resolveZCodeApiOrigin();
+      targetOrigin = resolveNekodeApiOrigin();
       trust = await trustedOrigins.isTrusted({
         mcpKey: official.mcpKey,
         origin: targetOrigin,
@@ -1241,7 +1241,7 @@ class NodeMcpAdapter implements McpPort {
         // 只在失败时附加：成功路径上它是纯噪声。服务端已给的键一律不覆盖。
         _meta:
           isError && serverRequestId
-            ? { ...meta, [ZCODE_MCP_SERVER_REQUEST_ID_META_KEY]: serverRequestId }
+            ? { ...meta, [NEKODE_MCP_SERVER_REQUEST_ID_META_KEY]: serverRequestId }
             : meta,
       };
     } catch (error) {
@@ -1606,13 +1606,13 @@ class NodeMcpAdapter implements McpPort {
           config.timeoutMs,
           // 只有 http 形态置位。这个标记的用途是**信任结果里的结构化标识**
           // （额度耗尽 / 无套餐），因此判据必须是"结果由谁产出"：
-          //   - http：结果来自 ZCode 后端。fetch wrapper 对每次请求校验 origin；登录态只在
+          //   - http：结果来自 Nekode 后端。fetch wrapper 对每次请求校验 origin；登录态只在
           //     tools/call 解析，缺失时由同一可信后端返回结构化 coding_plan_required；
           //   - stdio：结果由插件进程自己产出，可以任意伪造 `{"error_code":"quota_exceeded"}`，
           //     从而在用户输入框上方弹出"额度用完 / 请开通 Coding Plan"的误导提示。
           // 原判据是 `type !== "sse"`，把 stdio 一起放了进来，等于这道门槛在 stdio 上为零。
           // 注意这不是在挡凭证外泄（那由 origin 校验负责），而是在挡**结果伪造**。
-          config.type === "http" && config.auth?.type === ZCODE_OFFICIAL_MCP_AUTH_TYPE,
+          config.type === "http" && config.auth?.type === NEKODE_OFFICIAL_MCP_AUTH_TYPE,
           config.alwaysLoad,
         ),
       );
@@ -1801,7 +1801,7 @@ class NodeMcpAdapter implements McpPort {
         input.name,
         input.generation,
       );
-      const credentialStore = oauthOptions?.credentialStore ?? createSharedZCodeCredentialStore();
+      const credentialStore = oauthOptions?.credentialStore ?? createSharedNekodeCredentialStore();
       const keyPrefix = createCredentialKeyPrefix(input.name, input.serverUrl, input.oauthConfig);
       // 403 step-up 的最终 scope 必须是 config ∪ token.scope ∪ challenge
       // 的并集。只带 challenge scope 重新授权时，授权服务器可能按新请求收回先前授予的 scope，
@@ -2066,7 +2066,7 @@ class NodeMcpAdapter implements McpPort {
     config: McpServerConfig,
   ): AuthProvider | OAuthClientProvider | undefined {
     if (config.type === "stdio") return undefined;
-    // 官方鉴权与 OAuth 互斥：官方 MCP 的失败只能由 ZCode 登录/套餐解决，
+    // 官方鉴权与 OAuth 互斥：官方 MCP 的失败只能由 Nekode 登录/套餐解决，
     // 交出任何 authProvider 都会让 401 误转成 MCP 授权流程。
     if (isOfficialAuthConfig(config)) return undefined;
     const authorizationCodeOAuthConfig = resolveAuthorizationCodeOAuthConfig(config);
@@ -2092,8 +2092,8 @@ class NodeMcpAdapter implements McpPort {
     return undefined;
   }
 
-  private resolveCredentialStore(): SharedZCodeCredentialStore {
-    this.credentialStore ??= this.mcpOAuth?.credentialStore ?? createSharedZCodeCredentialStore();
+  private resolveCredentialStore(): SharedNekodeCredentialStore {
+    this.credentialStore ??= this.mcpOAuth?.credentialStore ?? createSharedNekodeCredentialStore();
     return this.credentialStore;
   }
 
@@ -2336,7 +2336,7 @@ class NodeMcpAdapter implements McpPort {
 }
 
 function mcpRequestMeta(request: McpCallToolRequest): Record<string, unknown> {
-  // nodeRepl.requestMeta 暴露。ZCode 所有 MCP server 都可忽略这些扩展键；node_repl browser
+  // nodeRepl.requestMeta 暴露。Nekode 所有 MCP server 都可忽略这些扩展键；node_repl browser
   // bridge 则以它们作为回到当前 BrowserControlPort session 的唯一关联依据。runtime_scope
   // 不能从 child session id 猜测，必须由实际执行工具的 runtime 显式透传。
   const requestContext = {
@@ -2359,7 +2359,7 @@ function mcpRequestMeta(request: McpCallToolRequest): Record<string, unknown> {
   };
   return {
     ...requestContext,
-    "com.zcode/request-context": requestContext,
+    "com.nekode/request-context": requestContext,
   };
 }
 
@@ -2414,7 +2414,7 @@ function resolveVersionNegotiation(
     mode,
     probe: {
       // 原因：SDK 的 stdio auto/pin 会先启动 disposable sibling；若沿用 SDK 60s 默认值，
-      // ZCode 的总连接超时可能先结束并让 probe 残留，也不给 legacy initialize 留预算。
+      // Nekode 的总连接超时可能先结束并让 probe 残留，也不给 legacy initialize 留预算。
       timeoutMs: probeTimeoutMs,
     },
   };
@@ -2437,7 +2437,7 @@ function resolveAuthorizationCodeOAuthConfig(
   // 官方鉴权与 MCP OAuth 互斥。必须位于所有既有分支之前：
   // 官方 MCP 既不写 oauth 字段、又禁止静态 authorization 头，若不在此短路就会落进
   // 下面的 authorization_code 兜底，导致 401 时弹出 MCP 授权 UI —— 而官方鉴权失败
-  // 只能由 ZCode 自身的登录/套餐解决，不可能由目标 MCP 的 OAuth 授权解决。
+  // 只能由 Nekode 自身的登录/套餐解决，不可能由目标 MCP 的 OAuth 授权解决。
   if (isOfficialAuthConfig(config)) return undefined;
   if (config.oauth?.type === "authorization_code") return config.oauth;
   if (config.oauth?.type === "client_credentials") return undefined;

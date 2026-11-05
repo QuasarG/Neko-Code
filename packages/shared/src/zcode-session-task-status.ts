@@ -1,14 +1,14 @@
 // ── 旧协议兼容面（过渡期）──────────────────────────────
-// 剩余 1 个导出：deriveZCodeTaskStatusFromSessionSnapshot。
+// 剩余 1 个导出：deriveNekodeTaskStatusFromSessionSnapshot。
 // 消费者：zcodeTaskServiceAdapter/zcodeTaskIndexSyncer/zcodeSessionProjection（旧投影栈）。
-import type { ZCodeSessionStateSnapshot } from "./zcode-protocol/index.js";
-import { getZCodeUserVisibleMessages } from "./zcode-session-visible-content.js";
-import type { ZCodeTaskMeta } from "./zcode-task-types-core.js";
-type ZCodeTaskStatus = ZCodeTaskMeta["status"];
+import type { NekodeSessionStateSnapshot } from "./zcode-protocol/index.js";
+import { getNekodeUserVisibleMessages } from "./zcode-session-visible-content.js";
+import type { NekodeTaskMeta } from "./zcode-task-types-core.js";
+type NekodeTaskStatus = NekodeTaskMeta["status"];
 
-function statusFromZCodeSession(
-  status: ZCodeSessionStateSnapshot["session"]["status"],
-): ZCodeTaskStatus {
+function statusFromNekodeSession(
+  status: NekodeSessionStateSnapshot["session"]["status"],
+): NekodeTaskStatus {
   if (status === "running" || status === "waiting" || status === "paused") {
     return "running";
   }
@@ -17,7 +17,7 @@ function statusFromZCodeSession(
   return undefined;
 }
 
-function hasBlockingActiveSnapshotRuntime(snapshot: ZCodeSessionStateSnapshot): boolean {
+function hasBlockingActiveSnapshotRuntime(snapshot: NekodeSessionStateSnapshot): boolean {
   if (snapshot.runtime.activeTurnId || snapshot.runtime.activeTurnKind) {
     return true;
   }
@@ -31,7 +31,7 @@ function hasBlockingActiveSnapshotRuntime(snapshot: ZCodeSessionStateSnapshot): 
   );
 }
 
-function hasActiveSnapshotRuntime(snapshot: ZCodeSessionStateSnapshot): boolean {
+function hasActiveSnapshotRuntime(snapshot: NekodeSessionStateSnapshot): boolean {
   return hasBlockingActiveSnapshotRuntime(snapshot);
 }
 
@@ -40,8 +40,8 @@ function isToolCallContinuationFinish(finish: string | undefined): boolean {
   return normalized === "tool-calls";
 }
 
-function hasCompletedVisibleAssistantTurn(snapshot: ZCodeSessionStateSnapshot): boolean {
-  const visibleMessages = getZCodeUserVisibleMessages(snapshot.messages, {
+function hasCompletedVisibleAssistantTurn(snapshot: NekodeSessionStateSnapshot): boolean {
+  const visibleMessages = getNekodeUserVisibleMessages(snapshot.messages, {
     target: snapshot.projection.target,
   });
   const latestVisibleMessage = visibleMessages.at(-1);
@@ -54,14 +54,14 @@ function hasCompletedVisibleAssistantTurn(snapshot: ZCodeSessionStateSnapshot): 
   return typeof latestVisibleMessage.info.time.completed === "number";
 }
 
-export function deriveZCodeTaskStatusFromSessionSnapshot(
-  snapshot: ZCodeSessionStateSnapshot,
-): ZCodeTaskStatus {
+export function deriveNekodeTaskStatusFromSessionSnapshot(
+  snapshot: NekodeSessionStateSnapshot,
+): NekodeTaskStatus {
   if (snapshot.projection.lastError) {
     return "error";
   }
 
-  const status = statusFromZCodeSession(snapshot.session.status);
+  const status = statusFromNekodeSession(snapshot.session.status);
   if (status === "error" || status === "completed") {
     return status;
   }

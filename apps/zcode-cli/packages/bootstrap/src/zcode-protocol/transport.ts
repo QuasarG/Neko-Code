@@ -1,10 +1,10 @@
 import type {
-  ZCodeProtocolError,
-  ZCodeProtocolMessage,
-  ZCodeProtocolNotification,
-  ZCodeProtocolRequest,
-  ZCodeProtocolRequestId,
-  ZCodeProtocolResponse,
+  NekodeProtocolError,
+  NekodeProtocolMessage,
+  NekodeProtocolNotification,
+  NekodeProtocolRequest,
+  NekodeProtocolRequestId,
+  NekodeProtocolResponse,
 } from "@zcode/shared";
 import {
   networkCaptureControlSchema,
@@ -15,15 +15,15 @@ import {
 import { V4_METHODS } from "@zcode/shared/zcode-protocol-v4";
 import type { Logger } from "@zcode/contracts";
 
-type ZCodeProtocolOutgoingMessage =
-  | ZCodeProtocolError
-  | ZCodeProtocolNotification
-  | ZCodeProtocolRequest
-  | ZCodeProtocolResponse;
+type NekodeProtocolOutgoingMessage =
+  | NekodeProtocolError
+  | NekodeProtocolNotification
+  | NekodeProtocolRequest
+  | NekodeProtocolResponse;
 
-type ZCodeProtocolMessageHandler = (
-  message: ZCodeProtocolMessage,
-) => Promise<ZCodeProtocolOutgoingMessage | undefined>;
+type NekodeProtocolMessageHandler = (
+  message: NekodeProtocolMessage,
+) => Promise<NekodeProtocolOutgoingMessage | undefined>;
 
 const PROTOCOL_EOF_DRAIN_MS = 100;
 // 生命周期由 session owner 自己串行化。若排在长请求后，查询看不到 starting/stopping，
@@ -68,24 +68,24 @@ const MCP_APP_CONCURRENT_METHODS = new Set<string>([
   zcodeProtocolMethods.mcpUiResolveAppToolCall,
 ]);
 
-interface ZCodeProtocolNdjsonConnectionOptions {
+interface NekodeProtocolNdjsonConnectionOptions {
   signal?: AbortSignal;
   clearPostResponseMessages?: () => void;
-  handleMessage: ZCodeProtocolMessageHandler;
+  handleMessage: NekodeProtocolMessageHandler;
   input: NodeJS.ReadableStream;
   logger?: Logger;
   onTransportClosed?: (error: Error) => void;
   output: NodeJS.WritableStream;
   takePostResponseMessages?: (
-    requestId: ZCodeProtocolRequestId,
-  ) => readonly ZCodeProtocolOutgoingMessage[];
-  takePostResponseBatch?: (requestId: ZCodeProtocolRequestId) => {
-    readonly messages: readonly ZCodeProtocolOutgoingMessage[];
+    requestId: NekodeProtocolRequestId,
+  ) => readonly NekodeProtocolOutgoingMessage[];
+  takePostResponseBatch?: (requestId: NekodeProtocolRequestId) => {
+    readonly messages: readonly NekodeProtocolOutgoingMessage[];
     commit(): boolean;
   } | null;
 }
 
-export class ZCodeProtocolNdjsonConnection {
+export class NekodeProtocolNdjsonConnection {
   private buffer = "";
   private processing: Promise<void> = Promise.resolve();
   private lastQueuedMessageStarted: Promise<void> = Promise.resolve();
@@ -97,7 +97,7 @@ export class ZCodeProtocolNdjsonConnection {
   private draining = false;
   private drainTimer?: ReturnType<typeof setTimeout>;
 
-  constructor(private readonly options: ZCodeProtocolNdjsonConnectionOptions) {
+  constructor(private readonly options: NekodeProtocolNdjsonConnectionOptions) {
     this.closedPromise = new Promise((resolve, reject) => {
       this.resolveClosed = resolve;
       this.rejectClosed = reject;
@@ -118,7 +118,7 @@ export class ZCodeProtocolNdjsonConnection {
     return this.closedPromise;
   }
 
-  send(message: ZCodeProtocolOutgoingMessage): void {
+  send(message: NekodeProtocolOutgoingMessage): void {
     if (this.terminal) return;
     // 观测可丢弃，不能在 stdout 背压时无界积压或挤占业务协议输出。
     if (
@@ -158,7 +158,7 @@ export class ZCodeProtocolNdjsonConnection {
       this.buffer = "";
     }
     this.draining = true;
-    this.notifyTransportClosed(new Error("ZCode Protocol client connection closed"));
+    this.notifyTransportClosed(new Error("Nekode Protocol client connection closed"));
     // EOF 保留短请求半关闭响应，但挂起 handler 不能让进程永久保活。
     this.drainTimer = setTimeout(() => this.finish(), PROTOCOL_EOF_DRAIN_MS);
     void this.processing.then(
@@ -168,7 +168,7 @@ export class ZCodeProtocolNdjsonConnection {
   };
 
   private readonly onAbort = (): void => {
-    this.notifyTransportClosed(new Error("ZCode Protocol runtime stopping"));
+    this.notifyTransportClosed(new Error("Nekode Protocol runtime stopping"));
     this.finish();
   };
 
@@ -278,12 +278,12 @@ export class ZCodeProtocolNdjsonConnection {
       });
   }
 
-  private decodeLine(line: string): ZCodeProtocolMessage | null {
+  private decodeLine(line: string): NekodeProtocolMessage | null {
     let decoded: unknown;
     try {
       decoded = JSON.parse(line);
     } catch (error) {
-      this.options.logger?.warn("ZCode Protocol JSON parse failed", {
+      this.options.logger?.warn("Nekode Protocol JSON parse failed", {
         error: error instanceof Error ? error.message : String(error),
         event: "zcode_protocol.parse.failed",
         module: "bootstrap.zcode_protocol",
@@ -295,7 +295,7 @@ export class ZCodeProtocolNdjsonConnection {
 
     const parsed = zcodeProtocolMessageSchema.safeParse(decoded);
     if (!parsed.success) {
-      this.sendError("invalid-message", -32600, "Invalid ZCode Protocol message", {
+      this.sendError("invalid-message", -32600, "Invalid Nekode Protocol message", {
         issues: parsed.error.issues,
       });
       return null;
@@ -304,7 +304,7 @@ export class ZCodeProtocolNdjsonConnection {
     return parsed.data;
   }
 
-  private shouldBypassProcessingQueue(message: ZCodeProtocolMessage): boolean {
+  private shouldBypassProcessingQueue(message: NekodeProtocolMessage): boolean {
     // 模型任务占住串行队列时，停止/取消请求必须仍能进入 server，
     // 才能把底层 AbortSignal 传给真实模型请求。控制面只旁路当前执行，普通请求仍保持串行。
     return (
@@ -316,7 +316,7 @@ export class ZCodeProtocolNdjsonConnection {
     );
   }
 
-  private async handleMessage(message: ZCodeProtocolMessage): Promise<void> {
+  private async handleMessage(message: NekodeProtocolMessage): Promise<void> {
     if (this.terminal) return;
     const response = await this.options.handleMessage(message);
     if (response) {

@@ -5,25 +5,25 @@ const ENCRYPTED_VALUE_PREFIX = "enc:v1:";
 const CREDENTIAL_CIPHER_ALGORITHM = "aes-256-gcm";
 const CREDENTIAL_CIPHER_IV_BYTES = 12;
 const CREDENTIAL_CIPHER_AUTH_TAG_BYTES = 16;
-const CREDENTIAL_SECRET_ENV_KEY = "ZCODE_CREDENTIAL_SECRET";
+const CREDENTIAL_SECRET_ENV_KEY = "NEKODE_CREDENTIAL_SECRET";
 
-export interface ZCodeCredentialCipher {
+export interface NekodeCredentialCipher {
   decrypt(value: string): string;
   encrypt(value: string): string;
 }
 
-export interface ZCodeCredentialCipherOptions {
+export interface NekodeCredentialCipherOptions {
   env?: Record<string, string | undefined>;
 }
 
-export function createZCodeCredentialCipher(
-  options: ZCodeCredentialCipherOptions = {},
-): ZCodeCredentialCipher {
+export function createNekodeCredentialCipher(
+  options: NekodeCredentialCipherOptions = {},
+): NekodeCredentialCipher {
   const key = deriveCipherKey(resolveCredentialSecret(options.env ?? process.env));
 
   return {
     decrypt(value: string): string {
-      if (!isEncryptedZCodeCredentialValue(value)) {
+      if (!isEncryptedNekodeCredentialValue(value)) {
         return value;
       }
 
@@ -76,7 +76,7 @@ export function createZCodeCredentialCipher(
   };
 }
 
-export function isEncryptedZCodeCredentialValue(value: string): boolean {
+export function isEncryptedNekodeCredentialValue(value: string): boolean {
   return value.startsWith(ENCRYPTED_VALUE_PREFIX);
 }
 

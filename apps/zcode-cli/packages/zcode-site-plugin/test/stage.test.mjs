@@ -48,7 +48,7 @@ test("pack writes the stage as a gzip tar and skips local-only files", async () 
     "public/中文.html": "non-ascii name",
     "lib/addon.node": elf(0x3e),
     ".DS_Store": "",
-    ".zcode-site.json": "{}",
+    ".nekode-site.json": "{}",
     ".git/HEAD": "ref",
   });
   await chmod(join(root, "server.js"), 0o755);

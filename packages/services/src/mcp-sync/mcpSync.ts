@@ -3,11 +3,11 @@ import type {
   LoadCliMcpFromUserDirectoryResult,
   McpDataSyncPayload,
   SaveCliMcpToUserDirectoryRequest,
-  ZCodeAgentMcpServer,
-  ZCodeMcpListMode,
-  ZCodeMcpListResult,
+  NekodeAgentMcpServer,
+  NekodeMcpListMode,
+  NekodeMcpListResult,
   WorkspaceMcpTrustDecision,
-  ZCodeWorkspaceMcpTrustResult,
+  NekodeWorkspaceMcpTrustResult,
 } from "@zcode/shared";
 import { ServiceChannels } from "@zcode/shared";
 import type { IDataSyncCategoryService } from "../data-sync/contract.js";
@@ -28,10 +28,10 @@ export interface IMcpSyncService extends IDataSyncCategoryService<McpDataSyncPay
   listWorkspaceMcpServerStatuses(params: {
     workspacePath: string;
     workspaceIdentity?: string;
-    mcpServers?: ZCodeAgentMcpServer[];
-    mode?: ZCodeMcpListMode;
-  }): Promise<ZCodeMcpListResult>;
-  setWorkspaceMcpTrust?(params: WorkspaceMcpTrustDecision): Promise<ZCodeWorkspaceMcpTrustResult>;
+    mcpServers?: NekodeAgentMcpServer[];
+    mode?: NekodeMcpListMode;
+  }): Promise<NekodeMcpListResult>;
+  setWorkspaceMcpTrust?(params: WorkspaceMcpTrustDecision): Promise<NekodeWorkspaceMcpTrustResult>;
   saveMcpToUserDirectory(payload: SaveCliMcpToUserDirectoryRequest): Promise<void>;
 }
 

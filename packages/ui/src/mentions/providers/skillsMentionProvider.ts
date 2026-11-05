@@ -1,11 +1,11 @@
 import { useMemo } from "react";
-import type { Locale, SkillScope, ZCodeProvider } from "@zcode/shared";
+import type { Locale, SkillScope, NekodeProvider } from "@zcode/shared";
 import type { MentionCategoryResult, MentionItem } from "@/mentions/mentionTypes.js";
 import { filterMentionItemsWithOptions } from "@/mentions/mentionSearch.js";
 import { buildSkillMentionMarkdown } from "@/mentions/mentionMarkdown.js";
 import { useSkills } from "@/hooks/useSkills.js";
 import { filterSkillsForProvider } from "@/lib/skillSourceFilter.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { resolveSkillDisplayDescription, resolveSkillSourceLabel } from "@/lib/builtinSkillI18n.js";
 
 export function mapSkillsToMentionItemsForTest(
@@ -16,6 +16,7 @@ export function mapSkillsToMentionItemsForTest(
     path: string;
     scope: SkillScope;
     pluginName?: string;
+    category?: string;
   }>,
   locale?: Locale,
 ): MentionItem[] {
@@ -40,14 +41,19 @@ export function mapSkillsToMentionItemsForTest(
   return uniqueSkills.map((skill) => {
     const sourceLabel = resolveSkillSourceLabel(skill.scope, locale);
     const description = resolveSkillDisplayDescription(skill, locale);
+    // 分类标签：$ 面板按分类索引（other 不显示避免噪音）；分类词同时进检索通道。
+    const category = skill.category?.trim() || "other";
+    const categoryTag = category !== "other" ? ` [${category}]` : "";
     return {
       id: `skill:${skill.id}`,
       category: "skills",
       label: skill.name,
-      description: description ? `${sourceLabel} · ${description}` : sourceLabel,
+      description: description
+        ? `${sourceLabel}${categoryTag} · ${description}`
+        : `${sourceLabel}${categoryTag}`,
       value: skill.name,
       markdown: buildSkillMentionMarkdown(skill.name, skill.path),
-      keywords: [...new Set([skill.name, skill.description, description, skill.scope])],
+      keywords: [...new Set([skill.name, skill.description, description, skill.scope, category])],
       data: {
         path: skill.path,
         scope: skill.scope,
@@ -60,14 +66,14 @@ export function useSkillsMentionProvider(
   workspacePath: string,
   workspaceIdentity: string | undefined,
   sessionId: string | null,
-  provider: ZCodeProvider,
+  provider: NekodeProvider,
   query: string,
   enabled: boolean,
   requireQuery: boolean,
   emptyText: string,
   title: string,
 ): MentionCategoryResult {
-  const { locale } = useZCodeIntl();
+  const { locale } = useNekodeIntl();
   const { skills, loading, error } = useSkills({
     workspacePath,
     workspaceIdentity,

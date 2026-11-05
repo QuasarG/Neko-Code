@@ -295,7 +295,7 @@ const createRunDeps = (): RunDependencies & { appOptions: () => unknown } => {
   let appOptions: unknown;
   return {
     appOptions: () => appOptions,
-    createZCodeApp: (options?: unknown) => {
+    createNekodeApp: (options?: unknown) => {
       appOptions = options;
       return {
         getModel: () => "openai/gpt-test",
@@ -528,7 +528,7 @@ const createWaitingRunDeps = (
   const sinks: ((event: SessionEvent) => void)[] = [];
   return {
     pollCount: () => polls,
-    createZCodeApp: () =>
+    createNekodeApp: () =>
       ({
         getModel: () => "openai/gpt-test",
         getThoughtLevel: () => "medium",
@@ -723,7 +723,7 @@ test("a resolvable custom command waits for settle instead of early-returning", 
         metadata: {
           description: "Start a dynamic workflow",
           name: "launch-plan",
-          path: "/workspace/.zcode/commands/launch-plan.md",
+          path: "/workspace/.nekode/commands/launch-plan.md",
           scope: "project",
           source: "zcode",
         },
@@ -773,8 +773,8 @@ test("a run with no workflow activity never polls and stays byte-identical", asy
   // 把 dwf 活动从回合事件里摘掉：没有触发证据就绝不进等待。
   const quietDeps = {
     ...deps,
-    createZCodeApp: ((options?: unknown) => {
-      const app = (deps.createZCodeApp as (o?: unknown) => Record<string, unknown>)(options);
+    createNekodeApp: ((options?: unknown) => {
+      const app = (deps.createNekodeApp as (o?: unknown) => Record<string, unknown>)(options);
       return {
         ...app,
         submitPrompt: async (

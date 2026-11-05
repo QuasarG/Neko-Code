@@ -6,7 +6,7 @@ test("CUA producer checkout 参与 CLI 测试缓存键并由 Turbo 传入", asyn
   const config = JSON.parse(
     await readFile(new URL("../../apps/zcode-cli/turbo.json", import.meta.url), "utf8"),
   );
-  assert.ok(config.tasks.test.env.includes("ZCODE_CUA_REPO"));
+  assert.ok(config.tasks.test.env.includes("NEKODE_CUA_REPO"));
   assert.ok(config.tasks.test.env.includes("VITEST_MAX_WORKERS"));
 });
 

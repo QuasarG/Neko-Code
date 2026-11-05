@@ -52,7 +52,7 @@ zcode skills list --json
 
 `doctor` 用于检查版本、平台、CPU、Node、执行路径和 SEA 状态；它不证明模型凭据、网络或工具调用已经可用。插件清单可以独立查询，不要求先发一次付费模型请求。
 
-当前源码的个人模型设置保存在 `~/.zcode/v2/provider_config.json`；运行与扩展设置仍在 `~/.zcode/cli/config.json`。按[配置](03-config.md)建立个人 provider，或在受支持的账号路径上执行 `zcode login`。远程终端可用 `zcode login --no-browser` 显示登录 URL；浏览器回调仍可能要求与 CLI 位于同一机器。
+当前源码的个人模型设置保存在 `~/.nekode/v2/provider_config.json`；运行与扩展设置仍在 `~/.nekode/cli/config.json`。按[配置](03-config.md)建立个人 provider，或在受支持的账号路径上执行 `zcode login`。远程终端可用 `zcode login --no-browser` 显示登录 URL；浏览器回调仍可能要求与 CLI 位于同一机器。
 
 ## 第一次非交互调用
 
@@ -66,6 +66,6 @@ zcode --prompt "只用一句话回复 ready，不调用工具" --cwd /absolute/p
 
 ## 隔离运行环境
 
-并发任务应使用独立工作目录、用户目录和数据基目录。在子进程环境中同时设置 `HOME`、`USERPROFILE`、`ZCODE_DATA_BASE_DIR` 为本次运行的临时目录；不要修改调用者的全局环境。这样可隔离凭据、个人模型配置、会话、插件和记忆。`ZCODE_STORAGE_DIR` 只控制部分存储路径，不能单独代表完整隔离。
+并发任务应使用独立工作目录、用户目录和数据基目录。在子进程环境中同时设置 `HOME`、`USERPROFILE`、`NEKODE_DATA_BASE_DIR` 为本次运行的临时目录；不要修改调用者的全局环境。这样可隔离凭据、个人模型配置、会话、插件和记忆。`NEKODE_STORAGE_DIR` 只控制部分存储路径，不能单独代表完整隔离。
 
 可复制的跨平台子进程例子见[批量任务](13-automation.md)。配置文件和密钥也须写入该隔离环境；不能依赖开发机原有登录态。

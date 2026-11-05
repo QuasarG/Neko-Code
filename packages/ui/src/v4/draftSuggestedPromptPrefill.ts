@@ -1,4 +1,4 @@
-import type { ZCodePluginReferenceCatalogEntry } from "@zcode/shared";
+import type { NekodePluginReferenceCatalogEntry } from "@zcode/shared";
 import { buildPluginMentionMarkdown } from "@/mentions/mentionMarkdown.js";
 import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
 
@@ -39,7 +39,7 @@ export async function buildDraftSuggestedPromptPrefill({
 }: {
   prompt: string;
   plugin?: DraftSuggestedPromptPluginReference;
-  loadPluginCatalog: () => Promise<readonly ZCodePluginReferenceCatalogEntry[]>;
+  loadPluginCatalog: () => Promise<readonly NekodePluginReferenceCatalogEntry[]>;
   onCatalogError?: (error: unknown) => void;
 }): Promise<DraftSuggestedPromptPrefill> {
   const text = prompt.trim();
@@ -47,7 +47,7 @@ export async function buildDraftSuggestedPromptPrefill({
     return { text };
   }
 
-  let catalog: readonly ZCodePluginReferenceCatalogEntry[];
+  let catalog: readonly NekodePluginReferenceCatalogEntry[];
   try {
     catalog = await loadPluginCatalog();
   } catch (error) {

@@ -6,7 +6,7 @@ import {
   listSessionSubagents,
   readSession,
 } from "../src/zcode-protocol/server-operations.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 import { ConversationV4Gateway } from "../src/zcode-protocol-v4/v4-gateway.js";
 import { createConversationV4Gateway } from "../src/zcode-protocol/v4-bridge.js";
 
@@ -34,13 +34,13 @@ function createRecordingLogger(logs: RecordedLog[]): Logger {
 function contextWithLogger(
   logger: Logger,
   overrides: Record<string, unknown> = {},
-): ZCodeProtocolAgentServerContext {
+): NekodeProtocolAgentServerContext {
   return {
     deps: {},
     sessions: new Map(),
     logger,
     ...overrides,
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("session lifecycle diagnostics", () => {

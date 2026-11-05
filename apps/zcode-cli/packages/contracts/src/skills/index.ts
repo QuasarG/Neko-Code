@@ -48,6 +48,8 @@ export interface SkillMetadata {
   /** 所属 plugin 的完整 id；非 plugin skill 不设置。 */
   pluginId?: string;
   qualifiedName?: string;
+  /** L0 分类分组名（frontmatter 可选字段，≤24 字符）；未声明时消费方归入 "other"。 */
+  category?: string;
   path: string;
   directory: string;
   rootPath: string;
@@ -79,6 +81,16 @@ export interface SkillLoadOutcome {
   skills: SkillMetadata[];
   diagnostics: SkillDiagnostic[];
   totalDiscovered: number;
+  /**
+   * 分组目录（root/<分类>/<技能>）携带的分类级描述（<分类>/category.json）。
+   * 进入提示词的描述只到分类粒度；单个技能的 description 不进 agent 提示词。
+   */
+  categories?: SkillCategoryInfo[];
+}
+
+export interface SkillCategoryInfo {
+  name: string;
+  description?: string;
 }
 
 export interface SkillContent {

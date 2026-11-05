@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZCode Sites start.sh for a static site. Copy static-server.mjs next to this file.
+# Nekode Sites start.sh for a static site. Copy static-server.mjs next to this file.
 # Runs in the foreground on 0.0.0.0:3000 (the runtime ignores the shebang and runs `bash start.sh`).
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

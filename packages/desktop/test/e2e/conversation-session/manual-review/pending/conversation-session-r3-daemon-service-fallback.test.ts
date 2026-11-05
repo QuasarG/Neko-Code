@@ -33,13 +33,13 @@ const CASE_MARKER = "E2E_R3_DAEMON_SERVICE_FALLBACK";
 type ServiceCase = "stale-group" | "private-tmp" | "registered";
 const SUBCASE = (process.env.R3_DAEMON_SERVICE_CASE ?? "") as ServiceCase;
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-daemon-service-fallback",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-daemon-service-fallback",
 );
 const ACCESS_GROUP = "zcode-e2e-svc";
 const RESTRICTED_ROOT = "/srv/zcode-e2e-svc";
 const PRIVATE_TMP_ROOT = "/tmp/zcode-e2e-private";
-const SERVER_BIN = '"$HOME/.zcode/server/bin/zcode"';
-const SERVER_ROOT = '"$HOME/.zcode/server"';
+const SERVER_BIN = '"$HOME/.nekode/server/bin/zcode"';
+const SERVER_ROOT = '"$HOME/.nekode/server"';
 const FALLBACK_LOG = "Source Server started in detached fallback mode for this remote environment";
 const REGISTERED_LOG = "Source Server registered with the remote OS user service manager";
 const REUSE_LOG = "Reusing running Source Server";
@@ -109,8 +109,8 @@ async function prepareRemoteFixture(container: string, facts: Record<string, unk
     await rootShell(
       container,
       `set -e; groupadd ${ACCESS_GROUP}; install -d -o root -g ${ACCESS_GROUP} -m 0750 ${RESTRICTED_ROOT}; ` +
-        `install -d -o dev -g dev -m 0700 ${RESTRICTED_ROOT}/.zcode; ` +
-        `ln -sfn ${RESTRICTED_ROOT}/.zcode /home/dev/.zcode; chown -h dev:dev /home/dev/.zcode; ` +
+        `install -d -o dev -g dev -m 0700 ${RESTRICTED_ROOT}/.nekode; ` +
+        `ln -sfn ${RESTRICTED_ROOT}/.nekode /home/dev/.nekode; chown -h dev:dev /home/dev/.nekode; ` +
         `usermod -aG ${ACCESS_GROUP} dev`,
     );
     const gid = (await rootShell(container, `getent group ${ACCESS_GROUP} | cut -d: -f3`)).trim();
@@ -121,19 +121,19 @@ async function prepareRemoteFixture(container: string, facts: Record<string, unk
     return gid;
   }
   if (SUBCASE === "private-tmp") {
-    // manager 使用私有 /tmp，~/.zcode 指向宿主 /tmp：SSH 会话可写，manager 的挂载视图里不存在。
+    // manager 使用私有 /tmp，~/.nekode 指向宿主 /tmp：SSH 会话可写，manager 的挂载视图里不存在。
     await rootShell(
       container,
       "set -e; mkdir -p /etc/systemd/system/user@1000.service.d; " +
         "printf '[Service]\\nPrivateTmp=yes\\n' > /etc/systemd/system/user@1000.service.d/zcode-e2e-private-tmp.conf; " +
         "systemctl daemon-reload; systemctl restart user@1000.service; " +
-        `install -d -o dev -g dev -m 0700 ${PRIVATE_TMP_ROOT}/.zcode; ` +
-        `ln -sfn ${PRIVATE_TMP_ROOT}/.zcode /home/dev/.zcode; chown -h dev:dev /home/dev/.zcode`,
+        `install -d -o dev -g dev -m 0700 ${PRIVATE_TMP_ROOT}/.nekode; ` +
+        `ln -sfn ${PRIVATE_TMP_ROOT}/.nekode /home/dev/.nekode; chown -h dev:dev /home/dev/.nekode`,
     );
     const manager = await readManager(container);
     const hidden = await rootShell(
       container,
-      `test -d ${PRIVATE_TMP_ROOT}/.zcode && echo host-visible; ` +
+      `test -d ${PRIVATE_TMP_ROOT}/.nekode && echo host-visible; ` +
         `nsenter -t ${manager.pid} -m test -e ${PRIVATE_TMP_ROOT} && echo manager-visible || echo manager-hidden`,
     );
     expect(hidden.trim().split("\n")).toEqual(["host-visible", "manager-hidden"]);

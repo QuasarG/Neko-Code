@@ -7,9 +7,9 @@ import { createConfig, parseEnvConfig } from "../src/config/index.js";
 describe("env model config", () => {
   it("ignores legacy model environment variables", () => {
     const config = parseEnvConfig({
-      ZCODE_API_KEY: "secret",
-      ZCODE_BASE_URL: "https://api.example.test/anthropic",
-      ZCODE_MODEL: "glm-5.1",
+      NEKODE_API_KEY: "secret",
+      NEKODE_BASE_URL: "https://api.example.test/anthropic",
+      NEKODE_MODEL: "glm-5.1",
     });
 
     expect(config).not.toHaveProperty("model");
@@ -45,8 +45,8 @@ describe("env model config", () => {
 
       const result = createConfig({
         env: {
-          ZCODE_BASE_URL: "https://api.env.example/anthropic",
-          ZCODE_MODEL: "env-model",
+          NEKODE_BASE_URL: "https://api.env.example/anthropic",
+          NEKODE_MODEL: "env-model",
         },
         userConfigPath: path,
       });

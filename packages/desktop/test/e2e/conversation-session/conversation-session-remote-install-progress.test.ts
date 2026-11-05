@@ -17,7 +17,7 @@ import { prepareV4ConversationE2E } from "../helpers/v4-conversation.js";
 
 const CASE_MARKER = "E2E_REMOTE_INSTALL_PROGRESS";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-install-progress",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/remote-install-progress",
 );
 
 interface Observation {
@@ -54,7 +54,7 @@ describe(`${CASE_MARKER}: 远端安装真实阶段`, () => {
     this.timeout(10 * 60_000);
     // harness 的目标 suffix 支持命名批次，不限十六进制；仍只允许其独立容器命名空间。
     // 在本 case 内真实首装，再制造同版本新 SHA 验证更新。
-    expect(process.env.ZCODE_E2E_SSH_CONTAINER).toMatch(
+    expect(process.env.NEKODE_E2E_SSH_CONTAINER).toMatch(
       /^zcode-(?:progress-e2e-|r3-server-)[a-z0-9-]+$/u,
     );
     const config = readSingleSSHWorkspaceRuntimeConfig(CASE_MARKER);
@@ -78,7 +78,7 @@ describe(`${CASE_MARKER}: 远端安装真实阶段`, () => {
     });
     const sourceId = parseRemoteWorkspaceIdentity(initial.workspaceIdentity!)?.sourceServerId;
     if (!sourceId) throw new Error(`${CASE_MARKER}: 首装缺少 Source 身份`);
-    const installed = await runSSHCommand(config, 'cat "$HOME/.zcode/server/current.json"');
+    const installed = await runSSHCommand(config, 'cat "$HOME/.nekode/server/current.json"');
     const oldSha = JSON.parse(installed.stdout).archiveSha256 as string;
     await disconnectRemoteSource(sourceId, CASE_MARKER);
     const update = await prepareSourceServerUpdateArchive(oldSha, CASE_MARKER);

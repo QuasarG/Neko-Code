@@ -11,15 +11,14 @@ import {
   IOnboardingRecordService,
   ICredentialService,
   IBroadcastService,
-  IZCodeTaskService,
-  IZCodeAgentService,
-  IZCodeSessionService,
+  INekodeTaskService,
+  INekodeAgentService,
+  INekodeSessionService,
   IProjectService,
   ITaskGroupService,
   IRemoteProjectService,
   ICuaPermissionService,
   IConversationShareService,
-  IBotsService,
   IFileWatcherService,
   IOAuthService,
   IModelSelectionService,
@@ -50,7 +49,7 @@ import {
   ISubagentsService,
   ICommandsService,
   IHooksService,
-  IMemoryService,
+  INekoMemoryService,
   IOutputStyleService,
   ISettingsSyncService,
   IFeedbackService,
@@ -80,18 +79,17 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly onboardingRecordService: IOnboardingRecordService;
   readonly credentialService: ICredentialService;
   readonly broadcastService: IBroadcastService;
-  readonly zcodeTaskService: IZCodeTaskService;
+  readonly zcodeTaskService: INekodeTaskService;
   readonly windowControllerService: IWindowControllerService;
-  readonly zcodeAgentService: IZCodeAgentService;
-  readonly zcodeSessionService: IZCodeSessionService;
+  readonly zcodeAgentService: INekodeAgentService;
+  readonly zcodeSessionService: INekodeSessionService;
   readonly taskGroupService: ITaskGroupService;
   readonly projectService: IProjectService;
   readonly remoteProjectService: IRemoteProjectService;
-  // cuaPermissionService 在 IServiceAccessor 上是可选（远端/bots host 不提供），但桌面 renderer
+  // cuaPermissionService 在 IServiceAccessor 上是可选（远端 host 不提供），但桌面 renderer
   // 经 RPC 一定能拿到（main host 始终注册此 descriptor；非 macOS / 未启用时方法返回 available:false）。
   readonly cuaPermissionService: ICuaPermissionService;
   readonly conversationShareService: IConversationShareService;
-  readonly botsService: IBotsService;
   readonly fileWatcherService: IFileWatcherService;
   readonly oauthService: IOAuthService;
   readonly providerSettingsService: IProviderSettingsService;
@@ -126,7 +124,8 @@ export class RemoteServiceAccess implements IServiceAccessor {
   readonly subagentsService: ISubagentsService;
   readonly commandsService: ICommandsService;
   readonly hooksService: IHooksService;
-  readonly memoryService: IMemoryService;
+  /** Neko 记忆只读面；旧 host 没有该 channel 时保留可选性，调用前由消费方判断。 */
+  readonly nekoMemoryService?: INekoMemoryService;
   readonly outputStyleService: IOutputStyleService;
   readonly settingsSyncService: ISettingsSyncService;
   readonly feedbackService: IFeedbackService;
@@ -186,14 +185,14 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.broadcastService = ProxyChannel.toService<IBroadcastService>(
       channelClient.getChannel(IBroadcastService.channelName),
     );
-    this.zcodeTaskService = ProxyChannel.toService<IZCodeTaskService>(
-      channelClient.getChannel(IZCodeTaskService.channelName),
+    this.zcodeTaskService = ProxyChannel.toService<INekodeTaskService>(
+      channelClient.getChannel(INekodeTaskService.channelName),
     );
     this.windowControllerService = ProxyChannel.toService<IWindowControllerService>(
       channelClient.getChannel(IWindowControllerService.channelName),
     );
-    this.zcodeAgentService = ProxyChannel.toService<IZCodeAgentService>(
-      channelClient.getChannel(IZCodeAgentService.channelName),
+    this.zcodeAgentService = ProxyChannel.toService<INekodeAgentService>(
+      channelClient.getChannel(INekodeAgentService.channelName),
     );
     this.remoteProjectService = ProxyChannel.toService<IRemoteProjectService>(
       channelClient.getChannel(IRemoteProjectService.channelName),
@@ -204,17 +203,14 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.projectService = ProxyChannel.toService<IProjectService>(
       channelClient.getChannel(IProjectService.channelName),
     );
-    this.zcodeSessionService = ProxyChannel.toService<IZCodeSessionService>(
-      channelClient.getChannel(IZCodeSessionService.channelName),
+    this.zcodeSessionService = ProxyChannel.toService<INekodeSessionService>(
+      channelClient.getChannel(INekodeSessionService.channelName),
     );
     this.cuaPermissionService = ProxyChannel.toService<ICuaPermissionService>(
       channelClient.getChannel(ICuaPermissionService.channelName),
     );
     this.conversationShareService = ProxyChannel.toService<IConversationShareService>(
       channelClient.getChannel(IConversationShareService.channelName),
-    );
-    this.botsService = ProxyChannel.toService<IBotsService>(
-      channelClient.getChannel(IBotsService.channelName),
     );
     this.fileWatcherService = ProxyChannel.toService<IFileWatcherService>(
       channelClient.getChannel(IFileWatcherService.channelName),
@@ -321,8 +317,8 @@ export class RemoteServiceAccess implements IServiceAccessor {
     this.hooksService = ProxyChannel.toService<IHooksService>(
       channelClient.getChannel(IHooksService.channelName),
     );
-    this.memoryService = ProxyChannel.toService<IMemoryService>(
-      channelClient.getChannel(IMemoryService.channelName),
+    this.nekoMemoryService = ProxyChannel.toService<INekoMemoryService>(
+      channelClient.getChannel(INekoMemoryService.channelName),
     );
     this.outputStyleService = ProxyChannel.toService<IOutputStyleService>(
       channelClient.getChannel(IOutputStyleService.channelName),

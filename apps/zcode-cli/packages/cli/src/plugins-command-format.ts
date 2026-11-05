@@ -1,10 +1,10 @@
 import { formatJson } from "@zcode/core";
 import type { GlobalOptions, JsonValue, RunContext } from "@zcode/shared-types";
 import type {
-  SetZCodePluginEnabledResult,
-  ZCodeAvailablePluginData,
-  ZCodeInstalledPluginData,
-  ZCodeMarketplaceSummaryData,
+  SetNekodePluginEnabledResult,
+  NekodeAvailablePluginData,
+  NekodeInstalledPluginData,
+  NekodeMarketplaceSummaryData,
 } from "@zcode/bootstrap";
 import type { PluginDiagnostic, PluginListItem, PluginListOutcome } from "./plugins-command-shared.js";
 
@@ -44,7 +44,7 @@ export function formatHumanPluginList(outcome: PluginListOutcome, options: Globa
   return `${lines.join("\n")}\n`;
 }
 
-export function formatHumanAvailableList(plugins: readonly ZCodeAvailablePluginData[]): string {
+export function formatHumanAvailableList(plugins: readonly NekodeAvailablePluginData[]): string {
   if (plugins.length === 0) return "No plugins available from configured marketplaces.\n";
   const lines = [`Available plugins (${plugins.length})`];
   for (const plugin of plugins) {
@@ -56,7 +56,7 @@ export function formatHumanAvailableList(plugins: readonly ZCodeAvailablePluginD
 }
 
 export function formatHumanMarketplaceList(
-  marketplaces: readonly ZCodeMarketplaceSummaryData[],
+  marketplaces: readonly NekodeMarketplaceSummaryData[],
 ): string {
   if (marketplaces.length === 0) return "No marketplaces configured.\n";
   const lines = [`Marketplaces (${marketplaces.length})`];
@@ -79,20 +79,20 @@ function formatMarketplaceSource(source: Record<string, unknown>): string {
   return locator ? `${kind} ${locator}` : kind;
 }
 
-export function formatHumanPluginSet(result: SetZCodePluginEnabledResult): string {
+export function formatHumanPluginSet(result: SetNekodePluginEnabledResult): string {
   const verb = result.enabled ? "Enabled" : "Disabled";
   return `${verb} plugin ${result.plugin.id} in ${result.path}\n`;
 }
 
 export function formatHumanPluginUninstall(
-  removed: ZCodeInstalledPluginData | null,
+  removed: NekodeInstalledPluginData | null,
   target: string,
 ): string {
   if (!removed) return `Plugin not installed: ${target}\n`;
   return `Uninstalled plugin ${removed.id}\n`;
 }
 
-export const formatPluginSetJson = (result: SetZCodePluginEnabledResult): string =>
+export const formatPluginSetJson = (result: SetNekodePluginEnabledResult): string =>
   formatJson({
     enabled: result.enabled,
     path: result.path,
@@ -127,7 +127,7 @@ export function formatPluginJson(
   };
 }
 
-export function formatAvailablePluginJson(plugin: ZCodeAvailablePluginData) {
+export function formatAvailablePluginJson(plugin: NekodeAvailablePluginData) {
   return {
     id: plugin.id,
     installed: plugin.installed,
@@ -139,7 +139,7 @@ export function formatAvailablePluginJson(plugin: ZCodeAvailablePluginData) {
   };
 }
 
-export function formatInstalledPluginJson(plugin: ZCodeInstalledPluginData) {
+export function formatInstalledPluginJson(plugin: NekodeInstalledPluginData) {
   return {
     enabled: plugin.enabled,
     id: plugin.id,
@@ -154,7 +154,7 @@ export function formatInstalledPluginJson(plugin: ZCodeInstalledPluginData) {
   };
 }
 
-export function formatMarketplaceJson(marketplace: ZCodeMarketplaceSummaryData) {
+export function formatMarketplaceJson(marketplace: NekodeMarketplaceSummaryData) {
   return {
     id: marketplace.id,
     isOfficial: marketplace.isOfficial,

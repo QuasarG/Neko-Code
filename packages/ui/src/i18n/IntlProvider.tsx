@@ -131,7 +131,7 @@ const IntlContext = createContext<IntlContextValue | null>(null);
  * 国际化 Provider —— 管理当前语言和 intl 实例。
  * 如果传入 settingService，会从设置中读取初始语言并在切换时持久化。
  */
-export function ZCodeIntlProvider({
+export function NekodeIntlProvider({
   children,
   settingService,
   broadcastService,
@@ -355,10 +355,10 @@ export function ZCodeIntlProvider({
 }
 
 /** 获取 intl 上下文 */
-export function useZCodeIntl(): IntlContextValue {
+export function useNekodeIntl(): IntlContextValue {
   const ctx = useContext(IntlContext);
   if (!ctx) {
-    throw new Error("useZCodeIntl 必须在 ZCodeIntlProvider 内使用");
+    throw new Error("useNekodeIntl 必须在 NekodeIntlProvider 内使用");
   }
   return ctx;
 }

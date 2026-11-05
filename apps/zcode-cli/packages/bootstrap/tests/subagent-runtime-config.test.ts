@@ -14,7 +14,7 @@ describe("runtime subagent source parsing", () => {
     const parsed = parseRuntimeSubagentConfig({
       documents: [
         {
-          path: "/project/.zcode/agents/reviewer.md",
+          path: "/project/.nekode/agents/reviewer.md",
           source: "project",
           content:
             "---\nname: reviewer\ndescription: Review\npermissionMode: bypassPermissions\nmodel: custom:provider:model\nthoughtLevel: high\ntools: Read, Grep\n---\nNEW_PROMPT",
@@ -66,7 +66,7 @@ describe("subagent initialization source", () => {
       const configPath = join(root, "config.json");
       const logDir = join(root, "logs");
       const invalidDocument = {
-        path: join(workspace, ".zcode", "agents", "invalid.md"),
+        path: join(workspace, ".nekode", "agents", "invalid.md"),
         source: "project" as const,
         content: "This document intentionally lacks frontmatter",
       };
@@ -111,7 +111,7 @@ describe("subagent initialization source", () => {
       });
       const initial = Promise.withResolvers<SubagentRuntimeConfig>();
       const readHost = vi.fn(async () => initial.promise);
-      const fileLoader = vi.spyOn(subagents, "loadZCodeAgentProfiles");
+      const fileLoader = vi.spyOn(subagents, "loadNekodeAgentProfiles");
       const pluginLoader = vi.spyOn(subagents, "loadPluginAgentTemplates");
       const requests: ModelRequest[] = [];
       let parentCalls = 0;
@@ -119,7 +119,7 @@ describe("subagent initialization source", () => {
       let creating: ReturnType<typeof createRegistryBackedTestApp> | undefined;
       try {
         await mkdir(join(storage, "agents"), { recursive: true });
-        await mkdir(join(workspace, ".zcode", "agents"), { recursive: true });
+        await mkdir(join(workspace, ".nekode", "agents"), { recursive: true });
         if (source === "files") await writeFile(invalidDocument.path, invalidDocument.content);
         await writeFile(
           configPath,
@@ -129,8 +129,8 @@ describe("subagent initialization source", () => {
         creating = createRegistryBackedTestApp({
           loggerFactory: createNodeLoggerFactory({ logDir }),
           env: {
-            ZCODE_STORAGE_DIR: storage,
-            ZCODE_SESSION_DB_PATH: join(storage, "cli", "db", "db.sqlite"),
+            NEKODE_STORAGE_DIR: storage,
+            NEKODE_SESSION_DB_PATH: join(storage, "cli", "db", "db.sqlite"),
           },
           userConfigPath: configPath,
           runtimeConfig: {
@@ -236,7 +236,7 @@ describe("subagent initialization source", () => {
     let app: Awaited<ReturnType<typeof createRegistryBackedTestApp>> | undefined;
     try {
       app = await createRegistryBackedTestApp({
-        env: { ZCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
+        env: { NEKODE_STORAGE_DIR: root, NEKODE_SESSION_DB_PATH: join(root, "db.sqlite") },
         skipUserConfig: true,
         runtimeConfig: {
           workingDirectory: root,
@@ -283,13 +283,13 @@ describe("subagent initialization source", () => {
 
   it("propagates an initialization read failure without using the file loader", async () => {
     const root = await mkdtemp(join(tmpdir(), "subagent-initial-failure-"));
-    const fileLoader = vi.spyOn(subagents, "loadZCodeAgentProfiles");
+    const fileLoader = vi.spyOn(subagents, "loadNekodeAgentProfiles");
     const error = new Error("Host configuration unavailable");
     let app: Awaited<ReturnType<typeof createRegistryBackedTestApp>> | undefined;
     try {
       await expect(
         createRegistryBackedTestApp({
-          env: { ZCODE_STORAGE_DIR: root, ZCODE_SESSION_DB_PATH: join(root, "db.sqlite") },
+          env: { NEKODE_STORAGE_DIR: root, NEKODE_SESSION_DB_PATH: join(root, "db.sqlite") },
           skipUserConfig: true,
           runtimeConfig: { workingDirectory: root, mcp: { enabled: false, servers: {} } },
           readSubagentRuntimeConfig: async () => {

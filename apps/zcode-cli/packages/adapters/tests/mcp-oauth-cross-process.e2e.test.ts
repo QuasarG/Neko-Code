@@ -7,8 +7,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
 import {
-  createSharedZCodeCredentialStore,
-  type SharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
+  type SharedNekodeCredentialStore,
 } from "../src/auth/shared-credentials.js";
 import { publishCanonicalCredentials } from "../src/mcp/oauth-credentials.js";
 import { createCredentialKeyPrefix } from "../src/mcp/oauth.js";
@@ -339,15 +339,15 @@ function runChild(config: Record<string, unknown>): ChildHandle {
 }
 
 async function createCredentials(secret: string): Promise<{
-  credentialStore: SharedZCodeCredentialStore;
+  credentialStore: SharedNekodeCredentialStore;
   credentialsPath: string;
 }> {
   const directory = await mkdtemp(join(tmpdir(), "zcode-mcp-oauth-cross-process-"));
   temporaryDirectories.push(directory);
   const credentialsPath = join(directory, "credentials.json");
   return {
-    credentialStore: createSharedZCodeCredentialStore({
-      env: { ZCODE_CREDENTIAL_SECRET: secret },
+    credentialStore: createSharedNekodeCredentialStore({
+      env: { NEKODE_CREDENTIAL_SECRET: secret },
       filePath: credentialsPath,
     }),
     credentialsPath,

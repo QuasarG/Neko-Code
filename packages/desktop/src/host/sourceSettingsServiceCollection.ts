@@ -16,7 +16,6 @@ import {
   ICommandsService,
   IHooksService,
   ISubagentsService,
-  IMemoryService,
   IOutputStyleService,
   ISettingsSyncService,
   type IServiceAccessor,
@@ -103,10 +102,6 @@ export function createSourceSettingsServiceCollection(
     .register(
       ISubagentsService,
       read(ISubagentsService, (accessor) => accessor.subagentsService),
-    )
-    .register(
-      IMemoryService,
-      read(IMemoryService, (accessor) => accessor.memoryService),
     )
     .register(
       IOutputStyleService,

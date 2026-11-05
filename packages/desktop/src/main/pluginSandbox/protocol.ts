@@ -206,7 +206,7 @@ export function createPluginSandboxProtocolHandler(options: {
       let html =
         record.contentKind === "gen-ui"
           ? record.html.replace(
-              "__ZCODE_GEN_UI_RUNTIME__",
+              "__NEKODE_GEN_UI_RUNTIME__",
               `/instance/${record.sandboxId}/__zcode__/gen-ui.js`,
             )
           : injectPluginSandboxAliasScript(record.html, record.sandboxId);
@@ -219,7 +219,7 @@ export function createPluginSandboxProtocolHandler(options: {
           const decode = (value: Uint8Array) => new TextDecoder().decode(value);
           // bridge/Tweak 在作者脚本前，inner kit 在片段后；原手写 Widgets 改变了上游初始化语义。
           html = html.replace(
-            "<!--__ZCODE_GEN_UI_STYLES__-->",
+            "<!--__NEKODE_GEN_UI_STYLES__-->",
             `<style>${decode(styles)}\n:root { --visualize-paint-gutter: 5px; --viz-fg: var(--foreground); }</style>`,
           );
           if (/\bviz-calendar\b/i.test(record.html)) {
@@ -229,7 +229,7 @@ export function createPluginSandboxProtocolHandler(options: {
               `<script>${calendar.replaceAll("</script", "<\\/script")}</script></head>`,
             );
           }
-          const marker = "<!--__ZCODE_GEN_UI_INNER_KIT__-->";
+          const marker = "<!--__NEKODE_GEN_UI_INNER_KIT__-->";
           const index = html.lastIndexOf(marker);
           if (index < 0) throw new Error("Gen UI document is missing its runtime slot");
           html =

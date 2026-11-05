@@ -1,4 +1,4 @@
-import { getZCodeCopy, type UiLocale } from "@zcode/i18n";
+import { getNekodeCopy, type UiLocale } from "@zcode/i18n";
 import type { TuiEffortOption } from "@zcode/tui";
 import type { CommandCenterApp } from "./types.js";
 
@@ -13,7 +13,7 @@ export function thoughtLevelsToEffortOptions(
   levels: readonly string[],
   locale?: UiLocale,
 ): TuiEffortOption[] {
-  const effortCopy = getZCodeCopy(locale).tui.effort;
+  const effortCopy = getNekodeCopy(locale).tui.effort;
   return levels.map((level) => ({
     id: level,
     label: effortLabel(level, effortCopy),

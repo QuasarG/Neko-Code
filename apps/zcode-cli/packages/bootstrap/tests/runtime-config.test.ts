@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createConfig } from "@zcode/adapters/config";
-import { ZCODE_CUA_OFFICIAL_PLUGIN_ID, ZCODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
+import { NEKODE_CUA_OFFICIAL_PLUGIN_ID, NEKODE_PLUGIN_ID_ENV_KEY } from "@zcode/shared";
 import { ProviderRegistry } from "@zcode/provider";
 import {
   resolveAppRuntimeConfig as resolveProductionAppRuntimeConfig,
@@ -155,85 +155,6 @@ describe("resolveAppRuntimeConfig", () => {
     });
   });
 
-  it("projects canonical memory inputs and supported switches", () => {
-    const resolved = resolveAppRuntimeConfig({
-      cliStorageRoot: "/tmp/zcode-cli",
-      configResult: createConfig({
-        cliOverrides: {
-          features: { memory: false },
-          memory: {
-            use: false,
-          },
-          model: {
-            main: {
-              provider: "provider:test",
-              model: "glm-0531",
-              kind: "anthropic",
-              baseURL: "http://old.example.test/v1",
-            },
-          },
-        },
-        env: {},
-        skipUserConfig: true,
-        workingDirectory,
-      }),
-      options: {},
-      subagentOutputRootDir: "/tmp/zcode-cli/agents",
-      subagentProfiles: [],
-      workingDirectory,
-      workspaceIdentity: "  ssh:example:/workspace/app  ",
-    });
-
-    expect(resolved.runtimeConfig.memory).toEqual({
-      cliStorageRoot: "/tmp/zcode-cli",
-      enabled: false,
-      use: false,
-      workspaceIdentity: "ssh:example:/workspace/app",
-    });
-  });
-
-  it("defaults the runtime memory switches to enabled", () => {
-    const resolved = resolveAppRuntimeConfig({
-      cliStorageRoot: "/tmp/zcode-cli",
-      configResult: createConfigResult(),
-      options: {},
-      subagentOutputRootDir: "/tmp/zcode-cli/agents",
-      subagentProfiles: [],
-      workingDirectory,
-    });
-
-    expect(resolved.runtimeConfig.memory).toEqual({
-      cliStorageRoot: "/tmp/zcode-cli",
-      enabled: true,
-      use: true,
-      workspaceIdentity: undefined,
-    });
-    expect(runtimeConfigLogContext(resolved.runtimeConfig, workingDirectory)).toMatchObject({
-      memoryExtractionEnabled: true,
-    });
-  });
-
-  it("preserves an explicit disabled memory Extraction gate and logs it", () => {
-    const resolved = resolveAppRuntimeConfig({
-      cliStorageRoot: "/tmp/zcode-cli",
-      configResult: createConfigResult(),
-      options: {
-        runtimeConfig: {
-          memory: { extractionEnabled: false },
-        },
-      },
-      subagentOutputRootDir: "/tmp/zcode-cli/agents",
-      subagentProfiles: [],
-      workingDirectory,
-    });
-
-    expect(resolved.runtimeConfig.memory?.extractionEnabled).toBe(false);
-    expect(runtimeConfigLogContext(resolved.runtimeConfig, workingDirectory)).toMatchObject({
-      memoryEnabled: true,
-      memoryExtractionEnabled: false,
-      memoryUse: true,
-    });
-  });
 
   it("passes the initial Session Selection without recreating ModelSelection state", () => {
     const sessionModelSelection = {
@@ -321,7 +242,7 @@ describe("resolveAppRuntimeConfig", () => {
   });
 
   it("projects explicit session tool filters into the runtime tool surface", () => {
-    // Explicit filters come from ZCode Protocol session/create or the headless CLI
+    // Explicit filters come from Nekode Protocol session/create or the headless CLI
     // flags; they are the only inputs that shape the provider-visible tool surface.
     const configResult = createConfig({
       cliOverrides: {
@@ -430,7 +351,7 @@ describe("resolveAppRuntimeConfig", () => {
       configResult: createConfigResult(),
       options: {
         env: {
-          ZCODE_EMBEDDED_SEARCH_COMMAND: "/tmp/zcode-test",
+          NEKODE_EMBEDDED_SEARCH_COMMAND: "/tmp/zcode-test",
         },
       },
       workingDirectory,
@@ -549,8 +470,8 @@ describe("resolveAppRuntimeConfig", () => {
     const name = "plugin:computer-use:computer-use";
     const officialPluginConfig = {
       type: "stdio" as const,
-      command: "/Applications/ZCode Computer Use.app/Contents/MacOS/server",
-      env: { [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID },
+      command: "/Applications/Nekode Computer Use.app/Contents/MacOS/server",
+      env: { [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID },
     };
     const baseInput = {
       cliStorageRoot: "/tmp/zcode-cli",
@@ -577,7 +498,7 @@ describe("resolveAppRuntimeConfig", () => {
               [name]: {
                 type: "stdio",
                 command: "/tmp/attacker-command",
-                env: { [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID },
+                env: { [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID },
               },
             },
           },

@@ -39,11 +39,11 @@ for arg in "$@"; do
   printf '\\t%s' "$arg" >> "${logPath}"
 done
 printf '\\n' >> "${logPath}"
-if [[ "${toolName}" == "codesign" && "\${ZCODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "codesign" && "\${NEKODE_FAKE_CODESIGN_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper codesign rejection" >&2
   exit 7
 fi
-if [[ "${toolName}" == "xcrun" && "\${ZCODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
+if [[ "${toolName}" == "xcrun" && "\${NEKODE_FAKE_STAPLER_FAIL_HELPER:-0}" == "1" && "$*" == *"${HELPER_APP_NAME}"* ]]; then
   echo "fake helper stapler rejection" >&2
   exit 8
 fi
@@ -51,7 +51,7 @@ fi
   );
 }
 
-function createReleaseApp(rootDir: string, productName = "ZCode") {
+function createReleaseApp(rootDir: string, productName = "Nekode") {
   const appPath = join(rootDir, `${productName}.app`);
 
   writeExecutable(join(appPath, "Contents", "MacOS", productName), "#!/bin/bash\n");
@@ -75,9 +75,9 @@ function runDoctor(appPath: string, binDir: string, extraEnv: NodeJS.ProcessEnv 
     cwd: REPO_ROOT,
     env: {
       ...process.env,
-      ZCODE_ENV: "production",
+      NEKODE_ENV: "production",
       // Test selection must not inherit a developer's active dev/preview helper variant.
-      ZCODE_CUA_HELPER_INSTALL_VARIANT: "",
+      NEKODE_CUA_HELPER_INSTALL_VARIANT: "",
       ...extraEnv,
       PATH: `${binDir}:${process.env.PATH ?? ""}`,
     },
@@ -97,8 +97,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     const workspaceDir = makeTempDir("zcode-macos-preview-doctor-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
-    const { appPath } = createReleaseApp(workspaceDir, "ZCode Preview");
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const { appPath } = createReleaseApp(workspaceDir, "Nekode Preview");
+    const zcodeHome = join(workspaceDir, ".nekode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome, "preview");
 
     mkdirSync(binDir, { recursive: true });
@@ -107,29 +107,29 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZCODE_ENV: "test",
-      ZCODE_CUA_REQUIRE_HELPER: "1",
-      ZCODE_HOME: zcodeHome,
+      NEKODE_ENV: "test",
+      NEKODE_CUA_REQUIRE_HELPER: "1",
+      NEKODE_HOME: zcodeHome,
     });
 
-    expect(output).toContain(`validating ZCode Preview.app: ${appPath}`);
+    expect(output).toContain(`validating Nekode Preview.app: ${appPath}`);
     const log = readFileSync(toolLog, "utf-8");
     expect(log).toContain(`codesign\t--verify\t--deep\t--strict\t${appPath}`);
     expect(log).toContain(`codesign\t--verify\t--deep\t--strict\t${helperAppPath}`);
   });
 
-  it("默认只验收安装后的 ZCode.app，不强绑 Computer Use Helper 发布", () => {
+  it("默认只验收安装后的 Nekode.app，不强绑 Computer Use Helper 发布", () => {
     const workspaceDir = makeTempDir("zcode-macos-release-doctor-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
     writeFakeTool(binDir, "spctl", toolLog);
 
-    const output = runDoctor(appPath, binDir, { ZCODE_HOME: zcodeHome });
+    const output = runDoctor(appPath, binDir, { NEKODE_HOME: zcodeHome });
 
     expect(output).toContain("[macos-release-doctor] done");
     const log = readFileSync(toolLog, "utf-8");
@@ -139,12 +139,12 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     expect(output).toContain("standalone Computer Use Helper.app not required");
   });
 
-  it("CUA release gate 验收外置 ZCode Computer Use.app", () => {
+  it("CUA release gate 验收外置 Nekode Computer Use.app", () => {
     const workspaceDir = makeTempDir("zcode-macos-release-doctor-helper-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome);
 
     mkdirSync(binDir, { recursive: true });
@@ -153,8 +153,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     writeFakeTool(binDir, "xcrun", toolLog);
 
     const output = runDoctor(appPath, binDir, {
-      ZCODE_CUA_REQUIRE_HELPER: "1",
-      ZCODE_HOME: zcodeHome,
+      NEKODE_CUA_REQUIRE_HELPER: "1",
+      NEKODE_HOME: zcodeHome,
     });
 
     expect(output).toContain("[macos-release-doctor] done");
@@ -171,7 +171,7 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome);
 
     mkdirSync(binDir, { recursive: true });
@@ -181,9 +181,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_CUA_HELPER_APP_PATH: helperAppPath,
-        ZCODE_FAKE_STAPLER_FAIL_HELPER: "1",
+        NEKODE_CUA_REQUIRE_HELPER: "1",
+        NEKODE_CUA_HELPER_APP_PATH: helperAppPath,
+        NEKODE_FAKE_STAPLER_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper stapler rejection/);
   });
@@ -193,7 +193,7 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
 
     mkdirSync(binDir, { recursive: true });
     writeFakeTool(binDir, "codesign", toolLog);
@@ -201,13 +201,13 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
+        NEKODE_CUA_REQUIRE_HELPER: "1",
+        NEKODE_HOME: zcodeHome,
       }),
     ).toThrow(/Computer Use Helper\.app missing/);
   });
 
-  it("CUA release gate 在没有 ZCODE_HOME/HOME 时应 fail-closed", () => {
+  it("CUA release gate 在没有 NEKODE_HOME/HOME 时应 fail-closed", () => {
     const workspaceDir = makeTempDir("zcode-macos-release-doctor-no-home-");
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
@@ -219,8 +219,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: "",
+        NEKODE_CUA_REQUIRE_HELPER: "1",
+        NEKODE_HOME: "",
         HOME: "",
       }),
     ).toThrow(/no product helper path/);
@@ -231,7 +231,7 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome);
 
     mkdirSync(binDir, { recursive: true });
@@ -240,9 +240,9 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
-        ZCODE_FAKE_CODESIGN_FAIL_HELPER: "1",
+        NEKODE_CUA_REQUIRE_HELPER: "1",
+        NEKODE_HOME: zcodeHome,
+        NEKODE_FAKE_CODESIGN_FAIL_HELPER: "1",
       }),
     ).toThrow(/fake helper codesign rejection/);
 
@@ -256,7 +256,7 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
     const binDir = join(workspaceDir, "bin");
     const toolLog = join(workspaceDir, "tool.log");
     const { appPath } = createReleaseApp(workspaceDir);
-    const zcodeHome = join(workspaceDir, ".zcode");
+    const zcodeHome = join(workspaceDir, ".nekode");
     const helperAppPath = createZcodeHomeHelper(zcodeHome);
     writeExecutable(join(helperAppPath, "Contents", "MacOS", HELPER_DISPLAY_NAME), "#!/bin/bash\n");
 
@@ -266,8 +266,8 @@ describe.skipIf(isWindows)("doctor-macos-release-app.sh", () => {
 
     expect(() =>
       runDoctor(appPath, binDir, {
-        ZCODE_CUA_REQUIRE_HELPER: "1",
-        ZCODE_HOME: zcodeHome,
+        NEKODE_CUA_REQUIRE_HELPER: "1",
+        NEKODE_HOME: zcodeHome,
       }),
     ).toThrow(/not a Mach-O executable/);
     const log = existsSync(toolLog) ? readFileSync(toolLog, "utf-8") : "";

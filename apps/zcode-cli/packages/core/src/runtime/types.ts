@@ -23,9 +23,11 @@ import type {
   WorkspaceHookBundleSnapshot,
   WorkspaceId,
 } from "@zcode/contracts";
-import type { ZCodeProviderAccountAccess } from "@zcode/shared";
+import type { NekodeProviderAccountAccess } from "@zcode/shared";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
 import type { RuntimeMessageEntry } from "../agent/message-history.js";
+import type { NekoMemoryBooksPort } from "../neko-memory/ports.js";
+import type { WardrobeStorePort } from "../wardrobe/ports.js";
 import type { ProviderToolRound } from "./provider-tool-rounds/contract.js";
 import type {
   CompactPhase,
@@ -76,7 +78,6 @@ import type {
   ExecutionShellSelection,
   AutomationPort,
   OffPeakPort,
-  TopicResourcePort,
   FileSystemPort,
   HttpClientPort,
   ImageProcessorPort,
@@ -166,7 +167,7 @@ export interface AgentRuntimeConfig {
   runtimeFeatures?: {
     /**
      * 是否注册 node_repl 工具（js）。
-     * 由 bootstrap 根据 ZCode 官方插件启停推导，不由普通插件 manifest 自声明。
+     * 由 bootstrap 根据 Nekode 官方插件启停推导，不由普通插件 manifest 自声明。
      */
     nodeRepl?: boolean;
     /**
@@ -202,7 +203,6 @@ export interface AgentRuntimeConfig {
   embeddedSearchBackend?: EmbeddedSearchBackend;
   /** 根 Session runtime 创建时固定；false 只关闭 Bash 的 bfs/ugrep prelude。 */
   nativeSearchEnhancementsEnabled?: boolean;
-  memory?: MemoryRuntimeConfig;
   /** 历史恢复允许未绑定；只有完整选择才能创建本轮执行 Model。 */
   modelSelection?: ModelSelection;
   titleGeneration?: {
@@ -214,7 +214,7 @@ export interface AgentRuntimeConfig {
   taskType?: SessionTaskType;
   /**
    * 动态工作流灰度门（docs/dynamic-workflow/launch.md「Gray release」）：Host 判定后经
-   * ZCode Protocol 下发，runtime 只消费。**缺席即开启**（进程内嵌入方靠这个极性）；
+   * Nekode Protocol 下发，runtime 只消费。**缺席即开启**（进程内嵌入方靠这个极性）；
    * 独立 CLI 的 TUI 与 headless 按 --workflow-mode 显式传 true/false（缺省 disabled，DWG-04），
    * workflow_child 继承父配置。
    * false 会关闭十个工作流工具，不改变其他工具的注册策略。
@@ -318,16 +318,6 @@ export interface EnqueueSubagentMessageInput {
   traceContext: TraceContext;
 }
 
-export interface MemoryRuntimeConfig {
-  cliStorageRoot?: string;
-  enabled?: boolean;
-  /** 是否调度成功 Main turn 后的自动 Extraction；缺省按 true 处理。 */
-  extractionEnabled?: boolean;
-  storageRoot?: string;
-  use?: boolean;
-  workspaceIdentity?: string;
-}
-
 export interface AgentRuntimeDeps {
   /** 只读目录入口；必须同步读取内存，不在请求收集阶段进行 I/O。 */
   getAgentDefinitions?: GetAgentDefinitions;
@@ -402,7 +392,6 @@ export interface AgentRuntimeDeps {
   artifactStore?: ToolArtifactStorePort;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
-  topicResourcePort?: TopicResourcePort;
   contextSourcePort?: ContextSourcePort;
   eventSink?: SessionEventSink;
   logger?: Logger;
@@ -410,7 +399,17 @@ export interface AgentRuntimeDeps {
   contextBuilder?: ContextBuilder; // Optional, will be created from config
   now?: () => Date;
   isRemoteWorkspace?: () => boolean;
-  memoryRoot?: string;
+  /**
+   * Neko Memory v2 书架：六本固定 Markdown 的枚举、定位与每会话投递快照。
+   * 只有主会话由 bootstrap 构造并注入；子代理与工作流子会话不注入，
+   * 因此既没有记忆系统提示段，也不做每轮投递。
+   */
+  nekoMemoryBooks?: NekoMemoryBooksPort;
+  /**
+   * 衣橱存储端口（定义文件 + runtime 状态）：注入后开启 wardrobe 工具与
+   * `<wardrobe>` 状态注入；与记忆书相互独立。
+   */
+  wardrobeStore?: WardrobeStorePort;
 }
 
 export interface RuntimeModelFactoryInput {
@@ -431,7 +430,7 @@ export type RuntimeModelFactory = (input: RuntimeModelFactoryInput) => Model;
 export interface ProviderRuntimeHeadersPort {
   shouldRefreshBeforeModelRequest?(input: { providerId: string; modelId: string }): boolean;
   refreshBeforeModelRequest(input: {
-    accountAccess?: ZCodeProviderAccountAccess;
+    accountAccess?: NekodeProviderAccountAccess;
     expectedAccountScope?: string;
     rejectedProjectTokenFingerprint?: string;
     abortSignal?: AbortSignal;
@@ -462,8 +461,6 @@ export interface TurnResult {
  */
 export interface ModelExecutionContext {
   offPeak?: { executionId: string; ticketId: string; providerErrorCode: string };
-  /** 仅当前 Turn 跳过自动 Project Memory Extraction；不修改 Session Memory 配置。 */
-  memoryExtraction?: "skip";
   selectionScope: "execution";
   /** 接纳加速输入前固定的 Session 候选；仅在内存中随本条命令传递。 */
   highspeedFallbackSelection?: ModelSelection;

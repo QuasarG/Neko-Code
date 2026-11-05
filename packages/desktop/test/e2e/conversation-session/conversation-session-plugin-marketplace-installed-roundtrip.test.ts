@@ -43,7 +43,7 @@ describe("WPL-015 Marketplace installed roundtrip E2E", () => {
     const fixture = await createPluginLifecycleFixture("1.0.0");
     const { storageRoot, workspace } = getE2EAppDataPaths();
     const userConfigPath = join(storageRoot, "cli", "config.json");
-    const workspaceConfigPath = join(workspace, ".zcode", "config.json");
+    const workspaceConfigPath = join(workspace, ".nekode", "config.json");
 
     await waitForDefaultWorkspaceReady();
     await addMarketplaceSourceThroughAgent(fixture.marketplaceRoot);

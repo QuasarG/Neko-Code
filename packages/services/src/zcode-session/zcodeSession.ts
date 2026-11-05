@@ -1,55 +1,55 @@
 import { ServiceChannels } from "@zcode/shared";
 import type {
   TraceId,
-  ZCodeAgentMcpServer,
-  ZCodeDeliveryKind,
-  ZCodeMessageWithParts,
+  NekodeAgentMcpServer,
+  NekodeDeliveryKind,
+  NekodeMessageWithParts,
   ModelSelection,
-  ZCodePermissionRequestParams,
-  ZCodeProviderRuntimeHeadersRequestParams,
-  ZCodeUserInputRequestParams,
-  ZCodeUserInputResponse,
-  ZCodeSessionInfo,
-  ZCodeSessionImportHistory,
-  ZCodeSessionEvent,
-  ZCodeSessionMode,
-  ZCodeSessionPersistence,
-  ZCodeSessionStateSnapshot,
-  ZCodeStateUpdatedNotification,
-  ZCodeWorkspacePresentation,
+  NekodePermissionRequestParams,
+  NekodeProviderRuntimeHeadersRequestParams,
+  NekodeUserInputRequestParams,
+  NekodeUserInputResponse,
+  NekodeSessionInfo,
+  NekodeSessionImportHistory,
+  NekodeSessionEvent,
+  NekodeSessionMode,
+  NekodeSessionPersistence,
+  NekodeSessionStateSnapshot,
+  NekodeStateUpdatedNotification,
+  NekodeWorkspacePresentation,
 } from "@zcode/shared";
 import { createServiceDescriptor } from "#src/descriptors.js";
 import type { ProviderRuntimeHeadersUiResponse } from "#src/zcode-agent/zcodeAgent.js";
 
-export interface ZCodeSessionWorkspaceTarget {
+export interface NekodeSessionWorkspaceTarget {
   workspacePath: string;
   workspaceIdentity?: string;
   remoteSessionId?: string;
 }
 
-export type ZCodeSessionReadWorkspacePresentationParams = ZCodeSessionWorkspaceTarget;
+export type NekodeSessionReadWorkspacePresentationParams = NekodeSessionWorkspaceTarget;
 
-export interface ZCodeTaskTarget extends ZCodeSessionWorkspaceTarget {
+export interface NekodeTaskTarget extends NekodeSessionWorkspaceTarget {
   sessionId: string;
 }
 
-export interface ZCodeSessionCreateParams extends ZCodeSessionWorkspaceTarget {
+export interface NekodeSessionCreateParams extends NekodeSessionWorkspaceTarget {
   /** 仅导入事务使用的预分配 ID；普通新会话继续由 Agent 分配。 */
   sessionId?: string;
   sessionTraceId?: TraceId;
   parentSessionId?: string;
-  mode?: ZCodeSessionMode;
+  mode?: NekodeSessionMode;
   model?: ModelSelection;
-  persistence?: ZCodeSessionPersistence;
+  persistence?: NekodeSessionPersistence;
   thoughtLevel?: string;
-  mcpServers?: ZCodeAgentMcpServer[];
-  importedHistory?: ZCodeSessionImportHistory;
+  mcpServers?: NekodeAgentMcpServer[];
+  importedHistory?: NekodeSessionImportHistory;
 }
 
-export interface ZCodeSessionResumeParams extends ZCodeTaskTarget {
+export interface NekodeSessionResumeParams extends NekodeTaskTarget {
   model?: ModelSelection;
   thoughtLevel?: string;
-  mcpServers?: ZCodeAgentMcpServer[];
+  mcpServers?: NekodeAgentMcpServer[];
   /**
    * 默认广播 resume 得到的历史快照，并让 shadow 订阅请求初始 snapshot。
    * 续聊发送前的 runtime 预恢复会关闭它，避免旧终态快照覆盖本地已开始的新输入运行态。
@@ -57,50 +57,50 @@ export interface ZCodeSessionResumeParams extends ZCodeTaskTarget {
   broadcastSnapshot?: boolean;
 }
 
-export interface ZCodeSessionListParams extends ZCodeSessionWorkspaceTarget {
+export interface NekodeSessionListParams extends NekodeSessionWorkspaceTarget {
   limit?: number;
 }
 
-export interface ZCodeSessionReadParams extends ZCodeTaskTarget {
-  deliveryKind?: ZCodeDeliveryKind;
+export interface NekodeSessionReadParams extends NekodeTaskTarget {
+  deliveryKind?: NekodeDeliveryKind;
   messageLimit?: number;
   afterSeq?: number;
 }
 
-export interface ZCodeSessionMessagesParams extends ZCodeTaskTarget {
+export interface NekodeSessionMessagesParams extends NekodeTaskTarget {
   afterMessageId?: string;
   limit?: number;
 }
 
-export interface ZCodeSessionEventsParams extends ZCodeTaskTarget {
+export interface NekodeSessionEventsParams extends NekodeTaskTarget {
   afterSeq?: number;
   limit?: number;
 }
 
-export interface ZCodeSessionSetModelParams extends ZCodeTaskTarget {
+export interface NekodeSessionSetModelParams extends NekodeTaskTarget {
   model: ModelSelection;
   expectedRevision?: number;
   persistAsWorkspaceLastUsed?: boolean;
 }
 
-export interface ZCodeSessionSetThoughtLevelParams extends ZCodeTaskTarget {
+export interface NekodeSessionSetThoughtLevelParams extends NekodeTaskTarget {
   thoughtLevel?: string;
   expectedRevision?: number;
   persistAsWorkspaceLastUsed?: boolean;
 }
 
-export interface ZCodeSessionSetModeParams extends ZCodeTaskTarget {
-  mode: ZCodeSessionMode;
+export interface NekodeSessionSetModeParams extends NekodeTaskTarget {
+  mode: NekodeSessionMode;
   expectedRevision?: number;
 }
 
-export interface ZCodeSessionRespondProviderRuntimeHeadersParams extends ZCodeTaskTarget {
+export interface NekodeSessionRespondProviderRuntimeHeadersParams extends NekodeTaskTarget {
   requestId: string;
   response: ProviderRuntimeHeadersUiResponse;
 }
 
-export interface ZCodeSessionSubscribeParams extends ZCodeTaskTarget {
-  deliveryKind: ZCodeDeliveryKind;
+export interface NekodeSessionSubscribeParams extends NekodeTaskTarget {
+  deliveryKind: NekodeDeliveryKind;
   afterSeq?: number;
   includeSnapshot?: boolean;
   eventCoalescing?: {
@@ -109,20 +109,20 @@ export interface ZCodeSessionSubscribeParams extends ZCodeTaskTarget {
   };
 }
 
-export type ZCodeSessionServiceEvent =
-  | { type: "session.event"; event: ZCodeSessionEvent }
-  | { type: "state.updated"; notification: ZCodeStateUpdatedNotification }
-  | { type: "permission.request"; request: ZCodePermissionRequestParams }
-  | { type: "userInput.request"; request: ZCodeUserInputRequestParams }
+export type NekodeSessionServiceEvent =
+  | { type: "session.event"; event: NekodeSessionEvent }
+  | { type: "state.updated"; notification: NekodeStateUpdatedNotification }
+  | { type: "permission.request"; request: NekodePermissionRequestParams }
+  | { type: "userInput.request"; request: NekodeUserInputRequestParams }
   | {
       type: "userInput.response";
       requestId: string;
-      response: ZCodeUserInputResponse;
+      response: NekodeUserInputResponse;
     }
-  | { type: "providerRuntimeHeaders.request"; request: ZCodeProviderRuntimeHeadersRequestParams }
-  | { type: "snapshot"; snapshot: ZCodeSessionStateSnapshot };
+  | { type: "providerRuntimeHeaders.request"; request: NekodeProviderRuntimeHeadersRequestParams }
+  | { type: "snapshot"; snapshot: NekodeSessionStateSnapshot };
 
-export interface ZCodeSessionInitializeResult {
+export interface NekodeSessionInitializeResult {
   available: boolean;
   workspaceKey: string;
   protocolName?: string;
@@ -132,41 +132,41 @@ export interface ZCodeSessionInitializeResult {
   reasonCode?: "provider_not_ready";
 }
 
-export interface ZCodeSessionWorkspaceRuntimeIdentity {
+export interface NekodeSessionWorkspaceRuntimeIdentity {
   generation: number;
   identity: string;
   processId?: number;
   workspaceKey: string;
 }
 
-export interface IZCodeSessionService {
-  initializeWorkspace(params: ZCodeSessionWorkspaceTarget): Promise<ZCodeSessionInitializeResult>;
+export interface INekodeSessionService {
+  initializeWorkspace(params: NekodeSessionWorkspaceTarget): Promise<NekodeSessionInitializeResult>;
   getWorkspaceRuntimeIdentity(
-    params: ZCodeSessionWorkspaceTarget,
-  ): Promise<ZCodeSessionWorkspaceRuntimeIdentity>;
+    params: NekodeSessionWorkspaceTarget,
+  ): Promise<NekodeSessionWorkspaceRuntimeIdentity>;
   readWorkspacePresentation(
-    params: ZCodeSessionReadWorkspacePresentationParams,
-  ): Promise<ZCodeWorkspacePresentation>;
-  createSession(params: ZCodeSessionCreateParams): Promise<ZCodeSessionStateSnapshot>;
-  resumeSession(params: ZCodeSessionResumeParams): Promise<ZCodeSessionStateSnapshot>;
-  listSessions(params: ZCodeSessionListParams): Promise<ZCodeSessionInfo[]>;
-  readSession(params: ZCodeSessionReadParams): Promise<ZCodeSessionStateSnapshot>;
-  readSessionMessages(params: ZCodeSessionMessagesParams): Promise<ZCodeMessageWithParts[]>;
-  readSessionEvents(params: ZCodeSessionEventsParams): Promise<ZCodeSessionEvent[]>;
-  promoteDeferredDraftSession(params: ZCodeTaskTarget): Promise<void>;
-  closeSession(params: ZCodeTaskTarget): Promise<void>;
-  closeDeferredDraftSession(params: ZCodeTaskTarget): Promise<boolean>;
-  setModel(params: ZCodeSessionSetModelParams): Promise<ZCodeSessionStateSnapshot>;
-  setThoughtLevel(params: ZCodeSessionSetThoughtLevelParams): Promise<ZCodeSessionStateSnapshot>;
-  setMode(params: ZCodeSessionSetModeParams): Promise<ZCodeSessionStateSnapshot>;
+    params: NekodeSessionReadWorkspacePresentationParams,
+  ): Promise<NekodeWorkspacePresentation>;
+  createSession(params: NekodeSessionCreateParams): Promise<NekodeSessionStateSnapshot>;
+  resumeSession(params: NekodeSessionResumeParams): Promise<NekodeSessionStateSnapshot>;
+  listSessions(params: NekodeSessionListParams): Promise<NekodeSessionInfo[]>;
+  readSession(params: NekodeSessionReadParams): Promise<NekodeSessionStateSnapshot>;
+  readSessionMessages(params: NekodeSessionMessagesParams): Promise<NekodeMessageWithParts[]>;
+  readSessionEvents(params: NekodeSessionEventsParams): Promise<NekodeSessionEvent[]>;
+  promoteDeferredDraftSession(params: NekodeTaskTarget): Promise<void>;
+  closeSession(params: NekodeTaskTarget): Promise<void>;
+  closeDeferredDraftSession(params: NekodeTaskTarget): Promise<boolean>;
+  setModel(params: NekodeSessionSetModelParams): Promise<NekodeSessionStateSnapshot>;
+  setThoughtLevel(params: NekodeSessionSetThoughtLevelParams): Promise<NekodeSessionStateSnapshot>;
+  setMode(params: NekodeSessionSetModeParams): Promise<NekodeSessionStateSnapshot>;
   respondProviderRuntimeHeaders(
-    params: ZCodeSessionRespondProviderRuntimeHeadersParams,
+    params: NekodeSessionRespondProviderRuntimeHeadersParams,
   ): Promise<void>;
   // M5 删波次 2：onDynamicSessionEvent（旧 session/subscribe 词表的 renderer 订阅面）
   // 已删除——v4 UI 走 agentService 的 conversation/sessions-index 帧通道，
   // 该方法在 renderer 侧已无任何调用者（grep packages/ui packages/desktop 为零）。
 }
 
-export const IZCodeSessionService = createServiceDescriptor<IZCodeSessionService>(
-  ServiceChannels.ZCodeSession,
+export const INekodeSessionService = createServiceDescriptor<INekodeSessionService>(
+  ServiceChannels.NekodeSession,
 );

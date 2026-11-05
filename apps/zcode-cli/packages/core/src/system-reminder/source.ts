@@ -22,6 +22,7 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
   "model",
   "output_style_instructions",
   "date",
+  "current_time",
   "skills_listing",
   "gen_ui_state",
   "tool_search_announcement",
@@ -45,13 +46,19 @@ export const SYSTEM_REMINDER_PERSISTED_SOURCES = [
   "selection_side_chat",
   "queued_system_notification",
   "shell_environment_change",
+  // Neko 记忆：每轮投递的记录段与节奏提醒，随历史恢复。
+  // scratch_pending 的 descriptor 为旧会话历史兼容保留，v2 起不再产生新条目。
+  "runtime_memory",
+  "memory_checkpoint",
+  "memory_hint",
+  "scratch_pending",
+  // 衣橱：当前着装状态注入（新会话首轮与 current/locked 变化后）。
+  "wardrobe",
 ] as const;
 
 export const SYSTEM_REMINDER_PER_REQUEST_SOURCES = [
   "incoming_message",
   "hook_context",
-  "memory_update",
-  "relevant_memory",
   "runtime_mode",
   "plan_mode_exit",
   "output_style",
@@ -112,6 +119,7 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     "sr.output_style_instructions",
   ),
   date: descriptor("current_turn", "resume_history", true, "sr.date"),
+  current_time: descriptor("current_turn", "resume_history", true, "sr.current_time"),
   agent_listing_delta: descriptor("current_turn", "resume_history", true, "sr.agent_listing_delta"),
   incoming_message: descriptor("mid_turn_event", "mid_turn_event", true, "sr.incoming_message"),
   bot_topic_context: descriptor(
@@ -123,8 +131,6 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
   context_prefix: descriptor("current_turn", "resume_history", true, "sr.context_prefix"),
   skills_listing: descriptor("current_turn", "resume_history", true, "sr.skills_listing"),
   hook_context: descriptor("current_turn", "per_current_turn", true, "sr.hook_context"),
-  memory_update: descriptor("current_turn", "per_current_turn", true, "sr.memory_update"),
-  relevant_memory: descriptor("current_turn", "per_current_turn", true, "sr.relevant_memory"),
   runtime_mode: descriptor("current_turn", "per_current_turn", true, "sr.runtime_mode"),
   plan_mode_exit: descriptor("current_turn", "runtime_local", true, "sr.plan_mode_exit"),
   output_style: descriptor("current_turn", "per_current_turn", true, "sr.output_style"),
@@ -208,6 +214,13 @@ const SYSTEM_REMINDER_DESCRIPTORS: Record<SystemReminderSource, DescriptorShape>
     true,
     "sr.shell_environment_change",
   ),
+  // 记忆投递是当前轮的尾部附件：恢复历史时原样保留，保证前缀稳定。
+  runtime_memory: descriptor("current_turn", "resume_history", true, "sr.runtime_memory"),
+  memory_checkpoint: descriptor("current_turn", "resume_history", true, "sr.memory_checkpoint"),
+  memory_hint: descriptor("current_turn", "resume_history", true, "sr.memory_hint"),
+  scratch_pending: descriptor("current_turn", "resume_history", true, "sr.scratch_pending"),
+  // 衣橱注入与记忆投递同通道：状态快照随历史恢复，跨会话只见状态不见事件。
+  wardrobe: descriptor("current_turn", "resume_history", true, "sr.wardrobe"),
   diagnostics: descriptor("mid_turn_event", "mid_turn_event", true, "sr.diagnostics"),
   // 第四批 4a-0（2026-09-12）：原 plugin_ui_state 源已删除，插件给模型的信息改走 ui/update-model-context。
 };

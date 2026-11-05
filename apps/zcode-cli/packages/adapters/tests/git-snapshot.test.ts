@@ -347,7 +347,7 @@ describe("resolveGitSnapshot command semantics", () => {
     setGitResponse(["show-ref", "--verify", "--quiet", "refs/remotes/origin/main"], {
       code: 0,
     });
-    setGitResponse(["config", "user.name"], { code: 0, stdout: "ZCode Tester\n" });
+    setGitResponse(["config", "user.name"], { code: 0, stdout: "Nekode Tester\n" });
     setGitResponse(STATUS_COMMAND, {
       code: 0,
       stdout: " M tracked.txt\n",
@@ -376,7 +376,7 @@ describe("resolveGitSnapshot command semantics", () => {
       stdout: "origin/trunk\n",
     });
     setGitResponse(["show-ref", "--verify", "--quiet", "refs/remotes/origin/trunk"], { code: 0 });
-    setGitResponse(["config", "user.name"], { code: 0, stdout: "ZCode Tester\n" });
+    setGitResponse(["config", "user.name"], { code: 0, stdout: "Nekode Tester\n" });
     setGitResponse(STATUS_COMMAND, { code: 0, stdout: " M a.ts\n" });
     setGitResponse(["--no-optional-locks", "log", "--oneline", "-n", "5"], {
       code: 0,
@@ -393,7 +393,7 @@ describe("resolveGitSnapshot command semantics", () => {
       isGitRepository: true,
       gitBranch: "feature",
       gitMainBranch: "trunk",
-      gitUser: "ZCode Tester",
+      gitUser: "Nekode Tester",
       gitStatus: "dirty",
       gitStatusLines: ["M a.ts"],
       recentCommits: ["abc123 first", "def456 second"],
@@ -493,7 +493,7 @@ describe("resolveGitSnapshot command semantics", () => {
   });
 
   // 修复原因：自动 git 不是工具调用，不经过权限判定；仓库 `.git/config` 里的 fsmonitor、hooks 等
-  // 会让 ZCode 自己执行仓库里的程序。每条命令都带同一组覆盖，并镜像到 GIT_CONFIG_COUNT。
+  // 会让 Nekode 自己执行仓库里的程序。每条命令都带同一组覆盖，并镜像到 GIT_CONFIG_COUNT。
   it("starts every automatic git command with the hardening overrides", async () => {
     const nullDevice = process.platform === "win32" ? "\\\\.\\NUL" : "/dev/null";
     const hooks = [
@@ -564,7 +564,7 @@ describe("resolveGitSnapshot command semantics", () => {
     process.env.GIT_CONFIG_KEY_0 = "core.pager";
     process.env.GIT_CONFIG_VALUE_0 = "evil";
     process.env.GIT_CONFIG_PARAMETERS = "'core.fsmonitor=evil'";
-    process.env.ZCODE_GIT_SNAPSHOT_KEEP = "kept";
+    process.env.NEKODE_GIT_SNAPSHOT_KEEP = "kept";
     delete process.env.GIT_PROXY_COMMAND;
     process.env.PATH = [gitBinDirectory, "relative-bin", ""].join(delimiter);
     try {
@@ -590,7 +590,7 @@ describe("resolveGitSnapshot command semantics", () => {
         GIT_PROXY_COMMAND: "",
         GIT_SSH_COMMAND: "false",
         GIT_TERMINAL_PROMPT: "0",
-        ZCODE_GIT_SNAPSHOT_KEEP: "kept",
+        NEKODE_GIT_SNAPSHOT_KEEP: "kept",
       });
       // 继承的 GIT_CONFIG_KEY_0 被换成加固的第一项，计数从 0 开始。
       expect(env.GIT_CONFIG_KEY_0).toBe("core.fsmonitor");

@@ -27,7 +27,7 @@ export async function createToolSearchCliFixture(
   const repoRoot = resolve(process.cwd(), "../..");
   const root = await mkdtemp(join(tmpdir(), "zcode-toolsearch-process-"));
   const workspace = join(root, "workspace");
-  const configPath = join(root, ".zcode", "cli", "config.json");
+  const configPath = join(root, ".nekode", "cli", "config.json");
   const personalPath = join(root, "provider.json");
   const requests: CliWireRequest[] = [];
   const active = new Set<ReturnType<typeof spawn>>();
@@ -59,7 +59,7 @@ export async function createToolSearchCliFixture(
   if (!address || typeof address === "string") throw new Error("CLI fixture failed to listen");
   const port = address.port;
   await mkdir(workspace, { recursive: true });
-  await mkdir(join(root, ".zcode", "cli"), { recursive: true });
+  await mkdir(join(root, ".nekode", "cli"), { recursive: true });
   let config = {
     features: { memory: false, skill: false, mcp: false, subagent: false },
     permission: { mode: "yolo", allowedTools: [] as string[], disallowedTools: [] as string[] },
@@ -94,10 +94,10 @@ export async function createToolSearchCliFixture(
     USERPROFILE: root,
     TMPDIR: process.env.TMPDIR,
     NODE_ENV: "test",
-    ...(options.modelIo ? { ZCODE_RUNTIME_ENV: "development" } : {}),
-    ZCODE_DATA_BASE_DIR: root,
-    ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
-    ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: join(repoRoot, "config/provider/zcode-builtin.json"),
+    ...(options.modelIo ? { NEKODE_RUNTIME_ENV: "development" } : {}),
+    NEKODE_DATA_BASE_DIR: root,
+    NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personalPath,
+    NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: join(repoRoot, "config/provider/zcode-builtin.json"),
   };
   return {
     root,

@@ -1,7 +1,7 @@
-export type ZCodeAgentBinaryKind = "native-binary";
+export type NekodeAgentBinaryKind = "native-binary";
 
-export interface ZCodeAgentRuntimeDescriptor {
-  binaryKind: ZCodeAgentBinaryKind;
+export interface NekodeAgentRuntimeDescriptor {
+  binaryKind: NekodeAgentBinaryKind;
   binaryEnvVar: string;
   bundledResourceDir: string;
   version: string;
@@ -23,16 +23,16 @@ export function resolvePlatformBinaryName(binaryName: string, platform: string):
   return platform === "win32" ? `${binaryName}.exe` : binaryName;
 }
 
-export const ZCODE_AGENT_RUNTIME: ZCodeAgentRuntimeDescriptor = {
+export const NEKODE_AGENT_RUNTIME: NekodeAgentRuntimeDescriptor = {
   binaryKind: "native-binary",
   binaryEnvVar: "GLM_BINARY_PATH",
   bundledResourceDir: "glm",
   version: "0.13.3",
   spawnArgs: ["app-server", "--stdio"],
-  nativeConfigDir: ".zcode/cli",
+  nativeConfigDir: ".nekode/cli",
   nativeConfigFileName: "config.json",
   missingBinaryMessage:
-    "[ZCode Agent] glm binary 未找到，请设置 ZCODE_AGENT_WORKDIR、GLM_BINARY_PATH 或先准备 GLM 运行时资源",
+    "[Nekode Agent] glm binary 未找到，请设置 NEKODE_AGENT_WORKDIR、GLM_BINARY_PATH 或先准备 GLM 运行时资源",
   resolveEntrySegments: (platform) => [resolvePlatformBinaryName("zcode-agent", platform)],
   nodeBundleEntryFile: "zcode.cjs",
   resolveNodeBundleSegments() {
@@ -40,6 +40,6 @@ export const ZCODE_AGENT_RUNTIME: ZCodeAgentRuntimeDescriptor = {
   },
 };
 
-export function getZCodeAgentRuntime(): ZCodeAgentRuntimeDescriptor {
-  return ZCODE_AGENT_RUNTIME;
+export function getNekodeAgentRuntime(): NekodeAgentRuntimeDescriptor {
+  return NEKODE_AGENT_RUNTIME;
 }

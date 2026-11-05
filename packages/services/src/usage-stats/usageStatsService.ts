@@ -19,7 +19,7 @@ import type {
 import { isCodingPlanModelProviderId } from "@zcode/shared";
 import type { ICredentialService } from "../credential/credential.js";
 import type { IAccountRequestAuthService } from "../model-provider/accountRequestAuthService.js";
-import type { IZCodeAgentService } from "../zcode-agent/zcodeAgent.js";
+import type { INekodeAgentService } from "../zcode-agent/zcodeAgent.js";
 import type { IUsageStatsService } from "./usageStats.js";
 import {
   BigModelUsageQuotaProvider,
@@ -39,8 +39,8 @@ interface UsageStatsServiceDependencies {
   ) => Promise<UsageApiAuthorization | null>;
   credentialService?: Pick<ICredentialService, "load">;
   env?: NodeJS.ProcessEnv;
-  /** App Usage 经 ZCode Protocol 读取 agent 数据库真实统计。 */
-  zcodeAgentService: Pick<IZCodeAgentService, "getAppUsageStats">;
+  /** App Usage 经 Nekode Protocol 读取 agent 数据库真实统计。 */
+  zcodeAgentService: Pick<INekodeAgentService, "getAppUsageStats">;
   /**
    * 官方 Server MCP 额度的凭证来源（与 server MCP 调用同一套 5 个身份头）。
    * 缺省时 entitlement 快照不含 MCP 额度。
@@ -86,7 +86,7 @@ export function createUsageStatsService(
   return {
     async getAppUsageSnapshot(request: AppUsageRequest): Promise<AppUsageSnapshot> {
       // App Usage 现读取 agent 数据库真实统计（model_usage/turn_usage/tool_usage），
-      // 经 ZCode Protocol usage/stats 取回。不再读本地 session JSON 估算。
+      // 经 Nekode Protocol usage/stats 取回。不再读本地 session JSON 估算。
       return dependencies.zcodeAgentService.getAppUsageStats({
         range: request.range,
         timeZone: request.timeZone,

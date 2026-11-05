@@ -1,5 +1,5 @@
 import { expandCustomCommandPrompt, type CustomCommandContent } from "@zcode/contracts";
-import { BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES } from "@zcode/shared";
+import { BUILTIN_NEKODE_SLASH_COMMAND_HELP_ENTRIES } from "@zcode/shared";
 import { DYNAMIC_WORKFLOW_SKILL_NAME } from "./app/bundled-skills.js";
 
 /**
@@ -14,7 +14,7 @@ import { DYNAMIC_WORKFLOW_SKILL_NAME } from "./app/bundled-skills.js";
  */
 export const BUILTIN_WORKFLOW_COMMAND_NAME = "workflow";
 
-const helpEntry = BUILTIN_ZCODE_SLASH_COMMAND_HELP_ENTRIES.find(
+const helpEntry = BUILTIN_NEKODE_SLASH_COMMAND_HELP_ENTRIES.find(
   (entry) => entry.name === BUILTIN_WORKFLOW_COMMAND_NAME,
 );
 if (!helpEntry) {

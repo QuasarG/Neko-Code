@@ -1,18 +1,18 @@
 import type { McpServerConfig } from "@zcode/contracts";
 import {
-  resetCapturedZCodeCuaBrokerCredentialsForTest,
-  sanitizeZCodeRuntimeEnvInPlace,
-  ZCODE_CUA_OFFICIAL_PLUGIN_ID,
-  ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
-  ZCODE_PLUGIN_ID_ENV_KEY,
+  resetCapturedNekodeCuaBrokerCredentialsForTest,
+  sanitizeNekodeRuntimeEnvInPlace,
+  NEKODE_CUA_OFFICIAL_PLUGIN_ID,
+  NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY,
+  NEKODE_PLUGIN_ID_ENV_KEY,
 } from "@zcode/shared";
 import { describe, expect, it } from "vitest";
 import {
-  injectZCodeCuaBrokerMcpServers,
+  injectNekodeCuaBrokerMcpServers,
   omitMcpServers,
   resolveTrustedOfficialCuaServerNames,
-  ZCODE_CUA_BROKER_SOCKET_ENV,
-  ZCODE_CUA_BROKER_UNAVAILABLE_ENV,
+  NEKODE_CUA_BROKER_SOCKET_ENV,
+  NEKODE_CUA_BROKER_UNAVAILABLE_ENV,
 } from "../src/mcp-config.js";
 
 // 遗留 bearer token 的环境变量名。broker 已整体改为 identity 模式（socket + plugin
@@ -23,7 +23,7 @@ import {
 // 缺失的命名导出不报链接错误、只是 undefined，于是 `process.env[undefined]` 变成读
 // `"undefined"` 键，`toBeUndefined()` 之类断言全部永真。2026-09-16 评审实测本文件因此
 // 静默失效（2 条断言退化 + 3 条真失败），且子包 tsconfig 只 include src/**，typecheck 看不到。
-const LEGACY_BROKER_TOKEN_ENV = "ZCODE_CUA_PERMISSION_BROKER_TOKEN";
+const LEGACY_BROKER_TOKEN_ENV = "NEKODE_CUA_PERMISSION_BROKER_TOKEN";
 
 describe("project MCP config", () => {
   // CUA 已不再声明任何 MCP server（.zcode-plugin/plugin.json 去掉 mcpServers，执行面搬到
@@ -33,16 +33,16 @@ describe("project MCP config", () => {
   it("does not trust a project override that copies the official CUA plugin identity", () => {
     const officialPluginConfig: McpServerConfig = {
       type: "stdio",
-      command: "/Applications/ZCode Computer Use.app/Contents/MacOS/server",
+      command: "/Applications/Nekode Computer Use.app/Contents/MacOS/server",
       env: {
-        [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+        [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID,
       },
     };
     const projectSpoof: McpServerConfig = {
       type: "stdio",
       command: "/tmp/attacker-command",
       env: {
-        [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+        [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID,
       },
     };
     const pluginServers = { "plugin:official-cua:computer-use": officialPluginConfig };
@@ -55,7 +55,7 @@ describe("project MCP config", () => {
       new Set(),
     );
 
-    const injected = injectZCodeCuaBrokerMcpServers(
+    const injected = injectNekodeCuaBrokerMcpServers(
       configuredServers,
       "/tmp/product-broker.sock",
       "product-token",
@@ -67,9 +67,9 @@ describe("project MCP config", () => {
   it("trusts the unmodified in-memory official CUA plugin config", () => {
     const officialPluginConfig: McpServerConfig = {
       type: "stdio",
-      command: "/Applications/ZCode Computer Use.app/Contents/MacOS/server",
+      command: "/Applications/Nekode Computer Use.app/Contents/MacOS/server",
       env: {
-        [ZCODE_PLUGIN_ID_ENV_KEY]: ZCODE_CUA_OFFICIAL_PLUGIN_ID,
+        [NEKODE_PLUGIN_ID_ENV_KEY]: NEKODE_CUA_OFFICIAL_PLUGIN_ID,
       },
     };
     const pluginServers = { "plugin:official-cua:computer-use": officialPluginConfig };
@@ -88,7 +88,7 @@ describe("project MCP config", () => {
       },
     };
 
-    const injected = injectZCodeCuaBrokerMcpServers(servers, "/tmp/broker.sock", "tok");
+    const injected = injectNekodeCuaBrokerMcpServers(servers, "/tmp/broker.sock", "tok");
 
     expect(injected).toBe(servers);
   });
@@ -112,7 +112,7 @@ describe("project MCP config", () => {
       },
     };
 
-    const injected = injectZCodeCuaBrokerMcpServers(
+    const injected = injectNekodeCuaBrokerMcpServers(
       servers,
       "/tmp/broker.sock",
       "tok",
@@ -123,27 +123,27 @@ describe("project MCP config", () => {
 
   it("re-injects the product broker into shared node_repl after CLI env sanitization", () => {
     // 复现 Critical：CLI 入口 sanitize 会先从 process.env 删除 broker socket/token，若定向注入只读
-    // process.env，全局 ~/.zcode/cli/config.json 的 zcode-cua 会 fail-open 绕过 broker，让
+    // process.env，全局 ~/.nekode/cli/config.json 的 zcode-cua 会 fail-open 绕过 broker，让
     // Python/uvx 成为 TCC 主体。修复后 sanitize 前的凭据被捕获到进程内私有存储并仍能定向注入。
     const socketPath = "/tmp/zcode-cua-broker.sock";
     const token = "broker-token-abc";
-    const previousSocket = process.env[ZCODE_CUA_BROKER_SOCKET_ENV];
+    const previousSocket = process.env[NEKODE_CUA_BROKER_SOCKET_ENV];
     const previousToken = process.env[LEGACY_BROKER_TOKEN_ENV];
-    const previousAuthority = process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
-    const previousRefreshMarker = process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
-    const previousUnavailable = process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    const previousAuthority = process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
+    const previousRefreshMarker = process.env["NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
+    const previousUnavailable = process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     try {
-      process.env[ZCODE_CUA_BROKER_SOCKET_ENV] = socketPath;
+      process.env[NEKODE_CUA_BROKER_SOCKET_ENV] = socketPath;
       process.env[LEGACY_BROKER_TOKEN_ENV] = token;
-      process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "dev.zcode.cua-helper/dev";
-      process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] =
+      process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = "dev.zcode.cua-helper/dev";
+      process.env["NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] =
         `${socketPath}.permission-refresh.json`;
-      delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
+      delete process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
 
       // 模拟真实 CLI 入口：sanitize 剔除凭据（剔除前捕获到进程内私有存储）。
-      sanitizeZCodeRuntimeEnvInPlace(process.env);
-      expect(process.env[ZCODE_CUA_BROKER_SOCKET_ENV]).toBeUndefined();
+      sanitizeNekodeRuntimeEnvInPlace(process.env);
+      expect(process.env[NEKODE_CUA_BROKER_SOCKET_ENV]).toBeUndefined();
       expect(process.env[LEGACY_BROKER_TOKEN_ENV]).toBeUndefined();
 
       const result = omitMcpServers(
@@ -155,49 +155,49 @@ describe("project MCP config", () => {
       const env = nodeRepl?.type === "stdio" ? (nodeRepl.env ?? {}) : {};
 
       expect(nodeRepl?.type === "stdio" ? nodeRepl.args : undefined).toEqual(["server.js"]);
-      expect(env[ZCODE_CUA_BROKER_SOCKET_ENV]).toBe(socketPath);
+      expect(env[NEKODE_CUA_BROKER_SOCKET_ENV]).toBe(socketPath);
       // identity 模式：凭据只有 socket + authority(+ refresh marker)。遗留 token 即使存在于
       // process.env 也必须止步于 sanitize，不得被重新注入给 node_repl —— 否则等于把一个
       // 旧 Helper 认的口令又发给了子进程。
       expect(env[LEGACY_BROKER_TOKEN_ENV]).toBeUndefined();
-      expect(env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]).toBe("dev.zcode.cua-helper/dev");
-      expect(env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"]).toBe(
+      expect(env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]).toBe("dev.zcode.cua-helper/dev");
+      expect(env["NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"]).toBe(
         `${socketPath}.permission-refresh.json`,
       );
     } finally {
-      resetCapturedZCodeCuaBrokerCredentialsForTest();
-      if (previousSocket === undefined) delete process.env[ZCODE_CUA_BROKER_SOCKET_ENV];
-      else process.env[ZCODE_CUA_BROKER_SOCKET_ENV] = previousSocket;
+      resetCapturedNekodeCuaBrokerCredentialsForTest();
+      if (previousSocket === undefined) delete process.env[NEKODE_CUA_BROKER_SOCKET_ENV];
+      else process.env[NEKODE_CUA_BROKER_SOCKET_ENV] = previousSocket;
       if (previousToken === undefined) delete process.env[LEGACY_BROKER_TOKEN_ENV];
       else process.env[LEGACY_BROKER_TOKEN_ENV] = previousToken;
-      if (previousAuthority === undefined) delete process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
-      else process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = previousAuthority;
+      if (previousAuthority === undefined) delete process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
+      else process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = previousAuthority;
       if (previousRefreshMarker === undefined)
-        delete process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
-      else process.env["ZCODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] = previousRefreshMarker;
-      if (previousUnavailable === undefined) delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
-      else process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV] = previousUnavailable;
+        delete process.env["NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"];
+      else process.env["NEKODE_CUA_PERMISSION_BROKER_REFRESH_MARKER"] = previousRefreshMarker;
+      if (previousUnavailable === undefined) delete process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
+      else process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV] = previousUnavailable;
     }
   });
 
   it("prefers captured broker credentials over stale/injected process.env values", () => {
-    const previousSocket = process.env[ZCODE_CUA_BROKER_SOCKET_ENV];
+    const previousSocket = process.env[NEKODE_CUA_BROKER_SOCKET_ENV];
     const previousToken = process.env[LEGACY_BROKER_TOKEN_ENV];
-    const previousAuthority = process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
-    const previousUnavailable = process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
-    resetCapturedZCodeCuaBrokerCredentialsForTest();
+    const previousAuthority = process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
+    const previousUnavailable = process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
+    resetCapturedNekodeCuaBrokerCredentialsForTest();
     try {
-      // 捕获可信凭据（模拟 CLI 入口 sanitize 从 ZCode 下发的 spawn env 捕获）。
+      // 捕获可信凭据（模拟 CLI 入口 sanitize 从 Nekode 下发的 spawn env 捕获）。
       const spawnEnv: Record<string, string | undefined> = {
-        [ZCODE_CUA_BROKER_SOCKET_ENV]: "/tmp/captured.sock",
+        [NEKODE_CUA_BROKER_SOCKET_ENV]: "/tmp/captured.sock",
         [LEGACY_BROKER_TOKEN_ENV]: "captured-token",
-        [ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: "dev.zcode.cua-helper/captured",
+        [NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]: "dev.zcode.cua-helper/captured",
       };
-      sanitizeZCodeRuntimeEnvInPlace(spawnEnv);
+      sanitizeNekodeRuntimeEnvInPlace(spawnEnv);
       // 运行时 env 里残留/被注入了不同的 broker 值：绝不能覆盖 captured。
-      process.env[ZCODE_CUA_BROKER_SOCKET_ENV] = "/tmp/stale.sock";
+      process.env[NEKODE_CUA_BROKER_SOCKET_ENV] = "/tmp/stale.sock";
       process.env[LEGACY_BROKER_TOKEN_ENV] = "stale-token";
-      delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
+      delete process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
 
       const result = omitMcpServers(
         { node_repl: { type: "stdio", command: "node", args: ["server.js"] } },
@@ -208,20 +208,20 @@ describe("project MCP config", () => {
       const env = nodeRepl?.type === "stdio" ? (nodeRepl.env ?? {}) : {};
 
       expect(nodeRepl?.type === "stdio" ? nodeRepl.args : undefined).toEqual(["server.js"]);
-      expect(env[ZCODE_CUA_BROKER_SOCKET_ENV]).toBe("/tmp/captured.sock");
+      expect(env[NEKODE_CUA_BROKER_SOCKET_ENV]).toBe("/tmp/captured.sock");
       // captured 凭据也不含 token（identity 模式）；spawn env 里的遗留 token 被 sanitize 吃掉。
       expect(env[LEGACY_BROKER_TOKEN_ENV]).toBeUndefined();
-      expect(env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]).toBe("dev.zcode.cua-helper/captured");
+      expect(env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY]).toBe("dev.zcode.cua-helper/captured");
     } finally {
-      resetCapturedZCodeCuaBrokerCredentialsForTest();
-      if (previousSocket === undefined) delete process.env[ZCODE_CUA_BROKER_SOCKET_ENV];
-      else process.env[ZCODE_CUA_BROKER_SOCKET_ENV] = previousSocket;
+      resetCapturedNekodeCuaBrokerCredentialsForTest();
+      if (previousSocket === undefined) delete process.env[NEKODE_CUA_BROKER_SOCKET_ENV];
+      else process.env[NEKODE_CUA_BROKER_SOCKET_ENV] = previousSocket;
       if (previousToken === undefined) delete process.env[LEGACY_BROKER_TOKEN_ENV];
       else process.env[LEGACY_BROKER_TOKEN_ENV] = previousToken;
-      if (previousAuthority === undefined) delete process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
-      else process.env[ZCODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = previousAuthority;
-      if (previousUnavailable === undefined) delete process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV];
-      else process.env[ZCODE_CUA_BROKER_UNAVAILABLE_ENV] = previousUnavailable;
+      if (previousAuthority === undefined) delete process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY];
+      else process.env[NEKODE_CUA_PLUGIN_AUTHORITY_ENV_KEY] = previousAuthority;
+      if (previousUnavailable === undefined) delete process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV];
+      else process.env[NEKODE_CUA_BROKER_UNAVAILABLE_ENV] = previousUnavailable;
     }
   });
 
@@ -233,10 +233,10 @@ describe("project MCP config", () => {
       }
     };
     const KEYS = [
-      ZCODE_CUA_BROKER_SOCKET_ENV,
+      NEKODE_CUA_BROKER_SOCKET_ENV,
       LEGACY_BROKER_TOKEN_ENV,
-      ZCODE_CUA_BROKER_UNAVAILABLE_ENV,
-      "ZCODE_CUA_HELPER_ALLOW_UNAUTHENTICATED_LOCAL",
+      NEKODE_CUA_BROKER_UNAVAILABLE_ENV,
+      "NEKODE_CUA_HELPER_ALLOW_UNAUTHENTICATED_LOCAL",
     ];
     const snapshot = () =>
       Object.fromEntries(KEYS.map((k) => [k, process.env[k]])) as Record<
@@ -254,13 +254,13 @@ describe("project MCP config", () => {
 
     it("omits a global zcode-cua regardless of broker state", () => {
       const saved = snapshot();
-      resetCapturedZCodeCuaBrokerCredentialsForTest();
+      resetCapturedNekodeCuaBrokerCredentialsForTest();
       try {
         clearAll();
         const result = omitMcpServers(cuaServer(), new Set());
         expect(result["zcode-cua"]).toBeUndefined();
       } finally {
-        resetCapturedZCodeCuaBrokerCredentialsForTest();
+        resetCapturedNekodeCuaBrokerCredentialsForTest();
         restore(saved);
       }
     });

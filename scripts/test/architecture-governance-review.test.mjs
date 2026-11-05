@@ -185,9 +185,9 @@ test("ui layer of any managed module cannot import service or repo implementatio
       "packages/beta/package.json": '{"name":"@fixture/beta"}\n',
       ...ARTIFACTS("alpha", ["beta"]),
       ...ARTIFACTS("beta"),
-      "packages/beta/src/services/botsService.ts": "export const svc = 1;\n",
+      "packages/beta/src/services/alphaService.ts": "export const svc = 1;\n",
       "packages/alpha/src/ui/panel.ts":
-        'import { svc } from "@fixture/beta/src/services/botsService.js";\nexport const panel = svc;\n',
+        'import { svc } from "@fixture/beta/src/services/alphaService.js";\nexport const panel = svc;\n',
     },
     async (cwd) => {
       const result = await checkArchitecture({ cwd });
@@ -305,7 +305,7 @@ test("diff base prefers explicit, then CI, then pre-push stdin, then default bra
     assert.equal((await pick({}, baseSha)).base, baseSha);
     assert.equal((await pick({ CI_MERGE_REQUEST_DIFF_BASE_SHA: baseSha })).base, baseSha);
     const stdin = `refs/heads/feature ${headSha} refs/heads/feature ${baseSha}\n`;
-    assert.equal((await pick({ ZCODE_PRE_PUSH_STDIN: stdin })).base, baseSha);
+    assert.equal((await pick({ NEKODE_PRE_PUSH_STDIN: stdin })).base, baseSha);
     const fallback = await pick({});
     assert.equal(fallback.base, baseSha);
     assert.match(fallback.label, /merge-base/);

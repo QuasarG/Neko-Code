@@ -45,14 +45,6 @@ describe("node session data files", () => {
     expect(await files.removeSession("sess_a")).toBe(0);
   });
 
-  it("removes the whole memory folder of a directory", async () => {
-    const { cli, files, write } = await setup();
-    await write(join(cli, "memories", "projects", "demo-hash", "memory", "MEMORY.md"), 9);
-    await write(join(cli, "memories", "projects", "other-hash", "memory", "MEMORY.md"), 1);
-    expect(await files.measureMemory({ workspacePath: "/work/demo" })).toBe(9);
-    expect(await files.removeMemory({ workspacePath: "/work/demo" })).toBe(9);
-    expect(await readdir(join(cli, "memories", "projects"))).toEqual(["other-hash"]);
-  });
 
   it("rejects session ids that would escape the storage root", async () => {
     const { files } = await setup();

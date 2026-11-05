@@ -1,12 +1,12 @@
 import { createConfig, type ConfigResult } from "@zcode/adapters/config";
 import {
-  createSharedZCodeCredentialStore,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
+  createSharedNekodeCredentialStore,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
 } from "@zcode/adapters/auth";
 import { createNodeHttpClientAdapter } from "@zcode/adapters/http";
 import { createProviderEndpointRoutingPort } from "@zcode/adapters/model";
 import { createNodeLoggerFactory } from "@zcode/adapters/logging";
-import { resolveRuntimeZCodeEndpointOrigin } from "@zcode/shared";
+import { resolveRuntimeNekodeEndpointOrigin } from "@zcode/shared";
 import type { Logger, LoggerFactory, ProviderEndpointRoutingPort } from "@zcode/contracts";
 import type { ModelProviderSourceTitle } from "./model-config.js";
 import { createProviderEndpointRoutingSourceHeaders } from "./provider-endpoint-routing-source-headers.js";
@@ -38,14 +38,14 @@ export function resolveProcessProviderEndpointRoutingPort(
   options: ResolveProcessProviderEndpointRoutingPortOptions,
 ): ProviderEndpointRoutingPort {
   const env = options.env ?? process.env;
-  const endpointOrigin = resolveRuntimeZCodeEndpointOrigin(env);
+  const endpointOrigin = resolveRuntimeNekodeEndpointOrigin(env);
   const key = routingRegistryKey(endpointOrigin, options.network);
   const existing = processRoutingPorts.get(key);
   if (existing) {
     return existing;
   }
 
-  const credentialStore = createSharedZCodeCredentialStore({ env });
+  const credentialStore = createSharedNekodeCredentialStore({ env });
 
   const port = createProviderEndpointRoutingPort({
     appVersion: options.appVersion,
@@ -59,7 +59,7 @@ export function resolveProcessProviderEndpointRoutingPort(
     logger: options.logger.child({
       module: "adapters.model.provider_endpoint_routing",
     }),
-    readZCodeJwt: () => credentialStore.load(SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken),
+    readNekodeJwt: () => credentialStore.load(SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken),
     sourceHeaders: () =>
       createProviderEndpointRoutingSourceHeaders({
         appVersion: options.appVersion,

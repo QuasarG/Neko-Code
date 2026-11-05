@@ -70,10 +70,10 @@ function runtimeToolFixtures(releasePlan) {
       binaryName,
       envVar:
         toolId === "bfs"
-          ? "ZCODE_BFS_BINARY"
+          ? "NEKODE_BFS_BINARY"
           : toolId === "ugrep"
-            ? "ZCODE_UGREP_BINARY"
-            : "ZCODE_RG_BINARY",
+            ? "NEKODE_UGREP_BINARY"
+            : "NEKODE_RG_BINARY",
       id: toolId,
       sha256: sha256(sourcePath),
       sourcePath,
@@ -117,11 +117,11 @@ function main() {
     const storageRoot = join(e2eRoot, "storage");
     const seaEnv = {
       ...process.env,
-      ZCODE_STORAGE_DIR: storageRoot,
+      NEKODE_STORAGE_DIR: storageRoot,
     };
-    delete seaEnv.ZCODE_BFS_BINARY;
-    delete seaEnv.ZCODE_RG_BINARY;
-    delete seaEnv.ZCODE_UGREP_BINARY;
+    delete seaEnv.NEKODE_BFS_BINARY;
+    delete seaEnv.NEKODE_RG_BINARY;
+    delete seaEnv.NEKODE_UGREP_BINARY;
 
     execute(isolatedBinary, ["--version"], {
       cwd: e2eRoot,

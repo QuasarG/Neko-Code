@@ -8,7 +8,6 @@ import {
 } from "../../agent/message-history.js";
 import { normalizedInstructionSources } from "../../context/sections/request-user-context.js";
 import { estimateTokens } from "../../context/utils.js";
-import { MEMORY_INDEX_FILE_NAME } from "../../memory/index-content.js";
 import {
   formatReadTextToolResult,
   readFileForCompactRestore,
@@ -116,7 +115,6 @@ export function restorePostCompactFiles(
         sessionId: runtime.sessionId,
         workspaceRoot: runtime.workspaceRoot,
       }),
-      ...(runtime.memoryRoot ? [join(runtime.memoryRoot, MEMORY_INDEX_FILE_NAME)] : []),
       ...(instructions
         ? normalizedInstructionSources(instructions).map((source) => source.filePath)
         : []),

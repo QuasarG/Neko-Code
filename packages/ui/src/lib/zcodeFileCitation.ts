@@ -5,9 +5,9 @@ import {
   findUnclosedAssistantDirectiveStart,
 } from "@/lib/assistantDirectiveParser.js";
 
-export type ZCodeFileCitationPreviewKind = "docx" | "xlsx" | "pptx" | "pdf" | "video" | "audio";
+export type NekodeFileCitationPreviewKind = "docx" | "xlsx" | "pptx" | "pdf" | "video" | "audio";
 
-export interface ZCodeFileCitation {
+export interface NekodeFileCitation {
   artifactKind?: string;
   end: number;
   path: string;
@@ -16,7 +16,7 @@ export interface ZCodeFileCitation {
   start: number;
 }
 
-export interface ZCodeFileCitationDirective {
+export interface NekodeFileCitationDirective {
   artifactKind?: string;
   end: number;
   path?: string;
@@ -25,12 +25,12 @@ export interface ZCodeFileCitationDirective {
   start: number;
 }
 
-export interface ZCodeFileCitationProjection {
+export interface NekodeFileCitationProjection {
   visibleText: string;
 }
 
 const ARTIFACT_KIND_TO_PREVIEW_KIND: Readonly<
-  Record<string, Exclude<ZCodeFileCitationPreviewKind, "pdf">>
+  Record<string, Exclude<NekodeFileCitationPreviewKind, "pdf">>
 > = {
   audio: "audio",
   document: "docx",
@@ -38,7 +38,7 @@ const ARTIFACT_KIND_TO_PREVIEW_KIND: Readonly<
   video: "video",
   workbook: "xlsx",
 };
-const PREVIEW_EXTENSION_TO_KIND: Readonly<Record<string, ZCodeFileCitationPreviewKind>> = {
+const PREVIEW_EXTENSION_TO_KIND: Readonly<Record<string, NekodeFileCitationPreviewKind>> = {
   ".docx": "docx",
   ".flac": "audio",
   ".m4a": "audio",
@@ -55,19 +55,19 @@ const PREVIEW_EXTENSION_TO_KIND: Readonly<Record<string, ZCodeFileCitationPrevie
   ".webm": "video",
   ".weba": "audio",
 };
-const ZCODE_FILE_CITATION_DIRECTIVE_NAME = "zcode-file-citation";
-const ZCODE_FILE_CITATION_SINGLE_COLON_PREFIX_LENGTH = ":zcode".length;
-const ZCODE_FILE_CITATION_SYNTAX = {
+const NEKODE_FILE_CITATION_DIRECTIVE_NAME = "zcode-file-citation";
+const NEKODE_FILE_CITATION_SINGLE_COLON_PREFIX_LENGTH = ":zcode".length;
+const NEKODE_FILE_CITATION_SYNTAX = {
   allowSingleColon: true,
   allowSmartQuotes: true,
   allowTripleColon: true,
 } as const;
 
-export function extractZCodeFileCitationDirectives(content: string): ZCodeFileCitationDirective[] {
+export function extractNekodeFileCitationDirectives(content: string): NekodeFileCitationDirective[] {
   return extractAssistantDirectives(
     content,
-    ZCODE_FILE_CITATION_DIRECTIVE_NAME,
-    ZCODE_FILE_CITATION_SYNTAX,
+    NEKODE_FILE_CITATION_DIRECTIVE_NAME,
+    NEKODE_FILE_CITATION_SYNTAX,
   ).map((directive) => ({
     start: directive.start,
     end: directive.end,
@@ -82,8 +82,8 @@ export function extractZCodeFileCitationDirectives(content: string): ZCodeFileCi
   }));
 }
 
-export function extractZCodeFileCitations(content: string): ZCodeFileCitation[] {
-  return extractZCodeFileCitationDirectives(content).flatMap((directive) =>
+export function extractNekodeFileCitations(content: string): NekodeFileCitation[] {
+  return extractNekodeFileCitationDirectives(content).flatMap((directive) =>
     directive.path
       ? [
           {
@@ -100,28 +100,28 @@ export function extractZCodeFileCitations(content: string): ZCodeFileCitation[] 
  * 卡片是否生成仍由终态 row gate 决定。异常模型输出若已换行继续正文，则保留原文，避免
  * 一个缺失 `}` 的指令把后续回答全部吞掉；代码块中的协议样例也不参与隐藏。
  */
-export function projectZCodeFileCitations(
+export function projectNekodeFileCitations(
   content: string,
   options: { streaming: boolean },
-): ZCodeFileCitationProjection {
+): NekodeFileCitationProjection {
   if (!options.streaming || !content) return { visibleText: content };
 
   const protectedRanges = findMarkdownCodeRanges(content);
   const unclosedStart = findUnclosedAssistantDirectiveStart(
     content,
-    ZCODE_FILE_CITATION_DIRECTIVE_NAME,
+    NEKODE_FILE_CITATION_DIRECTIVE_NAME,
     protectedRanges,
-    ZCODE_FILE_CITATION_SYNTAX,
+    NEKODE_FILE_CITATION_SYNTAX,
   );
   if (unclosedStart === null) {
     const prefixStart = findAssistantDirectivePrefixStart(
       content,
-      ["code-comment", ZCODE_FILE_CITATION_DIRECTIVE_NAME],
+      ["code-comment", NEKODE_FILE_CITATION_DIRECTIVE_NAME],
       protectedRanges,
       {
-        minimumSingleColonPrefixLength: ZCODE_FILE_CITATION_SINGLE_COLON_PREFIX_LENGTH,
-        singleColonDirectiveNames: [ZCODE_FILE_CITATION_DIRECTIVE_NAME],
-        tripleColonDirectiveNames: [ZCODE_FILE_CITATION_DIRECTIVE_NAME],
+        minimumSingleColonPrefixLength: NEKODE_FILE_CITATION_SINGLE_COLON_PREFIX_LENGTH,
+        singleColonDirectiveNames: [NEKODE_FILE_CITATION_DIRECTIVE_NAME],
+        tripleColonDirectiveNames: [NEKODE_FILE_CITATION_DIRECTIVE_NAME],
       },
     );
     return prefixStart === null
@@ -134,7 +134,7 @@ export function projectZCodeFileCitations(
   };
 }
 
-function inferPreviewKindFromPath(path: string): ZCodeFileCitationPreviewKind | null {
+function inferPreviewKindFromPath(path: string): NekodeFileCitationPreviewKind | null {
   const normalizedPath = path.trim().toLowerCase();
   for (const [extension, kind] of Object.entries(PREVIEW_EXTENSION_TO_KIND)) {
     if (normalizedPath.endsWith(extension)) return kind;
@@ -142,10 +142,10 @@ function inferPreviewKindFromPath(path: string): ZCodeFileCitationPreviewKind | 
   return null;
 }
 
-export function resolveZCodeFileCitationPreviewKind(params: {
+export function resolveNekodeFileCitationPreviewKind(params: {
   artifactKind?: string;
   path: string;
-}): ZCodeFileCitationPreviewKind | null {
+}): NekodeFileCitationPreviewKind | null {
   const inferredKind = inferPreviewKindFromPath(params.path);
   if (params.artifactKind === undefined) return inferredKind;
 

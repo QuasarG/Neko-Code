@@ -57,7 +57,7 @@ describe("global database migration startup gate", () => {
       await expect(loading).toHaveAttribute("data-database-phase", "waiting_for_lock");
       await expect($('[contenteditable="true"]')).not.toBeDisplayed();
       await browser.saveScreenshot(
-        join(process.env.ZCODE_E2E_ARTIFACT_DIR ?? process.cwd(), "database-waiting.png"),
+        join(process.env.NEKODE_E2E_ARTIFACT_DIR ?? process.cwd(), "database-waiting.png"),
       );
       await browser.refresh();
       await $('[data-testid="database-startup-status"]').waitForDisplayed({ timeout: 30_000 });
@@ -241,7 +241,7 @@ describe("global database migration startup gate", () => {
     await prepareV4ConversationE2E();
     await quitElectronAppGracefully();
     const paths = getE2EAppDataPaths();
-    const caseRoot = join(paths.workspace, ".zcode-e2e", "database-startup-invalid-project");
+    const caseRoot = join(paths.workspace, ".nekode-e2e", "database-startup-invalid-project");
     const parent = join(caseRoot, "former-parent");
     const project = join(parent, "old-project");
     const settingsPath = join(paths.appDataDir, "setting.json");

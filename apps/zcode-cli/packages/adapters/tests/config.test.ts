@@ -18,11 +18,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 describe("config adapters", () => {
-  it.each(["zcode.json", ".zcode/config.json", "explicit-project.json"])(
+  it.each(["zcode.json", ".nekode/config.json", "explicit-project.json"])(
     "restricts project runtime parameters while retaining extension settings in %s",
     async (fileName) => {
       const root = await mkdtemp(join(tmpdir(), "zcode-project-runtime-boundary-"));
-      const userPath = join(root, ".zcode", "cli", "config.json");
+      const userPath = join(root, ".nekode", "cli", "config.json");
       const projectPath = join(root, fileName);
       const skillPath = join(root, "skills", "demo", "SKILL.md");
       const commandPath = join(root, "commands", "demo.md");
@@ -45,8 +45,7 @@ describe("config adapters", () => {
         storage: { dir: "./fake-user-storage", sessionDbPath: "./fake-session.sqlite" },
         permission: { mode: "yolo", autoApproveHighRisk: true },
         modelStream: { idleTimeoutMs: 1 },
-        features: { mcp: false, subagent: false, memory: false, skill: false },
-        memory: { use: false },
+        features: { mcp: false, subagent: false, skill: false },
         logging: { level: "error", format: "text" },
         ui: { locale: "zh-CN", theme: "light" },
         toolConcurrency: { maxConcurrency: 1 },
@@ -74,7 +73,7 @@ describe("config adapters", () => {
         vi.stubEnv("HOME", root);
         vi.stubEnv("USERPROFILE", root);
         await mkdir(join(root, ".git"));
-        await mkdir(join(root, ".zcode", "cli"), { recursive: true });
+        await mkdir(join(root, ".nekode", "cli"), { recursive: true });
         await writeFile(userPath, JSON.stringify(userConfig));
         await writeFile(projectPath, JSON.stringify(projectConfig));
         const baseline = createConfig({ env: {}, userConfigPath: userPath });
@@ -90,7 +89,6 @@ describe("config adapters", () => {
           "permission",
           "modelStream",
           "features",
-          "memory",
           "logging",
           "ui",
           "toolConcurrency",
@@ -303,10 +301,10 @@ describe("config adapters", () => {
   it("deep merges Workspace Plugin enablement and options over User config", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-config-workspace-plugins-"));
     const userPath = join(dir, "user.json");
-    const workspacePath = join(dir, ".zcode", "config.json");
+    const workspacePath = join(dir, ".nekode", "config.json");
 
     try {
-      await mkdir(join(dir, ".zcode"), { recursive: true });
+      await mkdir(join(dir, ".nekode"), { recursive: true });
       await writeFile(
         userPath,
         JSON.stringify({
@@ -383,14 +381,14 @@ describe("config adapters", () => {
     }
   });
 
-  it.each(["zcode.json", ".zcode/config.json", "explicit-project.json"])(
+  it.each(["zcode.json", ".nekode/config.json", "explicit-project.json"])(
     "ignores plugin directories from project config %s",
     async (fileName) => {
       const dir = await mkdtemp(join(tmpdir(), "zcode-project-plugin-dirs-"));
       const projectConfigPath = join(dir, fileName);
       try {
         await mkdir(join(dir, ".git"));
-        await mkdir(join(dir, ".zcode"));
+        await mkdir(join(dir, ".nekode"));
         await writeFile(
           projectConfigPath,
           JSON.stringify({ plugins: { dirs: ["./plugin", join(dir, "absolute-plugin")] } }),
@@ -474,13 +472,13 @@ describe("config adapters", () => {
 
   it("parses the supported ZCODE environment surface", () => {
     const config = parseEnvConfig({
-      ZCODE_STORAGE_DIR: "/tmp/zcode",
-      ZCODE_HTTP_PROXY: "http://127.0.0.1:7890",
-      ZCODE_NO_PROXY: "localhost,127.0.0.1",
-      ZCODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
-      ZCODE_HTTP_TIMEOUT: "1234",
-      ZCODE_LOCALE: "zh-CN",
-      ZCODE_LOG_FORMAT: "json",
+      NEKODE_STORAGE_DIR: "/tmp/zcode",
+      NEKODE_HTTP_PROXY: "http://127.0.0.1:7890",
+      NEKODE_NO_PROXY: "localhost,127.0.0.1",
+      NEKODE_AGENT_CA_CERT: "/tmp/zcode-ca.pem",
+      NEKODE_HTTP_TIMEOUT: "1234",
+      NEKODE_LOCALE: "zh-CN",
+      NEKODE_LOG_FORMAT: "json",
     });
 
     expect(config.model).toBeUndefined();
@@ -494,44 +492,15 @@ describe("config adapters", () => {
     expect(config.logging?.level).toBeUndefined();
   });
 
-  it("loads the supported memory config fields", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "zcode-config-memory-"));
-    const path = join(dir, "config.json");
-
-    try {
-      await writeFile(
-        path,
-        JSON.stringify({
-          memory: {
-            use: false,
-          },
-        }),
-      );
-
-      const loaded = loadFileConfig(path);
-      const merged = createConfig({ env: {}, userConfigPath: path });
-
-      expect(loaded.loaded).toBe(true);
-      expect(loaded.config.memory).toEqual({
-        use: false,
-      });
-      expect(merged.config.memory).toEqual({
-        use: false,
-      });
-    } finally {
-      await rm(dir, { force: true, recursive: true });
-    }
-  });
-
   it("parses session database path environment overrides", () => {
     expect(
       parseEnvConfig({
-        ZCODE_SESSION_DB_PATH: "/tmp/zcode/db/db.sqlite",
+        NEKODE_SESSION_DB_PATH: "/tmp/zcode/db/db.sqlite",
       }).storage?.sessionDbPath,
     ).toBe("/tmp/zcode/db/db.sqlite");
     expect(
       parseEnvConfig({
-        ZCODE_SESSION_DB: "/tmp/zcode/legacy.sqlite",
+        NEKODE_SESSION_DB: "/tmp/zcode/legacy.sqlite",
       }).storage?.sessionDbPath,
     ).toBe("/tmp/zcode/legacy.sqlite");
   });
@@ -564,8 +533,8 @@ describe("config adapters", () => {
 
   it("ignores undeclared ZCODE environment switches", () => {
     const config = parseEnvConfig({
-      ZCODE_LOG_LEVEL: "debug",
-      ZCODE_UNDECLARED_FLAG: "1",
+      NEKODE_LOG_LEVEL: "debug",
+      NEKODE_UNDECLARED_FLAG: "1",
     });
 
     expect(config).toEqual({});
@@ -635,11 +604,11 @@ describe("config adapters", () => {
     const path = join(dir, "config.json");
     await writeFile(
       path,
-      JSON.stringify({ plugins: { suppressedBuiltins: ["skill-creator@zcode-plugins-official"] } }),
+      JSON.stringify({ plugins: { suppressedBuiltins: ["zcode-guide@zcode-plugins-official"] } }),
     );
     const loaded = loadFileConfig(path);
     expect(loaded.config.plugins.suppressedBuiltins).toEqual([
-      "skill-creator@zcode-plugins-official",
+      "zcode-guide@zcode-plugins-official",
     ]);
   });
 
@@ -903,7 +872,7 @@ describe("config adapters", () => {
                 url: "https://example.com/sse",
                 oauth: {
                   type: "authorization_code",
-                  clientName: "ZCode",
+                  clientName: "Nekode",
                   redirectPath: "/oauth/callback/mcp/figma",
                   scope: "mcp:connect",
                 },
@@ -938,7 +907,7 @@ describe("config adapters", () => {
         type: "sse",
         oauth: {
           type: "authorization_code",
-          clientName: "ZCode",
+          clientName: "Nekode",
           redirectPath: "/oauth/callback/mcp/figma",
           scope: "mcp:connect",
         },
@@ -1246,7 +1215,7 @@ describe("config adapters", () => {
           plugins: {
             enabledPlugins: {
               "superpowers@zcode-plugins-official": true,
-              "skill-creator@zcode-plugins-official": false,
+              "zcode-guide@zcode-plugins-official": false,
             },
           },
         }),
@@ -1273,7 +1242,7 @@ describe("config adapters", () => {
         url: "https://open.bigmodel.cn/api/mcp/web_reader/mcp",
       });
       expect(merged.config.plugins.enabledPlugins).toMatchObject({
-        "skill-creator@zcode-plugins-official": false,
+        "zcode-guide@zcode-plugins-official": false,
         "superpowers@zcode-plugins-official": true,
       });
     } finally {
@@ -1312,7 +1281,7 @@ describe("config adapters", () => {
 
       const result = loadFileConfig(path);
       const merged = createConfig({
-        env: { ZCODE_LOG_DIR: logDir },
+        env: { NEKODE_LOG_DIR: logDir },
         userConfigPath: path,
       });
 
@@ -1372,7 +1341,7 @@ describe("config adapters", () => {
       );
 
       const result = createConfig({
-        env: { ZCODE_LOG_DIR: logDir },
+        env: { NEKODE_LOG_DIR: logDir },
         skipUserConfig: true,
         workingDirectory: root,
       });
@@ -1448,7 +1417,7 @@ describe("config adapters", () => {
   it("merges project configs from root to cwd with nearest config winning", async () => {
     const root = await mkdtemp(join(tmpdir(), "zcode-project-config-"));
     const cwd = join(root, "packages", "app");
-    const cwdConfigDir = join(cwd, ".zcode");
+    const cwdConfigDir = join(cwd, ".nekode");
 
     try {
       await mkdir(join(root, ".git"));
@@ -1693,7 +1662,7 @@ describe("config adapters", () => {
 
     try {
       await mkdir(join(root, ".git"));
-      await mkdir(join(root, ".zcode"), { recursive: true });
+      await mkdir(join(root, ".nekode"), { recursive: true });
       await writeFile(
         join(root, "zcode.json"),
         JSON.stringify({
@@ -1711,7 +1680,7 @@ describe("config adapters", () => {
         }),
       );
       await writeFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({
           hooks: {
             enabled: true,
@@ -1739,7 +1708,7 @@ describe("config adapters", () => {
           (diagnostic) => diagnostic.code === "config_project_hooks_pending_trust",
         ),
       ).toHaveLength(2);
-      for (const configPath of [join(root, "zcode.json"), join(root, ".zcode", "config.json")]) {
+      for (const configPath of [join(root, "zcode.json"), join(root, ".nekode", "config.json")]) {
         expect(result.sources.project.diagnostics).toContainEqual(
           expect.objectContaining({
             code: "config_project_hooks_pending_trust",
@@ -1763,7 +1732,7 @@ describe("config adapters", () => {
 
     try {
       await mkdir(join(root, ".git"));
-      await mkdir(join(root, ".zcode"), { recursive: true });
+      await mkdir(join(root, ".nekode"), { recursive: true });
       await writeFile(
         userConfigPath,
         JSON.stringify({
@@ -1781,7 +1750,7 @@ describe("config adapters", () => {
         }),
       );
       await writeFile(
-        join(root, ".zcode", "config.json"),
+        join(root, ".nekode", "config.json"),
         JSON.stringify({
           hooks: {
             enabled: true,
@@ -1954,10 +1923,10 @@ describe("config adapters", () => {
       const dir = await mkdtemp(join(tmpdir(), "zcode-config-retired-model-"));
       try {
         const path = join(dir, "config.json");
-        await writeFile(path, JSON.stringify({ ...legacy, features: { memory: false } }));
+        await writeFile(path, JSON.stringify({ ...legacy, features: { skill: false } }));
         const result = loadFileConfig(path);
         expect(result.loaded).toBe(true);
-        expect(result.config).toMatchObject({ features: { memory: false } });
+        expect(result.config).toMatchObject({ features: { skill: false } });
         for (const key of ["model", "provider", "modelCatalog", "modelSmall", "smallModel"])
           expect(result.config).not.toHaveProperty(key);
       } finally {
@@ -2041,7 +2010,7 @@ describe("config adapters", () => {
   it("adds and removes a suppressed builtin id atomically", async () => {
     const dir = await mkdtemp(join(tmpdir(), "zcode-config-suppress-patch-"));
     const path = join(dir, "config.json");
-    const id = "skill-creator@zcode-plugins-official";
+    const id = "zcode-guide@zcode-plugins-official";
 
     const added = await addSuppressedBuiltinInFileConfig(path, id);
     expect(added.suppressed).toBe(true);

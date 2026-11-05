@@ -13,7 +13,6 @@ export const REMOTE_AGENT_OFFICIAL_PLUGIN_PACKAGE_NAMES = [
   "image-search-plugin",
   "ios-simulator-plugin",
   "restore-legacy-sessions-plugin",
-  "skill-creator-plugin",
   "plugin-creator-plugin",
   "zcode-guide-plugin",
   "visualize-plugin",

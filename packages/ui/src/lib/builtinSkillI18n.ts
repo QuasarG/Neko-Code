@@ -19,7 +19,6 @@ const OFFICIAL_BUILTIN_PLUGIN_NAMES = new Set([
   "spreadsheets",
   "ios-simulator",
   "restore-legacy-sessions",
-  "skill-creator",
   "plugin-creator",
   "superpowers",
   "zcode-guide",
@@ -37,7 +36,6 @@ const OFFICIAL_PLUGIN_PATH_MARKERS = [
   "/spreadsheets-plugin/",
   "/ios-simulator-plugin/",
   "/restore-legacy-sessions-plugin/",
-  "/skill-creator-plugin/",
   "/plugin-creator-plugin/",
   "/superpowers-plugin/",
   "/zcode-guide-plugin/",
@@ -53,8 +51,8 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US": "Use before any creative work, including creating features, building components, adding functionality, or modifying behavior. Explores user intent, requirements, and design before implementation.",
   },
   "control-browser": {
-    "zh-CN": "控制 ZCode 内置浏览器，用于打开、检查、点击、输入、截图或验证网页和本地开发页面。",
-    "en-US": "Control ZCode's built-in browser to open, inspect, click, type, screenshot, or verify webpages and local development targets.",
+    "zh-CN": "控制 Nekode 内置浏览器，用于打开、检查、点击、输入、截图或验证网页和本地开发页面。",
+    "en-US": "Control Nekode's built-in browser to open, inspect, click, type, screenshot, or verify webpages and local development targets.",
   },
   "dispatching-parallel-agents": {
     "zh-CN": "面对 2 个以上彼此独立、无共享状态或顺序依赖的任务时使用。",
@@ -105,16 +103,12 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US": "Use when completing tasks, implementing major features, or before merging to verify work meets requirements.",
   },
   "restore-legacy-sessions": {
-    "zh-CN": "检查、规划或执行 ACP 时代 ZCode 旧 session 恢复到新的 ZCode 任务与会话库。",
-    "en-US": "Inspect, plan, or restore old ACP-era ZCode sessions into the new ZCode task and session stores.",
+    "zh-CN": "检查、规划或执行 ACP 时代 Nekode 旧 session 恢复到新的 Nekode 任务与会话库。",
+    "en-US": "Inspect, plan, or restore old ACP-era Nekode sessions into the new Nekode task and session stores.",
   },
   "plugin-creator": {
-    "zh-CN": "创建、校验 ZCode 插件，并指导本地安装与更新。",
-    "en-US": "Create and validate ZCode plugins, and guide local installation and updates.",
-  },
-  "skill-creator": {
-    "zh-CN": "创建新技能、编辑现有技能并迭代措辞。适用于从零编写 SKILL.md、改进已有技能、把重复工作流沉淀为可复用技能，或优化技能描述以提升触发可靠性。",
-    "en-US": "Create new skills, edit existing skills, and iterate wording. Use for writing SKILL.md from scratch, improving skills, capturing repeated workflows, or tuning descriptions for reliable triggering.",
+    "zh-CN": "创建、校验 Nekode 插件，并指导本地安装与更新。",
+    "en-US": "Create and validate Nekode plugins, and guide local installation and updates.",
   },
   "subagent-driven-development": {
     "zh-CN": "在当前会话中执行包含独立任务的实现计划时使用。",
@@ -141,8 +135,8 @@ const BUILTIN_SKILL_DESCRIPTIONS: Record<string, Record<Locale, string>> = {
     "en-US": "Use before claiming work is complete, fixed, or passing. Requires running verification commands and confirming output before success claims.",
   },
   "web-gui-tester": {
-    "zh-CN": "使用 ZCode Browser Use 对网页和本地 Web 前端执行纯 GUI 黑盒测试，通过真实用户交互、DOM 语义证据和截图验证功能、交互与响应式布局。",
-    "en-US": "Run pure GUI black-box tests against websites and local web frontends with ZCode Browser Use, combining real user interactions, semantic DOM evidence, and inspected screenshots.",
+    "zh-CN": "使用 Nekode Browser Use 对网页和本地 Web 前端执行纯 GUI 黑盒测试，通过真实用户交互、DOM 语义证据和截图验证功能、交互与响应式布局。",
+    "en-US": "Run pure GUI black-box tests against websites and local web frontends with Nekode Browser Use, combining real user interactions, semantic DOM evidence, and inspected screenshots.",
   },
   "writing-plans": {
     "zh-CN": "已有规格或多步骤任务需求，在动代码前用于编写实现计划。",

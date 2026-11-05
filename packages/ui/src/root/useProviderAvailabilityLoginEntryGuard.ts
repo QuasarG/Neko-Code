@@ -54,7 +54,9 @@ export function useProviderAvailabilityLoginEntryGuard({
         : modelSelectionView;
       const availability = resolveProviderAvailabilityState({ modelSelectionView: refreshedView });
       const { hasUsableProvider, providerCount } = availability;
-      const shouldOpenLoginEntry = !providerFamilyDomain || (!user && !hasUsableProvider);
+      // Nekode：登录/欢迎面板已删除。没有可用 provider 时直接进主界面，
+      // 模型与 API Key 在设置页配置；这里只保留可用性统计供其他入口使用。
+      const shouldOpenLoginEntry = false;
 
       // 未登录且没有可用模型配置时必须引导用户连接账号或填写 API Key。
       // 启动检查、API Key 设置回流等入口统一走这里，避免各处复制判断后语义分叉。

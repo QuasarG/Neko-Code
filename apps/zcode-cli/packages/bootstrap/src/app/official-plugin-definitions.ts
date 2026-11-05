@@ -1,4 +1,4 @@
-import { ZCODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
+import { NEKODE_OFFICIAL_PLUGIN_MARKETPLACE } from "@zcode/contracts";
 
 // 内置插件的商店信息 seed（原样写入官方 marketplace.json 的条目 raw，键名与 CDN 目录
 // schema 一致：displayName_i18n / examplePrompts_i18n 等），解析复用 adapter 的
@@ -19,7 +19,7 @@ export interface OfficialPluginListingSeed {
 }
 
 export const OFFICIAL_BROWSER_USE_PLUGIN_NAME = "browser-use";
-export const OFFICIAL_BROWSER_USE_PLUGIN_ID = `${OFFICIAL_BROWSER_USE_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
+export const OFFICIAL_BROWSER_USE_PLUGIN_ID = `${OFFICIAL_BROWSER_USE_PLUGIN_NAME}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 /**
  * node_repl 宿主。它不是面向用户的插件：没有 skill、没有 listing、不进市场，唯一职责是
  * 携带 `dist/mcp/server.js` 这个 Browser Use 与 Computer Use 共用的运行时产物。
@@ -30,9 +30,9 @@ export const OFFICIAL_BROWSER_USE_PLUGIN_ID = `${OFFICIAL_BROWSER_USE_PLUGIN_NAM
  * 各自只贡献自己的领域资产，谁启用都能拿到同一个宿主。
  */
 export const OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME = "node-repl-host";
-export const OFFICIAL_NODE_REPL_HOST_PLUGIN_ID = `${OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
+export const OFFICIAL_NODE_REPL_HOST_PLUGIN_ID = `${OFFICIAL_NODE_REPL_HOST_PLUGIN_NAME}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 export const OFFICIAL_CUA_PLUGIN_NAME = "computer-use";
-export const OFFICIAL_CUA_PLUGIN_ID = `${OFFICIAL_CUA_PLUGIN_NAME}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
+export const OFFICIAL_CUA_PLUGIN_ID = `${OFFICIAL_CUA_PLUGIN_NAME}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}`;
 
 export interface OfficialPluginDefinition {
   /**
@@ -93,7 +93,7 @@ export const OFFICIAL_CUA_REQUIRED_SEED_PATHS = [
 // 残缺插件而没有任何诊断。0.3.0 起 `/workflow` 与 dynamic-workflows 技能不再随本插件发布
 // （命令编进 CLI，技能进 packages/bundled-skills，见 docs/dynamic-workflow/authoring.md），
 // 这里钉住的是配置指南技能正文。
-export const OFFICIAL_ZCODE_GUIDE_REQUIRED_SEED_PATHS = [
+export const OFFICIAL_NEKODE_GUIDE_REQUIRED_SEED_PATHS = [
   "skills/zcode-configuration-guide/SKILL.md",
 ] as const;
 
@@ -192,7 +192,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       displayName_i18n: { "zh-CN": "浏览器操作" },
       icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/browser-use/icon.png`,
       description_i18n: {
-        "zh-CN": "操作 ZCode 内置浏览器，检查网页并验证交互。",
+        "zh-CN": "操作 Nekode 内置浏览器，检查网页并验证交互。",
       },
     },
     name: OFFICIAL_BROWSER_USE_PLUGIN_NAME,
@@ -295,7 +295,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       displayName_i18n: { "zh-CN": "恢复旧版会话" },
       icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/restore-legacy-sessions/icon.png`,
       description_i18n: {
-        "zh-CN": "将旧版会话恢复为 ZCode 任务与会话记录。",
+        "zh-CN": "将旧版会话恢复为 Nekode 任务与会话记录。",
       },
     },
     name: "restore-legacy-sessions",
@@ -315,10 +315,10 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
       author: ZAI_AUTHOR,
       category: "utilities",
       displayName: "Plugin Creator",
-      // 创建器使用客户端自带图标，不再借用 skill-creator 的远端图片。
+      // 创建器使用客户端自带图标，不依赖远端图片。
       displayName_i18n: { "zh-CN": "插件创建器" },
       description_i18n: {
-        "zh-CN": "开发、校验 ZCode 插件，完成本地 dev 市场安装、试用与更新。",
+        "zh-CN": "开发、校验 Nekode 插件，完成本地 dev 市场安装、试用与更新。",
       },
     },
     rootCandidates: [
@@ -339,47 +339,28 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     ],
   },
   {
-    defaultEnabled: true,
-    listing: {
-      author: ZAI_AUTHOR,
-      category: "utilities",
-      displayName: "Skill Creator",
-      displayName_i18n: { "zh-CN": "技能创建器" },
-      icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/skill-creator/icon.png`,
-      description_i18n: { "zh-CN": "创建、编辑和验证可复用的 ZCode 技能。" },
-    },
-    name: "skill-creator",
-    rootCandidates: [
-      "packages/skill-creator-plugin",
-      "../skill-creator-plugin",
-      "../../skill-creator-plugin",
-      "../../../skill-creator-plugin",
-    ],
-    version: "0.1.0",
-  },
-  {
     // 纯内容型插件（只有 commands + skills，无 MCP / 无系统依赖），默认启用，
-    // 让用户/agent 开箱即用地拿到 ZCode 配置指南、自诊断技能与 dynamic workflow 编写指南。
+    // 让用户/agent 开箱即用地拿到 Nekode 配置指南、自诊断技能与 dynamic workflow 编写指南。
     defaultEnabled: true,
     listing: {
       author: ZAI_AUTHOR,
       category: "utilities",
-      displayName: "ZCode Guide",
-      displayName_i18n: { "zh-CN": "ZCode 使用指南" },
+      displayName: "Nekode Guide",
+      displayName_i18n: { "zh-CN": "Nekode 使用指南" },
       icon: `${OFFICIAL_PLUGIN_ASSETS_BASE_URL}/zcode-guide/icon.png`,
       description_i18n: {
-        "zh-CN": "提供 ZCode 配置指南与插件、技能、MCP、命令和钩子诊断。",
+        "zh-CN": "提供 Nekode 配置指南与插件、技能、MCP、命令和钩子诊断。",
       },
       examplePrompts: [
-        "How do I configure MCP servers in ZCode?",
-        "Diagnose my current ZCode setup",
+        "How do I configure MCP servers in Nekode?",
+        "Diagnose my current Nekode setup",
       ],
       examplePrompts_i18n: {
-        "zh-CN": ["ZCode 里怎么配置 MCP 服务器？", "帮我诊断当前的 ZCode 配置"],
+        "zh-CN": ["Nekode 里怎么配置 MCP 服务器？", "帮我诊断当前的 Nekode 配置"],
       },
     },
     name: "zcode-guide",
-    requiredSeedPaths: OFFICIAL_ZCODE_GUIDE_REQUIRED_SEED_PATHS,
+    requiredSeedPaths: OFFICIAL_NEKODE_GUIDE_REQUIRED_SEED_PATHS,
     rootCandidates: [
       "packages/zcode-guide-plugin",
       "../zcode-guide-plugin",
@@ -396,7 +377,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     // 判定式是 enabledPlugins[id] ?? defaultEnabled：曾在设置页手动开过的用户已落盘
     // 显式 true，不受本次默认值变更影响。改回默认开启时，需同步
     // packages/shared/src/plugin-marketplaces.ts 的名单（bootstrap 单测机械对照两者）、
-    // isZCodeCuaInternalFeatureEnabled（打包层默认 true）与输入框入口 hidden 默认值的联动语义。
+    // isNekodeCuaInternalFeatureEnabled（打包层默认 true）与输入框入口 hidden 默认值的联动语义。
     name: "computer-use",
     hostMcpServerNames: ["node_repl"],
     // 用户露出名统一为「Computer Use / 电脑控制」。包名与 producer workspace 包仍保持 zcode-cua，
@@ -429,7 +410,7 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     version: "0.6.5",
   },
   {
-    // ZCode Sites（技术方案 4）：Skill 指导 Agent 把项目改造并打包成 runner 可直接运行的产物包，
+    // Nekode Sites（技术方案 4）：Skill 指导 Agent 把项目改造并打包成 runner 可直接运行的产物包，
     // 再用 scripts/zcode-site.mjs（CLI）上传发布；commands/ 是 /site-* 斜杠命令。
     // 0.4.0 起自带 Sites 面板（UI plugin）：MCP server 与面板页面构建进 dist/，只给面板用，模型看不到
     // （docs/site/sites-panel.md）。默认开启，用户不必先去设置里打开就能让 Agent 部署站点。
@@ -439,8 +420,8 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
     listing: {
       author: ZAI_AUTHOR,
       category: "productivity",
-      displayName: "ZCode Sites",
-      displayName_i18n: { "zh-CN": "ZCode Sites" },
+      displayName: "Nekode Sites",
+      displayName_i18n: { "zh-CN": "Nekode Sites" },
       description_i18n: {
         "zh-CN": "把 Web 项目改造为可在云端 Linux 运行的部署包，一个 start.sh 即可启动。",
       },
@@ -473,17 +454,17 @@ export const OFFICIAL_PLUGIN_DEFINITIONS: readonly OfficialPluginDefinition[] = 
 
 // 在 official plugin 定义里标了 defaultEnabled: true 的, 拼成 `<name>@<marketplace>` 形式,
 // 透传给 adapter 让它在用户没显式配置时默认开启 (内容型 plugin 才适用)。
-// 注意: 任何解析 plugin 的入口 (CLI 子命令 resolveZCodePlugins、应用启动 resolveStartupPlugins)
+// 注意: 任何解析 plugin 的入口 (CLI 子命令 resolveNekodePlugins、应用启动 resolveStartupPlugins)
 // 都必须把这个集合传给 discoverNodePluginsSync, 否则 defaultEnabled 不生效。
 export const DEFAULT_ENABLED_OFFICIAL_PLUGIN_IDS: ReadonlySet<string> = new Set(
   OFFICIAL_PLUGIN_DEFINITIONS.filter((definition) => definition.defaultEnabled).map(
-    (definition) => `${definition.name}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
+    (definition) => `${definition.name}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}`,
   ),
 );
 
 export function resolveOfficialPluginHostMcpServerNames(pluginId: string): string[] {
   const definition = OFFICIAL_PLUGIN_DEFINITIONS.find(
-    (candidate) => `${candidate.name}@${ZCODE_OFFICIAL_PLUGIN_MARKETPLACE}` === pluginId,
+    (candidate) => `${candidate.name}@${NEKODE_OFFICIAL_PLUGIN_MARKETPLACE}` === pluginId,
   );
   return definition?.hostMcpServerNames ? [...definition.hostMcpServerNames] : [];
 }

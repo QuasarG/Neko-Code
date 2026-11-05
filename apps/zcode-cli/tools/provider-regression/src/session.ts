@@ -1,7 +1,7 @@
 import { mkdtemp, rm, readFile, stat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { createZCodeApp } from "@zcode/bootstrap";
+import { createNekodeApp } from "@zcode/bootstrap";
 import type { AiSdkModelAdapter } from "@zcode/adapters/model";
 import type { ProviderRegistry } from "@zcode/provider";
 import type { TurnAttachment, ToolEntry } from "@zcode/core";
@@ -76,7 +76,7 @@ export async function executeSessionCase(input: {
   const { row, test, signal } = input;
   const started = performance.now();
   const directory = await mkdtemp(join(tmpdir(), "zcode-provider-case-"));
-  let app: Awaited<ReturnType<typeof createZCodeApp>> | undefined;
+  let app: Awaited<ReturnType<typeof createNekodeApp>> | undefined;
   let previousHighSurrogate = false;
   // SYSTEM 包含两轮；共用监听，避免字符和首正文只统计第二轮。
   const onEvent = (event: SessionEvent) => {
@@ -93,8 +93,8 @@ export async function executeSessionCase(input: {
   };
   try {
     signal.throwIfAborted();
-    app = await createZCodeApp({
-      env: { ...process.env, ZCODE_STORAGE_DIR: directory },
+    app = await createNekodeApp({
+      env: { ...process.env, NEKODE_STORAGE_DIR: directory },
       skipUserConfig: true,
       pluginStorageRoot: join(directory, "plugins"),
       sourceTitle: "electron",

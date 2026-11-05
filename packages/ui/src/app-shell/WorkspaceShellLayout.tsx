@@ -50,13 +50,13 @@ import { useIsOfficeMode } from "@/hooks/useInterfaceMode.js";
 import { GitBranchSwitcher } from "@/GitBranchSwitcher.js";
 import { ScopedErrorBoundary } from "@/ErrorBoundary.js";
 
-import { AUTOMATIONS_TOAST_ANCHOR_ID, AutomationsSection } from "@/settings/AutomationsSection.js";
+import { WorkflowsSection } from "@/settings/WorkflowsSection.js";
 import type {
   SavedWorkflowLaunchTarget,
   SavedWorkflowsOpenArtifactParams,
   SavedWorkflowsOpenRunParams,
 } from "@/settings/saved-workflows/SavedWorkflowsSection.js";
-import { AutomationsMainBreadcrumbFrame } from "@/settings/AutomationsMainBreadcrumbFrame.js";
+import { WorkspaceMainViewBreadcrumbFrame } from "@/settings/WorkspaceMainViewBreadcrumbFrame.js";
 import { PluginStorePage } from "@/settings/PluginStorePage.js";
 import { TaskFindDialog } from "@/quickpick/TaskFindDialog.js";
 import { WebRemoteControlMobileShell } from "@/WebRemoteControlMobileShell.js";
@@ -89,7 +89,7 @@ import { Button } from "@/components/ui/button.js";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable.js";
 import { toast } from "@/components/ui/toast.js";
 import { getGitDirtyFileCount } from "@/git-branch-switcher/display.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 import { useBaseWorkspaceServices } from "@/hooks/useWorkspaceServices.js";
 import { getPathLeaf, toFileUrl } from "@/lib/path.js";
 import { shouldOpenAssistantHtmlInBrowser } from "@/lib/assistantPreviewCards.js";
@@ -114,7 +114,7 @@ import {
 import type { WorkspaceShellLayoutProps } from "@/app-shell/types.js";
 import { isWorkspaceTab } from "@/store/tabStore.js";
 import { useTabStore, useTabStoreApi } from "@/store/TabStoreProvider.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import type { ComposerMentionPrefill } from "@/store/zcodeSessionStoreTypes.js";
 
 const WEB_REMOTE_CONTROL_MOBILE_QUERY = "(max-width: 767px)";
@@ -277,14 +277,11 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   workspaceReadOnlyReason,
   workspaceMainView,
   pluginStoreOpenVersion,
-  openAutomationId,
-  openAutomationTab,
   openWorkflow,
   onOpenWorkflowConsumed,
   onOpenSavedWorkflowInHub,
   onWorkspaceMainViewChange,
-  onOpenAutomationConsumed,
-  handleOpenAutomations,
+  handleOpenWorkflows,
   handleOpenPluginStore,
   onConnectRemote,
   onSelectRemoteProject,
@@ -317,7 +314,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   isDesktop,
   isMacDesktop,
   isWindowsDesktop,
-  workspaceShellZCodeState,
+  workspaceShellNekodeState,
   theme,
   isMacFullscreen,
   desktopWindowChromeState,
@@ -430,7 +427,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   setGitSelectedSourceId,
   taskFindDialogProps,
 }: WorkspaceShellLayoutProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const isOfficeMode = useIsOfficeMode();
   const baseServices = useBaseWorkspaceServices();
   const tabStoreApi = useTabStoreApi();
@@ -518,7 +515,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   usePaneSessionPersistence({
     workspaceKey,
     activeSessionId: activeTaskId,
-    draftFocusVersion: workspaceShellZCodeState.draftFocusVersion,
+    draftFocusVersion: workspaceShellNekodeState.draftFocusVersion,
     enabled: !isWebRemoteControlShell,
     restoreOnStartup: Boolean(isDesktop && restorePaneSession),
     selectSession: (sessionId) => handleSelectTask(workspaceAbsPath, sessionId, workspaceIdentity),
@@ -1401,10 +1398,10 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   useEffect(() => {
     if (
       isWebRemoteControlShell &&
-      (workspaceMainView === "automations" || workspaceMainView === "plugin-store")
+      (workspaceMainView === "workflows" || workspaceMainView === "plugin-store")
     ) {
       // 修复原因：手机远控复用桌面 shell 时可能保留上一次主视图状态；
-      // 远控不承载 Automations，必须立即回落到 continuous/replayable 边界之外的聊天页。
+      // 远控不承载工作流/插件市场主视图，必须立即回落到 continuous/replayable 边界之外的聊天页。
       onWorkspaceMainViewChange("chat");
     }
   }, [isWebRemoteControlShell, onWorkspaceMainViewChange, workspaceMainView]);
@@ -1422,6 +1419,14 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
       onCreateTask(request);
     },
     [onCreateTask, showChatMainView, workspaceReadOnlyReason],
+  );
+  const handleCreateWorkflowViaChat = useCallback(
+    (prompt: string, targetWorkspace: { workspacePath: string; workspaceIdentity?: string }) => {
+      // 带 target 时跳过活动 workspace 只读检查，交由 handleCreateTaskInChat / root 动作在
+      // target 上校验（docs/dynamic-workflow/launch.md「The detail page」）。
+      handleCreateTaskInChat({ initialPrompt: prompt, targetWorkspace });
+    },
+    [handleCreateTaskInChat],
   );
   const shellWorkbenchBinding = useMemo<WorkbenchSessionBinding | null>(
     () =>
@@ -1442,18 +1447,6 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   useLayoutEffect(() => {
     shellWorkbenchBindingRef.current = shellWorkbenchBinding;
   }, [shellWorkbenchBinding]);
-  const handleCreateAutomationInChat = useCallback(
-    (prompt: string, targetWorkspace?: { workspacePath: string; workspaceIdentity?: string }) => {
-      // 带 target 时跳过活动 workspace 只读检查，交由 handleCreateTaskInChat / root 动作在
-      // target 上校验（docs/dynamic-workflow/launch.md「The detail page」）；无 target 时形状不变。
-      if (!targetWorkspace && workspaceReadOnlyReason) return;
-      handleCreateTaskInChat({
-        initialPrompt: prompt,
-        ...(targetWorkspace ? { targetWorkspace } : {}),
-      });
-    },
-    [handleCreateTaskInChat, workspaceReadOnlyReason],
-  );
   // 工作流「运行」现由中枢直接启动（docs/dynamic-workflow/launch.md）：GUI 建空会话 +
   // 发 startSavedWorkflow 命令，不再合成对话文案。本层只在 accepted 后把会话切到前台。
   const handleSelectTaskInChat = useCallback(
@@ -1474,16 +1467,16 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
           },
         });
         if (!workspaceResult.accepted) {
-          logger.warn("[automations] 运行历史目标远程 workspace 未连接，保留当前页面", {
+          logger.warn("[workflows] 运行历史目标远程 workspace 未连接，保留当前页面", {
             sessionId: taskId,
             workspaceIdentity: targetWorkspaceIdentity,
             workspacePath: targetWorkspacePath,
           });
-          toast(intl.formatMessage({ id: "automations.runs.openSessionFailed" }));
+          toast(intl.formatMessage({ id: "workflows.hub.openSessionFailed" }));
           return;
         }
         if (workspaceResult.openedLocalTab) {
-          logger.info("[automations] 为运行历史会话补开本地 workspace tab", {
+          logger.info("[workflows] 为运行历史会话补开本地 workspace tab", {
             sessionId: taskId,
             workspacePath: targetWorkspacePath,
           });
@@ -1505,7 +1498,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
         };
         selectWorkbenchSession(shellWorkbenchBindingRef.current, target);
       }
-      // 只有目标 workspace 已经激活或补开成功后才关闭 Automations，避免失败时看起来像跳转成功。
+      // 只有目标 workspace 已经激活或补开成功后才关闭工作流主视图，避免失败时看起来像跳转成功。
       showChatMainView();
       if (typeof expectedUnreadAt === "number") {
         handleSelectTask(targetWorkspacePath, taskId, targetWorkspaceIdentity, expectedUnreadAt);
@@ -1726,7 +1719,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   ]);
   const handleSelectComposerPlugin = useCallback(
     (mention: ComposerMentionPrefill) => {
-      useZCodeSessionStore
+      useNekodeSessionStore
         .getState()
         .requestComposerTextInsert(
           workspaceAbsPath,
@@ -2106,7 +2099,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   // 与 Task Header 分叉。桌面端统一复用 WorkspaceHeader，只由 variant 裁剪 task 专属内容；
   // 手机远控无 active task 时仍不渲染桌面 chrome，继续遵守 replayable overlay 边界。
   const shouldRenderMainViewHeader =
-    workspaceMainView !== "automations" && workspaceMainView !== "plugin-store";
+    workspaceMainView !== "workflows" && workspaceMainView !== "plugin-store";
   const shouldRenderWorkspaceHeader =
     shouldRenderMainViewHeader && (activeTaskId !== null || isDesktop);
   // 修复原因：ErrorBoundary resetKeys 的数组如果每次 render 都重新创建，
@@ -2175,8 +2168,8 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
       goBackShortcutLabel={goBackShortcutLabel}
       goForwardShortcutLabel={goForwardShortcutLabel}
       onOpenCommandCenter={handleOpenCommandCenter}
-      onOpenAutomations={handleOpenAutomations}
-      automationsActive={workspaceMainView === "automations"}
+      onOpenWorkflows={handleOpenWorkflows}
+      workflowsActive={workspaceMainView === "workflows"}
       onOpenPluginStore={handleOpenPluginStore}
       pluginStoreActive={workspaceMainView === "plugin-store"}
       // 桌面没有 mobile 导航动作；内联包装曾让右侧开关穿透侧栏 memo，重复渲染全部项目。
@@ -2255,7 +2248,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                 providerWorkspaceConfigPath={providerConfigFile.path}
                 providerWorkspaceConfigExists={providerConfigFile.exists}
                 providerWorkspaceConfigLoading={providerConfigFile.loading}
-                workspaceHeaderState={workspaceShellZCodeState}
+                workspaceHeaderState={workspaceShellNekodeState}
                 gitSummary={gitState.summary}
                 gitDirtyFileCount={gitDirtyFileCount}
                 isMacDesktop={isMacDesktop}
@@ -2285,56 +2278,43 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
         }
         chatOverlay={workspaceMainView === "chat" ? renderChatFindDialog() : undefined}
         chatContent={
-          workspaceMainView === "automations" && !isWebRemoteControlShell ? (
-            <main
-              id={AUTOMATIONS_TOAST_ANCHOR_ID}
-              className="flex h-full min-h-0 flex-1 flex-col bg-background"
-            >
-              <AutomationsMainBreadcrumbFrame
+          workspaceMainView === "workflows" && !isWebRemoteControlShell ? (
+            <main className="flex h-full min-h-0 flex-1 flex-col bg-background">
+              <WorkspaceMainViewBreadcrumbFrame
                 isDesktop={Boolean(isDesktop)}
-                sectionLabel={intl.formatMessage({
-                  id: "settings.automations.title",
-                })}
-                ariaLabel={intl.formatMessage({
-                  id: "automations.breadcrumbLabel",
-                })}
+                sectionLabel={intl.formatMessage({ id: "workflows.hub.title" })}
+                ariaLabel={intl.formatMessage({ id: "workflows.hub.title" })}
               >
                 <div
-                  // 修复原因：不同 Automations tab 的内容高度不同，滚动条出现/消失会改变
-                  // mx-auto 内容列的可用宽度，造成整页左右弹动；预留稳定槽位保持居中基准不变。
+                  // 修复原因：不同内容高度会让滚动条出现/消失，改变 mx-auto 内容列的可用宽度，
+                  // 造成整页左右弹动；预留稳定槽位保持居中基准不变。
                   className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
                 >
                   <ScopedErrorBoundary
-                    scope="automations-main"
+                    scope="workflows-main"
                     resetKeys={workspaceOnlyResetKeys}
                     variant="panel"
                     className="min-h-full"
                   >
                     <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-4 md:px-6 md:py-6">
-                      <AutomationsSection
+                      <WorkflowsSection
                         workspacePath={workspaceAbsPath}
                         workspaceIdentity={workspaceIdentity}
-                        onCreateViaChat={handleCreateAutomationInChat}
+                        onCreateViaChat={handleCreateWorkflowViaChat}
                         onNavigateToLaunchedRun={handleNavigateToLaunchedRun}
                         onOpenWorkflowRun={handleOpenSavedWorkflowRun}
                         onOpenWorkflowArtifact={handleOpenSavedWorkflowArtifact}
-                        openAutomationId={openAutomationId}
-                        openAutomationTab={openAutomationTab}
-                        onOpenAutomationConsumed={onOpenAutomationConsumed}
                         openWorkflow={openWorkflow}
                         onOpenWorkflowConsumed={onOpenWorkflowConsumed}
-                        onOpenSession={({ sessionId, workspacePath, workspaceIdentity }) =>
-                          handleSelectTaskInChat(workspacePath, sessionId, workspaceIdentity)
-                        }
                       />
                     </div>
                   </ScopedErrorBoundary>
                 </div>
-              </AutomationsMainBreadcrumbFrame>
+              </WorkspaceMainViewBreadcrumbFrame>
             </main>
           ) : workspaceMainView === "plugin-store" && !isWebRemoteControlShell ? (
             <main className="flex h-full min-h-0 flex-1 flex-col bg-background">
-              <AutomationsMainBreadcrumbFrame
+              <WorkspaceMainViewBreadcrumbFrame
                 isDesktop={Boolean(isDesktop)}
                 sectionLabel={intl.formatMessage({
                   id: "workspace.openPluginsSettings",
@@ -2361,7 +2341,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                     />
                   </div>
                 </div>
-              </AutomationsMainBreadcrumbFrame>
+              </WorkspaceMainViewBreadcrumbFrame>
             </main>
           ) : (
             <div className="relative flex h-full min-h-0 min-w-0 flex-1 flex-col">
@@ -2402,7 +2382,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                   onRefreshGit={handleRefreshGit}
                   onOpenGitReview={handleOpenGitReview}
                   onOpenBrowserUrl={handleOpenBrowserUrl}
-                  onOpenAutomationsMain={handleOpenAutomations}
+                  onOpenWorkflowsMain={handleOpenWorkflows}
                   onOpenCodeViewer={handleOpenCodeViewer}
                   onAutoOpenAssistantPptx={
                     isDesktop && !isWebRemoteControlShell ? handleAutoOpenAssistantPptx : undefined
@@ -2663,7 +2643,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                             providerWorkspaceConfigPath={providerConfigFile.path}
                             providerWorkspaceConfigExists={providerConfigFile.exists}
                             providerWorkspaceConfigLoading={providerConfigFile.loading}
-                            workspaceHeaderState={workspaceShellZCodeState}
+                            workspaceHeaderState={workspaceShellNekodeState}
                             gitSummary={gitState.summary}
                             gitDirtyFileCount={gitDirtyFileCount}
                             isMacDesktop={isMacDesktop}
@@ -2725,64 +2705,43 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                         </Button>
                       ) : null}
                       <div className="min-h-0 flex-1 overflow-hidden">
-                        {workspaceMainView === "automations" && !isWebRemoteControlShell ? (
-                          <main
-                            id={AUTOMATIONS_TOAST_ANCHOR_ID}
-                            className="flex h-full min-h-0 flex-1 flex-col bg-background"
-                          >
-                            <AutomationsMainBreadcrumbFrame
+                        {workspaceMainView === "workflows" && !isWebRemoteControlShell ? (
+                          <main className="flex h-full min-h-0 flex-1 flex-col bg-background">
+                            <WorkspaceMainViewBreadcrumbFrame
                               isDesktop={Boolean(isDesktop)}
-                              sectionLabel={intl.formatMessage({
-                                id: "settings.automations.title",
-                              })}
-                              ariaLabel={intl.formatMessage({
-                                id: "automations.breadcrumbLabel",
-                              })}
+                              sectionLabel={intl.formatMessage({ id: "workflows.hub.title" })}
+                              ariaLabel={intl.formatMessage({ id: "workflows.hub.title" })}
                             >
                               <div
-                                // 修复原因：不同 Automations tab 的内容高度不同，滚动条出现/消失会改变
-                                // mx-auto 内容列的可用宽度，造成整页左右弹动；预留稳定槽位保持居中基准不变。
+                                // 修复原因：不同内容高度会让滚动条出现/消失，改变 mx-auto 内容列的可用宽度，
+                                // 造成整页左右弹动；预留稳定槽位保持居中基准不变。
                                 className="min-h-0 flex-1 overflow-y-auto [scrollbar-gutter:stable]"
                               >
                                 <ScopedErrorBoundary
-                                  scope="automations-main"
+                                  scope="workflows-main"
                                   resetKeys={workspaceOnlyResetKeys}
                                   variant="panel"
                                   className="min-h-full"
                                 >
                                   <div className="mx-auto flex w-full max-w-5xl flex-col px-4 py-4 md:px-6 md:py-6">
-                                    <AutomationsSection
+                                    <WorkflowsSection
                                       workspacePath={workspaceAbsPath}
                                       workspaceIdentity={workspaceIdentity}
-                                      onCreateViaChat={handleCreateAutomationInChat}
+                                      onCreateViaChat={handleCreateWorkflowViaChat}
                                       onNavigateToLaunchedRun={handleNavigateToLaunchedRun}
                                       onOpenWorkflowRun={handleOpenSavedWorkflowRun}
                                       onOpenWorkflowArtifact={handleOpenSavedWorkflowArtifact}
-                                      openAutomationId={openAutomationId}
-                                      openAutomationTab={openAutomationTab}
-                                      onOpenAutomationConsumed={onOpenAutomationConsumed}
                                       openWorkflow={openWorkflow}
                                       onOpenWorkflowConsumed={onOpenWorkflowConsumed}
-                                      onOpenSession={({
-                                        sessionId,
-                                        workspacePath,
-                                        workspaceIdentity,
-                                      }) =>
-                                        handleSelectTaskInChat(
-                                          workspacePath,
-                                          sessionId,
-                                          workspaceIdentity,
-                                        )
-                                      }
                                     />
                                   </div>
                                 </ScopedErrorBoundary>
                               </div>
-                            </AutomationsMainBreadcrumbFrame>
+                            </WorkspaceMainViewBreadcrumbFrame>
                           </main>
                         ) : workspaceMainView === "plugin-store" && !isWebRemoteControlShell ? (
                           <main className="flex h-full min-h-0 flex-1 flex-col bg-background">
-                            <AutomationsMainBreadcrumbFrame
+                            <WorkspaceMainViewBreadcrumbFrame
                               isDesktop={Boolean(isDesktop)}
                               sectionLabel={intl.formatMessage({
                                 id: "workspace.openPluginsSettings",
@@ -2807,7 +2766,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                                   />
                                 </div>
                               </div>
-                            </AutomationsMainBreadcrumbFrame>
+                            </WorkspaceMainViewBreadcrumbFrame>
                           </main>
                         ) : (
                           <main className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
@@ -2858,7 +2817,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                                 onOpenGitReview={handleOpenGitReview}
                                 onPaneActiveSessionChange={handlePaneActiveSessionChange}
                                 onOpenBrowserUrl={handleOpenBrowserUrl}
-                                onOpenAutomationsMain={handleOpenAutomations}
+                                onOpenWorkflowsMain={handleOpenWorkflows}
                                 onOpenCodeViewer={handleOpenCodeViewer}
                                 onAutoOpenAssistantPptx={
                                   isDesktop && !isWebRemoteControlShell
@@ -2895,7 +2854,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                     </section>
                   </ResizablePanel>
                   {isWebRemoteControlShell ||
-                  (workspaceMainView !== "automations" && workspaceMainView !== "plugin-store") ? (
+                  (workspaceMainView !== "workflows" && workspaceMainView !== "plugin-store") ? (
                     <AnimatedTerminalPanel
                       frameClassName={cn(
                         isSidePaneVisible
@@ -2926,7 +2885,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
                 </ResizablePanelGroup>
               </SidePaneFullViewConversationHost>
             </ResizablePanel>
-            {/* Bugfix：Browser Guest Host 必须与主视图路由解耦，避免 automations/plugin
+            {/* Bugfix：Browser Guest Host 必须与主视图路由解耦，避免 workflows/plugin
                     切换时卸载 Guest；截图请求期间由上层临时展开真实面板承载可合成的 WebContents。 */}
             {sidePanePanel}
           </ResizablePanelGroup>
@@ -2986,7 +2945,7 @@ const WorkspaceShellLayoutContent = memo(function WorkspaceShellLayoutComponent(
   );
   return (
     <DesktopWindowFrame
-      title={`ZCode / ${getPathLeaf(workspaceAbsPath)}`}
+      title={`Nekode / ${getPathLeaf(workspaceAbsPath)}`}
       showHeader
       isDesktop={isDesktop}
       isMacDesktop={isMacDesktop}

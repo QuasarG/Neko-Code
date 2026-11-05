@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { updateOffPeakToolPolicy } from "../src/zcode-protocol/off-peak-tool-policy.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 function makeContext() {
   return {
@@ -9,7 +9,7 @@ function makeContext() {
       modelIoFullRetentionEnabled: false,
       offPeakToolEnabled: false,
     },
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 describe("workspace/updateOffPeakToolPolicy（D49 workspace 级工具面门禁）", () => {

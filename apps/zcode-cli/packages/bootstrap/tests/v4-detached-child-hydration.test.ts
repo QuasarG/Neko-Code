@@ -35,8 +35,8 @@ import type {
 import { SessionEventType } from "@zcode/contracts";
 import { createConversationV4Gateway } from "../src/zcode-protocol/v4-bridge.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 
 type TestSessionStore = Awaited<ReturnType<typeof createSqliteSessionStore>>;
@@ -155,7 +155,7 @@ async function seedActorTranscriptPrefix(
  * contextWindow 解析用的 runtime 模型选择（getSessionModelSelection） 与 workspace。其余能力留空即可，
  * 缺失时 gateway 的 seed 钩子对 child 一律返回 null（child 本就没有 record）。
  */
-function makeBackingRecord(eventStore: SessionEventStorePort): ZCodeProtocolSessionRecord {
+function makeBackingRecord(eventStore: SessionEventStorePort): NekodeProtocolSessionRecord {
   return {
     app: {
       readToolResultArtifact: async () => ({ content: "" }),
@@ -178,13 +178,13 @@ function makeBackingRecord(eventStore: SessionEventStorePort): ZCodeProtocolSess
       workspaceKey: `local:${WORKSPACE_PATH}`,
       workspacePath: WORKSPACE_PATH,
     },
-  } as unknown as ZCodeProtocolSessionRecord;
+  } as unknown as NekodeProtocolSessionRecord;
 }
 
 function makeContext(input: {
-  sessions: Map<string, ZCodeProtocolSessionRecord>;
+  sessions: Map<string, NekodeProtocolSessionRecord>;
   store: TestSessionStore;
-}): ZCodeProtocolAgentServerContext {
+}): NekodeProtocolAgentServerContext {
   const context = {
     appRuntimePreferences: {
       askUserQuestionAutoResolutionEnabled: false,
@@ -198,7 +198,7 @@ function makeContext(input: {
     sessions: input.sessions,
     v4Interactions: { resolve: () => false },
     workspaceModelCatalogs: new Map(),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
   return context;
 }
 
@@ -281,7 +281,7 @@ describe("v4 detached live child 的首次订阅 hydration", () => {
     await seedActorTranscriptPrefix(store, CHILD_SESSION_ID, "actor");
 
     const eventStore = createInMemorySessionEventStore();
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([
       [PARENT_SESSION_ID, makeBackingRecord(eventStore)],
     ]);
     const context = makeContext({ sessions, store });
@@ -308,7 +308,7 @@ describe("v4 detached live child 的首次订阅 hydration", () => {
 
     const eventStore = createInMemorySessionEventStore();
     // 注册表里只有一个与本 child 无关的会话：parentID 查不到常驻 record。
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([
       [PARENT_SESSION_ID, makeBackingRecord(eventStore)],
     ]);
     const context = makeContext({ sessions, store });
@@ -329,7 +329,7 @@ describe("v4 detached live child 的首次订阅 hydration", () => {
 
     const ownEventStore = createInMemorySessionEventStore();
     const parentEventStore = createInMemorySessionEventStore();
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([
       [PARENT_SESSION_ID, makeBackingRecord(parentEventStore)],
       [CHILD_SESSION_ID, makeBackingRecord(ownEventStore)],
     ]);

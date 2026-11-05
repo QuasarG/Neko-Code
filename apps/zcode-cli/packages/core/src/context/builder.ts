@@ -14,13 +14,13 @@ import type { ToolRegistry } from "../tool/registry.js";
 import { estimateTokens } from "./utils.js";
 import { buildCliPrefixSection } from "./sections/cli-prefix.js";
 import { buildIdentitySection } from "./sections/identity.js";
+import { buildPersonaSection } from "./sections/persona.js";
 import { buildWorkflowActorIdentitySection } from "./sections/workflow-actor.js";
 import { buildEnvironmentSections, buildGitSystemContextSection } from "./sections/env-info.js";
 import { buildSkillsSection } from "./sections/skills.js";
+import { buildAgentListingSection } from "./sections/agent-listing.js";
 import { buildRequestUserContextSection } from "./sections/request-user-context.js";
-import { buildCurrentDateSection } from "./sections/current-date.js";
 import { buildMemorySection } from "./sections/memory.js";
-import { ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH } from "../memory/project-memory-retrieval-branch.js";
 import { buildDesktopContextSection } from "./sections/desktop.js";
 import {
   buildContextManagementSection,
@@ -120,9 +120,17 @@ export class ContextBuilder {
       sections.push(buildWorkflowActorIdentitySection(workflowActor, midConversationSystem));
     } else {
       sections.push(buildIdentitySection(activeOutputStyle, midConversationSystem));
+
+      // 人格包跟在通用 identity 之后：stable system message 的最后一段身份声明，
+      // 冲突时压过 CLI prefix 与通用 identity。custom prompt / 工作流子代理各自
+      // 定义身份，不叠加产品人格。
+      const personaSection = buildPersonaSection();
+      if (personaSection) {
+        sections.push(personaSection);
+      }
     }
 
-    // 环境与模型是运行时公告（meta_user），不进 system；使用自定义 prompt 时也照常发送。
+    // 环境与模型属于 harness 事实，随 dynamic system body 下发；使用自定义 prompt 时也照常发送。
     const environmentSections = buildEnvironmentSections(
       this.config.envInfo,
       this.config.model,
@@ -156,16 +164,18 @@ export class ContextBuilder {
       }
 
       // Memory
-      if (this.config.memoryRoot) {
-        const memorySection = buildMemorySection(
-          this.config.memoryRoot,
-          ACTIVE_PROJECT_MEMORY_RETRIEVAL_BRANCH,
-        );
+      if (this.config.memoryBooks && this.config.memoryBooks.length > 0) {
+        const memorySection = buildMemorySection(this.config.memoryBooks);
         if (memorySection) {
           sections.push(memorySection);
         }
       }
       sections.push(...environmentSections);
+
+      const agentListingSection = buildAgentListingSection(this.config.agentListing);
+      if (agentListingSection) {
+        sections.push(agentListingSection);
+      }
 
       // Context Management
       sections.push(buildContextManagementSection());
@@ -176,6 +186,10 @@ export class ContextBuilder {
       }
     } else {
       sections.push(...environmentSections);
+      const agentListingSection = buildAgentListingSection(this.config.agentListing);
+      if (agentListingSection) {
+        sections.push(agentListingSection);
+      }
     }
 
     // 4. Skills appear as a meta user system-reminder, matching provider block layout.
@@ -195,16 +209,9 @@ export class ContextBuilder {
     // 5. Meta user context（workspace instructions / project memory）；日期是其后的独立公告。
     const requestUserContextSection = buildRequestUserContextSection({
       userInstructions: this.config.userInstructions,
-      memoryIndexContent: this.config.memoryIndexContent,
-      memoryRoot: this.config.memoryRoot,
     });
     if (requestUserContextSection) {
       sections.push(requestUserContextSection);
-    }
-
-    const currentDateSection = buildCurrentDateSection(this.config.currentDate);
-    if (currentDateSection) {
-      sections.push(currentDateSection);
     }
 
     // 6. Custom sections
@@ -272,7 +279,7 @@ export class ContextBuilder {
     if (dynamicSystemContent) {
       messages.push({
         role: "system",
-        // ZCode by design：Main Agent 的 dynamic system block 自带左边界，所有 provider 保持一致。
+        // Nekode by design：Main Agent 的 dynamic system block 自带左边界，所有 provider 保持一致。
         content: `\n\n${dynamicSystemContent}`,
         cacheControl: EPHEMERAL_CACHE_CONTROL,
       });
@@ -282,15 +289,14 @@ export class ContextBuilder {
   }
 }
 
-// 环境、模型、日期由运行时按当前事实宣告；builder 只保留 section 作开关与用量统计。
+// 环境与模型已进入 system body；保留该集合避免旧调用把同名 section 折回 meta carrier。
 const RUNTIME_ANNOUNCED_SOURCES: ReadonlySet<ContextSection["source"]> = new Set([
   "env_info",
   "model",
-  "current_date",
 ]);
 
 export function buildMetaUserAttachments(sections: ContextSection[]): ContextMetaUserAttachment[] {
-  // 来源明确分流；不再把日期、环境和 Git 折进指令 carrier。
+  // 指令、skills、Git 已进入 system body；保留兼容映射供旧重建路径读取。
   const sourceMap: Partial<Record<ContextSection["source"], ContextMetaUserAttachment["source"]>> =
     {
       skills: "skills_listing",

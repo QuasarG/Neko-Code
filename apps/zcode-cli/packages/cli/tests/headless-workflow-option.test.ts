@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import type { ZCodeAppOptions } from "@zcode/bootstrap";
+import type { NekodeAppOptions } from "@zcode/bootstrap";
 import type { RunContext } from "@zcode/shared-types";
 import { run, type RunDependencies } from "../src/run.js";
 import { WORKFLOW_MODE_SCOPE_ERROR } from "../src/workflow-mode.js";
@@ -14,7 +14,7 @@ import { WORKFLOW_MODE_SCOPE_ERROR } from "../src/workflow-mode.js";
 function harness(argv: string[]) {
   let stdout = "";
   let stderr = "";
-  const appOptions: ZCodeAppOptions[] = [];
+  const appOptions: NekodeAppOptions[] = [];
   let protocolCalls = 0;
   const ctx: RunContext = {
     argv,
@@ -49,7 +49,7 @@ function harness(argv: string[]) {
     listCustomCommands: async () => ({ commands: [], diagnostics: [] }),
     startProcessProviderRegistryRuntime: async () =>
       ({ runtime: { registryService: {} }, dispose: () => {} }) as never,
-    createZCodeApp: (options) => {
+    createNekodeApp: (options) => {
       appOptions.push(options!);
       return {
         sessionId: "sess_workflow_option",
@@ -80,7 +80,7 @@ function harness(argv: string[]) {
       });
       return 0;
     },
-    runZCodeProtocolAgent: async (options) => {
+    runNekodeProtocolAgent: async (options) => {
       protocolCalls += 1;
       // stdio 只接收原有协议入口参数，工作流策略继续由 Host 决定。
       assert.equal("dynamicWorkflowEnabled" in options, false);
@@ -103,7 +103,7 @@ const PAIRS = {
   alwaysOn: { enabled: true, onDemand: false },
 } as const;
 
-function assertPair(options: ZCodeAppOptions, mode: keyof typeof PAIRS) {
+function assertPair(options: NekodeAppOptions, mode: keyof typeof PAIRS) {
   assert.equal(options.runtimeConfig?.dynamicWorkflowEnabled, PAIRS[mode].enabled);
   assert.equal(options.runtimeConfig?.dynamicWorkflowToolsOnDemand, PAIRS[mode].onDemand);
 }

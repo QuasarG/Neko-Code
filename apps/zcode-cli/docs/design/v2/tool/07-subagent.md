@@ -12,7 +12,7 @@
 | fork subagent | fork gate 开启且省略 `subagent_type` | 子 agent 继承父会话历史、system prompt 和精确 tool pool，用于 prompt cache 共享 |
 | background subagent | `run_in_background`、agent 定义 `background: true`、coordinator、assistant mode、fork gate 或 proactive 强制 | 立即返回 task 引用，完成后以通知重新进入主会话 |
 | worktree subagent | `isolation: "worktree"` 或 agent 定义自带 worktree isolation | 在临时 git worktree 中运行，完成后无变更自动清理，有变更保留路径和 branch |
-| remote agent | `isolation: "remote"` | 远程环境执行；ZCode 当前不支持 |
+| remote agent | `isolation: "remote"` | 远程环境执行；Nekode 当前不支持 |
 | teammate spawn | `team_name` 和 `name` 同时存在 | 这是 agent team/swarm，不是普通 subagent，应作为独立工具或独立模式处理 |
 
 关键边界：普通 subagent 不是 OS 子进程，而是在同一进程内创建新的子执行上下文，再运行新的 query loop。外部进程、tmux、in-process teammate 和 remote agent 属于 agent team 或 remote task 分支，不应和普通 subagent 混成一个概念。
@@ -42,7 +42,7 @@
 | `isolation` | `"worktree" \| "remote"` | subagent | `worktree` 创建临时 git worktree。`remote` 当前不支持 |
 | `cwd` | `string` | gated | 让子 agent 在指定 cwd 中运行。要求绝对路径，并且与 `isolation: "worktree"` 互斥 |
 
-ZCode 需要把 schema gating 做成能力协商结果，而不是在 tool 内散落 feature flag。`cwd` 的绝对路径和与 worktree 的互斥关系也应进入 `validateInput`，不能只放在 prompt description。
+Nekode 需要把 schema gating 做成能力协商结果，而不是在 tool 内散落 feature flag。`cwd` 的绝对路径和与 worktree 的互斥关系也应进入 `validateInput`，不能只放在 prompt description。
 
 ## 输出契约
 
@@ -81,7 +81,7 @@ ZCode 需要把 schema gating 做成能力协商结果，而不是在 tool 内�
 - 后台启动文案：首行带 "(This tool result is internal metadata — never quote or paste any part of it, including the agentId below, into a user-facing reply.)"，第三行说明结果到达前不得报告或猜测；无 output file 时以 "In your own words, briefly tell the user what you launched — do not echo this tool result. …" 结尾。有 output file 时给出 `output_file` 和不读取提示；提示不提 transcript，因为输出文件是子代理输出文本，不是 JSONL transcript。只有父 agent 拥有 `Read` 或 `Bash` 时才提示 output file。App 按 "Async agent launched successfully." 前缀等四个片段识别后台启动，新文案仍满足。
 - 后台终态通知（`<task-notification>`）：每个字段单独一行，顺序是 `task-id`、`tool-use-id`、`output-file`、`status`、`summary`、`note`、`result`、`usage`。只转义 `& < >`，引号和撇号原样保留。
   - `status` 只有 `completed`、`failed`、`killed` 三个值。
-  - summary：completed 是 `Agent "<description>" finished`；failed 是 `Agent "<description>" failed: <原因>`，原因为空或只有空白时写 `Unknown error`（结构化 error 相同）；killed 按停止者区分：模型用 TaskStop 停止是 `Agent "<description>" was stopped by ZCode`，用户在 App 里停止是 `… was stopped by user`，系统停止（rewind、闲时任务收尾等）是 `… was stopped`。
+  - summary：completed 是 `Agent "<description>" finished`；failed 是 `Agent "<description>" failed: <原因>`，原因为空或只有空白时写 `Unknown error`（结构化 error 相同）；killed 按停止者区分：模型用 TaskStop 停止是 `Agent "<description>" was stopped by Nekode`，用户在 App 里停止是 `… was stopped by user`，系统停止（rewind、闲时任务收尾等）是 `… was stopped`。
   - `<note>` 每条都有，固定文字：`A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.` child 结束时封存自己的后台通知，不会自己恢复，所以 completed 且还有后台子任务时也用这一句。
   - `<result>` 只在 completed 时出现，内容是原始报告。failed 和 killed 不带 `<result>`（暂不采集子 agent 已输出的部分文字）。
   - `<usage>` 只在 completed 时出现：`<usage><subagent_tokens>N</subagent_tokens><tool_uses>N</tool_uses><duration_ms>N</duration_ms></usage>`，缺的字段不输出。
@@ -92,7 +92,7 @@ ZCode 需要把 schema gating 做成能力协商结果，而不是在 tool 内�
 
 ## Agent 定义契约
 
-ZCode 的用户／项目自定义 Markdown 仅从各自 `agents` 根目录直接文件加载
+Nekode 的用户／项目自定义 Markdown 仅从各自 `agents` 根目录直接文件加载
 （`.md` / `.markdown`，大小写规则不变），不扫描子目录；独立 CLI、Host 和 Settings
 使用同一范围。插件 agent 继续遵循已有插件发现规则。详见根目录 `docs/subagent-runtime-refresh.md`。
 
@@ -118,7 +118,7 @@ agent definition 的核心字段：
 | `permissionMode` | agent 内部工具权限模式。普通 worker 默认使用 `acceptEdits` |
 | `maxTurns` | agent 内部 query loop 最大轮数 |
 | `skills` | 启动时预加载的 prompt skill |
-| `mcpServers` | child 可见的 parent MCP server 范围；设计上可支持引用或 inline config，ZCode 当前只接受 parent server name 列表 |
+| `mcpServers` | child 可见的 parent MCP server 范围；设计上可支持引用或 inline config，Nekode 当前只接受 parent server name 列表 |
 | `requiredMcpServers` | agent 可用性前置条件，必须有匹配 server 且有工具 |
 | `hooks` | agent 生命周期内注册的 session scoped hooks |
 | `background` | agent 总是后台运行 |
@@ -129,9 +129,9 @@ agent definition 的核心字段：
 
 加载优先级是 built-in、plugin、user、project、flag、managed 逐组覆盖，同名 agent 后面的源会覆盖前面的源。解析失败的 markdown 只在看起来像 agent 文件时进入 `failedFiles`。
 
-### ZCode AGENTS.md 注入契约
+### Nekode AGENTS.md 注入契约
 
-ZCode 的 custom agent Markdown 额外支持可选 frontmatter 字段 `injectAgentsMd: boolean`。它只控制 child request 是否注入父 runtime 已解析的 AGENTS.md，不改变 agent system prompt：
+Nekode 的 custom agent Markdown 额外支持可选 frontmatter 字段 `injectAgentsMd: boolean`。它只控制 child request 是否注入父 runtime 已解析的 AGENTS.md，不改变 agent system prompt：
 
 | Profile | `injectAgentsMd` 缺省行为 |
 | --- | --- |
@@ -270,7 +270,7 @@ child 运行时还会：
 
 ## Transcript 与 Resume
 
-ZCode 不再写入独立的 `transcript.jsonl` 文件。子 agent 的 messages/parts 与恢复所需 session state
+Nekode 不再写入独立的 `transcript.jsonl` 文件。子 agent 的 messages/parts 与恢复所需 session state
 由 session store（默认 SQLite）持久化；session event store 负责运行期事件排序、live sink 和
 进程内事件回放。任务 artifact 目录只保存 `output.txt`、`task.output` 和 `metadata.json`。
 
@@ -297,9 +297,9 @@ transcript sidecar。
 
 ## 权限与副作用
 
-如果 `Agent` 的只读声明固定为 `true`（理由是它只负责编排，实际副作用由子 agent 调用的底层工具做权限检查），对 tool framework 方便，但对 ZCode 的审计语义不够细。
+如果 `Agent` 的只读声明固定为 `true`（理由是它只负责编排，实际副作用由子 agent 调用的底层工具做权限检查），对 tool framework 方便，但对 Nekode 的审计语义不够细。
 
-ZCode 建议拆成两层声明：
+Nekode 建议拆成两层声明：
 
 | 维度 | 建议 |
 | --- | --- |
@@ -318,7 +318,7 @@ ZCode 建议拆成两层声明：
 - async agent 默认避免弹权限 prompt，除非 permission mode 是 `bubble` 或显式允许显示 prompt。
 - `AskUserQuestion` 在 subagent 内默认不可用，避免子 agent 直接向用户发起交互。
 
-ZCode 的权限系统应在 spawn 前生成 `SubagentPolicy` 快照，记录 agent type、allowed tools、permission mode、side effect scopes、是否允许 background、是否允许 resume、是否允许 worktree 和是否允许 user prompt。
+Nekode 的权限系统应在 spawn 前生成 `SubagentPolicy` 快照，记录 agent type、allowed tools、permission mode、side effect scopes、是否允许 background、是否允许 resume、是否允许 worktree 和是否允许 user prompt。
 
 ## Hooks、MCP、Skills
 
@@ -340,11 +340,11 @@ subagent 不是只跑模型和工具，还会触发扩展系统：
 - agent frontmatter hooks 注册为 session scoped hooks，并在 agent lifecycle 结束时清理。
 - agent Stop hooks 会以 `SubagentStop` 事件执行。
 - agent frontmatter `mcpServers` 设计上可在父 MCP clients 基础上 additive 合并，inline MCP client
-  结束时 cleanup；ZCode 当前 child 只借用 parent-owned MCP 连接，不创建 inline client。
+  结束时 cleanup；Nekode 当前 child 只借用 parent-owned MCP 连接，不创建 inline client。
 - plugin-only policy 下，用户可控 frontmatter MCP 和 hooks 会被跳过或限制。
 - `skills` 会在 agent 启动时解析并预加载为 meta user message；plugin skills 可通过 bare name、plugin prefix 或 suffix match 解析。
 
-ZCode 应把 hook/MCP/skill 都视为外部 I/O 或扩展边界，必须带 trace、权限、timeout、cleanup 和 source trust。
+Nekode 应把 hook/MCP/skill 都视为外部 I/O 或扩展边界，必须带 trace、权限、timeout、cleanup 和 source trust。
 
 ## 失败路径
 
@@ -371,7 +371,7 @@ ZCode 应把 hook/MCP/skill 都视为外部 I/O 或扩展边界，必须带 trac
 - session store 中 child history 缺失，resume 失败。
 - output file 或 task state 被 evict，`SendMessage` 不会仅凭磁盘 artifact 重新发现目标。
 
-## ZCode Explore MVP（历史基线）
+## Nekode Explore MVP（历史基线）
 
 本节记录最初 Explore MVP 的收窄范围，不再代表当前完整能力：
 
@@ -386,7 +386,7 @@ ZCode 应把 hook/MCP/skill 都视为外部 I/O 或扩展边界，必须带 trac
   payload 保留 `source: "subagent"`、`parentToolCallId`、`childSessionId`、`childToolCallId`、
   `agentId`、`agentType` 和 `description`。镜像事件不写入父 event store；事实来源仍是 child
   session 中已经持久化的原始事件，避免把 child tool 误计为父 agent 的模型可见工具调用。
-- ZCode Protocol V4 把 Agent/Task 详情统一放在 child session。父 ProductProjection 在 materialize
+- Nekode Protocol V4 把 Agent/Task 详情统一放在 child session。父 ProductProjection 在 materialize
   tool row 前必须丢弃 `source: "subagent"` 的 mirrored lifecycle，不能生成父 `ToolCallRow`、plan
   或文件摘要；child topic 仍按原始事件生成完整工具行。foreground child 的等待态由父 Agent tool
   和 main turn phase 表达，background child 由 subagent manifest/background work 表达；权限、提问等
@@ -409,7 +409,7 @@ ZCode 应把 hook/MCP/skill 都视为外部 I/O 或扩展边界，必须带 trac
 - 子 agent session history / task state 存储契约，支持 resume、kill、progress、notification 和 event replay。
 - hooks、MCP、skills、remote agent 等扩展边界的 capability、权限、timeout、cleanup、trace 声明。
 
-## ZCode 当前实现
+## Nekode 当前实现
 
 当前实现已经从最初 Explore MVP 扩展为 profile-backed local agent：
 
@@ -453,7 +453,7 @@ Child finish    -> no parent MCP cleanup
 
 - `to` 必须是当前 runtime `RuntimeTaskRegistry` 中仍可寻址的 `local_agent` task/agent id。当前不支持名称 alias、跨 runtime 投递，也不会在 task 已从 registry evict 后仅凭磁盘 artifact 重新发现目标。
 - provider-visible description 和字段说明只覆盖 local-agent 子集；teammate mailbox、shutdown、
-  plan approval 等 ZCode 未支持的 team protocol 不进入工具说明。
+  plan approval 等 Nekode 未支持的 team protocol 不进入工具说明。
 - 输入 schema（不支持跨会话消息）：`required` 为 `["to","message"]`；`summary` 可选，
   描述为 `A 5-10 word summary shown as a one-line preview in the UI. Defaults to the first line of a plain-text message; longer summaries are truncated to 200 characters rather than rejected.`，
   provider schema 声明 `maxLength: 200`，运行时超长不拒绝：超过 200 个 UTF-16 码元时保留前 199 个码元
@@ -464,7 +464,7 @@ Child finish    -> no parent MCP cleanup
 - queued 和 terminal resume 的模型可见成功文案分别固定为：
   `Message queued for delivery to ${to} at its next tool round.`；
   `Agent "${to}" was stopped (${status}); resumed it in the background with your message. You'll be notified when it finishes. Output: ${outputFile}`。
-  `steered` 是 ZCode 的 active-turn 扩展，保持现有独立文案。
+  `steered` 是 Nekode 的 active-turn 扩展，保持现有独立文案。
 - terminal resume 继续只发布 `SubagentSpawned(background=true, resumed=true)`；V4 在同一次投影中
   复用原 `agentId` / `childSessionId` 恢复 running row 和 cancellable background work，并保留原
   `Agent` tool call 的 `parentToolCallId` 作为 row 展示锚点。不得用本次 `SendMessage` call id 覆盖，
@@ -499,7 +499,7 @@ Child finish    -> no parent MCP cleanup
 - display 从 handler 原始 output 生成，通过 live `tool_call_result.result.display` 下发，并写入 completed tool part 的 versioned metadata，不能混入 hook additional context。
 - Desktop/Web 展示规范见 `docs/ui/tool-display-rendering.md`；CLI TUI 的暂缓适配和验收条件记录在 [Tool Change Chain](./00-tool-change-chain.md) 的 `TODO(TUI display parity)`。
 
-## ZCode 设计结论
+## Nekode 设计结论
 
 第一版不建议把 `SubagentTool` 直接写成一个巨型工具。应拆成一组稳定接口：
 

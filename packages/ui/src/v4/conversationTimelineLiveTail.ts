@@ -1,45 +1,7 @@
-import type { BotTopicPreparation } from "@zcode/shared";
-import type { ConversationRow } from "@zcode/shared/zcode-protocol-v4";
 import {
-  sameItems,
   type ConversationTurnRenderUnit,
   type ConversationTurnRenderUnitsPartition,
 } from "@/v4/conversationTurnRenderUnits.js";
-import { withTopicPreparationMessages } from "@/v4/topicPreparationRenderUnits.js";
-
-// 准备消息挂在历史末项上时（尾轮为空）的结果，按 history 数组缓存：同一份材料复用同一个数组，
-// 下游按 history 引用缓存的派生不会每次失效。
-const topicPreparationHistories = new WeakMap<
-  readonly ConversationTurnRenderUnit[],
-  {
-    pending: readonly BotTopicPreparation[];
-    history: readonly ConversationTurnRenderUnit[];
-  }
->();
-
-/**
- * bot 话题准备消息挂在全部 unit 的最后一个上，结果与对 history ++ tail 调用
- * withTopicPreparationMessages 相同。没有准备中的材料时结果必为空，直接返回、不扫描 rows
- * （流式帧的常见情况）；有材料时只在 bot 话题准备期间按整窗计算。
- */
-export function withTopicPreparationUnits(
-  units: ConversationTurnRenderUnitsPartition,
-  rows: readonly ConversationRow[],
-  items: readonly BotTopicPreparation[],
-): ConversationTurnRenderUnitsPartition {
-  if (items.length === 0) return units;
-  const all = [...units.history, ...units.tail];
-  const merged = withTopicPreparationMessages(all, rows, items);
-  if (merged === all) return units;
-  if (units.tail.length > 0 || units.history.length === 0) {
-    return { history: units.history, tail: merged.slice(units.history.length) };
-  }
-  const pending = merged.at(-1)?.topicPreparations ?? [];
-  const cached = topicPreparationHistories.get(units.history);
-  if (cached && sameItems(cached.pending, pending)) return { history: cached.history, tail: [] };
-  topicPreparationHistories.set(units.history, { pending, history: merged });
-  return { history: merged, tail: [] };
-}
 
 export interface ConversationTimelineLiveTailSplit {
   virtualizedUnits: readonly ConversationTurnRenderUnit[];

@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import React, { act } from "react";
 import { testRender } from "@mbears/opentui-react/test-utils";
-import { getZCodeCopy } from "@zcode/i18n";
+import { getNekodeCopy } from "@zcode/i18n";
 import { TuiApp } from "../src/app.js";
 import { LoginRequiredPanel } from "../src/app-components.js";
-import { ZCODE_LOGO_LINES } from "../src/app-empty-transcript.js";
+import { NEKODE_LOGO_LINES } from "../src/app-empty-transcript.js";
 import { InputPane } from "../src/app-input-pane.js";
 import { InputActiveStatus } from "../src/app-input-status.js";
 import { QueuedInputPanel } from "../src/app-queued-inputs.js";
@@ -46,8 +46,8 @@ test("starts without a runtime readiness system message", async () => {
     assert.ok(view);
     const frame = view.captureCharFrame();
     const rows = frame.split("\n");
-    const firstLogoRow = rows.findIndex((row) => row.includes(ZCODE_LOGO_LINES[0]));
-    const lastLogoRow = rows.findIndex((row) => row.includes(ZCODE_LOGO_LINES.at(-1) ?? ""));
+    const firstLogoRow = rows.findIndex((row) => row.includes(NEKODE_LOGO_LINES[0]));
+    const lastLogoRow = rows.findIndex((row) => row.includes(NEKODE_LOGO_LINES.at(-1) ?? ""));
     const composerTopRow = rows.findIndex((row) => row.includes("╭─ Build"));
     const logoCenterRow = Math.floor((firstLogoRow + lastLogoRow) / 2);
     const transcriptCenterRow = Math.floor((composerTopRow - 1) / 2);
@@ -70,7 +70,7 @@ test("places the login notice before the prompt input in the composer area", () 
       busy: false,
       contentWidth: 80,
       contextUsage: {},
-      copy: getZCodeCopy("en-US").tui,
+      copy: getNekodeCopy("en-US").tui,
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
@@ -99,7 +99,7 @@ test("places composer selections above the prompt input", () => {
       busy: false,
       contentWidth: 80,
       contextUsage: {},
-      copy: getZCodeCopy("en-US").tui,
+      copy: getNekodeCopy("en-US").tui,
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
@@ -140,7 +140,7 @@ test("passes the busy active status outside the prompt input", () => {
       busy: true,
       contentWidth: 80,
       contextUsage: { contextUsed: 11_100, contextWindow: 185_000 },
-      copy: getZCodeCopy("en-US").tui,
+      copy: getNekodeCopy("en-US").tui,
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,
@@ -173,7 +173,7 @@ test("places queued input panel immediately above the prompt input", () => {
       busy: true,
       contentWidth: 80,
       contextUsage: {},
-      copy: getZCodeCopy("en-US").tui,
+      copy: getNekodeCopy("en-US").tui,
       draft: "",
       editorRef: { current: null },
       inputCursorToEndVersion: 0,

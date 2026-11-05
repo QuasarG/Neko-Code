@@ -30,7 +30,7 @@ Bash read-only 判定按多层 policy table 与执行器组合设计，而不是
 - 写入/执行选项拒绝表：拒绝 `find -delete/-exec/...` 这类会写入或执行的选项。
 - 路径目标、读写类型、redirect 和 git internal path 等更宽的 permission 语义由独立层处理。
 
-ZCode 当前先实现 Bash read-only auto-allow 所需的核心子集：AST 安全检查、simple command 限制、命令级 `safeFlags`、参数类型校验、短 flag 组合、`--flag=value`、`--` 处理、`find` 写语义拒绝。后续扩展其他命令时必须只改 policy table，不在执行器里追加命令名特判。
+Nekode 当前先实现 Bash read-only auto-allow 所需的核心子集：AST 安全检查、simple command 限制、命令级 `safeFlags`、参数类型校验、短 flag 组合、`--flag=value`、`--` 处理、`find` 写语义拒绝。后续扩展其他命令时必须只改 policy table，不在执行器里追加命令名特判。
 
 `sed` 的表达式属于另一套脚本语言；原来的 `-i` 和 `w` 黑名单漏掉了执行/写入形式。
 只读判定改为完整脚本白名单，不使用危险指令黑名单。解析器只消费既有 AST argv：

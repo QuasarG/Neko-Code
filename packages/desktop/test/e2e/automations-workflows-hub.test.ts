@@ -54,7 +54,7 @@ import { readDynamicWorkflowGrayMockStatus } from "#e2e/helpers/dynamic-workflow
 import { startDraftFromProject } from "#e2e/helpers/project-sidebar";
 
 const WORKFLOW_NAME = "release-check";
-const WORKFLOWS_DIR = join(DEFAULT_WORKSPACE, ".zcode", "workflows");
+const WORKFLOWS_DIR = join(DEFAULT_WORKSPACE, ".nekode", "workflows");
 const WORKFLOW_FILE = join(WORKFLOWS_DIR, `${WORKFLOW_NAME}.dwf.ts`);
 const EDITED_DESCRIPTION = "发布前检查（E2E 已编辑）";
 // 脚本正文：元数据编辑只改文件顶部的 frontmatter，这一段必须逐字节保留（不变式 4）。
@@ -127,7 +127,7 @@ async function clickRunSidePaneControl(currentTestId: string): Promise<void> {
 /**
  * 已保存工作流中枢「列表 → 详情 → 改元数据 → 删除」端到端（docs/dynamic-workflow/launch.md）。
  *
- * 只碰 UI + 项目目录里的 `.zcode/workflows/`：不发送 prompt、不依赖模型回放，因此是确定性的。
+ * 只碰 UI + 项目目录里的 `.nekode/workflows/`：不发送 prompt、不依赖模型回放，因此是确定性的。
  * 「运行」走对话的用例在 conversation-session/ 下单独立案（需要回放 provider）。
  */
 describe("已保存工作流中枢 E2E", () => {
@@ -160,7 +160,7 @@ describe("已保存工作流中枢 E2E", () => {
       timeoutMsg: "自动化页标题没有「工作流」切换",
     });
 
-    // 2) 全局视图按项目分组：默认工作区（folder 名 ZCodeProject）自成一组，组头带名字，
+    // 2) 全局视图按项目分组：默认工作区（folder 名 NekodeProject）自成一组，组头带名字，
     //    组内「通过对话创建」按钮带以 workspaceKey 收尾的 test id。
     //    group / create 的 test id 后缀是 workspaceKey（本地通常 = workspacePath），但
     //    resolveWorkspaceKey 若对本地路径做归一化（大小写 / 去尾斜杠 / realpath）后缀就不等于
@@ -194,9 +194,9 @@ describe("已保存工作流中枢 E2E", () => {
     );
     const seen = groupInfo as GroupHeaderInfo | null;
     expect(seen?.groupTestId?.startsWith(TID_WORKFLOW_PROJECT_GROUP)).toBe(true);
-    expect(seen?.text).toContain("ZCodeProject");
+    expect(seen?.text).toContain("NekodeProject");
     expect(seen?.createTestId?.startsWith(testId(TID_WORKFLOWS_CREATE_VIA_CHAT, ""))).toBe(true);
-    expect(seen?.createTestId).toContain("ZCodeProject");
+    expect(seen?.createTestId).toContain("NekodeProject");
 
     // 3) 预置文件以卡片出现：名字 + frontmatter 里的说明。
     const cardTestId = testId(TID_WORKFLOW_CARD, WORKFLOW_NAME);
@@ -215,7 +215,7 @@ describe("已保存工作流中枢 E2E", () => {
     await waitForTestIdByDom(TID_WORKFLOW_DETAIL_PROJECT, {
       timeoutMsg: "详情页标题旁没有项目归属小标",
     });
-    expect(await readTestIdText(TID_WORKFLOW_DETAIL_PROJECT)).toBe("ZCodeProject");
+    expect(await readTestIdText(TID_WORKFLOW_DETAIL_PROJECT)).toBe("NekodeProject");
     const crumbs = (await browser.execute(() => {
       const nav = document.querySelector('[data-testid="automations-main-drag-region"] nav');
       return nav
@@ -278,12 +278,12 @@ describe("已保存工作流中枢 E2E", () => {
 
 // ── 全局工作流：置顶「全局」组 + 全局→项目搬文件 + 项目→全局 AI 概括（docs/dynamic-workflow/launch.md）──
 // E2E_HOME_DIR 由 wdio 配置设为隔离目录并写进 HOME（wdio.conf.ts:520），app / agent 进程都继承它，
-// 因此 agent 的 os.homedir() 解析到这里，全局根 = `<E2E_HOME>/.zcode/workflows/`。
+// 因此 agent 的 os.homedir() 解析到这里，全局根 = `<E2E_HOME>/.nekode/workflows/`。
 const E2E_HOME = dirname(DEFAULT_WORKSPACE);
 const GLOBAL_WORKFLOW_NAME = "global-note";
-const GLOBAL_WORKFLOWS_DIR = join(E2E_HOME, ".zcode", "workflows");
+const GLOBAL_WORKFLOWS_DIR = join(E2E_HOME, ".nekode", "workflows");
 const GLOBAL_WORKFLOW_FILE = join(GLOBAL_WORKFLOWS_DIR, `${GLOBAL_WORKFLOW_NAME}.dwf.ts`);
-const GLOBAL_PROJECT_WORKFLOWS_DIR = join(DEFAULT_WORKSPACE, ".zcode", "workflows");
+const GLOBAL_PROJECT_WORKFLOWS_DIR = join(DEFAULT_WORKSPACE, ".nekode", "workflows");
 const GLOBAL_PROJECT_WORKFLOW_FILE = join(
   GLOBAL_PROJECT_WORKFLOWS_DIR,
   `${GLOBAL_WORKFLOW_NAME}.dwf.ts`,
@@ -412,7 +412,7 @@ describe("全局工作流中枢 E2E", () => {
 });
 
 // ── 直接启动：中枢「运行」→ 新会话顶部启动卡（docs/dynamic-workflow/launch.md）─────────
-// 与前两组一样只碰 UI + 项目目录里的 `.zcode/workflows/`，且刻意用**无 agent()/模型调用**的
+// 与前两组一样只碰 UI + 项目目录里的 `.nekode/workflows/`，且刻意用**无 agent()/模型调用**的
 // 常量工作流：run 的子代理一个都不起，因此整条路（建会话 → startSavedWorkflow → run 结算）
 // 都不需要 provider 回放，skipProvider 下即可跑到 completed。run 终态之后会触发既有的完成
 // 通知回合（那一跳才第一次要模型），本组**刻意断言到启动卡 completed 为止**，不依赖模型——

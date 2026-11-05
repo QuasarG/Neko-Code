@@ -1,27 +1,27 @@
-import type { IZCodeSessionService, IZCodeTaskService } from "@zcode/services";
+import type { INekodeSessionService, INekodeTaskService } from "@zcode/services";
 import type {
-  ZCodeConfigOption,
+  NekodeConfigOption,
   ModelSelection,
-  ZCodeSessionStateSnapshot,
-  ZCodeTaskSnapshot,
+  NekodeSessionStateSnapshot,
+  NekodeTaskSnapshot,
 } from "@zcode/shared";
 import {
   zcodeSessionSettingsToConfigOptions,
-  zcodeSessionSnapshotToZCodeTaskSnapshot,
+  zcodeSessionSnapshotToNekodeTaskSnapshot,
 } from "@/lib/zcodeSessionProjection.js";
-import { normalizeZCodeUiError, type ZCodeUiError } from "@/lib/zcodeUiError.js";
+import { normalizeNekodeUiError, type NekodeUiError } from "@/lib/zcodeUiError.js";
 import { logger } from "@/logger.js";
 
-export type ZCodeSessionRestoreService = Pick<
-  IZCodeSessionService,
+export type NekodeSessionRestoreService = Pick<
+  INekodeSessionService,
   "readSession" | "resumeSession"
 >;
-export type ZCodeLegacyTaskSnapshotRestoreService = Pick<IZCodeTaskService, "getTaskSnapshot">;
+export type NekodeLegacyTaskSnapshotRestoreService = Pick<INekodeTaskService, "getTaskSnapshot">;
 
 export interface DesktopContinuousSessionRestoreSnapshot {
-  snapshot: ZCodeTaskSnapshot;
-  restoreWarning?: ZCodeUiError;
-  resumedSessionSnapshot?: ZCodeSessionStateSnapshot;
+  snapshot: NekodeTaskSnapshot;
+  restoreWarning?: NekodeUiError;
+  resumedSessionSnapshot?: NekodeSessionStateSnapshot;
   usedLegacySnapshot?: boolean;
 }
 
@@ -35,7 +35,7 @@ function isRuntimeModelUnavailableError(error: unknown): boolean {
     typeof error === "object" &&
     error !== null &&
     "code" in error &&
-    error.code === "ZCODE_RUNTIME_MODEL_UNAVAILABLE"
+    error.code === "NEKODE_RUNTIME_MODEL_UNAVAILABLE"
   );
 }
 
@@ -61,7 +61,7 @@ function getRuntimeModelUnavailableDiagnostics(error: unknown): Record<string, u
   };
 }
 
-function getSessionSnapshotDiagnostics(snapshot: ZCodeSessionStateSnapshot) {
+function getSessionSnapshotDiagnostics(snapshot: NekodeSessionStateSnapshot) {
   return {
     activeTurnId: snapshot.runtime.activeTurnId ?? null,
     eventSeq: snapshot.runtime.eventSeq,
@@ -73,8 +73,8 @@ function getSessionSnapshotDiagnostics(snapshot: ZCodeSessionStateSnapshot) {
 }
 
 export async function readDesktopContinuousSessionRestoreSnapshot(params: {
-  zcodeSessionService: ZCodeSessionRestoreService;
-  zcodeTaskService?: ZCodeLegacyTaskSnapshotRestoreService;
+  zcodeSessionService: NekodeSessionRestoreService;
+  zcodeTaskService?: NekodeLegacyTaskSnapshotRestoreService;
   workspacePath: string;
   workspaceIdentity?: string;
   sessionId: string;
@@ -85,7 +85,7 @@ export async function readDesktopContinuousSessionRestoreSnapshot(params: {
   // Bugfix: session/read 只能读取 runtime 里的活跃 session。
   // 历史 task 首次打开时必须先 resume 激活，再按 desktop continuous 读取限流快照。
   const startedAt = Date.now();
-  let resumedSessionSnapshot: ZCodeSessionStateSnapshot;
+  let resumedSessionSnapshot: NekodeSessionStateSnapshot;
   try {
     const resumeStartedAt = Date.now();
     resumedSessionSnapshot = await params.zcodeSessionService.resumeSession({
@@ -156,8 +156,8 @@ export async function readDesktopContinuousSessionRestoreSnapshot(params: {
       snapshot: legacySnapshot,
       ...(runtimeModelUnavailable
         ? {
-            restoreWarning: normalizeZCodeUiError(error, {
-              fallbackCode: "ZCODE_RUNTIME_MODEL_UNAVAILABLE",
+            restoreWarning: normalizeNekodeUiError(error, {
+              fallbackCode: "NEKODE_RUNTIME_MODEL_UNAVAILABLE",
               taskId: params.sessionId,
             }),
           }
@@ -175,7 +175,7 @@ export async function readDesktopContinuousSessionRestoreSnapshot(params: {
   });
   const readDurationMs = Date.now() - readStartedAt;
   const projectionStartedAt = Date.now();
-  const snapshot = zcodeSessionSnapshotToZCodeTaskSnapshot(readSessionSnapshot);
+  const snapshot = zcodeSessionSnapshotToNekodeTaskSnapshot(readSessionSnapshot);
   logger.info("[zcodeSessionRestore] desktop readSession 快照转换完成", {
     durationMs: Date.now() - startedAt,
     messageLimit: params.messageLimit ?? null,
@@ -197,13 +197,13 @@ export async function readDesktopContinuousSessionRestoreSnapshot(params: {
 }
 
 export async function readWebRemoteReplayableSessionConfigOptions(params: {
-  zcodeSessionService: ZCodeSessionRestoreService;
+  zcodeSessionService: NekodeSessionRestoreService;
   workspacePath: string;
   workspaceIdentity?: string;
   sessionId: string;
   model?: ModelSelection;
   thoughtLevel?: string;
-}): Promise<ZCodeConfigOption[] | null> {
+}): Promise<NekodeConfigOption[] | null> {
   const startedAt = Date.now();
   try {
     if (params.model) {

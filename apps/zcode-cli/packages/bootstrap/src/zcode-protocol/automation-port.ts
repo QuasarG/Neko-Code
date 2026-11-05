@@ -14,12 +14,12 @@ import {
   zcodeAutomationPauseResultSchema,
   zcodeAutomationUpdateResultSchema,
   zcodeProtocolMethods,
-  type ZCodeAutomationProtocol,
+  type NekodeAutomationProtocol,
 } from "@zcode/shared";
 import {
   ProtocolRequestError,
-  type ZCodeProtocolAgentServerContext,
-  type ZCodeProtocolSessionRecord,
+  type NekodeProtocolAgentServerContext,
+  type NekodeProtocolSessionRecord,
 } from "./server-types.js";
 
 export const AUTOMATION_CREATE_FROM_AUTOMATION_RUN_ERROR =
@@ -33,11 +33,11 @@ export const AUTOMATION_CREATE_BOUND_SESSION_CHECK_ERROR =
   "Cannot verify whether this session belongs to a scheduled task. Try again later.";
 
 export function createProtocolAutomationPort(
-  context: ZCodeProtocolAgentServerContext,
+  context: NekodeProtocolAgentServerContext,
   // 归属会话解析器：automation-port 是按 session 构造的，直接绑定「自己所服务的 session
   // record」。避免依赖 context.sessions 查找——V4/desktop 会话未必登记在该 legacy map 里，
   // 之前会导致 activeSession 命中失败、权限/思考等级丢失（模型有 createContext 兜底才幸存）。
-  resolveOwnSession?: () => ZCodeProtocolSessionRecord | undefined,
+  resolveOwnSession?: () => NekodeProtocolSessionRecord | undefined,
 ): AutomationPort {
   // 共享连接不能借用首个工作区；包括只有 automationId 或空参数的列表请求。
   const requestClient: typeof context.requestClient = (...args) => {
@@ -142,9 +142,6 @@ export function createProtocolAutomationPort(
             ...(runtimeModelSelection ? { modelSelection: runtimeModelSelection } : {}),
             ...(runtimeMode ? { mode: runtimeMode === "auto" ? "build" : runtimeMode } : {}),
             ...(createContext?.sessionId ? { targetTaskId: createContext.sessionId } : {}),
-            ...(activeSession?.activeBotDeliveryTarget
-              ? { botDeliveryTarget: activeSession.activeBotDeliveryTarget }
-              : {}),
             ...(hasIntervalCarrier
               ? {
                   // 新建 carrier 不透传有限上限；create 协议没有 maxRuns=null 清除语义。
@@ -245,7 +242,7 @@ export function createProtocolAutomationPort(
 }
 
 function normalizeCronAutomationMode(
-  mode: ZCodeAutomationProtocol["mode"],
+  mode: NekodeAutomationProtocol["mode"],
 ): CronAutomation["mode"] {
   switch (mode) {
     case undefined:
@@ -271,7 +268,7 @@ function normalizeCronAutomationMode(
   }
 }
 
-function toCronAutomation(input: ZCodeAutomationProtocol): CronAutomation {
+function toCronAutomation(input: NekodeAutomationProtocol): CronAutomation {
   return {
     automationId: input.automationId,
     title: input.title,

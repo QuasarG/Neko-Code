@@ -21,7 +21,7 @@ import {
 
 const MARKER = "E2E_SSH_THREE_SCREEN";
 const alias = "rdux10-first-connect";
-const artifactDir = resolve(process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/three-screen");
+const artifactDir = resolve(process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/three-screen");
 
 async function clickButton(text: string) {
   await browser.waitUntil(
@@ -139,7 +139,7 @@ describe(`${MARKER}: 设置分类添加与连接反馈`, () => {
       ).version;
       expect(await $('[data-testid="remote-install-version"]').getText()).toBe(releaseVersion);
       expect(await $('[data-testid="remote-install-path"]').getText()).toBe(
-        `/home/${config.username}/.zcode/server`,
+        `/home/${config.username}/.nekode/server`,
       );
       expect(
         await browser.execute(() =>

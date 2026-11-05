@@ -4,7 +4,7 @@ import { TID_V4_COMPOSER_BACKGROUND_WORK_TRIGGER } from "@zcode/shared/test-ids"
 import type { BackgroundWorkSummary } from "@zcode/shared/zcode-protocol-v4";
 import { Button } from "@/components/ui/button.js";
 import { ControlHintTooltip } from "@/ControlHintTooltip.js";
-import { useZCodeIntl } from "@/i18n/IntlProvider.js";
+import { useNekodeIntl } from "@/i18n/IntlProvider.js";
 
 export interface ComposerBackgroundWorkCounts {
   bashCount: number;
@@ -56,7 +56,7 @@ function ConversationBackgroundWorkTriggerImpl({
   onOpen,
   openTarget = "panel",
 }: ConversationBackgroundWorkTriggerProps) {
-  const { intl } = useZCodeIntl();
+  const { intl } = useNekodeIntl();
   const counts = useMemo(
     () =>
       getComposerBackgroundWorkCounts(backgroundWorks, runningSubagentCount),

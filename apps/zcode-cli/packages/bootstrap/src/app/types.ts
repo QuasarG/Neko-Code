@@ -37,7 +37,6 @@ import type {
   ModelToolCall,
   ModelUsage,
   OffPeakPort,
-  TopicResourcePort,
   PdfDocumentPort,
   PermissionBrokerPort,
   PluginLoadOutcome,
@@ -94,8 +93,8 @@ import type {
 import type {
   BackgroundBashOutputResult,
   SubagentRuntimeConfig,
-  ZCodeModelOption,
-  ZCodeToolExecResource,
+  NekodeModelOption,
+  NekodeToolExecResource,
 } from "@zcode/shared";
 import type { McpAppsToolVisibility } from "@zcode/shared/mcp-apps";
 import type { EffectiveModelSelectionResult } from "@zcode/shared/model-selection";
@@ -104,12 +103,12 @@ import type {
   WorkspaceHookTrustRevokeTarget,
 } from "@zcode/shared/zcode-protocol-v4";
 import type { ModelProviderSourceTitle } from "../model-config.js";
-import type { ZCodeInstalledPluginData } from "../plugins.js";
+import type { NekodeInstalledPluginData } from "../plugins.js";
 import type { SessionTranscriptMessage } from "../session-transcript.js";
 import type { NodeReplBrowserBroker } from "./node-repl-browser-broker.js";
 import type { ProviderRegistryModelSource } from "./provider-registry-model-runtime.js";
 import type { WorkspaceHookReviewCommandResult } from "./workspace-hook-review-controller.js";
-export type { ZCodeModelOption } from "@zcode/shared";
+export type { NekodeModelOption } from "@zcode/shared";
 
 export interface WorkspaceHookReviewHostContext {
   taskId: string;
@@ -132,9 +131,9 @@ export type RevokeWorkspaceHookTrustInput =
   | WorkspaceHookTrustRevokeTarget;
 
 /** 新 Session 可使用 Environment 默认选择；恢复 Session 允许保持未绑定，不补默认模型。 */
-export type ZCodeAppRuntimeConfigInput = AgentRuntimeConfig;
+export type NekodeAppRuntimeConfigInput = AgentRuntimeConfig;
 
-export interface ZCodeAppOptions {
+export interface NekodeAppOptions {
   /** 独立 CLI 的配置菜单编辑输入默认值；其他装配保留显式 Session 配置语义。 */
   modelSelectionMode?: "cli-default";
   /** Host 在运行实例创建时传入，运行中不刷新。 */
@@ -143,7 +142,7 @@ export interface ZCodeAppOptions {
   resume?: boolean;
   version?: string;
   traceContext?: TraceContext;
-  runtimeConfig?: ZCodeAppRuntimeConfigInput;
+  runtimeConfig?: NekodeAppRuntimeConfigInput;
   /**
    * stdio 协议模式的 agent 进程由 Electron host 拉起，模型服务需要看到 electron 来源。
    * 普通 CLI 不传，继续使用 cli 默认值。
@@ -187,7 +186,7 @@ export interface ZCodeAppOptions {
     workspace: { workspacePath: string; workspaceIdentity?: string },
   ) => Promise<Record<string, string>>;
   /** 资源遥测旁路；由协议宿主注入，主任务和 workflow 的执行适配器共用。 */
-  onToolExecResource?: (sample: ZCodeToolExecResource) => void;
+  onToolExecResource?: (sample: NekodeToolExecResource) => void;
   /** browser-use 控制端口；注入后 node_repl 的 agent.browsers.* 可用。缺省则不可用。 */
   browserControlPort?: BrowserControlPort;
   /** 可由协议宿主注入的进程级 node_repl Browser broker；缺省时 app 自建并拥有。 */
@@ -217,7 +216,6 @@ export interface ZCodeAppOptions {
   onWorkflowEvent?: (event: WorkflowEvent) => void | Promise<void>;
   automationPort?: AutomationPort;
   offPeakPort?: OffPeakPort;
-  topicResourcePort?: TopicResourcePort;
   /** 首次真实用户执行或 cold-resume fallback 时解析一次，之后由 app 生命周期缓存。 */
   resolveInitialBashShellSelection?: () => Promise<ExecutionShellSelection | undefined>;
   /** Trusted embedder policy; workspace/project files cannot populate this field. */
@@ -306,15 +304,15 @@ export interface ResumeOptions {
   persistedMessages?: MessageWithParts[];
 }
 
-export interface ZCodePluginSetResult {
+export interface NekodePluginSetResult {
   enabled: boolean;
   path: string;
   plugin: PluginMetadata;
 }
 
-export interface ZCodePluginUninstallResult {
+export interface NekodePluginUninstallResult {
   // null 表示该 plugin id 当前未安装（幂等 no-op），调用方据此提示"未安装"。
-  removed: ZCodeInstalledPluginData | null;
+  removed: NekodeInstalledPluginData | null;
 }
 
 export interface SetLocaleResult {
@@ -325,7 +323,7 @@ export interface SetLocaleResult {
   traceId: TraceContext["traceId"];
 }
 
-export interface ZCodeApp {
+export interface NekodeApp {
   readonly sessionId: SessionId;
   readonly traceId: string;
   readonly runtime: AgentRuntime;
@@ -356,9 +354,9 @@ export interface ZCodeApp {
   getMode(): CollaborationMode;
   getModel(): string;
   /** current-only 协议快照精确读取当前 Registry 模型，避免枚举整个目录。 */
-  getCurrentModelOption?(): ZCodeModelOption | undefined;
+  getCurrentModelOption?(): NekodeModelOption | undefined;
   /** 只读 Registry 元数据；不要求选项完整，也不绑定执行模型。 */
-  getModelOption?(selection: ModelSelection): ZCodeModelOption | undefined;
+  getModelOption?(selection: ModelSelection): NekodeModelOption | undefined;
   getLocale(): SupportedLocale;
   getTheme(): UiThemePreference;
   getDefaultThoughtLevel(): string | undefined;
@@ -367,7 +365,7 @@ export interface ZCodeApp {
   readSubagents(input?: {
     endedCursor?: string;
     endedLimit?: number;
-  }): Promise<import("@zcode/shared").ZCodeSessionSubagentsResult>;
+  }): Promise<import("@zcode/shared").NekodeSessionSubagentsResult>;
   readSubagentTranscript(
     childSessionId: string,
   ): Promise<import("./subagent-observation.js").SubagentTranscriptSnapshot>;
@@ -419,11 +417,11 @@ export interface ZCodeApp {
     kind?: InputHistoryKind,
   ): Promise<InputHistoryEntry | null>;
   recallPreviousInputHistory(skip?: number): Promise<InputHistoryEntry | null>;
-  listModels(): ZCodeModelOption[];
+  listModels(): NekodeModelOption[];
   listThoughtLevels(): string[];
   listPlugins(): Promise<PluginLoadOutcome>;
-  setPluginEnabled(plugin: string, enabled: boolean): Promise<ZCodePluginSetResult>;
-  uninstallPlugin(plugin: string): Promise<ZCodePluginUninstallResult>;
+  setPluginEnabled(plugin: string, enabled: boolean): Promise<NekodePluginSetResult>;
+  uninstallPlugin(plugin: string): Promise<NekodePluginUninstallResult>;
   /**
    * Session 冻结的 Plugin 身份 catalog。
    * 在 App 创建时由 resolveStartupPlugins 结果构建一次，之后只读；
@@ -840,7 +838,7 @@ export interface ResolveLatestSessionOptions {
   sessionStore?: SessionStorePort;
 }
 
-export interface RunZCodeProtocolAgentOptions {
+export interface RunNekodeProtocolAgentOptions {
   /** 入口拥有退出时限；bootstrap 只编排取消和资源清理，不直接退出进程。 */
   lifecycle?: {
     readonly signal: AbortSignal;
@@ -858,7 +856,7 @@ export interface RunZCodeProtocolAgentOptions {
   version?: string;
 }
 
-export interface ListZCodeSessionsOptions {
+export interface ListNekodeSessionsOptions {
   directory?: string;
   env?: NodeJS.ProcessEnv;
   limit?: number;

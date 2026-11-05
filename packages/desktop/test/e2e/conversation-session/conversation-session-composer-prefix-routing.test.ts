@@ -104,15 +104,15 @@ describe("会话区 Composer 前缀提示路由 E2E", () => {
 
     // S01 语义：`@` 固定按 plugins → files → sessions → whiteboards 路由；
     // 当前 query 只命中 Plugin，选中后仍写入既有 canonical plugin:// markdown。
-    // 默认启用的官方纯内容插件 skill-creator 作为确定性候选；选中写入 canonical plugin:// markdown。
-    await setComposerText("@skill-creator");
+    // 默认启用的官方纯内容插件 zcode-guide 作为确定性候选；选中写入 canonical plugin:// markdown。
+    await setComposerText("@zcode-guide");
     const atPluginPanel = await waitForPanelSections("@", ["plugins"], "@ plugin 候选面板没有打开");
     // 展示名称随语言变化；下方仍精确校验选中的 canonical plugin 标识。
-    expect(optionTexts(atPluginPanel).join("\n")).toMatch(/skill-creator|技能创建器/u);
+    expect(optionTexts(atPluginPanel).join("\n")).toMatch(/zcode-guide|Nekode 使用指南/u);
     assertPanelExcludesSections(atPluginPanel, ["commands", "subagents", "skills"]);
     await browser.keys("Enter");
     await waitForComposerMarkdownContaining(
-      "plugin://skill-creator@zcode-plugins-official",
+      "plugin://zcode-guide@zcode-plugins-official",
       "@ plugin 候选 Enter 后没有写入 canonical plugin mention markdown",
     );
 
@@ -188,15 +188,15 @@ async function seedPromptCatalogFiles(seed: {
 }) {
   const files: Array<[string, string]> = [
     [
-      join(DEFAULT_WORKSPACE, ".zcode", "commands", `${seed.commandName}.md`),
+      join(DEFAULT_WORKSPACE, ".nekode", "commands", `${seed.commandName}.md`),
       `---\ndescription: E2E prefix command\nargument-hint: [topic]\n---\nPrefix fixture $ARGUMENTS.\n`,
     ],
     [
-      join(DEFAULT_WORKSPACE, ".zcode", "skills", seed.skillName, "SKILL.md"),
+      join(DEFAULT_WORKSPACE, ".nekode", "skills", seed.skillName, "SKILL.md"),
       `---\nname: ${seed.skillName}\ndescription: E2E prefix skill\n---\nUse only for prefix routing.\n`,
     ],
     [
-      join(DEFAULT_WORKSPACE, ".zcode", "agents", `${seed.subagentName}.md`),
+      join(DEFAULT_WORKSPACE, ".nekode", "agents", `${seed.subagentName}.md`),
       `---\nname: ${seed.subagentName}\ndescription: E2E prefix subagent\ntools: Read\n---\nUse only for prefix routing.\n`,
     ],
   ];

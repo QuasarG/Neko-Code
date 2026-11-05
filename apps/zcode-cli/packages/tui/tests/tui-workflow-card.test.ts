@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { SessionEventType, createSessionEvent, type SessionEvent } from "@zcode/contracts";
-import { getZCodeCopy } from "@zcode/i18n";
+import { getNekodeCopy } from "@zcode/i18n";
 import { WORKFLOW_RUNS_LIMITS } from "@zcode/shared/zcode-protocol-v4";
 import {
   EMPTY_TUI_WORKFLOW_MIRROR,
@@ -21,7 +21,7 @@ import {
   workflowRunSeedFromSummary,
 } from "../src/app-workflow-seed.js";
 
-const COPY = getZCodeCopy("en-US").tui;
+const COPY = getNekodeCopy("en-US").tui;
 const RUN_ID = "dwfrun-1";
 const TOOL_CALL_ID = "tc-1";
 
@@ -563,7 +563,7 @@ test("a replayed stopped run renders its real facts after a cold start", () => {
 test("both locales render the card without leaking raw copy keys", () => {
   const card = buildTuiWorkflowCardIndex(startedMirror()).get(TOOL_CALL_ID)!;
   for (const locale of ["en-US", "zh-CN"] as const) {
-    const copy = getZCodeCopy(locale).tui;
+    const copy = getNekodeCopy(locale).tui;
     const text = renderCardText(WorkflowRunCardView({ card, copy, expanded: true })).join("\n");
     assert.ok(text.length > 0, `${locale} rendered nothing`);
     assert.doesNotMatch(text, /undefined/u, `${locale} leaked undefined`);
@@ -617,7 +617,7 @@ test("both locales render a notice without leaking raw keys", () => {
   for (const locale of ["en-US", "zh-CN"] as const) {
     const text = workflowInterruptedNoticeText(
       { runId: "dwfrun-1", label: "L" },
-      getZCodeCopy(locale).tui,
+      getNekodeCopy(locale).tui,
     );
     assert.ok(text.length > 0);
     assert.doesNotMatch(text, /undefined|\[object Object\]/u);

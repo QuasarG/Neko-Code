@@ -6,14 +6,14 @@ import { join, resolve } from "node:path";
 import type { HttpClientPort, HttpClientResponse, SessionEvent } from "@zcode/contracts";
 import {
   createCliOAuthClient,
-  createSharedZCodeCredentialStore,
-  SHARED_ZCODE_CREDENTIAL_KEYS as keys,
+  createSharedNekodeCredentialStore,
+  SHARED_NEKODE_CREDENTIAL_KEYS as keys,
 } from "@zcode/adapters/auth";
 import { NodePersonalProviderConfigRepository } from "@zcode/provider-node";
 import {
-  loginZCodeCli,
+  loginNekodeCli,
   loginBigmodelCodingPlan,
-  type LoginZCodeCliOptions,
+  type LoginNekodeCliOptions,
 } from "../../bootstrap/src/auth-login.js";
 import { startProcessProviderRegistryRuntime } from "../../bootstrap/src/app/process-provider-registry-runtime.js";
 import { listRegistryBackedModels } from "../../bootstrap/src/app/provider-registry-selection.js";
@@ -71,15 +71,15 @@ async function fixture(t: TestContext, providerId: "zai" | "bigmodel" = "bigmode
   await personal.update((current) => current);
   personal.dispose();
   const env = {
-    ZCODE_DATA_BASE_DIR: dir,
-    ZCODE_CREDENTIAL_SECRET: "test-encryption-key",
-    ZCODE_BUILTIN_PROVIDER_CONFIG_FILE: resolve(
+    NEKODE_DATA_BASE_DIR: dir,
+    NEKODE_CREDENTIAL_SECRET: "test-encryption-key",
+    NEKODE_BUILTIN_PROVIDER_CONFIG_FILE: resolve(
       import.meta.dirname,
       "../../../../../config/provider/zcode-builtin.json",
     ),
-    ZCODE_PERSONAL_PROVIDER_CONFIG_FILE: personalFile,
+    NEKODE_PERSONAL_PROVIDER_CONFIG_FILE: personalFile,
   };
-  const store = createSharedZCodeCredentialStore({ env });
+  const store = createSharedNekodeCredentialStore({ env });
   let now = 1_000_000;
   const sleeps: number[] = [];
   const requests: Parameters<HttpClientPort["request"]>[0][] = [];
@@ -92,7 +92,7 @@ async function fixture(t: TestContext, providerId: "zai" | "bigmodel" = "bigmode
       now += ms;
     },
     poll: async (_signal?: AbortSignal): Promise<HttpClientResponse> => response(ready(providerId)),
-    options: {} as LoginZCodeCliOptions,
+    options: {} as LoginNekodeCliOptions,
   };
   const httpClient: HttpClientPort = {
     async request(request, options) {
@@ -137,7 +137,7 @@ async function fixture(t: TestContext, providerId: "zai" | "bigmodel" = "bigmode
         assert.ok(options?.signal);
         return TEST_PROJECT_MATERIAL;
       },
-    } as unknown as LoginZCodeCliOptions["apiKeyResolver"],
+    } as unknown as LoginNekodeCliOptions["apiKeyResolver"],
   };
   return f;
 }
@@ -164,7 +164,7 @@ for (const providerId of ["zai", "bigmodel"] as const) {
     const result =
       providerId === "bigmodel"
         ? await loginBigmodelCodingPlan(f.options)
-        : await loginZCodeCli(f.options);
+        : await loginNekodeCli(f.options);
     assert.equal(result.providerId, providerId);
     assert.equal(result.user.user_id, "test-account");
     assert.equal(attempts, 5);
@@ -303,7 +303,7 @@ test("cancellation during API key resolution does not save the login", async (t)
           controller.abort(new Error("cancel before save"));
           return TEST_PROJECT_MATERIAL;
         },
-      } as unknown as LoginZCodeCliOptions["apiKeyResolver"],
+      } as unknown as LoginNekodeCliOptions["apiKeyResolver"],
     }),
     /cancel before save/,
   );
@@ -363,7 +363,7 @@ test(
         cwd: () => process.cwd(),
         skipUserConfig: true,
         loadDotenv: () => ({ keys: [], loaded: false, path: "" }),
-        createZCodeApp: async () => app,
+        createNekodeApp: async () => app,
         startProcessProviderRegistryRuntime: async () => runtime,
         loginBigmodelCodingPlan: (options: Parameters<typeof loginBigmodelCodingPlan>[0]) =>
           loginBigmodelCodingPlan({
@@ -473,30 +473,17 @@ test(
   },
 );
 
-test("standalone login accepts provider selection and keeps authorization URL out of JSON stdout", async () => {
+test("standalone login reports that account login is unavailable", async () => {
   let stdout = "";
   let stderr = "";
-  let selected = "";
+  let loginCalled = false;
   const deps = {
     env: {},
     cwd: () => process.cwd(),
     loadDotenv: () => ({ keys: [], loaded: false, path: "" }),
-    loginZCodeCli: async (options: LoginZCodeCliOptions) => {
-      selected = options.providerId!;
-      assert.equal(options.noBrowser, true);
-      await options.onAuthorizeUrl?.({
-        authorize_url: authorizeUrl,
-        expires_at: 12345,
-        flow_id: "flow",
-        poll_interval_sec: 1,
-      });
-      return {
-        providerId: "bigmodel",
-        user: { user_id: "test-account" },
-        model: "provider/model",
-        configPath: "test-config",
-        credentialsPath: "test-credentials",
-      };
+    loginNekodeCli: async () => {
+      loginCalled = true;
+      throw new Error("login must not be called");
     },
   } as unknown as RunDependencies;
   const context = {
@@ -512,9 +499,8 @@ test("standalone login accepts provider selection and keeps authorization URL ou
     },
   } as unknown as Parameters<typeof runLoginCommand>[0];
   const options = { json: true } as Parameters<typeof runLoginCommand>[1];
-  assert.equal(await runLoginCommand(context, options, deps, true, ["bigmodel"]), 0);
-  assert.equal(selected, "bigmodel");
-  assert.equal(JSON.parse(stdout).provider, "bigmodel");
-  assert.match(stderr, /login\.example\.test/);
-  assert.doesNotMatch(stdout, /authorize/);
+  assert.equal(await runLoginCommand(context, options, deps, true, ["bigmodel"]), 1);
+  assert.equal(loginCalled, false);
+  assert.equal(stdout, "");
+  assert.match(stderr, /Account login is not available in this build/);
 });

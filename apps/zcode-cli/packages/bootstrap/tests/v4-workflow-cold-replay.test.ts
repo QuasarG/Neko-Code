@@ -25,8 +25,8 @@ import type {
 import { SessionEventType } from "@zcode/contracts";
 import { createConversationV4Gateway } from "../src/zcode-protocol/v4-bridge.js";
 import type {
-  ZCodeProtocolAgentServerContext,
-  ZCodeProtocolSessionRecord,
+  NekodeProtocolAgentServerContext,
+  NekodeProtocolSessionRecord,
 } from "../src/zcode-protocol/server-types.js";
 
 type TestSessionStore = Awaited<ReturnType<typeof createSqliteSessionStore>>;
@@ -93,7 +93,7 @@ function makeRecord(
   replay?: (input: {
     excludeRunIds: ReadonlySet<string>;
   }) => Promise<DynamicWorkflowRunProgressPayload[]>,
-): ZCodeProtocolSessionRecord {
+): NekodeProtocolSessionRecord {
   return {
     app: {
       readToolResultArtifact: async () => ({ content: "" }),
@@ -112,14 +112,14 @@ function makeRecord(
     stateRevision: 1,
     updatedAt: 0,
     workspace: { workspaceKey: `local:${WORKSPACE_PATH}`, workspacePath: WORKSPACE_PATH },
-  } as unknown as ZCodeProtocolSessionRecord;
+  } as unknown as NekodeProtocolSessionRecord;
 }
 
 function makeContext(input: {
-  sessions: Map<string, ZCodeProtocolSessionRecord>;
+  sessions: Map<string, NekodeProtocolSessionRecord>;
   store: TestSessionStore;
   warnings: string[];
-}): ZCodeProtocolAgentServerContext {
+}): NekodeProtocolAgentServerContext {
   return {
     appRuntimePreferences: {
       askUserQuestionAutoResolutionEnabled: false,
@@ -141,7 +141,7 @@ function makeContext(input: {
     sessions: input.sessions,
     v4Interactions: { resolve: () => false },
     workspaceModelCatalogs: new Map(),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 async function subscribeWorkflowRuns(
@@ -203,7 +203,7 @@ describe("v4 冷物化 · dwf run 的冷回放", () => {
       excludeSeen.push([...excludeRunIds]);
       return [...replayedRun("dwfrun-old", "stopped"), ...replayedRun("dwfrun-done", "completed")];
     });
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
     const context = makeContext({ sessions, store, warnings });
     const gateway = createConversationV4Gateway(context);
     context.v4Gateway = gateway;
@@ -239,7 +239,7 @@ describe("v4 冷物化 · dwf run 的冷回放", () => {
       replayCalls += 1;
       return replayedRun("dwfrun-old", "completed");
     });
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
     const context = makeContext({ sessions, store, warnings });
     const gateway = createConversationV4Gateway(context);
     context.v4Gateway = gateway;
@@ -278,7 +278,7 @@ describe("v4 冷物化 · dwf run 的冷回放", () => {
     const record = makeRecord(eventStore, async () => {
       throw new Error("journal exploded");
     });
-    const sessions = new Map<string, ZCodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
+    const sessions = new Map<string, NekodeProtocolSessionRecord>([[PARENT_SESSION_ID, record]]);
     const context = makeContext({ sessions, store, warnings });
     const gateway = createConversationV4Gateway(context);
     context.v4Gateway = gateway;

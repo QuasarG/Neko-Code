@@ -32,7 +32,7 @@ import { openWorkspaceDraftFromSidebar } from "../helpers/workspace-agent-warmup
 
 const CASE_MARKER = "E2E_R3_MODEL_CANDIDATES";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-model-candidates",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-model-candidates",
 );
 const LOCAL_ONLY_PROVIDER_ID = "e2e-r3-local-only";
 const LOCAL_ONLY_LABEL = "R3 Local Only Provider";
@@ -280,7 +280,7 @@ describe(`${CASE_MARKER}: 远端 tab 候选读目标远端（离线不 fallback 
     expect(hasLocalOnly(remoteOffline)).toBe(false);
     const remoteConfigOffline = await runSSHCommand(
       prepared.config,
-      `grep -c "${LOCAL_ONLY_PROVIDER_ID}" "$HOME/.zcode/v2/provider_config.json" || true`,
+      `grep -c "${LOCAL_ONLY_PROVIDER_ID}" "$HOME/.nekode/v2/provider_config.json" || true`,
     );
     const remoteConfigHasLocalOnlyWhileOffline =
       Number.parseInt(remoteConfigOffline.stdout.trim() || "0", 10) > 0;
@@ -319,7 +319,7 @@ describe(`${CASE_MARKER}: 远端 tab 候选读目标远端（离线不 fallback 
       async () => {
         const result = await runSSHCommand(
           prepared.config,
-          `grep -c "${LOCAL_ONLY_PROVIDER_ID}" "$HOME/.zcode/v2/provider_config.json" || true`,
+          `grep -c "${LOCAL_ONLY_PROVIDER_ID}" "$HOME/.nekode/v2/provider_config.json" || true`,
         );
         return Number.parseInt(result.stdout.trim() || "0", 10) > 0;
       },

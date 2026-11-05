@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ZCode Sites start.sh for a Python web server. Runs in the foreground on 0.0.0.0:3000.
+# Nekode Sites start.sh for a Python web server. Runs in the foreground on 0.0.0.0:3000.
 # Dependencies must already be in ./vendor (linux x86-64 wheels for Python 3.12); never install here.
 set -euo pipefail
 cd "$(dirname "${BASH_SOURCE[0]}")"

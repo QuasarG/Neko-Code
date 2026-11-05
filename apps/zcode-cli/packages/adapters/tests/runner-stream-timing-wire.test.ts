@@ -116,7 +116,7 @@ function harness(kind: "anthropic" | "openai-compatible" = "anthropic") {
   const status: ModelNetworkStatusEvent[] = [];
   const visible: Array<{ at: number; event: ModelStreamEvent }> = [];
   const adapter = new TestAiSdkModelAdapter({
-    env: { ZCODE_RUNTIME_ENV: "test" },
+    env: { NEKODE_RUNTIME_ENV: "test" },
     registry: new TestProviderConfigFixture({
       env: {},
       providers: {

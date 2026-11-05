@@ -127,12 +127,12 @@ vi.mock("../src/app/official-plugin-seed-lock.js", async (importOriginal) => {
 
 import { resolveOfficialPluginRoots } from "../src/app/bundled-plugins.js";
 import { OFFICIAL_PLUGIN_DEFINITIONS } from "../src/app/official-plugin-definitions.js";
-import { resolveZCodePlugins } from "../src/plugins.js";
+import { resolveNekodePlugins } from "../src/plugins.js";
 
 const OFFICIAL_CACHE_ROOT = join("cache", "zcode-plugins-official");
 const BROWSER_CACHE_SUFFIX = join(OFFICIAL_CACHE_ROOT, "browser-use", "0.5.1");
 const ANDROID_CACHE_SUFFIX = join(OFFICIAL_CACHE_ROOT, "android-emulator", "0.1.0");
-const SKILL_CREATOR_CACHE_SUFFIX = join(OFFICIAL_CACHE_ROOT, "skill-creator", "0.1.0");
+const BUILTIN_PLUGIN_CACHE_SUFFIX = join(OFFICIAL_CACHE_ROOT, "zcode-guide", "0.3.0");
 const ANDROID_MANIFEST_SUFFIX = join(ANDROID_CACHE_SUFFIX, ".zcode-plugin", "plugin.json");
 const CUA_DEFINITION = OFFICIAL_PLUGIN_DEFINITIONS.find(({ name }) => name === "computer-use");
 if (!CUA_DEFINITION) throw new Error("computer-use official plugin definition is missing");
@@ -166,7 +166,7 @@ describe("bundled official plugin cache resilience", () => {
     expect(() => resolveOfficialPluginRoots({ logger, storageRoot })).not.toThrow();
 
     expect(existsSync(join(storageRoot, BROWSER_CACHE_SUFFIX))).toBe(false);
-    expect(existsSync(join(storageRoot, SKILL_CREATOR_CACHE_SUFFIX))).toBe(true);
+    expect(existsSync(join(storageRoot, BUILTIN_PLUGIN_CACHE_SUFFIX))).toBe(true);
     expect(logger.warn).toHaveBeenCalledWith(
       "Official plugin cache operation degraded",
       expect.objectContaining({
@@ -185,7 +185,7 @@ describe("bundled official plugin cache resilience", () => {
     faults.promoteTargetSuffix = BROWSER_CACHE_SUFFIX;
 
     expect(() =>
-      resolveZCodePlugins({
+      resolveNekodePlugins({
         logger,
         pluginStorageRoot: storageRoot,
         skipUserConfig: true,
@@ -246,7 +246,7 @@ describe("bundled official plugin cache resilience", () => {
     const currentRoot = join(storageRoot, BROWSER_CACHE_SUFFIX);
     const staleRoot = join(dirname(currentRoot), "0.2.1");
     await rename(currentRoot, staleRoot);
-    await rm(join(storageRoot, SKILL_CREATOR_CACHE_SUFFIX), { force: true, recursive: true });
+    await rm(join(storageRoot, BUILTIN_PLUGIN_CACHE_SUFFIX), { force: true, recursive: true });
     // 入口目录旁只有一份缺 dist/docs/skills 的 browser-use 拷贝（升级中的桌面包、
     // 未构建 dist 的旧 checkout）；其余插件继续从真实 monorepo 源解析。
     const entrypointRoot = join(storageRoot, "stale-entrypoint");
@@ -267,7 +267,7 @@ describe("bundled official plugin cache resilience", () => {
     expect(roots).toContain(staleRoot);
     // 残缺源绝不能落成当前版本缓存（会永久命中 hash），也不能拖垮其他插件的 seeding。
     expect(existsSync(currentRoot)).toBe(false);
-    expect(existsSync(join(storageRoot, SKILL_CREATOR_CACHE_SUFFIX))).toBe(true);
+    expect(existsSync(join(storageRoot, BUILTIN_PLUGIN_CACHE_SUFFIX))).toBe(true);
     const marketplace = JSON.parse(
       await readFile(
         join(storageRoot, "marketplaces", "zcode-plugins-official", "marketplace.json"),
@@ -279,7 +279,7 @@ describe("bundled official plugin cache resilience", () => {
       "Official plugin cache operation degraded",
       expect.objectContaining({
         degraded: true,
-        errorCode: "ZCODE_PLUGIN_SEED_INCOMPLETE",
+        errorCode: "NEKODE_PLUGIN_SEED_INCOMPLETE",
         // browser-use 不再携带 node_repl 宿主产物（那是 node-repl-host 的），
         // 它自己必需的运行时资产是 browser-client。
         missingSeedPaths: expect.arrayContaining(["scripts/browser-client.mjs"]),
@@ -302,9 +302,9 @@ describe("bundled official plugin cache resilience", () => {
     process.argv[1] = join(entrypointRoot, "zcode.cjs");
     const logger = createLogger();
 
-    let outcome!: ReturnType<typeof resolveZCodePlugins>;
+    let outcome!: ReturnType<typeof resolveNekodePlugins>;
     expect(() => {
-      outcome = resolveZCodePlugins({
+      outcome = resolveNekodePlugins({
         logger,
         pluginStorageRoot: storageRoot,
         skipUserConfig: true,
@@ -334,7 +334,7 @@ describe("bundled official plugin cache resilience", () => {
     expect(logger.warn).toHaveBeenCalledWith(
       "Official plugin cache operation degraded",
       expect.objectContaining({
-        errorCode: "ZCODE_PLUGIN_SEED_INCOMPLETE",
+        errorCode: "NEKODE_PLUGIN_SEED_INCOMPLETE",
         operation: "seed_plugin",
         pluginId: "browser-use@zcode-plugins-official",
       }),
@@ -368,7 +368,7 @@ describe("bundled official plugin cache resilience", () => {
       "Official plugin cache operation degraded",
       expect.objectContaining({
         degraded: true,
-        errorCode: "ZCODE_PLUGIN_SEED_LOCK_TIMEOUT",
+        errorCode: "NEKODE_PLUGIN_SEED_LOCK_TIMEOUT",
         operation: "seed_plugin",
         pluginId: "browser-use@zcode-plugins-official",
       }),
@@ -378,7 +378,7 @@ describe("bundled official plugin cache resilience", () => {
   it("shares one seed lock wait budget across all plugins", async () => {
     const storageRoot = await createStorageRoot(cleanups);
     expect(resolveOfficialPluginRoots({ storageRoot })).toEqual([]);
-    for (const cacheSuffix of [BROWSER_CACHE_SUFFIX, SKILL_CREATOR_CACHE_SUFFIX]) {
+    for (const cacheSuffix of [BROWSER_CACHE_SUFFIX, BUILTIN_PLUGIN_CACHE_SUFFIX]) {
       const lockRoot = `${join(storageRoot, cacheSuffix)}.seed-lock`;
       await mkdir(lockRoot, { recursive: true });
       await writeFile(
@@ -386,7 +386,7 @@ describe("bundled official plugin cache resilience", () => {
         JSON.stringify({ createdAt: new Date().toISOString(), pid: process.pid }),
       );
     }
-    faults.seedLockHeldTargetSuffixes = [BROWSER_CACHE_SUFFIX, SKILL_CREATOR_CACHE_SUFFIX];
+    faults.seedLockHeldTargetSuffixes = [BROWSER_CACHE_SUFFIX, BUILTIN_PLUGIN_CACHE_SUFFIX];
 
     expect(() => resolveOfficialPluginRoots({ storageRoot })).not.toThrow();
 
@@ -413,7 +413,7 @@ describe("bundled official plugin cache resilience", () => {
     const logger = createLogger();
     faults.seedLockHeldTargetSuffixes = [BROWSER_CACHE_SUFFIX];
 
-    const outcome = resolveZCodePlugins({
+    const outcome = resolveNekodePlugins({
       logger,
       pluginStorageRoot: storageRoot,
       skipUserConfig: true,
@@ -423,7 +423,7 @@ describe("bundled official plugin cache resilience", () => {
     expect(logger.warn).toHaveBeenCalledWith(
       "Official plugin cache operation degraded",
       expect.objectContaining({
-        errorCode: "ZCODE_PLUGIN_SEED_LOCK_TIMEOUT",
+        errorCode: "NEKODE_PLUGIN_SEED_LOCK_TIMEOUT",
         operation: "seed_plugin",
         pluginId: "browser-use@zcode-plugins-official",
       }),
@@ -482,7 +482,7 @@ describe("bundled official plugin cache resilience", () => {
     faults.crossDeviceBackupTargetSuffix = BROWSER_CACHE_SUFFIX;
 
     expect(() =>
-      resolveZCodePlugins({
+      resolveNekodePlugins({
         logger,
         pluginStorageRoot: storageRoot,
         skipUserConfig: true,
@@ -626,17 +626,17 @@ describe("bundled official plugin cache resilience", () => {
     const storageRoot = await createStorageRoot(cleanups);
     resolveOfficialPluginRoots({ storageRoot });
     const logger = createLogger();
-    faults.removeTargetSuffix = SKILL_CREATOR_CACHE_SUFFIX;
+    faults.removeTargetSuffix = BUILTIN_PLUGIN_CACHE_SUFFIX;
 
     expect(() =>
       resolveOfficialPluginRoots({
         logger,
         storageRoot,
-        suppressedBuiltins: new Set(["skill-creator@zcode-plugins-official"]),
+        suppressedBuiltins: new Set(["zcode-guide@zcode-plugins-official"]),
       }),
     ).not.toThrow();
 
-    expect(existsSync(join(storageRoot, SKILL_CREATOR_CACHE_SUFFIX))).toBe(true);
+    expect(existsSync(join(storageRoot, BUILTIN_PLUGIN_CACHE_SUFFIX))).toBe(true);
     const marketplace = JSON.parse(
       await readFile(
         join(storageRoot, "marketplaces", "zcode-plugins-official", "marketplace.json"),
@@ -645,7 +645,7 @@ describe("bundled official plugin cache resilience", () => {
     ) as { plugins: Array<{ name: string }> };
     // 现行契约：suppressedBuiltins 只控制 runtime discovery。catalog/cache 是恢复入口
     // 的不可变资产，不应触发删除；注入的 EPERM 因而不会被命中，也不产生降级告警。
-    expect(marketplace.plugins.some((plugin) => plugin.name === "skill-creator")).toBe(true);
+    expect(marketplace.plugins.some((plugin) => plugin.name === "zcode-guide")).toBe(true);
     expect(logger.warn).not.toHaveBeenCalledWith(
       "Official plugin cache operation degraded",
       expect.objectContaining({ operation: "remove_suppressed_plugin" }),

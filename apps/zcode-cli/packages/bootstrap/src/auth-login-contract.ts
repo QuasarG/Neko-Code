@@ -5,18 +5,18 @@ import type {
   CliOAuthInitData,
   CliOAuthPollData,
   CliOAuthUser,
-  SharedZCodeCredentialStore,
+  SharedNekodeCredentialStore,
 } from "@zcode/adapters";
 import type { EnvRecord } from "@zcode/adapters/model";
 
 export type CodingPlanProviderId = "bigmodel" | "zai";
 
-export interface LoginZCodeCliOptions {
+export interface LoginNekodeCliOptions {
   providerId?: CodingPlanProviderId;
   abortSignal?: AbortSignal;
   apiKeyResolver?: ReturnType<typeof createCodingPlanApiKeyResolver>;
   baseUrl?: string;
-  credentialStore?: SharedZCodeCredentialStore;
+  credentialStore?: SharedNekodeCredentialStore;
   env?: EnvRecord;
   httpClient?: Parameters<typeof createCliOAuthClient>[0]["httpClient"];
   noBrowser?: boolean;
@@ -31,7 +31,7 @@ export interface LoginZCodeCliOptions {
   personalProviderConfigPath?: string;
 }
 
-export interface LoginZCodeCliResult {
+export interface LoginNekodeCliResult {
   browser?: BrowserOpenResult;
   configPath: string;
   credentialsPath: string;
@@ -41,12 +41,12 @@ export interface LoginZCodeCliResult {
 }
 
 // BigModel 与 Z.ai 共用服务端轮询登录，只是 providerId 固定为 bigmodel。
-export type LoginBigmodelCodingPlanOptions = Omit<LoginZCodeCliOptions, "providerId">;
-export type LoginBigmodelCodingPlanResult = LoginZCodeCliResult & { providerId: "bigmodel" };
+export type LoginBigmodelCodingPlanOptions = Omit<LoginNekodeCliOptions, "providerId">;
+export type LoginBigmodelCodingPlanResult = LoginNekodeCliResult & { providerId: "bigmodel" };
 
 export interface ConfigureCodingPlanApiKeyOptions {
   apiKey: string;
-  credentialStore?: SharedZCodeCredentialStore;
+  credentialStore?: SharedNekodeCredentialStore;
   env?: EnvRecord;
   personalProviderConfigPath?: string;
   providerId: CodingPlanProviderId;
@@ -58,16 +58,16 @@ export interface ConfigureCodingPlanApiKeyResult {
   providerId: CodingPlanProviderId;
 }
 
-export interface LogoutZCodeCliOptions {
-  credentialStore?: SharedZCodeCredentialStore;
+export interface LogoutNekodeCliOptions {
+  credentialStore?: SharedNekodeCredentialStore;
   env?: EnvRecord;
 }
 
-export interface LogoutZCodeCliResult {
+export interface LogoutNekodeCliResult {
   credentialsPath: string;
 }
 
-export class ZCodeCliLoginError extends Error {
+export class NekodeCliLoginError extends Error {
   readonly code:
     | "auth_failed"
     | "auth_timeout"
@@ -75,12 +75,12 @@ export class ZCodeCliLoginError extends Error {
     | "credential_write_failed";
 
   constructor(
-    code: ZCodeCliLoginError["code"],
+    code: NekodeCliLoginError["code"],
     message: string,
     options: { cause?: unknown } = {},
   ) {
     super(message, options);
-    this.name = "ZCodeCliLoginError";
+    this.name = "NekodeCliLoginError";
     this.code = code;
   }
 }

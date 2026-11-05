@@ -99,8 +99,8 @@ const enUS: Record<string, string> = {
     "Projects on this computer can be restored later from Removed projects on this page.",
   "projectManagement.confirm.restoreRemote":
     "To bring back a remote project later, add it again from its device.",
-  "projectManagement.confirm.data.option": "Also delete their ZCode data",
-  "projectManagement.confirm.data.optionOne": "Also delete its ZCode data",
+  "projectManagement.confirm.data.option": "Also delete their Nekode data",
+  "projectManagement.confirm.data.optionOne": "Also delete its Nekode data",
   "projectManagement.confirm.data.note":
     "Sessions, session files, checkpoints and memory of the {count} projects on this computer.",
   "projectManagement.confirm.data.noteOne":
@@ -182,8 +182,8 @@ const enUS: Record<string, string> = {
   "project.hasUnread": "Project has unread tasks",
   "project.projectOrder": "Project order",
   "project.taskOrder": "Task order",
-  "project.browseHint": "ZCode can read and edit these folders",
-  "project.connectAndBrowseHint": "Device status: {status}. ZCode connects first.",
+  "project.browseHint": "Nekode can read and edit these folders",
+  "project.connectAndBrowseHint": "Device status: {status}. Nekode connects first.",
   "project.selectHost": "Choose a remote connection",
   "project.back": "Back",
   "project.next": "Next",
@@ -196,7 +196,7 @@ const enUS: Record<string, string> = {
   "project.trustFolderTitle": "Trust this folder?",
   "project.trustFoldersTitle": "Trust these folders?",
   "project.trustFoldersDescription":
-    "ZCode can read and edit files in these folders and run commands within your current permission settings. Continue only if you trust every folder listed.",
+    "Nekode can read and edit files in these folders and run commands within your current permission settings. Continue only if you trust every folder listed.",
   "project.trustFoldersAndCreate": "Trust folders and create",
   "project.trustFoldersAndRestore": "Trust folders and restore",
   "project.existingOnDeviceHint": "Already have projects on this device?",
@@ -329,7 +329,7 @@ const enUS: Record<string, string> = {
   "remote.action.downgrade-server": "Switch remote to {version}",
   "remote.downgradeConfirmTitle": "Switch the remote to {version}?",
   "remote.downgradeConfirmDescription":
-    "The remote ZCode service will switch from {current} to {version}, the same version as this desktop app. Devices that still use the newer desktop app must update the remote again when they connect. The older version may not fully show content that the newer version wrote.",
+    "The remote Nekode service will switch from {current} to {version}, the same version as this desktop app. Devices that still use the newer desktop app must update the remote again when they connect. The older version may not fully show content that the newer version wrote.",
   "remote.downgradeConfirm": "Switch",
   "remote.downgradedHint":
     "An older desktop app switched this remote from {from} to the current version. The remote updates only after you confirm.",
@@ -478,7 +478,7 @@ const enUS: Record<string, string> = {
   "startPlan.recommendation.dismiss": "Don’t show again",
   "occupationOnboarding.stepMode": "UI mode",
   "occupationOnboarding.modeTitle": "Choose your UI mode",
-  "occupationOnboarding.modeDescription": "How would you like ZCode to show its work?",
+  "occupationOnboarding.modeDescription": "How would you like Nekode to show its work?",
   "occupationOnboarding.coding": "Coding mode",
   "occupationOnboarding.codingDescription":
     "I want to see code, command output, and change details throughout the development process.",
@@ -528,28 +528,26 @@ const enUS: Record<string, string> = {
   "occupationOnboarding.preferencesDescription": "Choose which features to enable.",
   "occupationOnboarding.migration": "Migrate conversations",
   "occupationOnboarding.migrationDescription": "Migrate conversation history from Claude Code",
-  "occupationOnboarding.memory": "Enable Workspace Memory",
-  "occupationOnboarding.memoryDescription": "Let ZCode remember your preferences and work context.",
   "occupationOnboarding.suggestions": "Enable proactive task suggestions",
   "occupationOnboarding.suggestionsDescription":
     "Show suggestions in new conversations. Click to fill the composer.",
   "occupationOnboarding.close": "Exit onboarding",
-  "startup.global.silent": "Starting ZCode",
+  "startup.global.silent": "Starting Nekode",
   "startup.global.upgrading": "Upgrading local data",
   "startup.global.initializing": "Initializing local data",
   "startup.global.waiting": "Waiting for database preparation",
   "startup.global.saving": "Saving updates",
   "startup.global.finishing": "Finishing startup",
   "startup.global.servicesFailed":
-    "Local data is ready, but app services failed to start. Copy the diagnostics, then exit and reopen ZCode.",
+    "Local data is ready, but app services failed to start. Copy the diagnostics, then exit and reopen Nekode.",
   "startup.global.starting": "Preparing local data",
   "startup.global.preparing_host_storage": "Preparing task index",
   "startup.global.preparing_session_storage": "Preparing chat history",
-  "startup.global.starting_services": "Starting ZCode",
+  "startup.global.starting_services": "Starting Nekode",
   "startup.global.ready": "Local data is ready",
   "startup.global.failed": "Startup preparation failed",
   "startup.global.help":
-    "ZCode will open when preparation finishes. Large histories may take longer. Please keep the app running.",
+    "Nekode will open when preparation finishes. Large histories may take longer. Please keep the app running.",
   "startup.global.diagnostic": "Diagnostic ID",
   "startup.global.copy": "Copy diagnostics",
   "startup.global.exit": "Exit",
@@ -570,15 +568,15 @@ const enUS: Record<string, string> = {
   "startup.global.error.open_failed":
     "The database could not be opened. Check that the data directory exists and is accessible, then retry.",
   "startup.global.error.lock_timeout":
-    "Waiting for the database write lock timed out. Another ZCode or CLI process may be updating data. Retry after it finishes.",
+    "Waiting for the database write lock timed out. Another Nekode or CLI process may be updating data. Retry after it finishes.",
   "startup.global.error.sql_failed":
     "Preparation did not finish. Copy the diagnostics and check the logs. Resolve the issue, then retry manually. The app will not retry automatically.",
   "startup.global.error.startup_status_timeout":
-    "No startup status was received. Exit and reopen ZCode. If it fails again, provide the diagnostics to support.",
+    "No startup status was received. Exit and reopen Nekode. If it fails again, provide the diagnostics to support.",
   "startup.global.error.transport_closed":
-    "The preparation process exited or disconnected. Exit and reopen ZCode to check the migration records again.",
+    "The preparation process exited or disconnected. Exit and reopen Nekode to check the migration records again.",
   "startup.global.error.unsupported_runtime":
-    "The configured Agent does not support storage preparation. Restore the bundled Agent, then reopen ZCode.",
+    "The configured Agent does not support storage preparation. Restore the bundled Agent, then reopen Nekode.",
 
   "startup.database.checking": "Checking history",
   "startup.database.waiting_for_lock": "Waiting for another window to prepare data",
@@ -609,9 +607,6 @@ const enUS: Record<string, string> = {
 
   "purchase.entry.loading": "Loading plans…",
   "purchase.entry.retry": "Could not load plans. Retry",
-  "bots.runtime.deliveryFailed": "Bot reply delivery failed",
-  "bots.runtime.deliveryFailedDescription":
-    "The message could not be delivered. Share the details below for troubleshooting. This notice clears after the next successful send.",
   "chat.selections.previewSideBlocked":
     "Resolve pending requests in the main task or side conversation first.",
   "chat.selections.previewSideUnavailable":
@@ -634,7 +629,7 @@ const enUS: Record<string, string> = {
   "offPeak.chatCreated.queuedAt": "#{position} in queue",
   "offPeak.chatCreated.open": "Go to idle-time tasks",
   "settings.computerUse.disabledToast":
-    "Computer Use is disabled. Existing conversations require a ZCode restart to take effect.",
+    "Computer Use is disabled. Existing conversations require a Nekode restart to take effect.",
   "settings.modelProvider.connectionUnavailableNotice": "The current plan is unavailable.",
   "settings.modelProvider.switchConnection": "Switch to “{connection}”",
   "settings.modelProvider.connectionSuggestionStale":
@@ -654,42 +649,7 @@ const enUS: Record<string, string> = {
     "The result could not be confirmed. Check your benefits later. This action will not be retried this session to avoid duplicate submissions.",
   "marketingTouch.succeeded": "Action succeeded",
   "workspace.context.lastActivity": "Last active {time}",
-  "bots.privateDelivery.retry": "Resend reply",
-  "bots.privateDelivery.retryHint":
-    "Resends the full reply as text. Content already received may be duplicated.",
-  "bots.privateDelivery.retryFailed": "Sending failed. Check the error details before retrying.",
-  "bots.boundGroups.title": "Bound groups",
-  "bots.boundGroups.count": "{count} topics",
-  "bots.boundGroups.countOne": "{count} topic",
-  "bots.boundGroups.toggle": "Enable group: {name}",
-  "bots.boundGroups.loading": "Loading groups…",
-  "bots.boundGroups.empty":
-    "No bound groups. Mention the bot with /enable in a group to add it here.",
-  "bots.boundGroups.botOff": "The bot is off. Enable it to change group switches.",
-  "bots.boundGroups.loadFailed": "Could not load groups. Refresh to retry.",
-  "bots.boundGroups.saveFailed": "The group change could not be confirmed. Refresh and retry.",
-  "bots.boundGroups.refresh": "Refresh",
-  "bots.topic.open": "Open topic in Feishu / Lark",
-  "bots.topic.details": "Topic details",
-  "bots.topic.loading": "Loading context…",
-  "bots.topic.unavailable": "Context is unavailable. Try again later.",
-  "bots.topic.coverage": "{count} discussion messages archived; only the read range is covered.",
-  "bots.topic.gap": "{count} discussion messages archived; some history is not covered.",
-  "bots.topic.historyOn": "The next mention reads new topic discussion.",
-  "bots.topic.historyOff":
-    "Topic history is off; only the current request and explicit references are submitted.",
-  "bots.topic.context": "Turn background and summary",
-  "bots.topic.correction": "Submit corrections as a new request. Original records are retained.",
-  "bots.group.syncing": "Replies sync to the Feishu/Lark group",
-  "bots.group.paused": "Group sync paused",
-  "bots.group.sharedWorkspace": "Members share workspace files.",
-  "bots.group.deliveryUnknown": "Feishu delivery unconfirmed",
-  "bots.group.deliveryFailed": "Feishu delivery failed",
-  "bots.group.confirmReceived": "Checked: received",
-  "bots.group.confirmNotReceived": "Checked: not received",
-  "bots.group.resend": "Resend result",
 
-  "bots.group.provider.feishu": "Feishu",
   "manualClaimPlan.banner.aria": "Claimable trial plan",
   "manualClaimPlan.banner.tag": "Limited-time offer",
   "manualClaimPlan.banner.unit.tokens": "TOKENS",
@@ -746,7 +706,7 @@ const enUS: Record<string, string> = {
   "manualClaimPlan.claim.share.copyImageSucceeded": "Image copied",
   "manualClaimPlan.claim.share.actionFailed": "Share action failed. Please try again.",
   "manualClaimPlan.claim.share.twitterText":
-    "I claimed {subtitle} on ZCode. Download and install ZCode to claim yours. https://zcode.z.ai",
+    "I claimed {subtitle} on Nekode. Download and install Nekode to claim yours. https://zcode.z.ai",
   "manualClaimPlan.claim.share.twitterTextLabel": "Twitter/X post text",
   // Common
   "common.loading": "Loading...",
@@ -797,7 +757,7 @@ const enUS: Record<string, string> = {
   "conversationShare.readonly.artifactPreview": "Download file",
   "conversationShare.readonly.markerCompact": "Context compacted",
   "conversationShare.readonly.markerModelChange": "Model switched",
-  "conversationShare.readonly.unsupportedRows": "Some content requires a newer version of ZCode",
+  "conversationShare.readonly.unsupportedRows": "Some content requires a newer version of Nekode",
   "conversationShare.workflowSnapshot": "Snapshot at tool execution; does not update live",
   "conversationShare.shareTitle": "Share title",
   "conversationShare.permissionLabel": "Access",
@@ -828,7 +788,7 @@ const enUS: Record<string, string> = {
   "conversationShare.error.preparationExpired": "Share preparation expired. Generate a new link.",
   "conversationShare.import.notAllowed":
     "This share is view-only. Ask the author to enable importing.",
-  "conversationShare.import.unsupportedVersion": "This share format is unsupported. Update ZCode.",
+  "conversationShare.import.unsupportedVersion": "This share format is unsupported. Update Nekode.",
   "conversationShare.issue.ruleLabel": "Validation rule",
   "conversationShare.issue.pathLabel": "Field path",
   "conversationShare.issue.fieldLabel": "Field",
@@ -836,7 +796,7 @@ const enUS: Record<string, string> = {
   "conversationShare.issue.rowKindLabel": "Content type",
   "conversationShare.publishFailed": "Could not generate the share link. Try again.",
   "conversationShare.error.authenticationRequired":
-    "Sign in to ZCode before sharing. If you're already signed in, sign in again and retry.",
+    "Sign in to Nekode before sharing. If you're already signed in, sign in again and retry.",
   "conversationShare.error.featureDisabled": "Sharing is currently unavailable. Try again later.",
   "conversationShare.error.artifactNotAllowed":
     "A previewed file type is not supported for sharing. Deselect that conversation and retry.",
@@ -846,7 +806,7 @@ const enUS: Record<string, string> = {
   "conversationShare.error.invalidContractHttp":
     "The share service returned HTTP {status}. Retry, and provide the error details if the problem persists.",
   "conversationShare.error.invalidContract":
-    "ZCode could not read the share service’s response, so sharing could not finish. Try again later. If it still fails, copy the request ID from Error details and contact support.",
+    "Nekode could not read the share service’s response, so sharing could not finish. Try again later. If it still fails, copy the request ID from Error details and contact support.",
   "conversationShare.issue.clientRequestIdLabel": "Client request ID",
   "conversationShare.issue.codeLabel": "Error code",
   "conversationShare.error.network":
@@ -1048,7 +1008,7 @@ const enUS: Record<string, string> = {
   "conversationShare.import.committing": "Creating the shared conversation",
   "conversationShare.import.complete": "Share import complete",
   "conversationShare.import.loginRequired":
-    "This share cannot be imported anonymously. Sign in to ZCode and try again",
+    "This share cannot be imported anonymously. Sign in to Nekode and try again",
   "conversationShare.import.notFound":
     "Share not found or access denied. Check the link and your account.",
   "conversationShare.import.expired": "The share expired. Ask the author to create a new one",
@@ -1114,7 +1074,7 @@ const enUS: Record<string, string> = {
   "quickPick.command.switchThemeToDark": "Switch theme to dark",
   "quickPick.command.switchThemeToLight": "Switch theme to light",
   "quickPick.command.mcpServers": "MCP Servers",
-  "quickPick.command.personalization": "Personalization",
+  "quickPick.command.personalization": "Persona",
   "quickPick.command.skills": "Skills",
   "quickPick.command.toggleSidebar": "Toggle sidebar",
   "quickPick.command.toggleTerminal": "Toggle terminal",
@@ -1171,321 +1131,16 @@ const enUS: Record<string, string> = {
   "confirmDialog.taskArchiveTitle": "Archive this task?",
   "confirmDialog.taskArchiveDescription":
     "Task “{taskTitle}” will move to the archive list and can still be restored later.",
-  "bots.title": "Bots",
-  "bots.description": "Connect external chats and webhooks to ZCode bots.",
-  "bots.listTitle": "Bots",
-  "bots.addBot": "New bot",
-  "bots.addBinding": "Add binding",
-  "bots.setup.chooseBot": "Choose bot",
-  "bots.setup.createBot": "Create bot",
-  "bots.setup.createAndTest": "Test and continue",
-  "bots.setup.bindBot": "Bind bot",
-  "bots.setup.setBot": "Set bot",
-  "bots.setup.next": "Next",
-  "bots.setup.finish": "Finish",
-  "bots.setup.bindDescription":
-    "Create a bind code, then send the bind command in the bot private chat.",
-  "bots.setup.bindCodeCreating": "Creating bind code...",
-  "bots.setup.bindExpiresIn": "Bind code expires in {time}",
-  "bots.setup.bindRegenerating": "Bind code expired. Creating a new one...",
-  "bots.setup.refreshBindCode": "Refresh code",
-  "bots.setup.bound": "{count} user(s) bound. Continue to configure this bot.",
-  "bots.setup.bindAdvanceIn": "Continuing in {seconds}s.",
-  "bots.setup.allowedWorkspaces": "Allowed workspaces",
-  "bots.setup.allowedAll": "Allow all workspaces (*)",
-  "bots.setup.allowedSelected": "Allow selected workspaces only",
-  "bots.setup.allowedAllShort": "All",
-  "bots.setup.allowedSelectedShort": "Selected",
-  "bots.setup.allowedAllDescription": "This bot can use every configured workspace.",
-  "bots.setupDescription.chooseBot": "Choose the third-party chat bot to connect.",
-  "bots.setupDescription.createBot":
-    "Enter bot or webhook credentials. The next step tests connectivity first.",
-  "bots.setupDescription.bindBot":
-    "Create a bind code and bind the account in the bot private chat.",
-  "bots.setupDescription.setBot":
-    "Set the default context, allowed workspaces, and third-party reply detail.",
-  "bots.setup.guide.createTitle": "Preparation guide",
-  "bots.setup.guide.bindTitle": "Binding guide",
-  "bots.setup.guide.createNote":
-    "Prepare the third-party side first, then come back and click Test and continue.",
-  "bots.setup.callbackUrlTitle": "Callback URL",
-  "bots.setup.callbackUrlDescription.webhook":
-    "Your external system should send inbound message callbacks to this address. Asynchronous outbound replies still use the Webhook URL entered on the left.",
-  "bots.setup.callbackUrlDescription.webhookBind":
-    "Webhook binding uses the same endpoint: send a private callback request here with text = /bind <code>.",
-  "bots.setup.guide.telegram.create.1": "Open @BotFather in Telegram and create a new bot.",
-  "bots.setup.guide.telegram.create.2":
-    "Copy the HTTP API token returned by BotFather and paste it into this form.",
-  "bots.setup.guide.telegram.create.3":
-    "It helps to open the bot's private chat now because the bind command must be sent there.",
-  "bots.setup.guide.telegram.bind.1":
-    "Return to Telegram and open the private chat with the bot you created.",
-  "bots.setup.guide.telegram.bind.2":
-    "If the chat has never started, press Start or send any message first, then send {command}.",
-  "bots.setup.guide.telegram.bind.3": "Come back here after Telegram confirms the bind succeeded.",
-  "bots.setup.guide.weixin.create.1":
-    "Start Weixin QR login, scan the QR code with Weixin, then confirm on your phone.",
-  "bots.setup.guide.weixin.create.2":
-    "ZCode saves the bot_token returned by iLink automatically; after scanning, send any message to the bot in Weixin to activate the chat.",
-  "bots.setup.guide.weixin.create.3":
-    "ZCode uses a built-in iLink client: `/ilink/bot/getupdates` for long polling and `/ilink/bot/sendmessage` for replies.",
-  "bots.setup.guide.weixin.bind.1": "Open the Weixin direct chat you want to bind.",
-  "bots.setup.guide.weixin.bind.2": "Send {command}.",
-  "bots.setup.guide.weixin.bind.3":
-    "Come back here after the bind succeeds to finish the workspace and CLI defaults.",
-  "bots.setup.guide.feishu.create.1":
-    "Create a self-built app in the Feishu/Lark developer console and enable bot capability.",
-  "bots.setup.guide.feishu.create.2":
-    "Copy the App ID and App Secret, then enable persistent connection events for `im.message.receive_v1` and card actions.",
-  "bots.setup.guide.feishu.create.3":
-    "Choose the matching Feishu or Lark domain here, then paste the credentials into the form.",
-  "bots.setup.guide.feishu.bind.1":
-    "Install the app into your tenant and open a direct chat with the bot.",
-  "bots.setup.guide.feishu.bind.2": "Send {command} in that direct chat.",
-  "bots.setup.guide.feishu.bind.3":
-    "Return here after the bind succeeds to finish the workspace and CLI defaults.",
-  "bots.setup.guide.webhook.create.1":
-    "Webhook mode does not require a native bot in the third-party product; your integration only needs to POST messages to ZCode.",
-  "bots.setup.guide.webhook.create.2":
-    "Set a shared secret first; add an outbound webhook URL as well if you want asynchronous replies pushed back.",
-  "bots.setup.guide.webhook.create.3":
-    "Keep one stable userId per external user so binding and future context resolve to the same person.",
-  "bots.setup.guide.webhook.bind.1":
-    "POST a private-message callback to ZCode's `/api/bots/webhook` endpoint.",
-  "bots.setup.guide.webhook.bind.2":
-    'The payload should at least include this botId, a stable userId, `chatType: "private"`, and set text to {command}.',
-  "bots.setup.guide.webhook.bind.3":
-    "If the bot uses a secret, also send `x-zcode-bot-secret`; then return here after the bind succeeds.",
-  "bots.setup.footer.choose": "Choose a supported bot to continue.",
-  "bots.setup.footer.create": "Connectivity must pass before binding.",
-  "bots.setup.testSuccess": "Connectivity test passed",
-  "bots.setup.testFailed": "Connectivity test failed",
-  "bots.setup.footer.bind":
-    "The bind code initially allows all workspaces; the final scope is saved next.",
-  "bots.setup.footer.set": "Finish enables the bot and returns it to the added list.",
-  "bots.setup.discardTitle": "Discard this bot?",
-  "bots.setup.discardDescription":
-    "This setup flow is not finished. The temporary bot will be deleted.",
-  "bots.setup.discardConfirm": "Discard setup",
-  "bots.refresh": "Refresh bots",
-  "bots.namePlaceholder": "Bot name",
-  "bots.credentialPlaceholder": "Link bot",
-  "bots.weixinBotTokenPlaceholder": "Saved after QR login; you can also paste bot_token manually",
-  "bots.webhookSecretPlaceholder": "Webhook secret",
-  "bots.webhookUrlPlaceholder": "Outbound webhook URL",
-  "bots.feishuAppIdPlaceholder": "Feishu App ID",
-  "bots.feishuAppSecretPlaceholder": "Feishu App Secret",
-  "bots.callbackSecretPlaceholder": "Callback secret",
-  "bots.feishuRegistrationTitle": "Scan to create app",
-  "bots.feishuRegistrationDescription": "Scan to create an app and save credentials.",
-  "bots.feishuRegistrationButton": "Scan",
-  "bots.feishuRegistrationQrAlt": "Feishu app registration QR code",
-  "bots.feishuRegistrationScanHint": "Scan with Feishu/Lark and confirm app creation.",
-  "bots.feishuRegistrationScanHint.feishu": "Scan with Feishu and confirm app creation.",
-  "bots.feishuRegistrationScanHint.lark": "Scan with Lark and confirm app creation.",
-  "bots.feishuRegistrationStarted": "Feishu registration started",
-  "bots.feishuRegistrationSuccess": "Feishu app credentials filled",
-  "bots.feishuRegistrationFailed": "Failed to start Feishu registration: {error}",
-  "bots.feishuRegistrationExpired": "The QR code expired. Start again.",
-  "bots.feishuRegistration.access_denied": "Registration was denied.",
-  "bots.feishuRegistration.expired": "The QR code expired. Start again.",
-  "bots.feishuRegistration.error": "Registration failed.",
-  "bots.enabledToggle": "Enable {name}",
-  "bots.replyGranularity": "Bot reply granularity",
-  "bots.replyGranularity.description": "Message detail level.",
-  "bots.replyGranularity.assistantChanges": "Standard reply",
-  "bots.replyGranularity.assistantChanges.description":
-    "Send assistant text and file changes, without tool-call progress.",
-  "bots.replyGranularity.assistantToolcallsChanges": "Full reply",
-  "bots.replyGranularity.assistantToolcallsChanges.description":
-    "Send assistant text, tool-call progress, and file changes.",
-  "bots.replyGranularity.summaryChanges": "Summary reply",
-  "bots.replyGranularity.summaryChanges.description":
-    "Send only the final result and change summary for quieter notifications.",
-  "bots.replyGranularity.streamingCard": "Streaming card",
-  "bots.replyGranularity.streamingCard.description":
-    "Feishu/Lark only support Card JSON 2.0 streaming cards, with tool calls shown only as collapsed summaries.",
-  "bots.add": "Add",
-  "bots.channel.telegram": "Telegram",
-  "bots.channel.weixin": "Weixin",
-  "bots.channel.feishu": "Feishu",
-  "bots.channel.lark": "Lark",
-  "bots.channel.dingding": "DingTalk",
-  "bots.channel.discord": "Discord",
-  "bots.channel.wecom": "WeCom",
-  "bots.channel.webhook": "Webhook",
-  "bots.newBot.title": "New bot",
-  "bots.newBot.chooseChannel": "Choose channel",
-  "bots.newBot.description":
-    "Choose where this bot will receive messages. After selecting a channel, configure credentials, binding, allowed workspaces, and defaults.",
-  "bots.newBot.selectProviderHint": "Choose a channel on the right to create a bot.",
-  "bots.newBot.fallbackName": "New bot",
-  "bots.newBot.comingSoon": "Coming soon",
-  "bots.newBot.providerDescription.telegram": "Create a bot, then bind by message.",
-  "bots.newBot.providerDescription.weixin": "Scan to log in; first message activates.",
-  "bots.newBot.providerDescription.feishu": "Scan to create an app, then bind by message.",
-  "bots.newBot.providerDescription.lark": "Scan to create an app, then bind by message.",
-  "bots.newBot.providerDescription.dingding": "DingTalk bot integration is planned.",
-  "bots.newBot.providerDescription.webhook":
-    "Receive callbacks from your own system and optionally push replies back.",
-  "bots.newBot.providerDescription.discord": "Discord bot integration is planned.",
-  "bots.newBot.providerDescription.wecom": "WeCom bot integration is planned.",
-  "bots.empty": "No bots configured.",
-  "bots.name": "Bot name",
-  "bots.provider": "Channel",
-  "bots.enabled": "Enabled",
-  "bots.enabled.description": "Turn this bot on or off and clear its runtime state.",
-  "bots.credential": "Credential",
-  "bots.webhookSecret": "Webhook secret",
-  "bots.webhookUrl": "Webhook URL",
-  "bots.providerSettings": "Channel settings",
-  "bots.providerSettings.telegram": "Save the BotFather token.",
-  "bots.providerSettings.weixin":
-    "Credentials are saved after scan; the first Weixin message activates the chat.",
-  "bots.providerSettings.feishu": "Scan to get app credentials.",
-  "bots.providerSettings.lark": "Scan to get app credentials.",
-  "bots.providerSettings.webhook":
-    "Webhook uses a callback secret for inbound requests and an optional outbound URL for replies.",
-  "bots.providerSettings.discord": "Discord support is not available yet.",
-  "bots.providerSettings.wecom": "WeCom support is not available yet.",
-  "bots.telegramBotToken": "Link bot",
-  "bots.weixinRegistrationTitle": "Weixin QR login",
-  "bots.weixinRegistrationDescription":
-    "Scan to log in, then send any message in Weixin to activate the chat.",
-  "bots.weixinRegistrationButton": "Scan",
-  "bots.weixinRegistrationQrAlt": "Weixin login QR code",
-  "bots.weixinRegistrationScanHint": "Scan with Weixin and confirm login.",
-  "bots.weixinRegistrationStarted": "Weixin QR login started",
-  "bots.weixinRegistrationSuccess": "Weixin bot linked. Send any message in Weixin to activate it.",
-  "bots.weixinActivationHint":
-    "Send any message to the bot in Weixin; the first message will receive a welcome and command guide.",
-  "bots.weixinRegistrationFailed": "Failed to start Weixin QR login: {error}",
-  "bots.weixinRegistration.pending": "Waiting for scan",
-  "bots.weixinRegistration.scanned": "Scanned, waiting for confirmation",
-  "bots.weixinRegistration.success": "Login succeeded",
-  "bots.weixinRegistration.expired": "The QR code expired. Start again.",
-  "bots.weixinRegistration.error": "Login failed.",
-  "bots.weixinBotToken": "Weixin bot_token",
-  "bots.feishuAppSecret": "Feishu App Secret",
-  "bots.callbackSecret": "Callback secret",
-  "bots.webhookOutboundUrl": "Outbound Webhook URL",
-  "bots.webhookAuthHeaderName": "Auth header name",
-  "bots.feishuAppId": "Feishu App ID",
-  "bots.saveSecrets": "Save secrets",
-  "bots.saveSecret": "Save",
-  "bots.removeSecret": "Remove secret",
-  "bots.removeSecretFailed": "Failed to remove secret: {error}",
-  "bots.botToken": "Link bot",
-  "bots.botTokenDescription.telegram": "Save the BotFather token.",
-  "bots.botTokenDescription.feishu": "Scan to get app credentials.",
-  "bots.botTokenDescription.lark": "Scan to get app credentials.",
-  "bots.botTokenDescription.weixin": "Credentials are saved after scan.",
-  "bots.botTokenDescription.webhook": "Used to connect this webhook bot.",
-  "bots.telegramBotFatherQrAlt": "Telegram BotFather QR code",
-  "bots.telegramBotFatherScanHint": "Scan to open BotFather, create a bot, and paste the token.",
-  "bots.openBotFather": "Open BotFather",
-  "bots.connected": "Connected",
-  "bots.notConnected": "Not connected",
-  "bots.runtime.telegramLongPollingRunning": "Telegram long polling is running.",
-  "bots.runtime.telegramLongPollingStarting": "Telegram long polling is starting.",
-  "bots.runtime.telegramLongPollingStopped": "Telegram long polling is stopped.",
-  "bots.runtime.telegramLongPollingHandledElsewhere":
-    "Telegram long polling is handled by another ZCode window.",
-  "bots.runtime.telegramTokenMissing": "Telegram bot credential is missing.",
-  "bots.runtime.telegramPollingFailedRetrying": "Telegram polling failed; retrying.",
-  "bots.runtime.feishuWebSocketStarting": "Feishu WebSocket is starting.",
-  "bots.runtime.feishuWebSocketConnecting": "Feishu WebSocket is connecting.",
-  "bots.runtime.feishuWebSocketRunning": "Feishu WebSocket is running.",
-  "bots.runtime.feishuWebSocketStopped": "Feishu WebSocket is stopped.",
-  "bots.runtime.connectionFailed": "Bot connection failed",
-  "bots.runtime.feishuConnectionFailed": "Feishu connection failed",
-  "bots.runtime.larkConnectionFailed": "Lark connection failed",
-  "bots.runtime.cannotConnectFeishu": "Unable to connect to Feishu",
-  "bots.runtime.cannotConnectLark": "Unable to connect to Lark",
-  "bots.runtime.feishuConnectionInterrupted": "Feishu connection interrupted",
-  "bots.runtime.larkConnectionInterrupted": "Lark connection interrupted",
-  "bots.runtime.boundConnectionInterrupted": "Disconnected",
-  "bots.runtime.boundConnectionInterruptedDescription":
-    "The bot is bound, but its persistent connection is interrupted.",
-  "bots.runtime.credentialsSavedConnectionFailedDescription":
-    "App credentials are saved, but the persistent connection failed.",
-  "bots.runtime.connectionBlocksBinding":
-    "The bot cannot receive messages, so binding is temporarily unavailable.",
-  "bots.runtime.feishuConnectionRecoverySuggestion":
-    "The long-connection limit may have been reached, or Feishu may be busy. Try again later; if the problem persists, bind a new bot.",
-  "bots.runtime.larkConnectionRecoverySuggestion":
-    "The long-connection limit may have been reached, or Lark may be busy. Try again later; if the problem persists, bind a new bot.",
-  "bots.runtime.errorCode": "Error code",
-  "bots.runtime.errorDetail": "Details",
-  "bots.runtime.unknownError": "Unknown connection error",
-  "bots.runtime.weixinLongPollingRunning": "Weixin long polling is running.",
-  "bots.runtime.weixinLongPollingStarting": "Weixin long polling is starting.",
-  "bots.runtime.weixinLongPollingStopped": "Weixin long polling is stopped.",
-  "bots.runtime.botDisabled": "Bot is disabled.",
-  "bots.scanQrCode": "Scan QR code",
-  "bots.authorizationQr": "Authorization QR",
-  "bots.bindCommand": "Bind command",
-  "bots.binding": "Binding",
-  "bots.allowedCommands": "Allowed commands",
-  "bots.unbound": "Not bound",
-  "bots.generateBindCode": "Generate bind code",
-  "bots.resetState": "Reset state",
-  "bots.allowedWorkspaces": "Project access",
-  "bots.allowedWorkspaces.all": "All",
-  "bots.allowedWorkspaces.mode.all": "All projects",
-  "bots.allowedWorkspaces.mode.selected": "Selected projects",
-  "bots.allowedWorkspaces.allDescription": "This bot can use any configured project.",
-  "bots.allowedWorkspaces.selectedDescription": "This bot can use {count} selected projects.",
-  "bots.botMeta": "{users} bound users · workspace {workspace}",
-  "bots.botSummary": "{users} users · {workspaces} workspaces · {workspace}",
-  "bots.userCount": "{count} users",
-  "bots.editDescription": "Review runtime state, default context, reply detail, and bound users.",
-  "bots.edit.basicSettings": "Basic settings",
-  "bots.edit.binding": "Bound users",
-  "bots.edit.emptyUsers":
-    "No users bound yet. Create a bind code, then send the bind command in the bot private chat.",
-  "bots.edit.userWorkspaces": "{count} workspace(s) allowed",
-  "bots.test": "Test",
-  "bots.bind": "Bind",
-  "bots.unbind": "Unbind",
-  "bots.delete": "Delete bot",
-  "bots.delete.description": "Remove this bot.",
-  "bots.deleteConfirmTitle": 'Delete bot "{name}"?',
-  "bots.deleteConfirmDescription":
-    "This removes the bot configuration, credentials, and binding state. This cannot be undone.",
-  "bots.bindCode": "Binding code",
-  "bots.bindHint": "Send {command} in a private bot chat.",
-  "bots.bindCodeExpires": "Bind code expires in {time}",
-  "bots.bindCodeExpired": "Bind code expired. Generate a new code.",
-  "bots.bindSuccess": "Bound successfully",
-  "bots.copyBindCommand": "Copy bind command",
-  "bots.bindCommandGuide":
-    "Copy the bind command below, then send it to the bot in a private chat.",
-  "bots.bindCommandStep.copy": "Copy the bind command",
-  "bots.bindCommandStep.openChat": "Open the private chat with the bot",
-  "bots.bindCommandStep.send": "Paste and send it to bind the current workspace",
-  "bots.bindCommandCopied":
-    "Bind command copied. Open the private bot chat, then paste and send it.",
-  "bots.bindCommandCopyFailed": "Failed to copy bind command: {error}",
-  "bots.loadFailed": "Failed to load bots: {error}",
-  "bots.saveSuccess": "Bot saved",
-  "bots.saveFailed": "Failed to save bot: {error}",
-  "bots.testFailed": "Bot test failed: {error}",
-  "bots.bindCodeCreated": "Binding code created",
-  "bots.bindCodeFailed": "Failed to create binding code: {error}",
-  "bots.unbindSuccess": "Bot unbound",
-  "bots.unbindFailed": "Failed to unbind bot: {error}",
-  "bots.deleteFailed": "Failed to delete bot: {error}",
 
   // Welcome / Login
-  "welcome.title": "Welcome to ZCode",
+  "welcome.title": "Welcome to Nekode",
   "welcome.username": "Username",
   "welcome.password": "Password",
   "welcome.login": "Login",
   "welcome.loggingIn": "Logging in...",
   "welcome.loginFailed": "Login failed",
-  "login.title": "Welcome to ZCode",
-  "login.description": "Connect your account to start using ZCode",
+  "login.title": "Welcome to Nekode",
+  "login.description": "Connect your account to start using Nekode",
   "login.oauth.activeProviderHint":
     "Current active provider: {provider}. Signing in again replaces the current identity.",
   "login.oauth.loadingProviders": "Loading account providers...",
@@ -1532,7 +1187,7 @@ const enUS: Record<string, string> = {
   "app.currentTheme": "Current: {theme}",
   "app.login": "Connect",
   "app.logout": "Disconnect",
-  "logout.confirm.title": "Disconnect and restart ZCode?",
+  "logout.confirm.title": "Disconnect and restart Nekode?",
   "logout.confirm.descriptionWithRunningSessions":
     "{count} session(s) are currently running. Disconnecting will interrupt them and restart the app.",
   "logout.confirm.descriptionDefault":
@@ -1788,7 +1443,7 @@ const enUS: Record<string, string> = {
   "modelTrajectory.refresh": "Refresh",
   "modelTrajectory.close": "Close",
   "modelTrajectory.loading": "Loading trajectory…",
-  "modelTrajectory.empty": "No model calls recorded (only ZCode Agent writes model-io)",
+  "modelTrajectory.empty": "No model calls recorded (only Nekode Agent writes model-io)",
   "modelTrajectory.error": "Failed to load trajectory",
   "modelTrajectory.truncatedNotice": "Too many records, showing the most recent calls",
   "modelTrajectory.summaryCalls": "{count} calls",
@@ -2279,14 +1934,14 @@ const enUS: Record<string, string> = {
   "titleBar.menu.view.actualSize": "Actual size",
   "titleBar.menu.view.zoomIn": "Zoom in",
   "titleBar.menu.view.zoomOut": "Zoom out",
-  "titleBar.menu.help.about": "About ZCode",
+  "titleBar.menu.help.about": "About Nekode",
   "titleBar.menu.help.checkForUpdates": "Check for updates",
   "titleBar.menu.help.feedback": "Feedback",
   "sidebar.menu.community": "Community",
   "titleBar.menu.help.exportLogs": "Export logs",
   "titleBar.menu.help.toggleDevTools": "Toggle developer tools",
   "titleBar.menu.help.resourceManager": "Resource manager",
-  "titleBar.menu.help.toggleZCodeStdioTap": "Capture agent stdio traffic",
+  "titleBar.menu.help.toggleNekodeStdioTap": "Capture agent stdio traffic",
   "titleBar.menu.help.clearAllData": "Clear all data",
 
   // Directory browser
@@ -2336,7 +1991,7 @@ const enUS: Record<string, string> = {
   "update.toast.ready": "v{version} downloaded, restart to install",
   "update.toast.devSkipped": "Updates are disabled in dev builds",
   "update.toast.error": "Update check failed: {error}",
-  "forceUpdate.title": "Update ZCode to continue",
+  "forceUpdate.title": "Update Nekode to continue",
   "forceUpdate.description":
     "Your current version v{currentVersion} is below the minimum supported version v{minimalVersion}. Update first before continuing with this client.",
   "forceUpdate.currentVersion": "Current version",
@@ -2425,7 +2080,7 @@ const enUS: Record<string, string> = {
   "remote.error.credentialsRequired":
     "No usable SSH password or private-key credential is available. Return to settings to add one.",
   "remote.error.sourceServerUpgradeRequired":
-    "remote device is incompatible with this ZCode Desktop version and must be upgraded.",
+    "remote device is incompatible with this Nekode Desktop version and must be upgraded.",
   "remote.error.sourceServerRunningTasks":
     "remote device still has running tasks. Wait for them to finish or confirm a forced update.",
   "remote.error.sourceServerDowngradeUnconfirmed":
@@ -2466,7 +2121,7 @@ const enUS: Record<string, string> = {
   "remote.error.retryableHint": "You can try again later.",
   "remote.error.connectionClosed": "The remote connection was closed",
   "workspaceSidebar.unavailableLocalDirectory":
-    "The workspace directory does not exist or cannot be accessed. You can only view history for now. Restore the directory and restart ZCode to continue.",
+    "The workspace directory does not exist or cannot be accessed. You can only view history for now. Restore the directory and restart Nekode to continue.",
   "workspaceSidebar.toggleSidebar": "Toggle sidebar",
   "workspaceSidebar.resizeSidebar": "Resize sidebar",
   "workspaceSidebar.showFileTree": "Show files",
@@ -2503,7 +2158,7 @@ const enUS: Record<string, string> = {
   "ssh.assetInstallMode.local-download-upload": "Download locally, then upload",
   "ssh.assetInstallMode.remote-download": "Download on remote server",
   "ssh.assetInstallModeDescription":
-    "Remote server download reduces upload waiting, but the server must reach the ZCode CDN and have download, extract, and checksum tools.",
+    "Remote server download reduces upload waiting, but the server must reach the Nekode CDN and have download, extract, and checksum tools.",
   "ssh.password": "Password",
   "ssh.passwordPlaceholder": "Enter your SSH password",
   "ssh.privateKey": "Private key",
@@ -2595,7 +2250,7 @@ const enUS: Record<string, string> = {
     "Connection failed · retry, or adjust the configuration and try again",
   "remote.phase.channel": "Connect to device",
   "remote.phase.identify": "Identify device",
-  "remote.phase.deploy": "Install ZCode Server",
+  "remote.phase.deploy": "Install Nekode Server",
   "remote.phase.handshake": "Start and check compatibility",
   "remote.phase.workspace": "Open project folder",
   "remote.phaseSub.workspaceReading": "Reading {path}",
@@ -2605,7 +2260,7 @@ const enUS: Record<string, string> = {
   "remote.progress.copyError": "Copy error details",
   "remote.progress.copied": "Copied",
   "remote.link.local": "This device",
-  "remote.link.localVersion": "ZCode v{version}",
+  "remote.link.localVersion": "Nekode v{version}",
   "remote.link.deviceHint": "Device details appear after connecting",
   "remote.link.devicePending": "Remote device",
   "remote.recognizedDevice": "Connected to device {device}",
@@ -2637,7 +2292,7 @@ const enUS: Record<string, string> = {
   "remote.phaseSub.channelEstablished.docker": "Connected to the container",
   "remote.phaseSub.channelEstablished": "Connected to device",
   "remote.phaseSub.identifyExisting": "Connected to device {device}",
-  "remote.phaseSub.identifyNew": "New device · ZCode Server not installed",
+  "remote.phaseSub.identifyNew": "New device · Nekode Server not installed",
   "remote.phaseSub.deploySkipped": "Remote already on v{version} · deployment skipped",
   "remote.phaseSub.deployWaitingConfirm": "Waiting for install confirmation…",
   "remote.phaseSub.deployUploading": "Uploading {file} · {sent} / {total}",
@@ -2680,18 +2335,6 @@ const enUS: Record<string, string> = {
   "webRemoteControl.mobileQr.description": "Use your phone camera to open this workspace remotely.",
   "webRemoteControl.statusTag.phone": "Phone",
   "webRemoteControl.statusTag.ready": "Ready",
-  "webRemoteControl.botChannel.title": "Use a bot channel",
-  "webRemoteControl.botChannel.description": "Connect a chat bot for longer-running mobile access.",
-  "webRemoteControl.botChannel.weixin.title": "Weixin",
-  "webRemoteControl.botChannel.weixin.description": "Open this workspace from Weixin chat.",
-  "webRemoteControl.botChannel.feishu.title": "Feishu",
-  "webRemoteControl.botChannel.feishu.description": "Open this workspace from Feishu.",
-  "webRemoteControl.botChannel.lark.title": "Lark",
-  "webRemoteControl.botChannel.lark.description": "Open this workspace from Lark.",
-  "webRemoteControl.botChannel.telegram.title": "Telegram",
-  "webRemoteControl.botChannel.telegram.description": "Open this workspace from Telegram.",
-  "webRemoteControl.botChannel.configure": "Configure in bot channels",
-  "webRemoteControl.botChannel.manageBots": "Manage bots",
   "webRemoteControl.linkLabel": "Remote control link",
   "webRemoteControl.linkPending": "The remote control link will appear here once ready.",
   "webRemoteControl.singlePageNote":
@@ -2762,7 +2405,7 @@ const enUS: Record<string, string> = {
   "remote.kind.wsl": "WSL",
   "remote.kind.docker": "Docker",
   "remote.kind.server.note":
-    "Server (direct connection to a running ZCode service) is shown only in development builds.",
+    "Server (direct connection to a running Nekode service) is shown only in development builds.",
   "remote.addAndConnect": "Add and connect",
   "remote.connect": "Connect",
   "remote.connecting": "Connecting...",
@@ -2773,16 +2416,16 @@ const enUS: Record<string, string> = {
   "remote.connectionLog": "Connection log",
   "remote.connectionLogEmpty": "waiting for connection output...",
   "remote.connectingConfirmTitle": "Stop the current connection?",
-  "remote.sourceServerInstallTitle": "ZCode Server installation required",
+  "remote.sourceServerInstallTitle": "Nekode Server installation required",
   "remote.sourceServerInstallDescription":
-    "ZCode will upload the matching release, install it under ~/.zcode/server, and start the remote service. Existing legacy remote files will be preserved.",
+    "Nekode will upload the matching release, install it under ~/.nekode/server, and start the remote service. Existing legacy remote files will be preserved.",
   "remote.sourceServerInstallConfirm": "Install and continue",
   "remote.installTarget": "Target account",
   "remote.installVersion": "Install version",
   "remote.installLocation": "Install location",
   "remote.sourceServerBoundaryTitle": "Local offline, tasks keep running",
   "remote.sourceServerBoundaryDescription":
-    "Remote tasks keep running, even when you close ZCode or put your computer to sleep.",
+    "Remote tasks keep running, even when you close Nekode or put your computer to sleep.",
   "remote.sourceServerBoundaryEyebrow": "New remote connection",
   "remote.sourceServerBoundaryLocalDevice": "This computer",
   "remote.sourceServerBoundaryLocalStatus": "Sleeping / closed",
@@ -2806,7 +2449,7 @@ const enUS: Record<string, string> = {
   "settings.source.retiredEntryNote": "Connection target changed; new identity confirmed",
   "settings.source.retiredNameSuffix": " (old)",
   "settings.source.reinstallRequired":
-    "ZCode Server was uninstalled remotely; connection and task records remain on this device.",
+    "Nekode Server was uninstalled remotely; connection and task records remain on this device.",
   "settings.source.reinstallAndConnect": "Reinstall and connect",
   "settings.source.copyDeviceId": "Copy device ID",
   "common.justNow": "just now",
@@ -2828,7 +2471,7 @@ const enUS: Record<string, string> = {
     "Uses this computer's version. Projects and tasks are kept.",
   "settings.source.reinstallRemoteServiceTitle": "Reinstall the remote service?",
   "settings.source.reinstallRemoteServiceDescription":
-    "ZCode Server {version} will be reinstalled on {source}. Damaged program files are replaced. Projects, tasks, settings, and sign-in information are kept.",
+    "Nekode Server {version} will be reinstalled on {source}. Damaged program files are replaced. Projects, tasks, settings, and sign-in information are kept.",
   "settings.source.reinstallRemoteServiceConfirm": "Reinstall",
   "settings.source.stopRemoteService": "Stop remote service",
   "settings.source.stopRemoteServiceTitle": "Stop the remote service?",
@@ -2837,9 +2480,9 @@ const enUS: Record<string, string> = {
   "settings.source.remoteServiceRunningTasksUnavailable": "The device didn't provide a task list.",
   "settings.source.remoteServiceNoRunningTasks": "No tasks are running on this device right now.",
   "settings.source.remoteServiceOtherClientsNotice":
-    "If ZCode on another computer is connected to this device, it may start the remote service again.",
+    "If Nekode on another computer is connected to this device, it may start the remote service again.",
   "settings.source.stopRemoteServiceStartupReconnectNotice":
-    "“Reconnect automatically at startup” is on, so the remote service will start again the next time you open ZCode.",
+    "“Reconnect automatically at startup” is on, so the remote service will start again the next time you open Nekode.",
   "settings.source.remoteServiceUpdateRequired": "Available after updating the remote service",
   "settings.source.removeOpenProjects": "These open projects will be disconnected:\n{projects}",
   "settings.source.noOpenProjects": "This device has no open projects.",
@@ -2847,7 +2490,7 @@ const enUS: Record<string, string> = {
   "settings.machine.unknownRemote": "Remote device",
   "settings.source.connectionName": "Connection name",
   "settings.source.connectionAddress": "Address",
-  "settings.source.connectionNameHint": "Used only to distinguish this connection in ZCode.",
+  "settings.source.connectionNameHint": "Used only to distinguish this connection in Nekode.",
   "settings.source.deviceNameRequired": "Device name is required.",
   "settings.source.error.connection-profile-unavailable":
     "This connection is no longer available. Refresh and try again.",
@@ -2893,7 +2536,7 @@ const enUS: Record<string, string> = {
   "settings.source.updatePhase.checking": "Checking the device and update files",
   "settings.source.updatePhase.downloading": "Downloading update files",
   "settings.source.updatePhase.uploading": "Uploading update files",
-  "settings.source.updatePhase.installing": "Installing ZCode Server",
+  "settings.source.updatePhase.installing": "Installing Nekode Server",
   "settings.source.updatePhase.reconnecting": "Starting the service and reconnecting",
   "settings.source.updatePhase.completed": "Update complete",
   "settings.source.updateLog": "Update log ({count})",
@@ -2959,13 +2602,13 @@ const enUS: Record<string, string> = {
   "sourceServer.restartFailedToast":
     "Couldn't restart the remote service on {source}. View details.",
   "sourceServer.controllerUpdateAvailableToast":
-    "ZCode has an update for {source}\nDesktop {current} → {available}; update ZCode to match this Source.",
+    "Nekode has an update for {source}\nDesktop {current} → {available}; update Nekode to match this Source.",
   "settings.source.forceUpdate": "Force update",
   "settings.source.forceUpdateTitle": "Force-update this device?",
   "settings.source.forceUpdateDescription":
     "A forced update stops tasks that are still running on this device. Confirm that those tasks may be interrupted.",
   "settings.source.controllerUpdateRequired":
-    "Update this ZCode Desktop first; the Server cannot be updated from here.",
+    "Update this Nekode Desktop first; the Server cannot be updated from here.",
   "settings.source.neverConnected": "Not connected",
   "settings.source.unidentifiedProfiles": "Not connected",
   "settings.source.unidentifiedProfilesDescription":
@@ -3028,7 +2671,7 @@ const enUS: Record<string, string> = {
   "remote.log.requestingSession": "Requesting the host process to create a remote session...",
   "remote.log.sessionReady":
     "Remote session created successfully. You can choose a directory next.",
-  "server.description": "Connect to an already running ZCode server.",
+  "server.description": "Connect to an already running Nekode server.",
   "server.url": "Server URL",
   "server.urlPlaceholder": "e.g. https://studio.example.com:3030",
   "server.name": "Display name",
@@ -3185,7 +2828,7 @@ const enUS: Record<string, string> = {
   "chat.changeSummary.reverted": "Undone",
   "chat.changeSummary.rewindDialog.title": "Undo file changes",
   "chat.changeSummary.rewindDialog.description":
-    "ZCode checks current file content again before writing. If another process changed a file, no files will be written.",
+    "Nekode checks current file content again before writing. If another process changed a file, no files will be written.",
   "chat.changeSummary.rewindDialog.loading": "Checking reversible files…",
   "chat.changeSummary.rewindDialog.safeTitle": "Safe to undo {count}",
   "chat.changeSummary.rewindDialog.unsafeTitle": "Unsafe to undo {count}",
@@ -3229,7 +2872,7 @@ const enUS: Record<string, string> = {
   "chat.previewCards.video": "Video",
   "chat.previewCards.audio": "Audio",
   "chat.previewCards.openExternal": "Open in browser",
-  "chat.message.link.openInZCode": "Open in ZCode",
+  "chat.message.link.openInNekode": "Open in Nekode",
   "chat.previewCards.previewInSidePane": "Preview",
   "chat.previewCards.openDefaultApp": "Open with default app",
   "chat.previewCards.openWith": "Open with",
@@ -3366,7 +3009,7 @@ const enUS: Record<string, string> = {
     "When launching the built-in terminal, inherit login shell environment, proxy, Kubernetes variables, and local terminal font when possible.",
   "settings.terminalFontFamily": "Terminal font",
   "settings.terminalFontFamilyDescription":
-    "Leave blank to auto-detect system terminal settings; set a value to override the ZCode terminal font.",
+    "Leave blank to auto-detect system terminal settings; set a value to override the Nekode terminal font.",
   "settings.terminalFontFamilyPlaceholder": "Leave blank to inherit, e.g. MesloLGS NF, monospace",
   "settings.integratedTerminalShell": "Integrated terminal shell",
   "settings.integratedTerminalShellDescription":
@@ -3384,43 +3027,36 @@ const enUS: Record<string, string> = {
   "settings.nativeSearchEnhancementsDescription":
     "Use enhanced Find and Grep in new sessions and sessions restored after an app restart. Active sessions keep their current setting; Find remains unchanged on Windows.",
   "settings.memory": "Memory",
-  "settings.personalization.title": "Personalization",
+  "settings.personalization.title": "Persona",
   "settings.personalization.description":
-    "Add custom instructions to personalize Agent responses. Instructions apply to future conversations of the local Agent; remote devices need separate configuration.",
-  "settings.personalization.placeholder": "Add custom instructions...",
-  "settings.personalization.editorLabel": "Custom instructions editor",
+    "The persona is injected as a dedicated identity section in the system prompt, after the generic identity and with the highest priority. It applies to future local conversations. Stored at ~/.nekode/persona/persona.md.",
+  "settings.personalization.placeholder": "Write Nekode's persona, tone and boundaries...",
+  "settings.personalization.editorLabel": "Persona editor",
   "settings.personalization.saved": "Saved; effective for new conversations",
   "settings.personalization.saveFailed": "Failed to save. Check the logs",
-  "settings.personalization.loadFailed": "Failed to load custom instructions. Check the logs",
+  "settings.personalization.loadFailed": "Failed to load persona. Check the logs",
   "settings.personalization.localOnly":
-    "Custom instructions can only be edited on the local desktop. Open Settings → Personalization in the desktop app.",
+    "Persona can only be edited on the local desktop. Open Settings → Persona in the desktop app.",
   "settings.personalization.unsaved": "Unsaved changes",
   "settings.personalization.sizeCount": "{used} / {limit}",
   "settings.personalization.sizeOverLimit":
     "Content exceeds the 100 KB limit the Agent reads; anything beyond it is ignored. Trim before saving.",
-  "settings.memory.workspaceMemory": "Workspace Memory",
-  "settings.memoryDescription":
-    "Save and reuse long-term context in workspaces. Applies to new sessions and may increase model requests and token costs.",
-  "settings.memory.viewer.disabled": "Enable Workspace Memory to view saved memories.",
+  "settings.memory.neko.title": "Neko memory",
+  "settings.memory.neko.description":
+    "Neko memory is six fixed markdown books: four global (profile, plans, experiences, playbook) plus two for the current project. This is a read-only view of the catalog, budgets and bodies; edits go through the Agent's Edit.",
+  "settings.memory.neko.unavailable": "This connection has no Neko memory service.",
+  "settings.memory.neko.loading": "Loading Neko memory…",
+  "settings.memory.neko.empty": "No memory books are visible yet.",
+  "settings.memory.neko.refresh": "Refresh",
+  "settings.memory.neko.summary": "{count} books · {bytes}",
+  "settings.memory.neko.overBudget": "Over budget",
+  "settings.memory.neko.scope.global": "Global",
+  "settings.memory.neko.scope.project": "Project",
+  "settings.memory.neko.preview": "Body",
+  "settings.memory.neko.previewLoading": "Loading body…",
+  "settings.memory.neko.bodyEmpty": "This book has no content yet.",
   "settings.memory.viewer.localOnly":
-    "Memory details are available only in the local desktop app. Open Memory settings there to view them.",
-  "settings.memory.viewer.title": "Saved workspace memories",
-  "settings.memory.viewer.description": "Browse memories saved by workspace on this device.",
-  "settings.memory.viewer.projectsDescription":
-    "Select a project to view all of its saved memories.",
-  "settings.memory.viewer.refresh": "Refresh",
-  "settings.memory.viewer.loading": "Loading memories…",
-  "settings.memory.viewer.empty": "No saved workspace memories",
-  "settings.memory.viewer.workspaces": "Workspaces",
-  "settings.memory.viewer.files": "Files",
-  "settings.memory.viewer.searchPlaceholder": "Search memory files…",
-  "settings.memory.viewer.searchEmpty": "No memory files found.",
-  "settings.memory.viewer.workspaceSearchPlaceholder": "Search workspaces…",
-  "settings.memory.viewer.workspaceSearchEmpty": "No workspaces found.",
-  "settings.memory.viewer.itemCount.one": "{count} item",
-  "settings.memory.viewer.itemCount.other": "{count} items",
-  "settings.memory.viewer.memoryCount.one": "{count} memory",
-  "settings.memory.viewer.memoryCount.other": "{count} memories",
+    "The Neko memory books are available only in the local desktop app. Open Memory settings there to view them.",
   "settings.memory.viewer.updated.justNow": "Just now",
   "settings.memory.viewer.updated.minutesAgo": "{count} min ago",
   "settings.memory.viewer.updated.today": "Today {time}",
@@ -3430,17 +3066,6 @@ const enUS: Record<string, string> = {
   "settings.memory.viewer.updated.date": "{date} {time}",
   "settings.memory.viewer.updated.dateMonthDay": "{month}/{day}",
   "settings.memory.viewer.updated.dateYearMonthDay": "{year}/{month}/{day}",
-  "settings.memory.viewer.tree": "Memory files",
-  "settings.memory.viewer.indexMissing": "MEMORY.md (not generated)",
-  "settings.memory.viewer.collapse": "Collapse memory items",
-  "settings.memory.viewer.expand": "Expand memory items",
-  "settings.memory.viewer.fileLoading": "Loading file…",
-  "settings.memory.viewer.fileDeleted":
-    "This memory file has been deleted. Refresh the file list to update it.",
-  "settings.memory.viewer.fileTooLarge": "This memory file exceeds the 5 MiB preview limit.",
-  "settings.memory.viewer.fileChanged":
-    "This memory file was updated while being read. Reopen it or refresh the file list.",
-  "settings.memory.viewer.noSelection": "Select a memory file to preview it.",
   "settings.httpProxy": "HTTP Proxy",
   "settings.httpProxyDescription":
     "Route model, MCP, command-tool, and app renderer egress traffic through this proxy; system environment variables are not read. Leave blank and that traffic connects directly, while the embedded browser follows your system proxy settings. Restart the app to take effect.",
@@ -3509,7 +3134,7 @@ const enUS: Record<string, string> = {
     "Group consecutive Write, Edit, and ApplyPatch calls into a Changes section.",
   "settings.zcodeInteractionBehavior": "Interaction behavior",
   "settings.zcodeInteractionBehaviorDescription":
-    "While ZCode is running, add follow-up actions to the queue or guide them to run after the next tool call.",
+    "While Nekode is running, add follow-up actions to the queue or guide them to run after the next tool call.",
   "settings.zcodeInteractionBehavior.option.queue": "Queue",
   "settings.zcodeInteractionBehavior.option.guide": "Guide",
   "settings.askUserQuestionAutoResolution": "Automatically continue questions",
@@ -3546,14 +3171,14 @@ const enUS: Record<string, string> = {
   "settings.taskAutoArchiveDays.option.30": "Archive after 30 days",
   "settings.dataBaseDir": "Data storage path",
   "settings.dataBaseDirDescription":
-    "Root directory for app data (defaults to user home directory). Existing data will be copied to the new location. The .zcode/v2 suffix cannot be changed.",
+    "Root directory for app data (defaults to user home directory). Existing data will be copied to the new location. The .nekode/v2 suffix cannot be changed.",
   "settings.dataBaseDirPlaceholder": "Default: user home directory",
   "settings.dataBaseDirBrowse": "Choose folder",
   "settings.dataBaseDirSave": "Save",
   "settings.dataBaseDirCopying": "Copying data, please do not close the app...",
   "settings.dataBaseDirCopyFailed": "Data copy failed. Path was not changed.",
   "settings.dataBaseDirForbiddenInstallDir":
-    "The data directory cannot be the ZCode installation folder on Windows. Choose a folder outside the app install location.",
+    "The data directory cannot be the Nekode installation folder on Windows. Choose a folder outside the app install location.",
   "settings.dataBaseDirRestartRequired": "Data saved. Please restart the app to take effect.",
   "settings.locale.system": "System default",
   "settings.locale.zh-CN": "中文简体",
@@ -3569,7 +3194,7 @@ const enUS: Record<string, string> = {
   "settings.migration.title": "Migration",
   "settings.migration.sectionTitle": "Claude History Migration",
   "settings.migration.sectionDescription":
-    "Scan native Claude Code history on this machine, optionally filter by workspace and activity window, then import the selected sessions into their matching ZCode task lists.",
+    "Scan native Claude Code history on this machine, optionally filter by workspace and activity window, then import the selected sessions into their matching Nekode task lists.",
   "settings.migration.badge.localOnly": "Local Claude records",
   "settings.migration.badge.manualOnly": "Manual only",
   "settings.migration.currentWorkspace": "Current workspace",
@@ -3623,14 +3248,14 @@ const enUS: Record<string, string> = {
   "settings.usageTitle": "Usage stats",
   "settings.usageDescription":
     "Review rough activity and model usage aggregated from local sessions.",
-  "resourceManager.storage.summaryTotal": "Total used by ZCode",
+  "resourceManager.storage.summaryTotal": "Total used by Nekode",
   "resourceManager.storage.scanning": "Calculating…",
   "resourceManager.storage.lastScanned": "Last calculated {time}",
   "resourceManager.storage.idle": "Not calculated yet",
   "resourceManager.storage.failed": "Calculation failed",
   "resourceManager.storage.rescan": "Recalculate",
   "resourceManager.storage.disk": "Disk",
-  "resourceManager.storage.diskUsage": "ZCode uses {used}",
+  "resourceManager.storage.diskUsage": "Nekode uses {used}",
   "resourceManager.storage.diskFree": "{free} free of {total}",
   "resourceManager.storage.diskUnknown": "Disk capacity unavailable",
   "resourceManager.storage.roots": "Data directories",
@@ -3698,7 +3323,7 @@ const enUS: Record<string, string> = {
   "settings.embeddedBrowserAllowInsecureCertificatesSavedHint":
     "Certificate setting saved. Restart the app to take effect.",
   "settings.browser.data.section": "Browser data",
-  "settings.browser.desktopOnly": "Browser data can only be managed in the ZCode desktop app.",
+  "settings.browser.desktopOnly": "Browser data can only be managed in the Nekode desktop app.",
   "settings.browser.import.title": "Import Chrome sign-in state",
   "settings.browser.import.description":
     "Bring your Chrome sign-in state into the built-in browser once, so the AI can open sites you are already signed in to and work more smoothly.",
@@ -3716,13 +3341,13 @@ const enUS: Record<string, string> = {
   "settings.browser.import.elevationCancelled":
     "Windows administrator access was canceled. No cookies were imported.",
   "settings.browser.import.helperVerificationFailed":
-    "ZCode could not verify its Windows secure import component. Reinstall or update ZCode before importing cookies.",
+    "Nekode could not verify its Windows secure import component. Reinstall or update Nekode before importing cookies.",
   "settings.browser.import.appBoundFailed":
     "Windows could not unlock Chrome's App-Bound cookies. No cookies were imported.",
   "settings.browser.import.adminConfirmTitle":
     "Allow administrator access to import Chrome cookies?",
   "settings.browser.import.adminConfirmDescription":
-    "Chrome protects cookies with App-Bound encryption on Windows. For this import only, ZCode will request administrator access, start a temporary system service, and delete it immediately afterward. Chrome passwords are never read or imported.",
+    "Chrome protects cookies with App-Bound encryption on Windows. For this import only, Nekode will request administrator access, start a temporary system service, and delete it immediately afterward. Chrome passwords are never read or imported.",
   "settings.browser.import.adminConsent":
     "I confirm administrator access for this cookie import only",
   "settings.browser.import.adminConfirmAction": "Continue and request access",
@@ -3791,7 +3416,7 @@ const enUS: Record<string, string> = {
   "settings.mcp.trust.trusted": "Current declaration trusted",
   "settings.mcp.trust.failed":
     "The declaration changed or trust is unavailable. Refresh and try again.",
-  "settings.mcp.description": "Manage MCP server configurations used by ZCode Agent.",
+  "settings.mcp.description": "Manage MCP server configurations used by Nekode Agent.",
   "settings.mcp.create.open": "Add MCP server",
   "settings.mcp.import.open": "Import MCP servers from external agents",
   "settings.mcp.import.action": "Import",
@@ -3817,7 +3442,7 @@ const enUS: Record<string, string> = {
     "This plugin MCP server is loaded but not currently connected.",
   "settings.mcp.host.active": "Host built-in",
   "settings.mcp.host.activeDescription":
-    "ZCode provides this MCP server for the {pluginName} plugin. Its runtime identity is managed by the host.",
+    "Nekode provides this MCP server for the {pluginName} plugin. Its runtime identity is managed by the host.",
   "settings.mcp.plugin.disabled": "Plugin disabled",
   "settings.mcp.plugin.disabledDescription":
     "This MCP server is built into a plugin. Enable the plugin to load it.",
@@ -3829,7 +3454,7 @@ const enUS: Record<string, string> = {
     "Open authorization to finish connecting this plugin MCP server.",
   "settings.mcp.oauth.openAuthorization": "Open authorization",
   "settings.mcp.statusOnlyUnsupported":
-    "This ZCode Agent cannot refresh OAuth status. Upgrade or restart ZCode, then reopen MCP settings to run a full refresh.",
+    "This Nekode Agent cannot refresh OAuth status. Upgrade or restart Nekode, then reopen MCP settings to run a full refresh.",
   "settings.mcp.refreshFailed": "Failed to refresh MCP status: {error}",
   "settings.mcp.status.toolCount": "{count} tools",
   "settings.mcp.status.connectedReason": "Connected and available.",
@@ -3856,7 +3481,7 @@ const enUS: Record<string, string> = {
   "settings.mcp.failure.official_origin_untrusted":
     "The MCP server URL failed the security check. The connection was blocked.",
   "settings.mcp.failure.not_authenticated":
-    "You are not signed in. Sign in to ZCode to use this MCP server.",
+    "You are not signed in. Sign in to Nekode to use this MCP server.",
   "settings.mcp.failure.coding_plan_required":
     "This account has no Coding Plan. Purchase or configure a Coding Plan to use this MCP server.",
   "settings.mcp.failure.server_not_found":
@@ -3926,7 +3551,7 @@ const enUS: Record<string, string> = {
   "settings.mcpServers.import.targetLabel": "Import target",
   "settings.mcpServers.import.target.global": "Import to Global",
   "settings.mcpServers.import.target.project": "Import to Project",
-  "settings.mcpServers.import.importing": "Importing MCP servers into ZCode",
+  "settings.mcpServers.import.importing": "Importing MCP servers into Nekode",
   "settings.mcpServers.import.imported": "Imported",
   "settings.mcpServers.import.skipped": "Skipped",
   "settings.mcpServers.import.failed": "Failed",
@@ -4066,7 +3691,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.startPlan.highlight.trial.label": "Trial period",
   "settings.modelProvider.startPlan.highlight.trial.value": "5 calendar days",
   "settings.modelProvider.startPlan.highlight.trial.description":
-    "Timing starts after signing in to ZCode 3.x.",
+    "Timing starts after signing in to Nekode 3.x.",
   "settings.modelProvider.startPlan.highlight.quota.label": "Daily quota",
   "settings.modelProvider.startPlan.highlight.quota.value": "3M tokens daily",
   "settings.modelProvider.startPlan.highlight.quota.description":
@@ -4076,7 +3701,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.startPlan.highlight.metering.description":
     "Metered only after using platform GLM flagship models.",
   "settings.modelProvider.startPlan.compatibility":
-    "Supports BYOK and BYOA. Base URL, API format, and API Key are maintained by ZCode automatically.",
+    "Supports BYOK and BYOA. Base URL, API format, and API Key are maintained by Nekode automatically.",
   "settings.modelProvider.codingPlan.title": "{provider} - Coding Plan",
   "settings.modelProvider.codingPlan.webview.title": "Upgrade Plan",
   "settings.modelProvider.codingPlan.webview.authInjectFailed":
@@ -4215,7 +3840,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.codingPlan.purchase.teamMemberNoticeTitle":
     "Assign members to your team plan",
   "settings.modelProvider.codingPlan.purchase.teamMemberNoticeDescription":
-    "Add yourself or other members on the BigModel team plan management page. Once assigned, the team quota will be available in ZCode.",
+    "Add yourself or other members on the BigModel team plan management page. Once assigned, the team quota will be available in Nekode.",
   "settings.modelProvider.codingPlan.purchase.manageTeamPlan": "Manage team plan",
   "settings.modelProvider.codingPlan.manage": "Manage",
   "settings.modelProvider.planCard.codingPlan": "Coding Plan",
@@ -4598,7 +4223,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.resetForm": "Reset form",
   "settings.modelProvider.fieldHelp": "About {field}",
   "settings.modelProvider.help.contextWindow":
-    "The context capacity the model can process at once, in tokens. ZCode uses this to manage context.\nDo not exceed the model's actual limit.",
+    "The context capacity the model can process at once, in tokens. Nekode uses this to manage context.\nDo not exceed the model's actual limit.",
   "settings.modelProvider.help.maxOutputTokens":
     "The maximum number of tokens a single model request may generate.\nDo not exceed the model's actual limit.",
   "settings.modelProvider.help.inputModalities":
@@ -4614,7 +4239,7 @@ const enUS: Record<string, string> = {
   "settings.modelProvider.help.advanced":
     "**MFJS tool schema**: Enables Moonshot Flavored JSON Schema compatibility, commonly used by Moonshot's Kimi model API. Enable only when the model API requires this format.",
   "settings.modelProvider.help.followRecommendedConfig":
-    "Matches recommended configuration using the model ID, Base URL, and API format. ZCode continually updates recommendations and automatically syncs them to you.\nWhen you manually change a setting, that setting becomes manually managed and stops following recommendation updates; other settings remain managed by smart configuration.",
+    "Matches recommended configuration using the model ID, Base URL, and API format. Nekode continually updates recommendations and automatically syncs them to you.\nWhen you manually change a setting, that setting becomes manually managed and stops following recommendation updates; other settings remain managed by smart configuration.",
   "settings.modelProvider.modelDefaultsLoaded": "Smart configuration matched for this model",
   "settings.modelProvider.modelConfigIncomplete": "Model configuration is incomplete",
   "settings.modelProvider.models": "Model list",
@@ -4692,7 +4317,7 @@ const enUS: Record<string, string> = {
   "settings.usage.sourceProvider": "Source: {provider}",
   "settings.usage.billingBanner.title": "{provider} Coding Plan",
   "settings.usage.billingBanner.description":
-    "Connect your {provider} account to query Coding Plan entitlement, then keep coding in ZCode after purchase or setup.",
+    "Connect your {provider} account to query Coding Plan entitlement, then keep coding in Nekode after purchase or setup.",
   "settings.usage.billingBanner.compactDescription":
     "Connect your {provider} account to sync usage.",
   "settings.usage.billingBanner.buy": "Buy Coding Plan",
@@ -4751,7 +4376,7 @@ const enUS: Record<string, string> = {
   "settings.usage.entitlementFiveHourUsage": "5-hour remaining",
   "settings.usage.entitlementWeeklyUsage": "Weekly remaining",
   "settings.usage.entitlementMonthlyMcpUsage": "Tool calls",
-  "settings.usage.entitlementServerMcpUsage": "ZCode MCP",
+  "settings.usage.entitlementServerMcpUsage": "Nekode MCP",
   "settings.usage.entitlementResetAt": "Resets {time}",
   "settings.usage.entitlementUsageDetails": "Tool usage detail",
   "settings.usage.entitlementPromptCap": "5-hour prompt pool",
@@ -4809,9 +4434,9 @@ const enUS: Record<string, string> = {
   "sidebar.usage.plan.fiveHour": "5 hours",
   "sidebar.usage.plan.weekly": "Weekly",
   "sidebar.usage.plan.toolCalls": "Tool calls",
-  "sidebar.usage.plan.mcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcp": "ZCode MCP",
-  "sidebar.usage.plan.zcodeMcpDescription": "Daily aggregate quota for ZCode built-in plugin MCPs",
+  "sidebar.usage.plan.mcp": "Nekode MCP",
+  "sidebar.usage.plan.zcodeMcp": "Nekode MCP",
+  "sidebar.usage.plan.zcodeMcpDescription": "Daily aggregate quota for Nekode built-in plugin MCPs",
   "chat.planUsage.title": "Plan usage",
   "chat.planUsage.titleWithPlan": "{plan} Plan usage",
   "chat.planUsage.providerFallback": "Current provider",
@@ -4996,12 +4621,13 @@ const enUS: Record<string, string> = {
   "settings.skills.delete.title": "Delete skill",
   "settings.skills.delete.description":
     'Delete "{name}"? This removes the skill folder from disk and cannot be undone.',
-  "settings.skills.agent.glm": "ZCode Agent",
+  "settings.skills.agent.glm": "Nekode Agent",
   "settings.skills.agent.unknown": "Unknown source",
   "settings.skills.create.open": "New skill",
   "settings.skills.create.taskCreateFailed":
     "Could not create a new task for the selected agent. Check availability and try again.",
   "settings.skills.import.open": "Import skills from external agents",
+  "settings.skills.category.other": "Other",
   "settings.skills.import.action": "Import",
   "settings.skills.import.title": "Import external agent skills",
   "settings.skills.import.description":
@@ -5037,10 +4663,10 @@ const enUS: Record<string, string> = {
   "settings.skills.import.mode.copy": "Copy",
   "settings.skills.import.mode.symlink": "Symlink",
   "settings.skills.import.mode.copy.description":
-    "Copy the full skill directory into ZCode. Later changes in the external agent directory will not sync automatically.",
+    "Copy the full skill directory into Nekode. Later changes in the external agent directory will not sync automatically.",
   "settings.skills.import.mode.symlink.description":
-    "Create a directory link to the external agent skill. ZCode follows later source changes, but the skill depends on that source path remaining available.",
-  "settings.skills.import.importing": "Importing skills into ZCode",
+    "Create a directory link to the external agent skill. Nekode follows later source changes, but the skill depends on that source path remaining available.",
+  "settings.skills.import.importing": "Importing skills into Nekode",
   "settings.skills.import.imported": "Imported",
   "settings.skills.import.skipped": "Skipped",
   "settings.skills.import.failed": "Failed",
@@ -5087,7 +4713,7 @@ const enUS: Record<string, string> = {
   "settings.skills.diagnostics.code.skill_not_found": "Skill not found",
   "settings.subagents.title": "Subagents",
   "settings.subagents.description":
-    "Manage user-level subagent Markdown files consumed by ZCode Agent.",
+    "Manage user-level subagent Markdown files consumed by Nekode Agent.",
   "settings.subagents.workspaceScopeUnsupported":
     "Workspace-level creation or editing is unsupported",
   "settings.subagents.searchPlaceholder": "Search subagents...",
@@ -5461,10 +5087,10 @@ const enUS: Record<string, string> = {
   "settings.plugins.import.mode.copy": "Copy",
   "settings.plugins.import.mode.symlink": "Symlink",
   "settings.plugins.import.mode.copy.description":
-    "Copy the full plugin directory into ZCode and register it in plugins.dirs. Later changes in the external agent directory will not sync automatically.",
+    "Copy the full plugin directory into Nekode and register it in plugins.dirs. Later changes in the external agent directory will not sync automatically.",
   "settings.plugins.import.mode.symlink.description":
-    "Create a directory link to the external agent plugin and register it in plugins.dirs. ZCode follows later source changes, but the plugin depends on that source path remaining available.",
-  "settings.plugins.import.importing": "Importing plugins into ZCode",
+    "Create a directory link to the external agent plugin and register it in plugins.dirs. Nekode follows later source changes, but the plugin depends on that source path remaining available.",
+  "settings.plugins.import.importing": "Importing plugins into Nekode",
   "settings.plugins.import.imported": "Imported",
   "settings.plugins.import.skipped": "Skipped",
   "settings.plugins.import.failed": "Failed",
@@ -5473,9 +5099,9 @@ const enUS: Record<string, string> = {
   "settings.plugins.import.finish": "Done",
   "settings.commands.title": "Commands",
   "settings.commands.description":
-    "Manage ZCode Agent .md command files. Commands can be invoked with /command-name in chat.",
+    "Manage Nekode Agent .md command files. Commands can be invoked with /command-name in chat.",
   "settings.commands.sourceFilterLabel": "Source filter",
-  "settings.commands.source.zcodeAgent": "ZCode Agent",
+  "settings.commands.source.zcodeAgent": "Nekode Agent",
   "settings.commands.add": "New",
   "settings.commands.addNew": "New command",
   "settings.commands.addDescription":
@@ -5535,10 +5161,10 @@ const enUS: Record<string, string> = {
   "settings.commands.import.mode.copy": "Copy",
   "settings.commands.import.mode.symlink": "Symlink",
   "settings.commands.import.mode.copy.description":
-    "Copy the command file into ZCode. Later changes in the external agent file will not sync automatically.",
+    "Copy the command file into Nekode. Later changes in the external agent file will not sync automatically.",
   "settings.commands.import.mode.symlink.description":
-    "Create a file link to the external agent command. ZCode follows later source changes, but the command depends on that source path remaining available.",
-  "settings.commands.import.importing": "Importing commands into ZCode",
+    "Create a file link to the external agent command. Nekode follows later source changes, but the command depends on that source path remaining available.",
+  "settings.commands.import.importing": "Importing commands into Nekode",
   "settings.commands.import.imported": "Imported",
   "settings.commands.import.skipped": "Skipped",
   "settings.commands.import.failed": "Failed",
@@ -5565,9 +5191,9 @@ const enUS: Record<string, string> = {
   "settings.hooks.title": "Hooks",
   "settings.workspaceFileSearch.title": "Workspace Search Scope",
   "settings.workspaceFileSearch.description":
-    "Edit .zcodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
+    "Edit .nekodeignore rules (gitignore syntax) that scope workspace file search. Takes effect on the next search after saving.",
   "settings.workspaceFileSearch.templateHint":
-    ".zcodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
+    ".nekodeignore does not exist yet: the content below is the initial preview (.gitignore copy + default exclusions); it is written to the workspace only after saving.",
   "settings.workspaceFileSearch.editorLabel": "Workspace search ignore rules editor",
   "settings.workspaceFileSearch.save": "Save",
   "settings.workspaceFileSearch.saved": "Saved; effective on the next search",
@@ -5578,7 +5204,8 @@ const enUS: Record<string, string> = {
   "settings.workspaceFileSearch.transformFailed":
     "Failed to apply the section operation; check the logs",
   "settings.workspaceFileSearch.reveal": "Reveal file location",
-  "settings.workspaceFileSearch.revealHint": "Save first; .zcodeignore lives at the workspace root",
+  "settings.workspaceFileSearch.revealHint":
+    "Save first; .nekodeignore lives at the workspace root",
   "settings.workspaceFileSearch.unsaved": "Unsaved changes",
   "settings.workspaceFileSearch.noWorkspace":
     "No workspace is open, so search ignore rules cannot be configured.",
@@ -5626,7 +5253,7 @@ const enUS: Record<string, string> = {
   "settings.hooks.customJson": "Custom fields JSON",
   "settings.hooks.customJsonObjectError": "Custom fields must be a JSON object.",
   "settings.hooks.customJsonParseError": "Custom fields JSON parsing failed.",
-  "settings.plugins.zcodeOnly": "ZCode Agent only",
+  "settings.plugins.zcodeOnly": "Nekode Agent only",
   "settingsSync.dialog.title": "Import Settings",
   "settingsSync.dialog.description":
     "Only missing items will be imported. Existing settings will be skipped automatically.",
@@ -5635,8 +5262,8 @@ const enUS: Record<string, string> = {
   "settingsSync.action.rescanning": "Scanning...",
   "settingsSync.action.importSelected": "Import selected",
   "settingsSync.action.importing": "Importing...",
-  "settingsSync.action.finish": "Start using ZCode",
-  "settingsSync.agent.zcode": "ZCode Agent",
+  "settingsSync.action.finish": "Start using Nekode",
+  "settingsSync.agent.nekode": "Nekode Agent",
   "settingsSync.agent.claudeCode": "Claude Code",
   "settingsSync.agent.codexCli": "Codex CLI",
   "settingsSync.agent.openCode": "OpenCode",
@@ -5685,7 +5312,7 @@ const enUS: Record<string, string> = {
   "settingsSync.discovery.description":
     "Importable agent settings are no longer scanned automatically.",
   "settingsSync.discovery.helper":
-    "Only missing items will be imported and your current ZCode settings will not be overwritten.",
+    "Only missing items will be imported and your current Nekode settings will not be overwritten.",
   "settingsSync.discovery.agentCount": "Agents found: {count}",
   "settingsSync.discovery.categoryCount": "Categories found: {count}",
   "settingsSync.discovery.error": "Scan failed: {error}",
@@ -5711,7 +5338,7 @@ const enUS: Record<string, string> = {
     "Import selected commands from external agents before the final migration.",
   "onboarding.stepDescription.agentSettings": "Choose which agents' providers to bring in.",
   "onboarding.stepDescription.migration":
-    "Start migration and wait while ZCode imports your selections.",
+    "Start migration and wait while Nekode imports your selections.",
   "onboarding.sessions.empty":
     "No workspaces yet. Scan local history, then pick workspaces to migrate.",
   "onboarding.sessions.count": "{count} sessions",
@@ -5730,7 +5357,7 @@ const enUS: Record<string, string> = {
   "onboarding.agentsFile.error": "Could not check AGENTS.md migration status: {error}",
   "onboarding.agentsFile.confirmTitle": "Overwrite default AGENTS.md?",
   "onboarding.agentsFile.confirmDescription":
-    "ZCode will copy {source} to {target}.\nIf the target file already exists, the ZCode default AGENTS configuration will be overwritten.",
+    "Nekode will copy {source} to {target}.\nIf the target file already exists, the Nekode default AGENTS configuration will be overwritten.",
   "onboarding.agentsFile.confirmAction": "Overwrite and migrate",
   "onboarding.finish.summary.label.imported": "Imported",
   "onboarding.finish.summary.label.skipped": "Skipped",
@@ -5820,8 +5447,8 @@ const enUS: Record<string, string> = {
   "chat.emptyResult.description":
     "This task finished without any chat content. It may have been stopped before the model produced a response.",
   "chat.placeholder.newTask":
-    "Ask ZCode anything, @ to add context, / for commands or capabilities",
-  "chat.placeholder.newTaskMobile": "Ask ZCode anything…",
+    "Ask Nekode anything, @ to add context, / for commands or capabilities",
+  "chat.placeholder.newTaskMobile": "Ask Nekode anything…",
   "chat.placeholder.followUpAsk": "Ask for follow-up changes",
   "chat.placeholder.followUpQueue": "Keep typing to queue follow-up changes",
   "chat.placeholder.loading": "Initializing task...",
@@ -5863,6 +5490,11 @@ const enUS: Record<string, string> = {
   "chat.message.expand": "Expand",
   "chat.message.collapse": "Collapse",
   "chat.userInput.epilogue.label": "Workflow engine instructions",
+  "chat.userInput.memoryEpilogue.count": "Memory delivery · {count} records",
+  "chat.userInput.memoryEpilogue.label": "Memory delivery",
+  "chat.userInput.memoryEpilogue.checkpoint": "Memory checkpoint",
+  "chat.userInput.memoryEpilogue.hint": "Memory reminder",
+  "chat.userInput.runtimeEpilogue.label": "Runtime context",
   "chat.message.bodyPreview.notice":
     "This reply is large. Showing a preview only ({previewBytes} / {fullBytes}).",
   "chat.message.bodyPreview.loadFull": "View full message",
@@ -5887,7 +5519,6 @@ const enUS: Record<string, string> = {
   "chat.topicPreparation.waitingStop": "Waiting for the current run to stop",
   "chat.topicPreparation.failed": "Material preparation failed",
   "chat.topicPreparation.retry": "Retry",
-  "chat.history.topicInterrupted": "Interrupted by a new message",
   "chat.history.stopped": "Stopped",
   "chat.history.duration.day": "d",
   "chat.history.duration.hour": "h",
@@ -6097,7 +5728,7 @@ const enUS: Record<string, string> = {
   "chat.compact.duplicateBlocked": "A compaction is already running or queued.",
   "chat.modelSwitch.contextWindowGuard.title": "Compress context before switching models",
   "chat.modelSwitch.contextWindowGuard.description":
-    "This conversation has used {used} tokens, which exceeds {modelName}'s available context of {target} tokens after reserving maximum output.\nCompress the current conversation with the current model first. If the compressed context fits, ZCode will continue switching models.",
+    "This conversation has used {used} tokens, which exceeds {modelName}'s available context of {target} tokens after reserving maximum output.\nCompress the current conversation with the current model first. If the compressed context fits, Nekode will continue switching models.",
   "chat.modelSwitch.contextWindowGuard.compress": "Compress",
   "chat.modelSwitch.contextWindowGuard.runningBlocked":
     "This conversation has used more context than the target model's available context after reserving maximum output. The conversation must be compressed before switching models, but the current task is still running and context compression cannot run now. Wait for the task to finish, then switch models again.",
@@ -6110,11 +5741,11 @@ const enUS: Record<string, string> = {
     "Computer Use is idle — it will start automatically on first use",
   "chat.toolbar.computerUse.tooltip.starting": "Enabling Computer Use plugin…",
   "chat.toolbar.computerUse.tooltip.ready":
-    "Computer Use ready — just describe what you want ZCode to do",
+    "Computer Use ready — just describe what you want Nekode to do",
   "chat.toolbar.computerUse.tooltip.permissionRequired":
     "Missing macOS permissions — click to grant",
   "chat.toolbar.computerUse.tooltip.error":
-    "Computer Use enablement failed. Please restart ZCode app and retry, or ask ZCode to investigate the logs",
+    "Computer Use enablement failed. Please restart Nekode app and retry, or ask Nekode to investigate the logs",
   "chat.toolbar.computerUse.tooltip.sessionBusy":
     "A conversation is running. Computer Use can't be toggled right now — try again after it finishes.",
   "chat.toolbar.mode.description":
@@ -6466,7 +6097,7 @@ const enUS: Record<string, string> = {
     "Could not reach the local agent; global workflows are unavailable.",
   "workflows.hub.empty.title": "No saved workflows in your open projects yet",
   "workflows.hub.empty.hint":
-    "Design a workflow with ZCode in chat, then have it save the workflow to a project once it works. Projects that aren't open don't appear here.",
+    "Design a workflow with Nekode in chat, then have it save the workflow to a project once it works. Projects that aren't open don't appear here.",
   "workflows.hub.noWorkspace": "Open a workspace to see its workflows.",
   "workflows.hub.loadError": "Could not read workflows: {error}",
   "workflows.hub.invalid": "{count} files could not be read",
@@ -6529,7 +6160,7 @@ const enUS: Record<string, string> = {
   "workflows.hub.detail.description": "Description",
   "workflows.hub.detail.whenToUse": "When to use",
   "workflows.hub.detail.whenToUse.help":
-    "A routing hint for ZCode: when this workflow is the right pick.",
+    "A routing hint for Nekode: when this workflow is the right pick.",
   "workflows.hub.detail.args": "Arguments",
   "workflows.hub.detail.args.name": "Name",
   "workflows.hub.detail.args.type": "Type",
@@ -6550,7 +6181,7 @@ const enUS: Record<string, string> = {
   "workflows.hub.detail.meta.descriptionRequired": "Description is required",
   "workflows.hub.detail.script": "Script",
   "workflows.hub.detail.script.note":
-    "The script is read-only. To change it, revise it with ZCode in chat and save a new version.",
+    "The script is read-only. To change it, revise it with Nekode in chat and save a new version.",
   "workflows.hub.detail.script.copy": "Copy script",
   "workflows.hub.detail.loadError": "Could not read this workflow: {reason}",
   "workflows.hub.detail.notFound": "This workflow is no longer in the project.",
@@ -6738,7 +6369,7 @@ const enUS: Record<string, string> = {
   // 「配置」弹层（docs/dynamic-workflow/presentation.md「The settings popover」）：改子代理模型与最大并发数，
   // 应用即一次 GUI 修订（新 run 接着跑，旧 run 停下，已完成的步骤作缓存带过去）。
   // 完成卡与 run 侧板上的「保存 / 再次运行」（docs/dynamic-workflow/transcript-and-notifications.md
-  // 「Saving the run, and running it again」）。两条路：交给 ZCode 提炼，或按原样直接写下去。
+  // 「Saving the run, and running it again」）。两条路：交给 Nekode 提炼，或按原样直接写下去。
   "chat.toolCall.workflow.saveRun.action": "Save",
   "chat.toolCall.workflow.saveRun.runAgain": "Run again",
   "chat.toolCall.workflow.saveRun.starting": "Starting…",
@@ -6747,10 +6378,10 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.saveRun.announce.project": "Saved to the project",
   "chat.toolCall.workflow.saveRun.announce.global": "Saved as a global workflow",
   "chat.toolCall.workflow.saveRun.title": "Save workflow",
-  "chat.toolCall.workflow.saveRun.lead": "Let ZCode refine and save it",
+  "chat.toolCall.workflow.saveRun.lead": "Let Nekode refine and save it",
   "chat.toolCall.workflow.saveRun.lead.hint":
-    "ZCode distills a reusable workflow for you, then asks you to confirm.",
-  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to ZCode…",
+    "Nekode distills a reusable workflow for you, then asks you to confirm.",
+  "chat.toolCall.workflow.saveRun.lead.sending": "Handed to Nekode…",
   "chat.toolCall.workflow.saveRun.lead.unsupported": "This agent cannot save directly.",
   "chat.toolCall.workflow.saveRun.or": "or save it as is",
   "chat.toolCall.workflow.saveRun.name": "Name",
@@ -6854,7 +6485,7 @@ const enUS: Record<string, string> = {
   "chat.toolCall.workflow.run.artifacts.nextVersion": "Next version",
   "chat.toolCall.workflow.run.artifacts.open": "Open artifact",
   // 动作。「下载」（存到用户挑的位置）仍缺席；「作为文件打开」
-  // 落的是宿主 ~/.zcode/tmp 下的副本，不是用户挑的位置。
+  // 落的是宿主 ~/.nekode/tmp 下的副本，不是用户挑的位置。
   "chat.toolCall.workflow.run.artifacts.reveal": "Reveal in workspace",
   "chat.toolCall.workflow.run.artifacts.copy": "Copy",
   "chat.toolCall.workflow.run.artifacts.copied": "Copied",
@@ -7130,7 +6761,7 @@ const enUS: Record<string, string> = {
   "chat.slash.subagents.title": "Agents",
   "chat.slash.subagents.empty": "No matching agents",
   "chat.slash.emptyUnavailable":
-    "No slash commands have been broadcast for the current ZCode Agent session",
+    "No slash commands have been broadcast for the current Nekode Agent session",
   "chat.slash.emptyResults": "No matching slash commands",
   // Errors
   "chat.error.connectionLost": "Connection to agent lost",
@@ -7175,9 +6806,9 @@ const enUS: Record<string, string> = {
   "chat.quota.startPlan.concurrentLimit.switchModel":
     "The current model request concurrency limit has been reached. Switch models to continue your current task.",
   "chat.quota.mcp.quotaExhausted":
-    'ZCode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
+    'Nekode MCP "{server}" has used up today\'s quota. It resets tomorrow.',
   "chat.quota.mcp.codingPlanRequired":
-    'No ZCode MCP "{server}" quota. Sign in or get a Coding Plan to use it.',
+    'No Nekode MCP "{server}" quota. Sign in or get a Coding Plan to use it.',
   "chat.quota.providerLimited":
     "The current account quota or plan limit has been reached. Upgrade or adjust the plan to continue.",
   "chat.quota.action.upgrade": "Upgrade",
@@ -7373,7 +7004,7 @@ const enUS: Record<string, string> = {
   "planTool.guidance.enterMode": "Entered plan mode",
   "chat.permission.switchMode.placeholder": "Implementation plan",
 
-  // ZCode Agent
+  // Nekode Agent
   "zcode.unavailable": "AI agent not available",
   "zcode.initFailed": "Failed to start AI agent",
   "zcode.error.TASK_OWNED_BY_OTHER_HOST": "This task is already running in another connected view.",
@@ -7386,9 +7017,9 @@ const enUS: Record<string, string> = {
     "Current image attachments are too large. Remove or compress images and try again.",
   "zcode.error.MEDIA_BUDGET_CURRENT_VIDEO_TOO_LARGE":
     "Current video attachments are too large. Remove or compress videos and try again.",
-  "zcode.error.ZCODE_RUNTIME_MODEL_UNAVAILABLE":
+  "zcode.error.NEKODE_RUNTIME_MODEL_UNAVAILABLE":
     "The current model is no longer available. Select an available model from the current model list to continue.",
-  "zcode.error.ZCODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
+  "zcode.error.NEKODE_BIGMODEL_TEAM_PLAN_MEMBER_REQUIRED":
     "The current model is unavailable. Check whether the current account has been added to the project member list.",
   "zcode.error.CLAUDE_UNKNOWN_COMMAND":
     "Claude Code does not recognize {command}. Check the command name, or switch to an Agent/skill that supports it and try again.",
@@ -7449,7 +7080,7 @@ const enUS: Record<string, string> = {
   "resourceManager.network.empty": "Waiting for new network requests…",
   "resourceManager.network.noMatches": "No matching requests",
   "resourceManager.storage": "Storage",
-  "resourceManager.appUsage": "ZCode",
+  "resourceManager.appUsage": "Nekode",
   "resourceManager.systemUsage": "System",
   "resourceManager.category.base": "Base services",
   "resourceManager.category.builtinPlugin": "Built-in plugins",
@@ -7693,7 +7324,7 @@ const enUS: Record<string, string> = {
   "feedback.submit.template.section.errorSummaryLine": "Error Summary: {message}",
   "feedback.submit.template.section.errorDetail": "Error Details",
   "feedback.submit.template.section.errorTraceId": "TraceID: {traceId}",
-  "feedback.submit.template.section.copyErrorHeading": "ZCode Error Info",
+  "feedback.submit.template.section.copyErrorHeading": "Nekode Error Info",
   "feedback.submit.template.section.notProvided": "Not provided",
   "feedback.submit.template.section.remoteLogEmpty": "No connection logs captured",
   "feedback.submit.template.section.taskFeedbackTitle": "Feedback about task: {title}",
@@ -7815,8 +7446,9 @@ const enUS: Record<string, string> = {
   "taskList.workflowRun.moreStations": "+{count}",
   "taskList.workflowRun.liveCount": "{count} workflows running",
   "taskGroup.cronGroupName": "Scheduled tasks",
-  "workspace.openScheduledSettings": "Automations",
+  "workspace.openWorkflows": "Workflows",
   "settings.automations.title": "Automations",
+  "workflows.hub.title": "Workflows",
   "automations.breadcrumbLabel": "Automation path",
   "settings.automations.betaBadge": "Beta",
   "automations.noWorkspace": "Open a workspace to manage its scheduled tasks.",
@@ -7853,7 +7485,7 @@ const enUS: Record<string, string> = {
   "automations.statusFilter.completed": "Completed",
   "automations.statusFilter.failed": "Failed",
   "automations.statusFilter.empty": "No tasks match this filter",
-  "offPeak.keepAwakeBanner": "Keep your computer awake while ZCode is running a chat.",
+  "offPeak.keepAwakeBanner": "Keep your computer awake while Nekode is running a chat.",
   "offPeak.sectionTitle": "Idle-time tasks",
   "offPeak.createButton": "Create idle-time task",
   "offPeak.templates.sectionTitle": "Idle-time task template",
@@ -7910,7 +7542,7 @@ const enUS: Record<string, string> = {
   "offPeak.form.titlePlaceholder": "e.g. Nightly refactor",
   "offPeak.form.instructionsLabel": "Instructions",
   "offPeak.form.instructionsPlaceholder":
-    "Describe a task ZCode can work on in the background, including the expected result and any constraints…",
+    "Describe a task Nekode can work on in the background, including the expected result and any constraints…",
   "offPeak.form.permissionWarning":
     "Idle-time runs are unattended. Actions that need confirmation will pause the task until you respond.",
   "offPeak.form.modelLabel": "Model",
@@ -8105,9 +7737,9 @@ const enUS: Record<string, string> = {
   "automations.runs.nextPage": "Next",
   // CUA (Computer Use)
   "chat.cuaReadiness.toolsNotLoaded":
-    "ZCode Computer Use is still preparing — its tools aren't loaded yet ({count} loaded). Grant the permissions below; tools appear once the helper is ready.",
+    "Nekode Computer Use is still preparing — its tools aren't loaded yet ({count} loaded). Grant the permissions below; tools appear once the helper is ready.",
   "chat.cuaReadiness.toolsPreparing":
-    "ZCode Computer Use is still preparing — its tools aren't loaded yet. Grant the permissions below; tools appear once the helper is ready.",
+    "Nekode Computer Use is still preparing — its tools aren't loaded yet. Grant the permissions below; tools appear once the helper is ready.",
   "chat.toolCall.cua.requestAccess": "Check Computer Use access",
   "chat.toolCall.cua.appName": "Computer Use",
   "chat.toolCall.cua.group.completedLabel": "Computer Use",
@@ -8235,9 +7867,9 @@ const enUS: Record<string, string> = {
   "cuaPermission.modal.restartButton": "Restart Helper",
   "cuaPermission.modal.restarting": "Restarting Helper…",
   "cuaPermission.modal.restartFailed": "Couldn't restart Helper: {error}",
-  "cuaPermission.modal.relaunchAppButton": "Restart ZCode",
+  "cuaPermission.modal.relaunchAppButton": "Restart Nekode",
   "cuaPermission.modal.relaunchAppHint":
-    "Still not working after restarting Helper? Restart ZCode to fully reload the Helper process.",
+    "Still not working after restarting Helper? Restart Nekode to fully reload the Helper process.",
   "cuaPermission.status.granted": "Granted",
   "cuaPermission.status.missing": "Missing",
   "cuaPermission.status.unknown": "Unknown",
@@ -8251,7 +7883,7 @@ const enUS: Record<string, string> = {
   "cuaPermission.tools.agentUpdateRequired":
     "The connected Agent is too old for a safe readiness check. Update or restart it, then check again.",
   "cuaPermission.tools.untrustedRuntime":
-    "Computer Use tools were found, but they did not come from the verified ZCode plugin. Review the plugin installation, then check again.",
+    "Computer Use tools were found, but they did not come from the verified Nekode plugin. Review the plugin installation, then check again.",
   "cuaPermission.perm.accessibility": "Accessibility",
   "cuaPermission.perm.accessibility.purpose": "Read/drive UI elements + synthesize input",
   "cuaPermission.perm.screenRecording": "Screen Recording",
@@ -8262,7 +7894,7 @@ const enUS: Record<string, string> = {
     "Please upgrade macOS before using it. Permission setup cannot be completed on older versions.",
   "cuaPermission.ready": "Permissions ready",
   "cuaPermission.ready.sessionValidationHint":
-    "ZCode will verify the Computer Use tools against the exact session when your first session starts.",
+    "Nekode will verify the Computer Use tools against the exact session when your first session starts.",
   "settings.computerUse.title": "Computer Use",
   "settings.computerUse.toggleLabel": "Enable Computer Use",
   "settings.computerUse.toggleDescription":
@@ -8313,13 +7945,13 @@ const enUS: Record<string, string> = {
   "globalNotice.highspeed.textCopied": "Share text copied",
   "globalNotice.highspeed.textCopyFailed": "Could not copy share text. Try again.",
   "globalNotice.highspeed.copyImage": "Copy image",
-  "globalNotice.highspeed.badge": "ZCode & Coding Plan Exclusive Benefits",
+  "globalNotice.highspeed.badge": "Nekode & Coding Plan Exclusive Benefits",
   "globalNotice.highspeed.standardTaskSpeed": "Standard generation speed",
   "globalNotice.highspeed.relativeTaskDuration": "Relative generation time",
   "globalNotice.highspeed.speedSummary": "HighSpeed · {duration}",
   "globalNotice.highspeed.lessWaiting": "{percent}% less waiting",
   "globalNotice.highspeed.copySummary":
-    "I used the ZCode Highspeed card and saved {duration}s. Give it a try. Download ZCode https://zcode.z.ai",
+    "I used the Nekode Highspeed card and saved {duration}s. Give it a try. Download Nekode https://zcode.z.ai",
   "globalNotice.highspeed.imageSummary": "{tokens} tokens · {duration}s saved",
   "globalNotice.highspeed.close": "Close Highspeed share card",
   "remoteSync.title": "Data sync",
@@ -8329,7 +7961,7 @@ const enUS: Record<string, string> = {
   "remoteSync.device.status.online": "Connected",
   "remoteSync.empty.title": "No connected devices",
   "remoteSync.empty.description":
-    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.zcode directory.",
+    "Connect an SSH, WSL, or Docker device to push this device's configuration to its ~/.nekode directory.",
   "remoteSync.empty.connect": "Connect remote device",
   "remoteSync.device.neverSynced": "Not synced yet",
   "remoteSync.device.lastSynced.today": "Synced today at {time}",
@@ -8390,7 +8022,7 @@ const enUS: Record<string, string> = {
   "remoteSync.blocked.compatDirectory":
     "The remote item is in the ~/.agents compatibility directory and cannot be overwritten",
   "remoteSync.blocked.externalDirectory":
-    "The remote plugin with the same name is outside ~/.zcode/plugins (for example a development checkout) and cannot be updated",
+    "The remote plugin with the same name is outside ~/.nekode/plugins (for example a development checkout) and cannot be updated",
   "remoteSync.blocked.targetCompatConfig":
     "The remote device uses the ~/.agents compatibility config; pushing would disable it",
   "remoteSync.blocked.sourceRemoved": "The source was removed and cannot be synced",

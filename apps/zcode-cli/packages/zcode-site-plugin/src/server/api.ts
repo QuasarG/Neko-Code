@@ -5,7 +5,7 @@ import type { SitesFailureReason, SitesResult } from "../contract.ts";
  * OFFICIAL_MCP_AUTH_META_KEY 一致（跨进程协议常量，单测比对）。这里不 import shared 的主入口，
  * 免得把整个 shared 打进 server.mjs。
  */
-export const OFFICIAL_MCP_AUTH_META_KEY = "com.zcode/official-mcp-auth";
+export const OFFICIAL_MCP_AUTH_META_KEY = "com.nekode/official-mcp-auth";
 
 const AUTH_REASONS = new Set<SitesFailureReason>([
   "official_auth_unavailable",
@@ -34,7 +34,7 @@ export function readOfficialAuth(meta: unknown): AuthResult {
 export interface SitesApiOptions {
   /** zcode-server origin，与宿主解析官方 MCP 目标时同一口径。 */
   origin: string;
-  /** 控制面要求的 X-ZCode-App-Version；缺失返回 3001，过旧返回 3609。 */
+  /** 控制面要求的 X-Nekode-App-Version；缺失返回 3001，过旧返回 3609。 */
   appVersion: string;
   fetch: typeof globalThis.fetch;
   timeoutMs: number;
@@ -62,7 +62,7 @@ export function createSitesApi(options: SitesApiOptions): SitesApi {
         headers: {
           ...auth.headers,
           Accept: "application/json",
-          "X-ZCode-App-Version": options.appVersion,
+          "X-Nekode-App-Version": options.appVersion,
           ...(body ? { "Content-Type": "application/json" } : {}),
         },
         ...(body ? { body: JSON.stringify(body) } : {}),

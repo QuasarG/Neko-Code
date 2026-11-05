@@ -165,8 +165,8 @@ describe("applyMcpNodeFallbackEnv", () => {
   const fallback = {
     binDir: "/storage/node-fallback/v1",
     env: {
-      [NODE_FALLBACK_EXEC_PATH_ENV_KEY]: "/Applications/ZCode.app/Helper",
-      [NODE_FALLBACK_NPM_ROOT_ENV_KEY]: "/Applications/ZCode.app/npm",
+      [NODE_FALLBACK_EXEC_PATH_ENV_KEY]: "/Applications/Nekode.app/Helper",
+      [NODE_FALLBACK_NPM_ROOT_ENV_KEY]: "/Applications/Nekode.app/npm",
     },
   };
 
@@ -184,7 +184,7 @@ describe("applyMcpNodeFallbackEnv", () => {
   });
 
   describe("on Windows", () => {
-    const winFallback = { ...fallback, binDir: "C:\\Users\\dev\\.zcode\\node-fallback\\v1" };
+    const winFallback = { ...fallback, binDir: "C:\\Users\\dev\\.nekode\\node-fallback\\v1" };
     const hostPath = "C:\\Windows\\System32";
 
     // 复现真实链路：MCP SDK StdioClientTransport 以 `{ PATH: process.env.PATH, ...env }` spawn；
@@ -223,11 +223,11 @@ describe("applyMcpNodeFallbackEnv", () => {
     it("compares entries case-insensitively", () => {
       expect(
         applyMcpNodeFallbackEnv(
-          { Path: "c:\\users\\dev\\.zcode\\node-fallback\\v1\\" },
+          { Path: "c:\\users\\dev\\.nekode\\node-fallback\\v1\\" },
           winFallback,
           "win32",
         ),
-      ).toEqual({ PATH: "c:\\users\\dev\\.zcode\\node-fallback\\v1\\", ...fallback.env });
+      ).toEqual({ PATH: "c:\\users\\dev\\.nekode\\node-fallback\\v1\\", ...fallback.env });
     });
   });
 

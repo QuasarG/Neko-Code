@@ -51,7 +51,7 @@ export type {
   SaveProjectInput,
   IProjectService,
   IWindowControllerService,
-  IZCodeTaskService,
+  INekodeTaskService,
   WindowHostControllerMutation,
   WindowHostControllerFrame,
   WindowHostTaskUnreadSignal,
@@ -143,9 +143,9 @@ export interface ProjectSidebarProps {
   onOpenCommandCenter: () => void;
   onOpenRepoWiki?: () => void;
   repoWikiActive?: boolean;
-  onOpenAutomations?: () => void;
+  onOpenWorkflows?: () => void;
   onOpenPluginStore?: () => void;
-  automationsActive?: boolean;
+  workflowsActive?: boolean;
   pluginStoreActive?: boolean;
   onFileTreeOpenChange?: (open: boolean) => void;
   onWebRemoteTaskOpen?: (options: { crossWorkspace: boolean }) => void;

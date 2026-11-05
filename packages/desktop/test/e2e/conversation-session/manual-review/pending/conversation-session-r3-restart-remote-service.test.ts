@@ -21,7 +21,7 @@ import { readHostProcesses, runSSHCommand, waitForRemoteTab } from "#e2e/helpers
 
 const CASE_MARKER = "E2E_R3_RESTART_REMOTE_SERVICE";
 const artifactDir = resolve(
-  process.env.ZCODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-restart-remote-service",
+  process.env.NEKODE_E2E_ARTIFACT_DIR ?? ".e2e-artifacts/r3-restart-remote-service",
 );
 
 /**
@@ -157,7 +157,7 @@ describe(`${CASE_MARKER}: 设备卡重启远端服务`, () => {
     expect(core1.pid).not.toBe(core0.pid);
     expect(core1.supervisorPid).not.toBe(core0.supervisorPid);
     const status1 = JSON.parse(
-      (await runSSHCommand(config, 'cat "$HOME/.zcode/server/run/status.json"')).stdout,
+      (await runSSHCommand(config, 'cat "$HOME/.nekode/server/run/status.json"')).stdout,
     ) as { serviceRegistered: boolean; crashBudget: { crashCount: number } };
     expect(status1.serviceRegistered).toBe(false);
     expect(status1.crashBudget.crashCount).toBe(0);

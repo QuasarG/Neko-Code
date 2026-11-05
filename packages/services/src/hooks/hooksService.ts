@@ -1,6 +1,7 @@
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
+import { isOfficialZcodeDataPath, resolveNekodeCliRoot } from "@zcode/shared/node";
 import { isAbsolute, join, resolve } from "node:path";
 import type {
   Hook,
@@ -25,14 +26,14 @@ import { updateJsonObjectFile } from "#src/fs/atomicFileUtils.js";
 import {
   fromLegacyHooksConfig,
   fromProjectSnapshot,
-  fromUserZCodeSource,
+  fromUserNekodeSource,
   resolveNextRootEnabled,
-  toZCodeHooksEvents,
+  toNekodeHooksEvents,
   type LegacyHooksConfig,
 } from "./workspaceHookSettingsModel.js";
 
 const SETTINGS_FILE = "settings.json";
-const ZCODE_CONFIG_FILE = "config.json";
+const NEKODE_CONFIG_FILE = "config.json";
 const HOOK_EVENTS: readonly HookEvent[] = [
   "SessionStart",
   "UserPromptSubmit",
@@ -43,7 +44,7 @@ const HOOK_EVENTS: readonly HookEvent[] = [
   "Stop",
 ];
 
-interface ZCodeConfigFile {
+interface NekodeConfigFile {
   hooks?: WorkspaceHooksConfig;
   [key: string]: unknown;
 }
@@ -54,17 +55,17 @@ function resolveUserHomeDir(): string {
 }
 
 function getRootDir(source: SettingsDirectorySource, workspacePath?: string): string {
-  const baseDir = workspacePath ?? resolveUserHomeDir();
   if (source === "zcode") {
-    return workspacePath ? join(baseDir, ".zcode") : join(baseDir, ".zcode", "cli");
+    return workspacePath ? join(workspacePath, ".nekode") : join(resolveNekodeCliRoot(), "cli");
   }
+  const baseDir = workspacePath ?? resolveUserHomeDir();
   return join(baseDir, source === "agents" ? ".agents" : ".claude");
 }
 
 function getConfigPath(source: SettingsDirectorySource, workspacePath?: string): string {
   return join(
     getRootDir(source, workspacePath),
-    source === "zcode" ? ZCODE_CONFIG_FILE : SETTINGS_FILE,
+    source === "zcode" ? NEKODE_CONFIG_FILE : SETTINGS_FILE,
   );
 }
 
@@ -102,7 +103,7 @@ async function readJsonFile<T>(filePath: string): Promise<T | null> {
   }
 }
 
-async function readUserZCodeSource(): Promise<WorkspaceHookSourceInput | undefined> {
+async function readUserNekodeSource(): Promise<WorkspaceHookSourceInput | undefined> {
   const path = getConfigPath("zcode");
   const config = await readJsonFile<Record<string, unknown>>(path);
   const parsed = workspaceHooksConfigSchema.safeParse(config?.hooks);
@@ -159,13 +160,16 @@ async function readPersistentWorkspaceHookTrustDigests(
   const storage = isRecord(userConfig.storage) ? userConfig.storage : {};
   const configured = typeof storage.dir === "string" ? storage.dir.trim() : "";
   const home = resolveUserHomeDir();
-  const storageRoot = configured
+  const configuredRoot = configured
     ? configured.startsWith("~/")
       ? join(home, configured.slice(2))
       : isAbsolute(configured)
         ? resolve(configured)
         : resolve(home, configured)
-    : join(home, ".zcode");
+    : resolveNekodeCliRoot();
+  const storageRoot = isOfficialZcodeDataPath(configuredRoot)
+    ? resolveNekodeCliRoot()
+    : configuredRoot;
   const trustFilePath = join(storageRoot, "security", "workspace-hook-trust-v1.json");
 
   // 异步读取 + ENOENT 区分：不用 existsSync 预检——同步调用会阻塞服务
@@ -225,10 +229,10 @@ async function loadHooksImpl(
 }> {
   const workspacePath = resolve(params.workspacePath);
   if (params.scope === "user") {
-    const userSource = await readUserZCodeSource();
+    const userSource = await readUserNekodeSource();
     const runtimeRoot = resolveWorkspaceHookRuntimeRoot([userSource?.hooks]);
     const hooks = [
-      ...fromUserZCodeSource({
+      ...fromUserNekodeSource({
         source: userSource,
         runtimeRoot,
         workspacePath,
@@ -242,7 +246,7 @@ async function loadHooksImpl(
   const workspaceIdentity = params.workspaceIdentity?.trim() || workspacePath;
   const [{ sources: projectSources }, userSource] = await Promise.all([
     readWorkspaceHookProjectSources({ workingDirectory: workspacePath }),
-    readUserZCodeSource(),
+    readUserNekodeSource(),
   ]);
   const runtimeRoot = resolveWorkspaceHookRuntimeRoot([
     userSource?.hooks,
@@ -266,7 +270,7 @@ async function loadHooksImpl(
     }),
     ...(await loadLegacyHooksFromLocation("agents", workspacePath)),
     ...(await loadLegacyHooksFromLocation("claude", workspacePath)),
-    ...fromUserZCodeSource({
+    ...fromUserNekodeSource({
       source: userSource,
       runtimeRoot,
       workspacePath,
@@ -288,19 +292,19 @@ async function loadHooksImpl(
  * config.json 里的 MCP、插件等其他配置会被冲掉。
  * 修法：改用 updateJsonObjectFile——文件损坏时报错不写，写前重读，只改 hooks 字段，原子替换。
  */
-async function writeZCodeHooksConfig(
+async function writeNekodeHooksConfig(
   workspacePath: string | undefined,
   hooks: Hook[],
 ): Promise<void> {
   await updateJsonObjectFile(getConfigPath("zcode", workspacePath), (current) => {
-    const existingConfig = current as ZCodeConfigFile;
+    const existingConfig = current as NekodeConfigFile;
     const enabled = resolveNextRootEnabled(existingConfig.hooks?.enabled, hooks);
     return {
       ...existingConfig,
       hooks: {
         ...existingConfig.hooks,
         ...(enabled !== undefined ? { enabled } : {}),
-        events: toZCodeHooksEvents(hooks),
+        events: toNekodeHooksEvents(hooks),
       },
     };
   });
@@ -312,7 +316,7 @@ async function saveHooksImpl(params: {
   scope?: "all" | "user";
   hooks: Hook[];
 }): Promise<void> {
-  const currentProjectConfigPath = resolve(params.workspacePath, ".zcode", "config.json");
+  const currentProjectConfigPath = resolve(params.workspacePath, ".nekode", "config.json");
   const userHooks = params.hooks.filter(
     (hook) =>
       hook.editable !== false &&
@@ -326,9 +330,9 @@ async function saveHooksImpl(params: {
       (!hook.configuredState ||
         resolve(hook.configuredState.sourcePath) === currentProjectConfigPath),
   );
-  await writeZCodeHooksConfig(undefined, userHooks);
+  await writeNekodeHooksConfig(undefined, userHooks);
   if (params.scope !== "user") {
-    await writeZCodeHooksConfig(params.workspacePath, projectHooks);
+    await writeNekodeHooksConfig(params.workspacePath, projectHooks);
   }
 }
 

@@ -99,35 +99,7 @@ describe("AgentRuntime session residency facts", () => {
     await tracked;
     expect(runtime.hasResidencyBlockingWork()).toBe(false);
   });
-
-  it("memory extraction 与 recall prefetch 的既有状态进入统一保护事实", () => {
-    const { runtime } = createRuntime("memory-work");
-    const internal = runtime as unknown as {
-      memoryExtractionScheduler?: { hasPendingWork(): boolean };
-      memoryRecallPrefetch?: { settled: boolean };
-    };
-
-    internal.memoryExtractionScheduler = { hasPendingWork: () => true };
-    expect(runtime.hasResidencyBlockingWork()).toBe(true);
-    internal.memoryExtractionScheduler = undefined;
-
-    internal.memoryRecallPrefetch = { settled: false };
-    expect(runtime.hasResidencyBlockingWork()).toBe(true);
-    internal.memoryRecallPrefetch.settled = true;
-    expect(runtime.hasResidencyBlockingWork()).toBe(false);
-  });
 });
-
-function deferred<T>(): {
-  promise: Promise<T>;
-  resolve: (value: T) => void;
-} {
-  let resolve!: (value: T) => void;
-  const promise = new Promise<T>((promiseResolve) => {
-    resolve = promiseResolve;
-  });
-  return { promise, resolve };
-}
 
 describe("runtime cleanup failure visibility", () => {
   it("propagates browser cleanup failure to the lifecycle resource owner", async () => {
@@ -310,3 +282,11 @@ it("最终 owner 可以重试失败的所属工作；成功的浏览器释放不
   expect(work).toHaveBeenCalledTimes(2);
   expect(browser).toHaveBeenCalledOnce();
 });
+
+function deferred<T>(): { promise: Promise<T>; resolve: (value: T) => void } {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((res) => {
+    resolve = res;
+  });
+  return { promise, resolve };
+}

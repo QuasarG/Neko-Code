@@ -12,7 +12,7 @@ import {
   findSavedWorkflowForRunOp,
   saveSavedWorkflowFromRunOp,
 } from "../src/zcode-protocol/saved-workflows-run.js";
-import type { ZCodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
+import type { NekodeProtocolAgentServerContext } from "../src/zcode-protocol/server-types.js";
 
 const SCRIPT = [
   'const reviewer = agent("检查员");',
@@ -42,7 +42,7 @@ function workspace() {
 }
 
 /** 只实现 `getRun`：两个方法从 journal 读的就只有这一行。 */
-function contextWithRuns(runs: readonly FakeRun[]): ZCodeProtocolAgentServerContext {
+function contextWithRuns(runs: readonly FakeRun[]): NekodeProtocolAgentServerContext {
   const journal = {
     getRun: (runId: string) => {
       const run = runs.find((candidate) => candidate.runId === runId);
@@ -54,15 +54,15 @@ function contextWithRuns(runs: readonly FakeRun[]): ZCodeProtocolAgentServerCont
   return {
     deps: { env: {}, sessionStore: { workflowJournalStore: () => journal } },
     sessions: new Map(),
-  } as unknown as ZCodeProtocolAgentServerContext;
+  } as unknown as NekodeProtocolAgentServerContext;
 }
 
 function projectDir() {
-  return join(cwd, ".zcode", "workflows");
+  return join(cwd, ".nekode", "workflows");
 }
 
 function globalDir() {
-  return join(home, ".zcode", "workflows");
+  return join(home, ".nekode", "workflows");
 }
 
 async function seed(dir: string, name: string, script: string, description = "已有") {

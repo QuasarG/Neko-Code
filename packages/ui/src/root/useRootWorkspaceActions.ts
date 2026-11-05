@@ -3,12 +3,9 @@ import { readProjectSidebarView } from "@/project-sidebar/index.js";
 /* eslint-disable max-lines -- Root workspace action hook 集中编排项目、远程和 conversation 入口；合并期保持动作边界完整，后续按领域拆分。 */
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  DesktopCommandIds,
   remoteHostIdFromWorkspaceIdentity,
-  type AppSettings,
   type IPlatformService,
-  type UserInfo,
-  type ZCodeTaskClientMode,
+  type NekodeTaskClientMode,
 } from "@zcode/shared";
 import type { IServiceAccessor } from "@zcode/services";
 import type {
@@ -17,8 +14,6 @@ import type {
   RemoteConnectionOpenPreference,
 } from "@/app-shell/types.js";
 import { useConfirmDialog } from "@/hooks/useConfirmDialog.js";
-import { reportAppTelemetryEvent } from "@/lib/appTelemetry.js";
-import { resolveLogoutProviderFamilyDomain } from "@/lib/providerFamilyDomainSettings.js";
 import { isRendererReloadNavigation } from "@/lib/rendererNavigation.js";
 import { parseWslUncWorkspacePath } from "@/lib/wslUncWorkspace.js";
 import { logger } from "@/logger.js";
@@ -33,13 +28,12 @@ import {
 } from "@/v4/composer/composerDraftStore.js";
 import { openFolderFromWorkspaceEntry } from "@/root/openWorkspaceFolderEntry.js";
 import { useConversationWorkspaceActions } from "@/root/useConversationWorkspaceActions.js";
-import { useZCodeSessionStore } from "@/store/zcodeSessionStore.js";
+import { useNekodeSessionStore } from "@/store/zcodeSessionStore.js";
 import { notifyTaskNavigationCommitted } from "@/store/zcodeSessionStoreNavigation.js";
 import { type TabStore, type TabStoreState } from "@/store/tabStore.js";
 import type { RootProps } from "@/root/types.js";
 import {
   hadPersistedPaneLayoutAtModuleLoad,
-  INITIAL_PANE_LAYOUT,
   usePaneLayoutStore,
 } from "@/v4/paneLayoutStore.js";
 import { resolveWorkbenchNewTaskTarget } from "@/conversation-workspace-target/workbenchTarget.js";
@@ -96,18 +90,12 @@ export function useRootWorkspaceActions({
   allowOpenWorkspace,
   preferDirectoryBrowser,
   openDirectoryBrowser,
-  refreshProviderState,
-  updateAppSettings,
-  setOAuthError,
-  setUser,
-  onProviderFamilyDomainClearedAfterLogout,
-  userId,
   onOpenRemoteConnection,
   openRemoteProjectWorkspace,
   openMobileProjectDraft,
   workbenchGroupClientMode = "desktop-continuous",
 }: {
-  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useZCodeIntl>["intl"];
+  intl: ReturnType<typeof import("@/i18n/IntlProvider.js").useNekodeIntl>["intl"];
   platform: IPlatformService;
   services: IServiceAccessor;
   tabStoreApi: TabStore;
@@ -119,12 +107,6 @@ export function useRootWorkspaceActions({
   allowOpenWorkspace: NonNullable<RootProps["allowOpenWorkspace"]>;
   preferDirectoryBrowser: boolean;
   openDirectoryBrowser?: () => void;
-  refreshProviderState: () => Promise<void>;
-  updateAppSettings: (patch: Partial<AppSettings>) => Promise<void>;
-  setOAuthError: (error: string | null) => void;
-  setUser: (user: UserInfo | null) => void;
-  onProviderFamilyDomainClearedAfterLogout?: () => void;
-  userId?: string;
   onOpenRemoteConnection?: (preference?: RemoteConnectionOpenPreference) => void;
   openRemoteProjectWorkspace?: (target: {
     hostId: string;
@@ -135,7 +117,7 @@ export function useRootWorkspaceActions({
     isCurrent?: () => boolean;
   }) => Promise<void>;
   openMobileProjectDraft?: (request: CreateTaskOptions) => Promise<void>;
-  workbenchGroupClientMode?: ZCodeTaskClientMode;
+  workbenchGroupClientMode?: NekodeTaskClientMode;
 }) {
   const navigationSequence = useRef(0);
   const [workspaceActionError, setWorkspaceActionError] = useState<string | null>(null);
@@ -209,7 +191,7 @@ export function useRootWorkspaceActions({
         useWorkbenchGroupStore.getState().deactivateActiveGroup();
         usePaneLayoutStore.getState().resetToPrimaryPane();
       }
-      useZCodeSessionStore
+      useNekodeSessionStore
         .getState()
         .startDraft(workspacePath, options?.provider, workspaceIdentity, {
           projectId,
@@ -219,7 +201,7 @@ export function useRootWorkspaceActions({
         stageV4ComposerDraftAttachments(
           workspacePath,
           workspaceIdentity,
-          useZCodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
+          useNekodeSessionStore.getState().getWorkspaceState(workspacePath, workspaceIdentity)
             .draftFocusVersion,
           options.initialComposerDraft,
         );
@@ -240,7 +222,7 @@ export function useRootWorkspaceActions({
           },
           scope,
         );
-        useZCodeSessionStore
+        useNekodeSessionStore
           .getState()
           .requestComposerTextInsert(workspacePath, initialPrompt, workspaceIdentity, mention);
       }
@@ -254,7 +236,7 @@ export function useRootWorkspaceActions({
       const sequence = ++navigationSequence.current;
       const originTab = tabStoreApi.getState().activeTabId;
       const originWorkspace = activeWorkspacePath
-        ? useZCodeSessionStore
+        ? useNekodeSessionStore
             .getState()
             .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined)
         : null;
@@ -264,7 +246,7 @@ export function useRootWorkspaceActions({
         tabStoreApi.getState().activeTabId === originTab &&
         (!activeWorkspacePath ||
           (() => {
-            const state = useZCodeSessionStore
+            const state = useNekodeSessionStore
               .getState()
               .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined);
             return (
@@ -325,7 +307,7 @@ export function useRootWorkspaceActions({
               remoteHostIdFromWorkspaceIdentity(newTaskTarget.workspaceIdentity) ?? undefined;
             if (!hostId) throw new Error("project.host-identity-required");
           }
-          const workspace = useZCodeSessionStore
+          const workspace = useNekodeSessionStore
             .getState()
             .getWorkspaceState(
               newTaskTarget.workspacePath,
@@ -464,84 +446,6 @@ export function useRootWorkspaceActions({
     setWorkspaceActionError,
   });
 
-  const handleLogout = useCallback(async () => {
-    let runningAgentSessionCount: number | null = null;
-    try {
-      const sessionActivity = await platform.getDesktopSessionActivity?.();
-      runningAgentSessionCount =
-        typeof sessionActivity?.runningAgentSessionCount === "number"
-          ? sessionActivity.runningAgentSessionCount
-          : null;
-    } catch (error) {
-      logger.warn("[Root] 查询桌面运行中会话数量失败，使用保守退出登录文案", { error });
-    }
-
-    const confirmed = await requestConfirmation({
-      title: intl.formatMessage({ id: "logout.confirm.title" }),
-      description:
-        runningAgentSessionCount !== null && runningAgentSessionCount > 0
-          ? intl.formatMessage(
-              { id: "logout.confirm.descriptionWithRunningSessions" },
-              { count: String(runningAgentSessionCount) },
-            )
-          : intl.formatMessage({ id: "logout.confirm.descriptionDefault" }),
-      confirmLabel: intl.formatMessage({ id: "logout.confirm.ok" }),
-      cancelLabel: intl.formatMessage({ id: "logout.confirm.cancel" }),
-    });
-    if (!confirmed) {
-      return;
-    }
-
-    // Bug 原因：telemetry 是辅助链路；等待网络重试会延迟退出登录，甚至在旧的无超时实现里
-    // 无限阻塞主流程。这里只调度事件，Main 侧负责有界重试与退出 drain。
-    void reportAppTelemetryEvent(
-      platform,
-      {
-        elementName: "app_user_logout",
-        eventRegion: "app_profile",
-        eventType: "ck",
-        eventExtraDetail: {},
-        userId,
-      },
-      "Root",
-    );
-    const settingsBeforeLogout = await services.settingService.get();
-    const nextProviderFamilyDomain = resolveLogoutProviderFamilyDomain({
-      currentDomain: settingsBeforeLogout.providerFamilyDomain,
-    });
-    await services.oauthService.logout();
-    await updateAppSettings({
-      providerFamilyDomain: (nextProviderFamilyDomain ?? "") as AppSettings["providerFamilyDomain"],
-      providerFamilyDomainUpdatedAt: Date.now(),
-      providerFamilyDomainMigrated: true,
-    });
-    if (!nextProviderFamilyDomain) {
-      onProviderFamilyDomainClearedAfterLogout?.();
-    }
-    // ZAI/BigModel provider 已恢复为 App 登录镜像。
-    // 派生 Coding/Start key 由 OAuth logout 的 host hook 统一清理，Root 只负责刷新展示态。
-    setOAuthError(null);
-    setUser(null);
-    // 退出登录后刷新 Account Source 与 Registry，避免继续展示退出前的 Provider 状态。
-    await refreshProviderState();
-    // Coding Plan 官网 webview 使用独立持久 partition，App logout 必须同步清理。
-    await platform.executeDesktopCommand(DesktopCommandIds.ClearCodingPlanWebviewStorage);
-    await platform.executeDesktopCommand(DesktopCommandIds.RelaunchApp);
-  }, [
-    intl,
-    requestConfirmation,
-    refreshProviderState,
-    onProviderFamilyDomainClearedAfterLogout,
-    platform,
-    services.oauthService,
-    services.modelSelectionService,
-    services.settingService,
-    setOAuthError,
-    setUser,
-    updateAppSettings,
-    userId,
-  ]);
-
   const handleSelectProject = useCallback(
     async (path: string, activateOtherWindow = true) => {
       logger.info("[Root] handleSelectProject called with path:", path);
@@ -549,7 +453,7 @@ export function useRootWorkspaceActions({
       const origin = tabStoreApi.getState();
       const readOriginDraft = () =>
         origin.activeWorkspacePath
-          ? useZCodeSessionStore
+          ? useNekodeSessionStore
               .getState()
               .getWorkspaceState(
                 origin.activeWorkspacePath,
@@ -752,7 +656,7 @@ export function useRootWorkspaceActions({
         activeWorkspacePath,
         activeWorkspaceIdentity ? { workspaceIdentity: activeWorkspaceIdentity } : undefined,
       );
-    const taskId = useZCodeSessionStore
+    const taskId = useNekodeSessionStore
       .getState()
       .getWorkspaceState(activeWorkspacePath, activeWorkspaceIdentity ?? undefined).activeTaskId;
     if (activated && taskId) {
@@ -769,7 +673,6 @@ export function useRootWorkspaceActions({
     setWorkspaceActionError,
     startDraftInWorkspace,
     startNewTaskFromActiveWorkspace,
-    handleLogout,
     handleSelectProject,
     handleSelectConversationWorkspace,
     handleResolveConversationWorkspace,

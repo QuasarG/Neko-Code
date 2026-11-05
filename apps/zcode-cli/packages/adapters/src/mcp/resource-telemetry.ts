@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { cpus, totalmem } from "node:os";
-import { ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS, type ZCodeMcpResourceSample } from "@zcode/shared";
+import { NEKODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS, type NekodeMcpResourceSample } from "@zcode/shared";
 import {
   createProcessProbe,
   type ProcessProbe,
@@ -31,11 +31,11 @@ export interface McpResourceProcess {
 }
 
 export interface McpResourceTelemetryOptions {
-  arch: ZCodeMcpResourceSample["arch"];
-  platform: ZCodeMcpResourceSample["platform"];
+  arch: NekodeMcpResourceSample["arch"];
+  platform: NekodeMcpResourceSample["platform"];
   now(): number;
   getProcesses(): McpResourceProcess[];
-  onResourceSamples?(samples: ZCodeMcpResourceSample[]): void;
+  onResourceSamples?(samples: NekodeMcpResourceSample[]): void;
   processProbe?: ProcessProbe;
   logicalCpuCount?: number;
   totalMemoryGb?: number;
@@ -80,10 +80,10 @@ export function createMcpResourceTelemetry(options: McpResourceTelemetryOptions)
       }
       const intervalMs =
         previousAt === undefined
-          ? ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS
+          ? NEKODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS
           : Math.max(1, sampledAt - previousAt);
       const next = new Map<string, Map<number, number>>();
-      const groups = new Map<string, ZCodeMcpResourceSample>();
+      const groups = new Map<string, NekodeMcpResourceSample>();
       const seenPids = new Set<number>();
       for (const entry of processes) {
         if (!entry.isCurrent()) continue;
@@ -144,7 +144,7 @@ export function createMcpResourceTelemetry(options: McpResourceTelemetryOptions)
       try {
         handle = timer.setInterval(() => {
           void sampleNow();
-        }, ZCODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS);
+        }, NEKODE_MCP_RESOURCE_SAMPLE_INTERVAL_MS);
         handle.unref?.();
       } catch {
         // 保持原 tracker 的旁路语义：定时器不可用不能阻断 MCP 连接。

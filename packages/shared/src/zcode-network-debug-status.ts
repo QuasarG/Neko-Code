@@ -2,11 +2,11 @@ import type {
   InputId,
   QueryId,
   TraceId,
-  ZCodeStreamEvent,
-  ZCodeTaskNetworkDebugStatusType,
+  NekodeStreamEvent,
+  NekodeTaskNetworkDebugStatusType,
 } from "./zcode-task-types-core.js";
 
-const MODEL_NETWORK_STATUS_TYPES = new Set<ZCodeTaskNetworkDebugStatusType>([
+const MODEL_NETWORK_STATUS_TYPES = new Set<NekodeTaskNetworkDebugStatusType>([
   "model_request_started",
   "model_request_completed",
   "model_request_failed",
@@ -21,7 +21,7 @@ export function zcodeTaskNetworkDebugStatusFromPayload(params: {
   queryId?: QueryId;
   eventId?: string;
   payload: Record<string, unknown>;
-}): Extract<ZCodeStreamEvent, { type: "task_network_debug_status" }> | null {
+}): Extract<NekodeStreamEvent, { type: "task_network_debug_status" }> | null {
   const statusType = networkStatusTypeValue(params.payload.type);
   if (!statusType) {
     return null;
@@ -111,9 +111,9 @@ export function zcodeTaskNetworkDebugStatusFromPayload(params: {
   };
 }
 
-function networkStatusTypeValue(value: unknown): ZCodeTaskNetworkDebugStatusType | undefined {
+function networkStatusTypeValue(value: unknown): NekodeTaskNetworkDebugStatusType | undefined {
   return typeof value === "string" && MODEL_NETWORK_STATUS_TYPES.has(value as never)
-    ? (value as ZCodeTaskNetworkDebugStatusType)
+    ? (value as NekodeTaskNetworkDebugStatusType)
     : undefined;
 }
 

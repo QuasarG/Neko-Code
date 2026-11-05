@@ -1,25 +1,25 @@
-export { hasConfiguredStandaloneCodingPlan, logoutZCodeCli } from "./auth-login-persistence.js";
+export { hasConfiguredStandaloneCodingPlan, logoutNekodeCli } from "./auth-login-persistence.js";
 import {
   persistStandaloneCodingPlanConnection,
   type StandaloneCodingPlanPersistenceResult,
 } from "./auth-login-persistence.js";
-export { ZCodeCliLoginError } from "./auth-login-contract.js";
+export { NekodeCliLoginError } from "./auth-login-contract.js";
 export type {
   CodingPlanProviderId,
-  LoginZCodeCliOptions,
-  LoginZCodeCliResult,
+  LoginNekodeCliOptions,
+  LoginNekodeCliResult,
   LoginBigmodelCodingPlanOptions,
   LoginBigmodelCodingPlanResult,
   ConfigureCodingPlanApiKeyOptions,
   ConfigureCodingPlanApiKeyResult,
-  LogoutZCodeCliOptions,
-  LogoutZCodeCliResult,
+  LogoutNekodeCliOptions,
+  LogoutNekodeCliResult,
 } from "./auth-login-contract.js";
 import {
-  ZCodeCliLoginError,
+  NekodeCliLoginError,
   type CodingPlanProviderId,
-  type LoginZCodeCliOptions,
-  type LoginZCodeCliResult,
+  type LoginNekodeCliOptions,
+  type LoginNekodeCliResult,
   type LoginBigmodelCodingPlanOptions,
   type LoginBigmodelCodingPlanResult,
   type ConfigureCodingPlanApiKeyOptions,
@@ -27,17 +27,17 @@ import {
 } from "./auth-login-contract.js";
 import {
   createCodingPlanApiKeyResolver,
-  createSharedZCodeCredentialStore,
+  createSharedNekodeCredentialStore,
   createCliOAuthClient,
   createCliOAuthPollToken,
   openUrlInBrowser,
-  SHARED_ZCODE_CREDENTIAL_KEYS,
+  SHARED_NEKODE_CREDENTIAL_KEYS,
   type CliOAuthClient,
 } from "@zcode/adapters";
 import { createConfig } from "@zcode/adapters/config";
 import { createNodeHttpClientAdapter } from "@zcode/adapters/http";
 import type { EnvRecord } from "@zcode/adapters/model";
-import { buildZCodeEndpointUrls, resolveRuntimeZCodeEndpointOrigin } from "@zcode/shared";
+import { buildNekodeEndpointUrls, resolveRuntimeNekodeEndpointOrigin } from "@zcode/shared";
 import { setTimeout as delay } from "node:timers/promises";
 import { createStandaloneAccountIdentityFromSecret } from "./app/standalone-account-provider-runtime.js";
 import { throwIfAborted, waitWithAbort } from "./auth-login-abort.js";
@@ -50,9 +50,9 @@ const DEFAULT_LOGIN_TIMEOUT_MS = 5 * 60 * 1_000;
  * 再解析项目访问材料并写入凭据与默认模型。OAuth 登录不落盘派生 API Key，
  * 运行时按 `authSource: "oauth"` 用访问令牌换取请求凭据。
  */
-export async function loginZCodeCli(
-  options: LoginZCodeCliOptions = {},
-): Promise<LoginZCodeCliResult> {
+export async function loginNekodeCli(
+  options: LoginNekodeCliOptions = {},
+): Promise<LoginNekodeCliResult> {
   const env = options.env ?? process.env;
   const providerId = options.providerId ?? "zai";
   const now = options.now ?? Date.now;
@@ -63,12 +63,12 @@ export async function loginZCodeCli(
     ? AbortSignal.any([options.abortSignal, timeoutController.signal])
     : timeoutController.signal;
   const timeoutError = () =>
-    new ZCodeCliLoginError("auth_timeout", "Authorization timed out. Please retry login.");
+    new NekodeCliLoginError("auth_timeout", "Authorization timed out. Please retry login.");
   let timer = setTimeout(() => timeoutController.abort(timeoutError()), timeoutMs);
   try {
     throwIfAborted(signal);
     const pollToken = options.pollToken ?? createCliOAuthPollToken();
-    const credentialStore = options.credentialStore ?? createSharedZCodeCredentialStore({ env });
+    const credentialStore = options.credentialStore ?? createSharedNekodeCredentialStore({ env });
     const oauthClient = createOAuthClient(options, env);
     const initData = await waitWithAbort(oauthClient.init({ pollToken }, { signal }), signal);
     const remainingMs = Math.min(deadlineMs, initData.expires_at * 1_000) - now();
@@ -96,7 +96,7 @@ export async function loginZCodeCli(
       createError: (code) =>
         code === "auth_timeout"
           ? timeoutError()
-          : new ZCodeCliLoginError(code, "Authorization failed. Please retry login."),
+          : new NekodeCliLoginError(code, "Authorization failed. Please retry login."),
     });
     const material = await waitWithAbort(
       resolveCodingPlanMaterial({
@@ -129,13 +129,13 @@ export async function loginZCodeCli(
       } else {
         const displayName = readyData.user.name || readyData.user.email || readyData.user.user_id;
         await credentialStore.saveMany({
-          [SHARED_ZCODE_CREDENTIAL_KEYS.activeProvider]: providerId,
-          [SHARED_ZCODE_CREDENTIAL_KEYS.zcodeJwtToken]: readyData.token,
-          [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelAccessToken]: readyData.accessToken,
+          [SHARED_NEKODE_CREDENTIAL_KEYS.activeProvider]: providerId,
+          [SHARED_NEKODE_CREDENTIAL_KEYS.zcodeJwtToken]: readyData.token,
+          [SHARED_NEKODE_CREDENTIAL_KEYS.bigmodelAccessToken]: readyData.accessToken,
           ...(readyData.refreshToken
-            ? { [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelRefreshToken]: readyData.refreshToken }
+            ? { [SHARED_NEKODE_CREDENTIAL_KEYS.bigmodelRefreshToken]: readyData.refreshToken }
             : {}),
-          [SHARED_ZCODE_CREDENTIAL_KEYS.bigmodelUserInfo]: JSON.stringify({
+          [SHARED_NEKODE_CREDENTIAL_KEYS.bigmodelUserInfo]: JSON.stringify({
             id: accountIdentity,
             username: displayName,
             displayName,
@@ -144,7 +144,7 @@ export async function loginZCodeCli(
         });
       }
     } catch (error) {
-      throw new ZCodeCliLoginError(
+      throw new NekodeCliLoginError(
         "credential_write_failed",
         "Login succeeded but writing credentials failed.",
         { cause: error },
@@ -162,9 +162,9 @@ export async function loginZCodeCli(
         providerId,
       });
     } catch (error) {
-      throw new ZCodeCliLoginError(
+      throw new NekodeCliLoginError(
         "config_update_failed",
-        "Login succeeded but updating ZCode config failed.",
+        "Login succeeded but updating Nekode config failed.",
         { cause: error },
       );
     }
@@ -185,7 +185,7 @@ export async function loginBigmodelCodingPlan(
   options: LoginBigmodelCodingPlanOptions = {},
 ): Promise<LoginBigmodelCodingPlanResult> {
   return {
-    ...(await loginZCodeCli({ ...options, providerId: "bigmodel" })),
+    ...(await loginNekodeCli({ ...options, providerId: "bigmodel" })),
     providerId: "bigmodel",
   };
 }
@@ -195,10 +195,10 @@ export async function configureCodingPlanApiKey(
 ): Promise<ConfigureCodingPlanApiKeyResult> {
   const apiKey = options.apiKey.trim();
   if (!apiKey) {
-    throw new ZCodeCliLoginError("config_update_failed", "API key must not be empty.");
+    throw new NekodeCliLoginError("config_update_failed", "API key must not be empty.");
   }
   const credentialStore =
-    options.credentialStore ?? createSharedZCodeCredentialStore({ env: options.env });
+    options.credentialStore ?? createSharedNekodeCredentialStore({ env: options.env });
   const configPatch = await persistStandaloneCodingPlanConnection({
     accountIdentity: createStandaloneAccountIdentityFromSecret(apiKey),
     apiKey,
@@ -214,17 +214,17 @@ export async function configureCodingPlanApiKey(
   };
 }
 
-function createOAuthClient(options: LoginZCodeCliOptions, env: EnvRecord): CliOAuthClient {
+function createOAuthClient(options: LoginNekodeCliOptions, env: EnvRecord): CliOAuthClient {
   return createCliOAuthClient({
     baseUrl:
-      options.baseUrl ?? buildZCodeEndpointUrls(resolveCliZCodeEndpointOrigin(env)).apiBaseUrl,
+      options.baseUrl ?? buildNekodeEndpointUrls(resolveCliNekodeEndpointOrigin(env)).apiBaseUrl,
     providerId: options.providerId ?? "zai",
     httpClient: options.httpClient ?? createDefaultHttpClient(env),
   });
 }
 
-function resolveCliZCodeEndpointOrigin(env: EnvRecord): string {
-  return resolveRuntimeZCodeEndpointOrigin(env);
+function resolveCliNekodeEndpointOrigin(env: EnvRecord): string {
+  return resolveRuntimeNekodeEndpointOrigin(env);
 }
 
 function createDefaultHttpClient(env: EnvRecord) {
