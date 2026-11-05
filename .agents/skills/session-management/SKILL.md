@@ -1,6 +1,6 @@
 ---
 name: session-management
-description: 修改 ZCode 会话管理（左侧任务列表、tasks-index.sqlite、sessions-index、CLI session store、标题/状态/置顶/归档/未读/删除、虚拟项目与 roots、workspace 身份、相关 migration）之前必读。它把 2026-09 「虚拟项目与数据归属收口」重构及分组恢复的设计理由、历史 bug 根因与不变量蒸馏成检查清单，让后来者知道为什么这样设计、哪些线不能踩。
+description: 修改 Nekode 会话管理（左侧任务列表、tasks-index.sqlite、sessions-index、CLI session store、标题/状态/置顶/归档/未读/删除、虚拟项目与 roots、workspace 身份、相关 migration）之前必读。它把 2026-09 「虚拟项目与数据归属收口」重构及分组恢复的设计理由、历史 bug 根因与不变量蒸馏成检查清单，让后来者知道为什么这样设计、哪些线不能踩。
 ---
 
 # Session 管理设计蒸馏
@@ -54,16 +54,16 @@ Host tasks-index    project_id、pinned、archived、unread_at(+CAS)、sort_orde
 ## 3. 关键裁决速查（详见 spec 第 3 节）
 
 - 2026-10-10 远程裁决：本地/远程项目平铺，Host 不作为分组；远程先建单目录项目再建会话，不允许无项目创建或拖拽追加目录。统一项目顺序归控制端侧栏偏好。详见 `docs/superpowers/specs/2026-10-10-session-manage-upstream-integration.md`。
-- 侧栏 = 全局置顶区（session + 置顶项目）→ 项目区 → 任务区（`project_id IS NULL`，任意 cwd）；`~/.zcode/workspace/*` 只作为全局新建任务的默认执行目录。筛选含按项目 / 按分组 / 最近更新；真实目录不是节点，不恢复旧两级切换器。
-- 项目：本地 0..n 个同 host 的 roots + 一个主要目录，远程恰好一个固定目录；同一目录可属多个项目；新建 session cwd = 主要目录；仅本地 0 root 时自动建 `~/.zcode/workspace/<ts>` 并加为主要 root。
+- 侧栏 = 全局置顶区（session + 置顶项目）→ 项目区 → 任务区（`project_id IS NULL`，任意 cwd）；`~/.nekode/workspace/*` 只作为全局新建任务的默认执行目录。筛选含按项目 / 按分组 / 最近更新；真实目录不是节点，不恢复旧两级切换器。
+- 项目：本地 0..n 个同 host 的 roots + 一个主要目录，远程恰好一个固定目录；同一目录可属多个项目；新建 session cwd = 主要目录；仅本地 0 root 时自动建 `~/.nekode/workspace/<ts>` 并加为主要 root。
 - 本地项目及在线远端权威项目删除 = 软删除容器，session 保留归属，时间线可见；新建 roots 集合完全相等的项目时提示恢复；不提供彻底删除。远程项目离线删除只移除本机入口与缓存，不触发远端软删除或恢复。
-- 本地项目移除 root / 换主要目录不影响已创建 session、定时任务、闲时任务、Bots（它们在创建时固化 cwd 与附加目录）；roots 变更对运行中 session 下次 resume 生效。
+- 本地项目移除 root / 换主要目录不影响已创建 session、定时任务、闲时任务（它们在创建时固化 cwd 与附加目录）；roots 变更对运行中 session 下次 resume 生效。
 - 同名 skill / subagent 来自不同 root 时并存，由 CLI 赋限定名 `<rootName>/<name>`。
 - 分组：控制端 Host 唯一持有跨设备分组，手机复用该 Host；不按 workspace 建组，不将分组转换为项目。分组不改变 cwd、项目、CLI 时间、配置或权限。读取只读，单节点移动在事务内复检来源/锚点，缺席不删除；系统任务只首次归组，手工移出后不拉回。
 - 展示偏好：有效新版 view 优先，否则沿用旧 organizeBy；旧 grouped 默认进入按分组。新建任务固化 draft 的分组 placement，首次发送后幂等提交，不在导航时猜测。
 - 远程：项目与任务组织态留在远端 app 库；本机持久化 host 连接记录、用户已添加的项目入口及基础信息缓存。离线不可展开、改名或编辑 roots，项目操作仅允许移除本机入口与缓存，远端项目与会话保留，无待同步删除队列。远程只允许创建时确定的一个固定 root，host 上限 20，启动自动连接已保存 host。
 - 重连只刷新本机仍存在的入口，迟到响应不得 upsert 已移除入口；setting.json 从本机入口列表派生，不反向重建已移除入口。重新添加远程项目须由用户主动选择，或由在线创建成功显式添加；删除本机 host 只移除连接及所属入口。
-- 设置页 agent 配置管理按真实目录（roots 去重平铺）；定时 / 闲时 / Bots 选虚拟项目。
+- 设置页 agent 配置管理按真实目录（roots 去重平铺）；定时 / 闲时任务选虚拟项目。
 
 ## 4. 数据与迁移纪律
 
